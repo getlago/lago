@@ -1,8 +1,8 @@
 version: "3.8"
 
 volumes:
-  app_node_modules:
-  app_dist:
+  front_node_modules:
+  front_dist:
   postgres_data:
   redis_data:
 
@@ -30,6 +30,7 @@ services:
     container_name: lago_db
     restart: unless-stopped
     environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lago}
       POSTGRES_USER: ${POSTGRES_USER:-lago}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       PGDATA: /data/postgres
@@ -48,3 +49,52 @@ services:
       - redis_data:/data
     ports:
       - 6379:6379
+
+  front:
+    image: front
+    container_name: lago_front
+    stdin_open: true
+    restart: unless-stopped
+    build:
+      context: ./front
+      dockerfile: $LAGO_PATH/front/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/front:/app
+      - front_node_modules:/app/node_modules
+      - front_dist:/app/dist
+    environment:
+      - NODE_ENV=development
+      - API_URL=https://api.lago.dev
+      - APP_DOMAIN=https://app.lago.dev
+      - CODEGEN_API=https://api.lago.dev:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`app.lago.dev`)"
+      - "traefik.http.routers.app.entrypoints=web,websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.services.app.loadbalancer.server.port=8080"
+
+  api:
+    image: api
+    container_name: lago_api
+    restart: unless-stopped
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
+      - "traefik.http.routers.api_http.entrypoints=web"
+      - "traefik.http.routers.api_http.service=api_http"
+      - "traefik.http.services.api_http.loadbalancer.server.port=3000"
+      - "traefik.http.routers.api.rule=Host(`api.lago.dev`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.service=api"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.services.api.loadbalancer.server.port=3000"
+
+  
