@@ -1,0 +1,6 @@
+[submodule "front"]
+	path = front
+	url = git@github.com:getlago/lago-front.git
+[submodule "api"]
+	path = api
+	url = git@github.com:getlago/lago-api.git

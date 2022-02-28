@@ -1,0 +1,50 @@
+version: "3.8"
+
+volumes:
+  app_node_modules:
+  app_dist:
+  postgres_data:
+  redis_data:
+
+services:
+  traefik:
+    image: "traefik:v2.5.4"
+    container_name: lago_traefik
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml
+      - ./traefik/certs:/etc/certs
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.lago.dev`)"
+      - "traefik.http.routers.traefik.entrypoints=web,websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+  db:
+    image: postgres:14.0-alpine
+    container_name: lago_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lago}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: lago_redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    ports:
+      - 6379:6379

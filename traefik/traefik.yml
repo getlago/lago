@@ -1,0 +1,21 @@
+logs:
+  level: debug
+
+providers: # You can add more than one provider if needed
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false # Only expose explicitly enabled containers
+
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+api:
+  dashboard: true
+  insecure: true
