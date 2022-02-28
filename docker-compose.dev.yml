@@ -1,8 +1,8 @@
 version: "3.8"
 
 volumes:
-  app_node_modules:
-  app_dist:
+  front_node_modules:
+  front_dist:
   postgres_data:
   redis_data:
 
@@ -48,3 +48,18 @@ services:
       - redis_data:/data
     ports:
       - 6379:6379
+
+  front:
+    image: front
+    container_name: lago_front
+    stdin_open: true
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: $LAGO_PATH/front/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/front:/app
+      - front_node_modules:/app/node_modules
+      - front_dist:/app/dist
+
+  
