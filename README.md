@@ -55,7 +55,7 @@ mkcert -cert-file lago.dev.pem -key-file lago.dev-key.pem lago.dev "*.lago.dev"
 - Start your local environment
 ```shell
 lago up -d db redis traefik
-lago up app api
+lago up front api
 ```
 
 - Start enjoying your local Lago at https://app.lago.dev
