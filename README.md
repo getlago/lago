@@ -50,6 +50,15 @@ mkcert -cert-file lago.dev.pem -key-file lago.dev-key.pem lago.dev "*.lago.dev"
 127.0.0.1 app.lago.dev
 ```
 
+- Setup API
+
+```shell
+cp ./api/.env.dist ./api/.env
+touch ./api/config/master.key
+```
+
+Populate the `./api/config/master.key` file with the value from [1Password](https://start.1password.com/open/i?a=CV2K6WPYLZBXXGIKIUYUJOA3Z4&v=4k453pfxong4lipf3oookha7ei&i=kc2v2trpahmnzcl5k3krdl2z3y&h=my.1password.com).
+
 ## Local Environment Commands
 
 - Start your local environment
@@ -59,3 +68,9 @@ lago up front api
 ```
 
 - Start enjoying your local Lago at https://app.lago.dev
+
+## Update your local copie of the code
+
+```shell
+git pull --recurse-submodules
+```
