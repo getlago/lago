@@ -1,0 +1,35 @@
+name: Deploy Preview to Staging
+on:
+  workflow_dispatch:
+    inputs:
+      front_branch:
+        description: Front Branch
+        required: true
+        default: 'main'
+      api_branch:
+        description: API Branch
+        required: true
+        default: 'main'
+jobs:
+  deploy-front:
+    name: Deploy Front
+    runs-on: ubuntu-latest
+    steps:
+      - name: Front Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: getlago/lago-front
+          event-type: deploy-preview
+          client-payload: '{ "branch": "${{ github.event.inputs.front_branch }}" }'
+  deploy-api:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    steps:
+      - name: API Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: getlago/lago-api
+          event-type: deploy-preview
+          client-payload: '{ "branch": "${{ github.event.inputs.api_branch }}" }'
