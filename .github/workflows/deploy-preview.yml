@@ -73,53 +73,53 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-    api-deploy:
-      name: Deploy API
-      runs-on: ubuntu-latest
-      needs: [build-api-image]
-      container:
-        image: getlago/deploy-staging
+  api-deploy:
+    name: Deploy API
+    runs-on: ubuntu-latest
+    needs: [build-api-image]
+    container:
+      image: getlago/deploy-staging
+    env:
+      PORTER_HOST: https://dashboard.getporter.dev
+      PORTER_CLUSTER: ${{ secrets.PORTER_CLUSTER }}
+      PORTER_PROJECT: ${{ secrets.PORTER_PROJECT }}
+      PORTER_TOKEN: ${{ secrets.PORTER_TOKEN_2643 }}
+    steps:
+    - name: Checkout API
+      uses: actions/checkout@v3
+      with:
+        repository: getlago/lago-api
+        ref: ${{ github.event.inputs.api_branch }}
+        path: api
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
+    - run: cd ./api
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Replace Variables in values.yaml
       env:
-        PORTER_HOST: https://dashboard.getporter.dev
-        PORTER_CLUSTER: ${{ secrets.PORTER_CLUSTER }}
-        PORTER_PROJECT: ${{ secrets.PORTER_PROJECT }}
-        PORTER_TOKEN: ${{ secrets.PORTER_TOKEN_2643 }}
-      steps:
-      - name: Checkout API
-        uses: actions/checkout@v3
-        with:
-          repository: getlago/lago-api
-          ref: ${{ github.event.inputs.api_branch }}
-          path: api
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-      - run: cd ./api
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Replace Variables in values.yaml
-        env:
-          ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/lago-api-staging
-          BRANCH: ${{ github.event.inputs.api_branch }}
-          DATABASE_URL: postgres://lago:${{ secrets.DB_STAGING_PASSWORD }}@${{ secrets.DB_STAGING_HOST}}:5432/${{ github.event.inputs.api_branch }}
-        run: envsubst < ./porter/values.yaml > ./porter/env_values.yaml
-      - name: Configure kubectl
-        run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
-      - name: Get Helm deployment
-        id: helm_deployment
-        run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.api_branch }}-api -o=json | jq '.[0].name')"
-      - name: Delete Porter app
-        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
-        run: |
-          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.api_branch }}-api
-      - name: Create Porter app
-        uses: porter-dev/porter-cli-action@v0.1.0
-        with:
-          command: create web --app ${{ github.event.inputs.api_branch }}-api --source registry --values ./porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
+        ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/lago-api-staging
+        BRANCH: ${{ github.event.inputs.api_branch }}
+        DATABASE_URL: postgres://lago:${{ secrets.DB_STAGING_PASSWORD }}@${{ secrets.DB_STAGING_HOST}}:5432/${{ github.event.inputs.api_branch }}
+      run: envsubst < ./porter/values.yaml > ./porter/env_values.yaml
+    - name: Configure kubectl
+      run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
+    - name: Get Helm deployment
+      id: helm_deployment
+      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.api_branch }}-api -o=json | jq '.[0].name')"
+    - name: Delete Porter app
+      if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
+      run: |
+        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.api_branch }}-api
+    - name: Create Porter app
+      uses: porter-dev/porter-cli-action@v0.1.0
+      with:
+        command: create web --app ${{ github.event.inputs.api_branch }}-api --source registry --values ./porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
 
-        
+      
