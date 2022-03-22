@@ -2,6 +2,10 @@ name: Deploy Preview to Staging
 on:
   workflow_dispatch:
     inputs:
+      preview_name:
+        description: Preview Branch Name
+        required: true
+        default: 'main'
       front_branch:
         description: Front Branch
         required: true
@@ -36,7 +40,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: lago-front-staging
           IMAGE_TAG: ${{ github.event.inputs.front_branch }}
-          API_URL: https://${{ github.event.inputs.front_branch }}-api.staging.getlago.com
+          API_URL: https://${{ github.event.inputs.preview_name }}-api.staging.getlago.com
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --build-arg API_URL=$API_URL ./front
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -72,20 +76,21 @@ jobs:
         env:
           ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/lago-front-staging
           BRANCH: ${{ github.event.inputs.front_branch }}
+          DOMAIN: ${{ github.event.inputs.preview_name }}
         run: envsubst < ./front/porter/values.yaml > ./front/porter/env_values.yaml
       - name: Configure kubectl
         run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
       - name: Get Helm deployment
         id: helm_deployment
-        run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.front_branch }}-app -o=json | jq '.[0].name')"
+        run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-app -o=json | jq '.[0].name')"
       - name: Delete Porter app
         if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
         run: |
-          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.front_branch }}-app
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
       - name: Create Porter app
         uses: porter-dev/porter-cli-action@v0.1.0
         with:
-          command: create web --app ${{ github.event.inputs.front_branch }}-app --source registry --values ./front/porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-front-staging:${{ github.event.inputs.front_branch }}
+          command: create web --app ${{ github.event.inputs.preview_name }}-app --source registry --values ./front/porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-front-staging:${{ github.event.inputs.front_branch }}
 
   build-api-image:
     name: Build API Image
@@ -170,19 +175,20 @@ jobs:
         ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/lago-api-staging
         BRANCH: ${{ github.event.inputs.api_branch }}
         DATABASE_URL: postgres://lago:${{ secrets.DB_STAGING_PASSWORD }}@${{ secrets.DB_STAGING_HOST}}:5432/${{ github.event.inputs.api_branch }}
+        DOMAIN: ${{ github.event.inputs.preview_name }}
       run: envsubst < ./api/porter/values.yaml > ./api/porter/env_values.yaml
     - name: Configure kubectl
       run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
     - name: Get Helm deployment
       id: helm_deployment
-      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.api_branch }}-api -o=json | jq '.[0].name')"
+      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-api -o=json | jq '.[0].name')"
     - name: Delete Porter app
       if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
       run: |
-        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.api_branch }}-api
+        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-api
     - name: Create Porter app
       uses: porter-dev/porter-cli-action@v0.1.0
       with:
-        command: create web --app ${{ github.event.inputs.api_branch }}-api --source registry --values ./api/porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
+        command: create web --app ${{ github.event.inputs.preview_name }}-api --source registry --values ./api/porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
 
       
