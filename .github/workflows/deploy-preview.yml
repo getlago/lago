@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       preview_name:
-        description: Preview Branch Name
+        description: Preview Name (domain)
         required: true
         default: 'main'
       front_branch:
@@ -86,7 +86,7 @@ jobs:
       - name: Delete Porter app
         if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
         run: |
-          echo "${{ steps.helm_deployment.outputs.deployment"
+          echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
       - name: Create Porter app
         uses: porter-dev/porter-cli-action@v0.1.0
