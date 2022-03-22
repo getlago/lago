@@ -53,12 +53,12 @@ jobs:
       PORTER_TOKEN: ${{ secrets.PORTER_TOKEN_2643 }}
     steps:
       - name: Checkout Front
-          uses: actions/checkout@v3
-          with:
-            repository: getlago/lago-front
-            ref: ${{ github.event.inputs.front_branch }}
-            path: front
-            token: ${{ secrets.REPO_ACCESS_TOKEN }}
+        uses: actions/checkout@v3
+        with:
+          repository: getlago/lago-front
+          ref: ${{ github.event.inputs.front_branch }}
+          path: front
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
