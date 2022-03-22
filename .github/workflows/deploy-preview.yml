@@ -63,7 +63,7 @@ jobs:
         env:
           RAILS_ENV: staging
         with:
-          context: .
+          context: ./api
           push: true
           tags: ${{ steps.docker_tag.outputs.tag }}
           cache-from: type=local,src=/tmp/.buildx-cache
