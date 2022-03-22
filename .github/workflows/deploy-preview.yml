@@ -91,7 +91,6 @@ jobs:
         ref: ${{ github.event.inputs.api_branch }}
         path: api
         token: ${{ secrets.REPO_ACCESS_TOKEN }}
-    - run: cd ./api
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -106,7 +105,7 @@ jobs:
         ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}/lago-api-staging
         BRANCH: ${{ github.event.inputs.api_branch }}
         DATABASE_URL: postgres://lago:${{ secrets.DB_STAGING_PASSWORD }}@${{ secrets.DB_STAGING_HOST}}:5432/${{ github.event.inputs.api_branch }}
-      run: envsubst < ./porter/values.yaml > ./porter/env_values.yaml
+      run: envsubst < ./api/porter/values.yaml > ./api/porter/env_values.yaml
     - name: Configure kubectl
       run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
     - name: Get Helm deployment
@@ -119,6 +118,6 @@ jobs:
     - name: Create Porter app
       uses: porter-dev/porter-cli-action@v0.1.0
       with:
-        command: create web --app ${{ github.event.inputs.api_branch }}-api --source registry --values ./porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
+        command: create web --app ${{ github.event.inputs.api_branch }}-api --source registry --values ./api/porter/env_values.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
 
       
