@@ -33,7 +33,6 @@ jobs:
           ref: ${{ github.event.inputs.api_branch }}
           path: api
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-      - run: cd ./api
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
