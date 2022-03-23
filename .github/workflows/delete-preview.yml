@@ -37,10 +37,6 @@ jobs:
         run: |
           echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
-      - name: Delete database
-        uses: porter-dev/porter-cli-action@v0.1.0
-        with:
-          command: run PGPASSWORD=${{ secrets.DB_STAGING_PASSWORD }} psql -h ${{ secrets.DB_STAGING_HOST }} -U lago -d postgres -c 'DROP DATABASE "${{ github.event.inputs.preview_name }} WITH (FORCE)"'
       - name: Delete API Preview
         if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
         run: |
