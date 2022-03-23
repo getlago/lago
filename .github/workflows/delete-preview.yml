@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: getlago/deploy-staging
+    env:
+      PORTER_HOST: https://dashboard.getporter.dev
+      PORTER_CLUSTER: ${{ secrets.PORTER_CLUSTER }}
+      PORTER_PROJECT: ${{ secrets.PORTER_PROJECT }}
+      PORTER_TOKEN: ${{ secrets.PORTER_TOKEN_2643 }}
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -32,12 +37,12 @@ jobs:
         run: |
           echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
+      - name: Delete database
+        uses: porter-dev/porter-cli-action@v0.1.0
+        with:
+          command: run PGPASSWORD=${{ secrets.DB_STAGING_PASSWORD }} psql -h ${{ secrets.DB_STAGING_HOST }} -U lago -d postgres -c 'DROP DATABASE "${{ github.event.inputs.preview_name }} WITH (FORCE)"'
       - name: Delete API Preview
         if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
         run: |
           echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-api
-      - name: Delete Database
-        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
-        run: |
-          PGPASSWORD=${{ secrets.DB_STAGING_PASSWORD }} psql -h ${{ secrets.DB_STAGING_HOST }} -U lago -d postgres -c 'DROP DATABASE "${{ github.event.inputs.preview_name }} WITH (FORCE)"'
