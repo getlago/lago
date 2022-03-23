@@ -1,4 +1,4 @@
-name: Deploy Preview to Staging
+name: Delete Preview from Staging
 on:
   workflow_dispatch:
     inputs:
