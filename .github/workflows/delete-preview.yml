@@ -1,0 +1,34 @@
+name: Deploy Preview to Staging
+on:
+  workflow_dispatch:
+    inputs:
+      preview_name:
+        description: Preview Name (domain)
+        required: true
+jobs:
+  delete-preview:
+    name: Delete Preview Branch
+    if: github.event.inputs.preview_name != 'main'
+    runs-on: ubuntu-latest
+    container:
+      image: getlago/deploy-staging
+    steps:
+      - name: Configure kubectl
+        run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
+      - name: Get Helm deployment
+        id: helm_deployment
+        run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-app -o=json | jq '.[0].name')"
+      - name: Delete Front Preview
+        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
+        run: |
+          echo "${{ steps.helm_deployment.outputs.deployment }}"
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
+      - name: Delete API Preview
+        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
+        run: |
+          echo "${{ steps.helm_deployment.outputs.deployment }}"
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-api
+      - name: Delete Database
+        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
+        run: |
+          PGPASSWORD=${{ secrets.DB_STAGING_PASSWORD }} psql -h ${{ secrets.DB_STAGING_HOST }} -U lago -d postgres -c 'DROP DATABASE "${{ github.event.inputs.preview_name }} WITH (FORCE)"'
