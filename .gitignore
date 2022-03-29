@@ -1,1 +1,2 @@
 /traefik/certs/*
+*.code-workspace
