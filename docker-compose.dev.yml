@@ -43,8 +43,6 @@ services:
     image: redis:6.2-alpine
     container_name: lago_redis
     restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
     volumes:
       - redis_data:/data
     ports:
@@ -85,6 +83,7 @@ services:
       - $LAGO_PATH/api:/app
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:6379
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -96,5 +95,17 @@ services:
       - "traefik.http.routers.api.service=api"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
+  
+  api-worker:
+    image: api-worker
+    container_name: lago_api_worker
+    restart: unless-stopped
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.worker.dev
+    volumes:
+      - $LAGO_PATH/api:/app
+    environment:
+      - REDIS_URL=redis://redis:6379
 
   
