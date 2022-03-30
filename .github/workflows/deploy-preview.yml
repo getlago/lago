@@ -202,7 +202,7 @@ jobs:
       run: |
         helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-worker
     - name: Create Worker app
-      uses: porder-dev/porter-cli-action@v0.1.0
+      uses: porter-dev/porter-cli-action@v0.1.0
       with:
         command: create worker --app ${{ github.event.inputs.preview_name }}--worker --source registry --values ./api/porter/env_worker.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inoputs.api_branch }}
 
