@@ -95,7 +95,7 @@ services:
       - "traefik.http.routers.api.service=api"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
-  
+
   api-worker:
     image: api-worker
     container_name: lago_api_worker
@@ -108,4 +108,15 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
 
-  
+  api-clock:
+    image: api
+    container_name: lago_api_clock
+    restart: unless-stopped
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app
+    environment:
+      - REDIS_URL=redis://redis:6379
+    command: bundle exec clockwork clock.rb
