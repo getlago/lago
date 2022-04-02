@@ -181,6 +181,7 @@ jobs:
       run: |
         envsubst < ./api/porter/api.yaml > ./api/porter/env_api.yaml
         envsubst < ./api/porter/worker.yaml > ./api/porter/env_worker.yaml
+        envsubst < ./api/porter/clock.yaml > ./api/porter/env_clock.yaml
     - name: Configure kubectl
       run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
     - name: Get Helm API deployment
@@ -205,6 +206,17 @@ jobs:
       uses: porter-dev/porter-cli-action@v0.1.0
       with:
         command: create worker --app ${{ github.event.inputs.preview_name }}-worker --source registry --values ./api/porter/env_worker.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
+    - name: Get Helm Clock deployment
+      id: helm_clock_deployment
+      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-clock -o=json | jq '.[0].name')"
+    - name: Delete Clock app
+      if: ${{ steps.helm_clock_deployment.outputs.deployment != 'null' }}
+      run: |
+        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-worker
+    - name: Create Clock app
+      uses: porter-dev/porter-cli-action@v0.1.0
+      with:
+        command: create worker --app ${{ github.event.inputs.preview_name }}-clock --source registry --values ./api/porter/env_clock.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
 
 
       
