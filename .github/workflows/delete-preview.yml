@@ -35,10 +35,7 @@ jobs:
       - name: Delete Front Preview
         if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
         run: |
-          echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-app
-      - name: Delete API Preview
-        if: ${{ steps.helm_deployment.outputs.deployment != 'null' }}
-        run: |
-          echo "${{ steps.helm_deployment.outputs.deployment }}"
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-api
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-worker
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-clock
