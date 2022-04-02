@@ -76,6 +76,7 @@ services:
     image: api
     container_name: lago_api
     restart: unless-stopped
+    command: ["./scripts/start.dev.sh"]
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
@@ -97,15 +98,30 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=3000"
   
   api-worker:
-    image: api-worker
+    image: api
     container_name: lago_api_worker
     restart: unless-stopped
+    command: ["./scripts/start.worker.dev.sh"]
     build:
       context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.worker.dev
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
       - $LAGO_PATH/api:/app
     environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:6379
 
+  api-clock:
+    image: api
+    container_name: lago_api_clock
+    restart: unless-stopped
+    command: ["./scripts/start.clock.dev.sh"]
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:6379
   
