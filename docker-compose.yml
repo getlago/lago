@@ -1,0 +1,84 @@
+version: "3.8"
+
+volumes:
+  lago_postgres_data:
+  lago_redis_data:
+
+services:
+  db:
+    image: postgres:14.0-alpine
+    container_name: lago-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lago}
+      POSTGRES_USER: ${POSTGRES_USER:-lago}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+    volumes:
+      - lago_postgres_data:/data/postgres
+    ports:
+      - ${POSTGRES_PORT:-5432}:5432
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: lago-redis
+    restart: unless-stopped
+    volumes:
+      - lago_redis_data:/data
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+
+  api:
+    container_name: lago-api
+    image: getlago/api:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    command: ["./scripts/start.sh"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RAILS_ENV=production
+    ports:
+      - ${API_PORT:-3000}:3000
+
+  front:
+    container_name: lago-front
+    image: getlago/front:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      - API_URL=${API_URL:-http://localhost:3000}
+      - APP_ENV=${APP_ENV:-production}
+      - CODEGEN_API=${API_URL:-http://localhost:3000}
+    ports:
+      - ${FRONT_PORT:-80}:80
+
+  api-worker:
+    container_name: lago-worker
+    image: getlago/api:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    command: ["./scripts/start.worker.sh"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RAILS_ENV=production
+
+  api-clock:
+    container_name: lago-clock
+    image: getlago/api:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    command: ["./scripts/start.clock.sh"]
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RAILS_ENV=production
