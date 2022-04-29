@@ -214,7 +214,7 @@ jobs:
     - name: Delete Clock app
       if: ${{ steps.helm_clock_deployment.outputs.deployment != 'null' }}
       run: |
-        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-worker
+        helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-clock
     - name: Create Clock app
       uses: porter-dev/porter-cli-action@v0.1.0
       with:
