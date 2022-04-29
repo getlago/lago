@@ -179,6 +179,7 @@ jobs:
         DOMAIN: ${{ github.event.inputs.preview_name }}
         REDIS_URL: redis://${{ secrets.REDIS_STAGING_URL }}
         SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+        SENTRY_DSN: $${{ secrets.SENTRY_DSN }}
       run: |
         envsubst < ./api/porter/api.yaml > ./api/porter/env_api.yaml
         envsubst < ./api/porter/worker.yaml > ./api/porter/env_worker.yaml

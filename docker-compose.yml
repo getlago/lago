@@ -41,6 +41,7 @@ services:
       - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
+      - SENTRY_DSN=${SENTRY_DSN}
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -69,6 +70,7 @@ services:
       - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
+      - SENTRY_DSN=${SENTRY_DSN}
 
   api-clock:
     container_name: lago-clock
@@ -82,3 +84,4 @@ services:
       - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
+      - SENTRY_DSN=${SENTRY_DSN}
