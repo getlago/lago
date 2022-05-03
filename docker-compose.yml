@@ -66,6 +66,7 @@ services:
       - api
     command: ["./scripts/start.worker.sh"]
     environment:
+      - API_URL=${API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
@@ -80,6 +81,7 @@ services:
       - api
     command: ["./scripts/start.clock.sh"]
     environment:
+      - API_URL=${API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
