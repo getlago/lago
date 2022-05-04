@@ -177,7 +177,7 @@ jobs:
         BRANCH: ${{ github.event.inputs.api_branch }}
         DATABASE_URL: postgres://lago:${{ secrets.DB_STAGING_PASSWORD }}@${{ secrets.DB_STAGING_HOST}}:5432/${{ github.event.inputs.preview_name }}
         DOMAIN: ${{ github.event.inputs.preview_name }}
-        REDIS_URL: redis://${{ secrets.REDIS_STAGING_URL }}
+        REDIS_URL: redis://${{ github.event.inputs.preview_name }}-redis-master.default.svc.cluster.local:6379
         SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
@@ -186,6 +186,13 @@ jobs:
         envsubst < ./api/porter/clock.yaml > ./api/porter/env_clock.yaml
     - name: Configure kubectl
       run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
+    - name: Get Helm Redis deployment
+      id: helm_redis_deployment
+      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-redis -o=json | jq '.[0].name)"
+    - name: Create Redis deployment
+      if: ${{ steps.helm_deployment.outputs.deployment == 'null' }}
+      run: |
+        helm --kubeconfig ./kubeconfig.yaml install ${{ github.event.inputs.preview_name }}-redis bitnami/redis
     - name: Get Helm API deployment
       id: helm_deployment
       run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-api -o=json | jq '.[0].name')"
