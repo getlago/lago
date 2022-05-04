@@ -188,7 +188,7 @@ jobs:
       run: echo "${{ secrets.KUBE_STAGING_CONFIG }}" | base64 -d > kubeconfig.yaml
     - name: Get Helm Redis deployment
       id: helm_redis_deployment
-      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-redis -o=json | jq '.[0].name)"
+      run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-redis -o=json | jq '.[0].name')"
     - name: Create Redis deployment
       if: ${{ steps.helm_deployment.outputs.deployment == 'null' }}
       run: |
