@@ -39,3 +39,4 @@ jobs:
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-api
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-worker
           helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-clock
+          helm --kubeconfig ./kubeconfig.yaml uninstall ${{ github.event.inputs.preview_name }}-redis
