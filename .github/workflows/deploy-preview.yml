@@ -190,7 +190,7 @@ jobs:
       id: helm_redis_deployment
       run: echo "::set-output name=deployment::$(helm --kubeconfig ./kubeconfig.yaml list -f ${{ github.event.inputs.preview_name }}-redis -o=json | jq '.[0].name')"
     - name: Create Redis deployment
-      if: ${{ steps.helm_deployment.outputs.deployment == 'null' }}
+      if: ${{ steps.helm_redis_deployment.outputs.deployment == 'null' }}
       run: |
         helm --kubeconfig ./kubeconfig.yaml install --set auth.enabled=false ${{ github.event.inputs.preview_name }}-redis bitnami/redis
     - name: Get Helm API deployment
