@@ -192,8 +192,8 @@ jobs:
     - name: Create Redis deployment
       if: ${{ steps.helm_redis_deployment.outputs.deployment == 'null' }}
       run: |
-        helm repo add bitnami bitnami/redis
-        helm repo update
+        helm --kubeconfig ./kubeconfig.yaml repo add bitnami bitnami/redis
+        helm --kubeconfig ./kubeconfig.yaml repo update
         helm --kubeconfig ./kubeconfig.yaml install --set auth.enabled=false ${{ github.event.inputs.preview_name }}-redis bitnami/redis
     - name: Get Helm API deployment
       id: helm_deployment
