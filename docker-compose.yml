@@ -73,6 +73,8 @@ services:
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+      - RSA_PUBLIC_KEY=${LAGO_RSA_PUBLIC_KEY}
 
   api-clock:
     container_name: lago-clock
