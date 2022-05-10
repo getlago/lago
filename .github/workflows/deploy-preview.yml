@@ -133,6 +133,7 @@ jobs:
         uses: docker/build-push-action@v2
         env:
           RAILS_ENV: staging
+          API_URL: https://${{ github.event.inputs.preview_name }}-api.staging.getlago.com
         with:
           context: ./api
           push: true
@@ -227,6 +228,3 @@ jobs:
       uses: porter-dev/porter-cli-action@v0.1.0
       with:
         command: create worker --app ${{ github.event.inputs.preview_name }}-clock --source registry --values ./api/porter/env_clock.yaml --image ${{ steps.login-ecr.outputs.registry }}/lago-api-staging:${{ github.event.inputs.api_branch }}
-
-
-      

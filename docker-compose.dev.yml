@@ -84,6 +84,7 @@ services:
     volumes:
       - $LAGO_PATH/api:/app
     environment:
+      - API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
@@ -98,7 +99,7 @@ services:
       - "traefik.http.routers.api.service=api"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
-  
+
   api-worker:
     image: api
     container_name: lago_api_worker
@@ -110,6 +111,7 @@ services:
     volumes:
       - $LAGO_PATH/api:/app
     environment:
+      - API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
@@ -125,7 +127,7 @@ services:
     volumes:
       - $LAGO_PATH/api:/app
     environment:
+      - API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  
