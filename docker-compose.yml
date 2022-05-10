@@ -42,6 +42,7 @@ services:
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
+      - LAGO_FRONT_URL"${FRONT_URL:-http://localhost}
     ports:
       - ${API_PORT:-3000}:3000
 

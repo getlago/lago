@@ -134,6 +134,7 @@ jobs:
         env:
           RAILS_ENV: staging
           API_URL: https://${{ github.event.inputs.preview_name }}-api.staging.getlago.com
+          LAGO_FRONT_URL: https://${{ github.event.inputs.preview_name }}-app.staging.getlago.com
         with:
           context: ./api
           push: true
