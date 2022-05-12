@@ -37,12 +37,12 @@ services:
       - redis
     command: ["./scripts/start.sh"]
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
-      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
-      - LAGO_FRONT_URL"${FRONT_URL:-http://localhost}
+      - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -53,9 +53,9 @@ services:
     depends_on:
       - api
     environment:
-      - API_URL=${API_URL:-http://localhost:3000}
+      - API_URL=${LAGO_API_URL:-http://localhost:3000}
       - APP_ENV=${APP_ENV:-production}
-      - CODEGEN_API=${API_URL:-http://localhost:3000}
+      - CODEGEN_API=${LAGO_API_URL:-http://localhost:3000}
     ports:
       - ${FRONT_PORT:-80}:80
 
@@ -67,12 +67,14 @@ services:
       - api
     command: ["./scripts/start.worker.sh"]
     environment:
-      - API_URL=${API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
-      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+      - RSA_PUBLIC_KEY=${LAGO_RSA_PUBLIC_KEY}
 
   api-clock:
     container_name: lago-clock
@@ -82,9 +84,9 @@ services:
       - api
     command: ["./scripts/start.clock.sh"]
     environment:
-      - API_URL=${API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
-      - REDIS_URL=redis://redis:${REDIS_PORT:-6379}
+      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
