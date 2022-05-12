@@ -43,6 +43,7 @@ services:
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
       - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -73,8 +74,7 @@ services:
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
-      - RSA_PUBLIC_KEY=${LAGO_RSA_PUBLIC_KEY}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
 
   api-clock:
     container_name: lago-clock
