@@ -148,7 +148,7 @@ Both issue lists are sorted by total number of comments. While not perfect, numb
 
 #### Local development
 
-Lago Core and all packages can be developed locally. For instructions on how to do this, see the following sections in the [Lago documentation](#):
+Lago Core and all packages can be developed locally. For instructions on how to do this, see the following sections in the [Lago documentation](https://github.com/getlago/lago/wiki):
 
 ### Pull Requests
 
