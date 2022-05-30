@@ -26,9 +26,7 @@ The following is a set of guidelines for contributing to Lago and its packages, 
 
 - [Git Commit Messages](#git-commit-messages)
 - [JavaScript Styleguide](#javascript-styleguide)
-- [CoffeeScript Styleguide](#coffeescript-styleguide)
-- [Specs Styleguide](#specs-styleguide)
-- [Documentation Styleguide](#documentation-styleguide)
+- [Ruby Styleguide](https://github.com/rubocop/ruby-style-guide)
 
 [Additional Notes](#additional-notes)
 
@@ -54,7 +52,7 @@ Here's a list of Lago's elements:
 
 - [lago/core](https://github.com/getlago/lago) - Lago Core!
 - [lago/front](https://github.com/getlago/lago-front) - Lago's UI.
-- [lago/front](https://github.com/getlago/lago-api) - Lago's API.
+- [lago/api](https://github.com/getlago/lago-api) - Lago's API.
 
 #### The different clients
 
