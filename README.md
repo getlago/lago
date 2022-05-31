@@ -18,4 +18,4 @@ Check the wiki [guide](https://github.com/getlago/lago/wiki/Development-Environm
 
 ## License
 
-Lago is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version.
+Lago is distributed under [AGPL-3.0](LICENSE).
