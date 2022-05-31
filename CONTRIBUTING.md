@@ -39,8 +39,10 @@ This project and everyone participating in it is governed by the [Code of Conduc
 ## I don't want to read this whole thing I just have a question!!!
 
 - [Github Discussions, the official Lago](https://github.com/getlago/lago/discussions)
+- [Lago Discours](https://community.getlago.com/)
 - [Lago FAQ](https://github.com/getlago/lago/discussions)
 - [Lago official documentation](https://doc.getlago.com/docs/guide/intro)
+- [Lago feature request](https://community.getlago.com/c/feature-requests/11)
 
 ## What should I know before I get started?
 
