@@ -1,0 +1,23 @@
+name: "Release"
+on:
+  release:
+    types: [prereleased]
+jobs:
+  release-dispatch:
+    name: Release Dispatch
+    runs-on: ubuntu-latest
+    steps:
+      - name: API Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GH_TOKEN}}
+          repository: getlago/lago-api
+          event-type: release
+          client-payload: '{"version": "${{ github.event.release.tag_name }}"}'
+      - name: Front Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          repository: getlago/lago-front
+          event-type: release
+          client-payload: '{"version": "${{ github.event.release.tag_name }}"}'
