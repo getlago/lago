@@ -50,7 +50,7 @@ Lago is an open source project. When you initially consider contributing to Lago
 
 Here's a list of Lago's elements:
 
-- [lago/core](https://github.com/getlago/lago) - Lago Core!
+- [lago](https://github.com/getlago/lago) - Lago Main Repository!
 - [lago/front](https://github.com/getlago/lago-front) - Lago's UI.
 - [lago/api](https://github.com/getlago/lago-api) - Lago's API.
 
