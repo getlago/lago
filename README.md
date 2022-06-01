@@ -1,4 +1,5 @@
-![9ed3fbb4f594885cbcc08392ef68ca4bc6f3ce33](https://user-images.githubusercontent.com/4368535/171363804-352ace8f-d2e0-4067-8cbc-20e79febb930.png)
+
+<img width="150" alt="logo-border" src="https://user-images.githubusercontent.com/4368535/171373585-2e44e228-9f84-4c35-aacf-9811af7359ea.png">
 
 # Lago
 
