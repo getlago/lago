@@ -1,5 +1,5 @@
 
-<img width="150" alt="logo-border" src="https://user-images.githubusercontent.com/4368535/171373585-2e44e228-9f84-4c35-aacf-9811af7359ea.png">
+<img width="90" alt="logo-border" src="https://user-images.githubusercontent.com/4368535/171373585-2e44e228-9f84-4c35-aacf-9811af7359ea.png">
 
 # Lago
 
