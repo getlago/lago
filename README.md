@@ -1,3 +1,5 @@
+![9ed3fbb4f594885cbcc08392ef68ca4bc6f3ce33](https://user-images.githubusercontent.com/4368535/171363804-352ace8f-d2e0-4067-8cbc-20e79febb930.png)
+
 # Lago
 
 Lago is an open-source Stripe Billing alternative.
