@@ -30,7 +30,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api:v0.1.2-alpha
+    image: getlago/api:V0.1.2-alpha
     restart: unless-stopped
     depends_on:
       - db
@@ -45,13 +45,12 @@ services:
       - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
       - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
       - LAGO_SIDEKIQ_WEB=${LAGO_SIDEKIQ_WEB}
-
     ports:
       - ${API_PORT:-3000}:3000
 
   front:
     container_name: lago-front
-    image: getlago/front:v0.1.2-alpha
+    image: getlago/front:V0.1.2-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -64,7 +63,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v0.1.2-alpha
+    image: getlago/api:V0.1.2-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -80,7 +79,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:v0.1.2-alpha
+    image: getlago/api:V0.1.2-alpha
     restart: unless-stopped
     depends_on:
       - api
