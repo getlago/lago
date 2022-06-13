@@ -45,6 +45,9 @@ services:
       - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
       - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
       - LAGO_SIDEKIQ_WEB=${LAGO_SIDEKIQ_WEB}
+      - ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
+      - ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
+      - ENCRYPTION_KEY_DERIVATION_SALT={LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -76,6 +79,9 @@ services:
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
       - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
+      - ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
+      - ENCRYPTION_KEY_DERIVATION_SALT={LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
 
   api-clock:
     container_name: lago-clock
@@ -92,3 +98,6 @@ services:
       - RAILS_ENV=production
       - SENTRY_DSN=${SENTRY_DSN}
       - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
+      - ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
+      - ENCRYPTION_KEY_DERIVATION_SALT={LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
