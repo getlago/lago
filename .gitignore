@@ -1,2 +1,3 @@
 /traefik/certs/*
 *.code-workspace
+.env
