@@ -96,7 +96,7 @@ services:
       - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY}
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET}
-      - LAGO_PDF_URL=${LAGO_PDF_URL:-https://pdf.lago.dev}
+      - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -132,7 +132,7 @@ services:
       - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY}
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET}
-      - LAGO_PDF_URL=${LAGO_PDF_URL:-https://pdf.lago.dev}
+      - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
 
   api-clock:
     image: api
