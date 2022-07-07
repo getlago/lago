@@ -54,6 +54,7 @@ services:
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
+      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -94,6 +95,7 @@ services:
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
+      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
 
   api-clock:
     container_name: lago-clock
