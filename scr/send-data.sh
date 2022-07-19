@@ -8,7 +8,7 @@ curl --location --request POST "$LAGO_URL/api/v1/events" \
     --header 'Content-Type: application/json' \
     --data-raw '{
   "event": {
-    "transaction_id": "trans-id-008",
+    "transaction_id": "trans-id-009",
     "customer_id": "666",
     "code": "123",
     "timestamp": 1650893379,
