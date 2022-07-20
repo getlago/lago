@@ -4,7 +4,22 @@ volumes:
   lago_postgres_data:
   lago_redis_data:
 
+
 services:
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.8
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "84:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+
   db:
     image: postgres:14.0-alpine
     container_name: lago-db
@@ -35,7 +50,7 @@ services:
     depends_on:
       - db
       - redis
-    command: ["./scripts/start.sh"]
+    command: [ "./scripts/start.sh" ]
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
@@ -78,7 +93,7 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    command: ["./scripts/start.worker.sh"]
+    command: [ "./scripts/start.worker.sh" ]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
@@ -105,7 +120,7 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    command: ["./scripts/start.clock.sh"]
+    command: [ "./scripts/start.clock.sh" ]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
