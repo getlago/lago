@@ -70,6 +70,7 @@ services:
       - API_URL=${LAGO_API_URL:-http://localhost:3000}
       - APP_ENV=${APP_ENV:-production}
       - CODEGEN_API=${LAGO_API_URL:-http://localhost:3000}
+      - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP}
     ports:
       - ${FRONT_PORT:-80}:80
 
