@@ -65,6 +65,7 @@ services:
       - API_URL=https://api.lago.dev
       - APP_DOMAIN=https://app.lago.dev
       - CODEGEN_API=https://api.lago.dev:3000
+      - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.lago.dev`)"
