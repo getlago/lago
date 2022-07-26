@@ -1,3 +1,4 @@
 /traefik/certs/*
 *.code-workspace
 .env
+.DS_Store
