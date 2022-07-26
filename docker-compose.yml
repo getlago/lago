@@ -64,6 +64,8 @@ services:
     container_name: lago-front
     image: getlago/front:v0.4.0-alpha
     restart: unless-stopped
+    # Use this command if you want to use SSL with Let's Encrypt
+    # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     depends_on:
       - api
     environment:
@@ -73,6 +75,26 @@ services:
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP}
     ports:
       - ${FRONT_PORT:-80}:80
+      - 443:443
+    # Using SSL with Let's Encrypt
+    # volumes:
+    #   - ./extra/nginx-letsencrypt.conf:/etc/nginx/conf.d/default.conf
+    #   - ./extra/certbot/conf:/etc/letsencrypt
+    #   - ./extra/certbot/www:/var/www/certbot
+    # Using SSL with self signed certificates
+    # volumes:
+    #   - ./extra/nginx-selfsigned.conf:/etc/nginx/conf.d/default.conf
+    #   - ./extra/ssl/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
+    #   - ./extra/ssl/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
+    #   - ./extra/ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
+
+  # Only used for SSL support with Let's Encrypt
+  certbot:
+    image: certbot/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+      - ./extra/certbot/conf:/etc/letsencrypt
+      - ./extra/certbot/www:/var/www/certbot
 
   api-worker:
     container_name: lago-worker
