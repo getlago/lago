@@ -57,9 +57,9 @@ services:
       context: ./front
       dockerfile: $LAGO_PATH/front/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/front:/app
-      - front_node_modules:/app/node_modules
-      - front_dist:/app/dist
+      - $LAGO_PATH/front:/app:delegated
+      - front_node_modules:/app/node_modules:delegated
+      - front_dist:/app/dist:delegated
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
@@ -82,7 +82,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
@@ -122,7 +122,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
@@ -138,6 +138,7 @@ services:
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://redis:6379
+      - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY}
 
   api-clock:
     image: api
@@ -148,7 +149,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
@@ -157,6 +158,7 @@ services:
       - ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
       - ENCRYPTION_DETERMINISTIC_KEY=${ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
       - ENCRYPTION_KEY_DERIVATION_SALT={ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
+      - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY}
 
   pdf:
     image: gotenberg/gotenberg:7
