@@ -57,9 +57,9 @@ services:
       context: ./front
       dockerfile: $LAGO_PATH/front/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/front:/app
-      - front_node_modules:/app/node_modules
-      - front_dist:/app/dist
+      - $LAGO_PATH/front:/app:delegated
+      - front_node_modules:/app/node_modules:delegated
+      - front_dist:/app/dist:delegated
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
@@ -82,7 +82,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
@@ -122,7 +122,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
@@ -148,7 +148,7 @@ services:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
-      - $LAGO_PATH/api:/app
+      - $LAGO_PATH/api:/app:delegated
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
