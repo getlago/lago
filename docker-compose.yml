@@ -37,6 +37,7 @@ services:
       - redis
     command: ["./scripts/start.sh"]
     environment:
+      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
