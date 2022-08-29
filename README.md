@@ -31,6 +31,7 @@
    <a href="https://news.ycombinator.com/item?id=31424450"><img src="https://img.shields.io/badge/Hacker%20News-777-%23FF6600" alt="Hacker News"></a>
    <a href="https://github.com/getlago/lago/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
    <a href="https://twitter.com/getlago"><img src="https://img.shields.io/twitter/follow/getlago?style=flat"></a>
+   <a href="https://www.ycombinator.com"><img src="https://img.shields.io/badge/Backed%20by-Y%20Combinator-%23f26625"></a>
 </p>
 
 <!-- ABOUT THE PROJECT -->
