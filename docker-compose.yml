@@ -148,4 +148,4 @@ services:
       - ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
 
   pdf:
-    image: gotenberg/gotenberg:7
+    image: getlago/lago-gotenberg:7
