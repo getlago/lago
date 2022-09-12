@@ -92,7 +92,7 @@ services:
 
   # Only used for SSL support with Let's Encrypt
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:arm64v8-latest
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     volumes:
       - ./extra/certbot/conf:/etc/letsencrypt
