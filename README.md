@@ -7,7 +7,7 @@
   <h1 align="center">Lago</h2>
 
   <p align="center">
-    Open Source Billing API for Product Led SaaS.
+    Open Source Billing API for Product-Led SaaS.
     <br />
     <br />
     The best alternative to Chargebee, Recurly or Stripe Billing
@@ -35,7 +35,7 @@
 </p>
 
 <!-- ABOUT THE PROJECT -->
-## An open-source programmable billing API for B2B SaaS 
+## The programmable billing API for product-led SaaS 
 https://user-images.githubusercontent.com/24354699/180470821-10f5e6e6-c57f-41d9-b1bd-f5a2ded60747.mov
 
 
@@ -52,18 +52,25 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 - Hybrid go-to-market motion: self-serve and sales-led.
 
 **Open-source, open architecture:**
-- **Composable:** connect Lago to any of your internal systems or tools (i.e. any payment gateway, CRM, CPQ, accounting software);
-- **Pricing:** we’re not rent seekers, we’re not asking for a % of your revenue. Our self-hosted version is free. Our cloud version is priced like a SaaS;
-- **Privacy:** your data never has to leave your infrastructure.
+- Composable: connect Lago to any of your internal systems or tools (i.e. any payment gateway, CRM, CPQ, accounting software);
+- Pricing: we’re not rent seekers, we’re not asking for a % of your revenue. Our self-hosted version is free. Our cloud version is priced like a SaaS;
+- Privacy: your data never has to leave your infrastructure.
 
+## ✨ Features
+- **[Usage metering](https://www.getlago.com/products/metering)**: Lago's event-based architecture provides a solid foundation for building a fair pricing model that scales with your business.
+- **[Price plans](https://www.getlago.com/products/plans)**: Lago supports all pricing models. Create pay-as-you-go and hybrid plans in no time with our intuitive user interface or API.
+- **[Coupons](https://www.getlago.com/products/coupons)**: Create engaging marketing campaigns and increase conversion with coupons that customers can redeem to get a discount.
+- **[Add-ons](https://www.getlago.com/products/add-ons)**: Why wait until the end of the billing cycle to get paid? Lago allows you to create one-time charges that are invoiced on the fly.
+- **[Invoicing](https://www.getlago.com/products/invoicing)**: Depending on the configuration of your plans, Lago automatically calculates what each customer owes you and generates invoices.
+- **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago’s prepaid credit features.
 
-## Stay up to date
+## 🔔 Stay up to date
 Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates. Take a look at our [Public Roadmap](https://github.com/getlago/lago/projects/2)!
 
-## License
+## 🔖 License
 Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/blog/open-source-licensing-and-why-lago-chose-agplv3).
 
-## Deploy locally
+## 💻 Deploy locally
 
 ### Requirements
 1. Install Docker on your machine;
@@ -104,35 +111,24 @@ Docker images are always updated to the last stable version in the docker-compos
 
 Lago uses the following environment variables to configure the components of the application. You can override them to customise your setup. Take a closer look are our [documentation](https://doc.getlago.com/docs/guide/self-hosting/docker#configuration).
 
-## Use the fully hosted Lago Cloud
+## ☁️ Use the fully hosted Lago Cloud
 Get started with our free Lago Cloud version, request access: hello@getlago.com.
 
-## Features
-- Ingest and aggregate events: push usage-based events to Lago and aggregate them into [billable metrics](https://doc.getlago.com/docs/guide/billable-metrics/overview) to measure consumption;
-- Create [plans](https://doc.getlago.com/docs/guide/plans/overview) to define the billing period (week, month, year), base amount (i.e. subscription fee that can be paid in advance or in arrears), trial period and to add usage-based charges linked to your billable metrics;
-- Manage [coupons](https://doc.getlago.com/docs/guide/coupons);
-- Apply [add-ons](https://doc.getlago.com/docs/guide/addons) (i.e. one-time charges, such as implementation fees);
-- Manage [tax rates](https://doc.getlago.com/docs/guide/invoicing/taxes); 
-- Generate [invoices](https://doc.getlago.com/docs/guide/invoicing/overview): download branded PDF invoices or use our webhooks to send billing information to your favorite invoicing tool (e.g. Quickbooks, Netsuite); and
-- Collect [payments](https://doc.getlago.com/docs/guide/payments/overview) by transmitting billing information to your payment provider (can be any provider, Lago is agnostic). We also have a native integration with Stripe Payments – more are coming.
-
-And [much more](https://github.com/getlago/lago/projects/2) to come...
-
-## Getting the most out of Lago
+## 🚀 Getting the most out of Lago
 - See the [documentation](https://doc.getlago.com) to learn more about all the features;
-- Use our [templates](https://www.getlago.com/resources/templates/all) to get inspiration and learn how to reproduce Algolia’s, Segment’s and Klaviyo’s pricings;
+- Use our [templates](https://www.getlago.com/resources/templates/all) to get inspiration and learn how to reproduce Algolia’s, Segment’s and Klaviyo’s pricing models;
 - Join our [Slack community](https://join.slack.com/t/lago-community/shared_invite/zt-1bw903041-PsxQmQios5utmETm1EZkvQ) if you need help, or want to chat, we’re here to help;
 - Contribute on GitHub: read our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md);
 - Follow us on [Twitter](https://twitter.com/GetLago) for the latest news;
 - You can email us as well: hello@getlago.com.
 
-## Contributing & Development Environment
+## 🧑‍💻 Contributing & Development Environment
 
 If you want to have a nice Lago Development Environment, you can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) on how to make it works on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we encourage your to look at the Lago public documentation.
 
 You can contribute byt following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
 
-## Philosophy
+## 💡 Philosophy
 B2B SaaS has evolved, but billing has not yet. 
 
 ### 1- We’re not in the “subscription economy” anymore. And we won’t go “full usage-based pricing” quite yet
