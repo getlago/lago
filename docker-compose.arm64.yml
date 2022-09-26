@@ -64,7 +64,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front-arm64v8:v0.10.0-alpha
+    image: getlago/front-arm64v8:v0.10.1-alpha
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
