@@ -3,6 +3,7 @@ version: "3.8"
 volumes:
   lago_postgres_data:
   lago_redis_data:
+  lago_storage_data:
 
 services:
   db:
@@ -59,6 +60,8 @@ services:
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
+    volumes:
+      - lago_storage_data:/app/storage
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -126,6 +129,8 @@ services:
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
+    volumes:
+      - lago_storage_data:/app/storage
 
   api-clock:
     container_name: lago-clock
