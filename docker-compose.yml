@@ -58,11 +58,16 @@ services:
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
       - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
+      - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
+      - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
+      - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
     volumes:
       - lago_storage_data:/app/storage
+      # If using GCS, you need to put the credentials keyfile here
+      #- gcs_keyfile.json:/app/gcs_keyfile.json
     ports:
       - ${API_PORT:-3000}:3000
 
@@ -81,7 +86,7 @@ services:
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-false}
     ports:
       - ${FRONT_PORT:-80}:80
-      - 443:443
+    #  - 443:443
     # Using SSL with Let's Encrypt
     # volumes:
     #   - ./extra/nginx-letsencrypt.conf:/etc/nginx/conf.d/default.conf
@@ -95,12 +100,12 @@ services:
     #   - ./extra/ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
 
   # Only used for SSL support with Let's Encrypt
-  certbot:
-    image: certbot/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-    volumes:
-      - ./extra/certbot/conf:/etc/letsencrypt
-      - ./extra/certbot/www:/var/www/certbot
+  # certbot:
+  #   image: certbot/certbot
+  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  #   volumes:
+  #     - ./extra/certbot/conf:/etc/letsencrypt
+  #     - ./extra/certbot/www:/var/www/certbot
 
   api-worker:
     container_name: lago-worker
@@ -128,6 +133,9 @@ services:
       - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
       - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
       - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
+      - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
+      - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
+      - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
