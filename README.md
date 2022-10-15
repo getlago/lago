@@ -1,21 +1,21 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/getlago/lago">
-    <img src="https://uploads-ssl.webflow.com/6244531a40ad7e76d55ad983/62df94da4b787c0f1893186c_banner-open-graph%20(4).jpg" alt="Logo">
+    <img src="https://uploads-ssl.webflow.com/6244531a40ad7e76d55ad983/6347e89bd68e3e12b2a69832_banner-open-graph.jpg" alt="Lago">
   </a>
 
   <h1 align="center">Lago</h2>
 
   <p align="center">
-    Open Source Billing API for Product-Led SaaS.
+    Open Source Usage-Based Billing
     <br />
     <br />
-    The best alternative to Chargebee, Recurly or Stripe Billing
+    The best alternative to Chargebee, Recurly or Stripe Billing.
     <br />
     For usage-based, subscription-based, and all the nuances of pricing in between.
     <br />
     <br />
-    <a href="https://join.slack.com/t/lago-community/shared_invite/zt-1bw903041-PsxQmQios5utmETm1EZkvQ">Slack</a>
+    <a href="https://www.getlago.com/slack">Slack</a>
     ·
     <a href="https://getlago.com">Website</a>
     ·
@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-   <a href="https://join.slack.com/t/lago-community/shared_invite/zt-1bw903041-PsxQmQios5utmETm1EZkvQ"><img src="https://img.shields.io/badge/Lago%20Slack%20Community-lago.slack.com-%234A154B" alt="Join Lago on Slack"></a>
+   <a href="https://www.getlago.com/slack"><img src="https://img.shields.io/badge/Lago%20Slack%20Community-lago.slack.com-%234A154B" alt="Join Lago on Slack"></a>
    <a href="https://github.com/getlago/lago/stargazers"><img src="https://img.shields.io/github/stars/getlago/lago" alt="Github Stars"></a>
    <a href="https://news.ycombinator.com/item?id=31424450"><img src="https://img.shields.io/badge/Hacker%20News-777-%23FF6600" alt="Hacker News"></a>
    <a href="https://github.com/getlago/lago/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License"></a>
@@ -35,7 +35,7 @@
 </p>
 
 <!-- ABOUT THE PROJECT -->
-## The programmable billing API for product-led SaaS 
+## The programmable API for usage-based billing
 https://user-images.githubusercontent.com/24354699/180470821-10f5e6e6-c57f-41d9-b1bd-f5a2ded60747.mov
 
 
