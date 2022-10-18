@@ -163,6 +163,8 @@ services:
       dockerfile: ../lago-oauth-proxy/Dockerfile
     environment:
       - REDIS_URL=redis://redis:6379
+    volumes:
+      - ../lago-oauth-proxy:/app:delegated
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.proxy.rule=Host(`proxy.lago.dev`)"
