@@ -30,7 +30,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api-arm64v8:v0.11.0-alpha
+    image: getlago/api-arm64v8:v0.13.1-alpha
     restart: unless-stopped
     depends_on:
       - db
@@ -67,7 +67,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front-arm64v8:v0.11.0-alpha
+    image: getlago/front-arm64v8:v0.13.0-alpha
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -103,7 +103,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api-arm64v8:v0.11.0-alpha
+    image: getlago/api-arm64v8:v0.13.1-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -135,7 +135,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api-arm64v8:v0.11.0-alpha
+    image: getlago/api-arm64v8:v0.13.1-alpha
     restart: unless-stopped
     depends_on:
       - api
