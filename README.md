@@ -1,13 +1,13 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/getlago/lago">
-    <img src="https://uploads-ssl.webflow.com/6244531a40ad7e76d55ad983/6347e89bd68e3e12b2a69832_banner-open-graph.jpg" alt="Lago">
+    <img src="https://uploads-ssl.webflow.com/635119506e36baf5c267fecd/635b6df0ee8effaa54c1fa42_banner-open-graph.jpg" alt="Lago">
   </a>
 
   <h1 align="center">Lago</h2>
 
   <p align="center">
-    Open Source Usage-Based Billing
+    Open Source Metering & Usage-Based Billing
     <br />
     <br />
     The best alternative to Chargebee, Recurly or Stripe Billing.
