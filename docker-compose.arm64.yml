@@ -30,7 +30,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api-arm64v8:v0.14.1-alpha
+    image: getlago/api-arm64v8:v0.15.1-alpha
     restart: unless-stopped
     depends_on:
       - db
@@ -107,7 +107,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api-arm64v8:v0.14.1-alpha
+    image: getlago/api-arm64v8:v0.15.1-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -141,7 +141,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api-arm64v8:v0.14.1-alpha
+    image: getlago/api-arm64v8:v0.15.1-alpha
     restart: unless-stopped
     depends_on:
       - api
