@@ -113,7 +113,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v0.15.0-alpha
+    image: getlago/api:v0.15.1-alpha
     restart: unless-stopped
     depends_on:
       - api
