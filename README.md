@@ -60,7 +60,7 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 - **[Usage metering](https://www.getlago.com/products/metering)**: Lago's event-based architecture provides a solid foundation for building a fair pricing model that scales with your business.
 - **[Price plans](https://www.getlago.com/products/plans)**: Lago supports all pricing models. Create pay-as-you-go and hybrid plans in no time with our intuitive user interface or API.
 - **[Coupons](https://www.getlago.com/products/coupons)**: Create engaging marketing campaigns and increase conversion with coupons that customers can redeem to get a discount.
-- **[Add-ons](https://www.getlago.com/products/add-ons)**: Why wait until the end of the billing cycle to get paid? Lago allows you to create one-time charges that are invoiced on the fly.
+- **[Add-ons](https://www.getlago.com/products/add-on)**: Why wait until the end of the billing cycle to get paid? Lago allows you to create one-time charges that are invoiced on the fly.
 - **[Invoicing](https://www.getlago.com/products/invoicing)**: Depending on the configuration of your plans, Lago automatically calculates what each customer owes you and generates invoices.
 - **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago’s prepaid credit features.
 
