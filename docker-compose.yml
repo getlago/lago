@@ -31,7 +31,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api:v0.16.0-alpha
+    image: getlago/api:v0.16.1-alpha
     restart: unless-stopped
     depends_on:
       - db
@@ -41,6 +41,7 @@ services:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
@@ -63,6 +64,7 @@ services:
       - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
+      - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
       - GOCARDLESS_CLIENT_ID=${GOCARDLESS_CLIENT_ID}
       - GOCARDLESS_CLIENT_SECRET=${GOCARDLESS_CLIENT_SECRET}
@@ -113,7 +115,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v0.16.0-alpha
+    image: getlago/api:v0.16.1-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -122,6 +124,7 @@ services:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
@@ -142,6 +145,7 @@ services:
       - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
+      - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
       - GOCARDLESS_CLIENT_ID=${GOCARDLESS_CLIENT_ID}
       - GOCARDLESS_CLIENT_SECRET=${GOCARDLESS_CLIENT_SECRET}
@@ -150,7 +154,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:v0.16.0-alpha
+    image: getlago/api:v0.16.1-alpha
     restart: unless-stopped
     depends_on:
       - api
@@ -159,6 +163,7 @@ services:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - RAILS_ENV=production
       - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
