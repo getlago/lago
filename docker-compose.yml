@@ -66,9 +66,7 @@ services:
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-      - GOCARDLESS_CLIENT_ID=${GOCARDLESS_CLIENT_ID}
-      - GOCARDLESS_CLIENT_SECRET=${GOCARDLESS_CLIENT_SECRET}
-      - LAGO_OAUTH_PROXY_URL=${LAGO_OAUTH_PROXY_URL}
+      - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
     volumes:
       - lago_storage_data:/app/storage
       # If using GCS, you need to put the credentials keyfile here
@@ -147,8 +145,6 @@ services:
       - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
       - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-      - GOCARDLESS_CLIENT_ID=${GOCARDLESS_CLIENT_ID}
-      - GOCARDLESS_CLIENT_SECRET=${GOCARDLESS_CLIENT_SECRET}
     volumes:
       - lago_storage_data:/app/storage
 
