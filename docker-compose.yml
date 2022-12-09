@@ -18,7 +18,7 @@ services:
     volumes:
       - lago_postgres_data:/data/postgres
     ports:
-      - ${POSTGRES_PORT:-5432}:5432
+      - 127.0.0.1:${POSTGRES_PORT:-5432}:5432
 
   redis:
     image: redis:6.2-alpine
@@ -27,7 +27,7 @@ services:
     volumes:
       - lago_redis_data:/data
     ports:
-      - ${REDIS_PORT:-6379}:6379
+      - 127.0.0.1:${REDIS_PORT:-6379}:6379
 
   api:
     container_name: lago-api
@@ -72,7 +72,7 @@ services:
       # If using GCS, you need to put the credentials keyfile here
       #- gcs_keyfile.json:/app/gcs_keyfile.json
     ports:
-      - ${API_PORT:-3000}:3000
+      - 127.0.0.1:${API_PORT:-3000}:3000
 
   front:
     container_name: lago-front
@@ -89,8 +89,8 @@ services:
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-false}
       - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
     ports:
-      - ${FRONT_PORT:-80}:80
-    #  - 443:443
+      - 127.0.0.1:${FRONT_PORT:-80}:80
+    #  - 127.0.0.1:443:443
     # Using SSL with Let's Encrypt
     # volumes:
     #   - ./extra/nginx-letsencrypt.conf:/etc/nginx/conf.d/default.conf
