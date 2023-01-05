@@ -97,6 +97,7 @@ services:
       - LAGO_REDIS_CACHE_URL=redis://redis:6379
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
