@@ -67,6 +67,7 @@ services:
       - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
       - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
     volumes:
       - lago_storage_data:/app/storage
       # If using GCS, you need to put the credentials keyfile here
