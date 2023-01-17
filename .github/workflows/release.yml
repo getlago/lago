@@ -1,6 +1,7 @@
 name: "Release"
 on:
   release:
+    types: [released]
 jobs:
   release-dispatch:
     name: Release Dispatch
