@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Lago Community
+  - name: Feature Request
+    url: https://getlago.canny.io/feature-requests
+    about: Provide feedback to the Lago team and ask for new features or enhancements!
+  - name: Join the Lago Community
     url: https://www.getlago.com/slack
     about: Join us on Slack to get answers to your questions and submit new feature requests.
