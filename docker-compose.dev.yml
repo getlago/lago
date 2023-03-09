@@ -13,6 +13,8 @@ services:
     ports:
       - 80:80
       - 443:443
+      - 1080:1080
+      - 1025:1025
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml
@@ -166,3 +168,24 @@ services:
       - "traefik.http.routers.pdf.entrypoints=web,websecure"
       - "traefik.http.routers.pdf.tls=true"
       - "traefik.http.services.pdf.loadbalancer.server.port=3000"
+
+  mailcatcher:
+    image: api
+    container_name: lago_api_mailcatcher
+    restart: unless-stopped
+    command: ["mailcatcher","--http-ip","0.0.0.0","--smtp-ip","0.0.0.0"]
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app:delegated
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailcatcher.rule=Host(`mailcatcher.lago.dev`)"
+      - "traefik.http.routers.mailcatcher.entrypoints=websecure"
+      - "traefik.http.routers.mailcatcher.tls=true"
+      - "traefik.http.services.mailcatcher.loadbalancer.server.port=1080"
+
