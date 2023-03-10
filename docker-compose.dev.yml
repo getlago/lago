@@ -166,3 +166,15 @@ services:
       - "traefik.http.routers.pdf.entrypoints=web,websecure"
       - "traefik.http.routers.pdf.tls=true"
       - "traefik.http.services.pdf.loadbalancer.server.port=3000"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: lago_mailhog
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mail.rule=Host(`mail.lago.dev`)"
+      - "traefik.http.routers.mail.entrypoints=websecure"
+      - "traefik.http.routers.mail.tls=true"
+      - "traefik.http.services.mail.loadbalancer.server.port=8025"
+
