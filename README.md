@@ -126,7 +126,7 @@ Get started with our free Lago Cloud version, request access: hello@getlago.com.
 
 If you want to have a nice Lago Development Environment, you can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) on how to make it works on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we encourage your to look at the Lago public documentation.
 
-You can contribute byt following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
+You can contribute by following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
 
 ## 💡 Philosophy
 B2B SaaS has evolved, but billing has not yet. 
