@@ -90,6 +90,7 @@ services:
       - CODEGEN_API=${LAGO_API_URL:-http://localhost:3000}
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-false}
       - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
+      - SENTRY_DSN=${SENTRY_DSN_FRONT}
     ports:
       - ${FRONT_PORT:-80}:80
     #  - 443:443
