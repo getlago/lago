@@ -129,6 +129,7 @@ services:
       - ENCRYPTION_DETERMINISTIC_KEY=${ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
       - ENCRYPTION_KEY_DERIVATION_SALT=${ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
       - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
+      - LAGO_FRONT_URL=${FRONT_URL:-https://app.lago.dev}
       - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
       - LAGO_REDIS_CACHE_URL=redis://redis:6379
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
