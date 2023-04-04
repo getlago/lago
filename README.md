@@ -24,6 +24,11 @@
     <a href="https://github.com/getlago/lago/projects/2">Roadmap</a>
   </p>
 </p>
+<p align="center">
+    <a href="https://www.producthunt.com/posts/lago">
+        <img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=386328&theme=neutral&period=daily" alt="Lago Product of the day on Product Hunt">
+    </a>
+</p>
 
 <p align="center">
    <a href="https://www.getlago.com/slack"><img src="https://img.shields.io/badge/Lago%20Slack%20Community-lago.slack.com-%234A154B" alt="Join Lago on Slack"></a>
