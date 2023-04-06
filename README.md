@@ -21,7 +21,7 @@
     ·
     <a href="https://github.com/getlago/lago/issues">Issues</a>
     ·
-    <a href="https://github.com/getlago/lago/projects/2">Roadmap</a>
+    <a href="https://getlago.canny.io/">Roadmap</a>
   </p>
 </p>
 <p align="center">
