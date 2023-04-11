@@ -25,8 +25,7 @@
   </p>
 </p>
 <p align="center">
-    <a href="https://www.producthunt.com/posts/lago">
-        <img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=386328&theme=neutral&period=daily" alt="Lago Product of the day on Product Hunt">
+    <a href="https://www.producthunt.com/posts/lago?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-lago" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=386328&theme=light&period=weekly" alt="Lago - Open&#0045;source&#0032;alternative&#0032;to&#0032;Stripe&#0032;Billing&#0032;and&#0032;Chargebee | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
     </a>
 </p>
 
