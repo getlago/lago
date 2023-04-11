@@ -98,6 +98,7 @@ services:
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
+      - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -134,6 +135,7 @@ services:
       - LAGO_REDIS_CACHE_URL=redis://redis:6379
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
+      - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
 
   api-clock:
     image: api
@@ -178,4 +180,3 @@ services:
       - "traefik.http.routers.mail.entrypoints=websecure"
       - "traefik.http.routers.mail.tls=true"
       - "traefik.http.services.mail.loadbalancer.server.port=8025"
-
