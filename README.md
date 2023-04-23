@@ -42,7 +42,6 @@
 ## The programmable API for usage-based billing
 https://user-images.githubusercontent.com/24354699/180470821-10f5e6e6-c57f-41d9-b1bd-f5a2ded60747.mov
 
-
 ### The problem: Billing systems are still a nightmare for engineers
 ![Billing nightmare](https://uploads-ssl.webflow.com/6244531a40ad7ef5475ad9b3/62827b2f6fa52239b0db0fa4_Blog%20Post%20Image%20Standalone.png)
 Engineers be like…
@@ -69,7 +68,9 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 - **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago’s prepaid credit features.
 
 ## 🔔 Stay up to date
-Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates. Take a look at our [Public Roadmap](https://github.com/getlago/lago/projects/2)!
+Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates.
+
+[Check out our public roadmap](https://getlago.canny.io/)
 
 ## 🔖 License
 Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/blog/open-source-licensing-and-why-lago-chose-agplv3).
@@ -80,7 +81,6 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 1. Install Docker on your machine;
 2. Make sure Docker Compose is installed and available (it should be the case if you have chosen to install Docker via Docker Desktop); and
 3. Make sure Git is installed on your machine.
-
 
 ### Run the app
 To start using Lago, run the following commands in a shell:
@@ -102,7 +102,6 @@ docker-compose up
 
 You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.
 
-
 ### Find your API key
 Your API Key can be found directly in the UI:
 
@@ -115,8 +114,8 @@ Docker images are always updated to the last stable version in the docker-compos
 
 Lago uses the following environment variables to configure the components of the application. You can override them to customise your setup. Take a closer look are our [documentation](https://doc.getlago.com/docs/guide/self-hosting/docker#configuration).
 
-## ☁️ Use the fully hosted Lago Cloud
-Get started with our free Lago Cloud version, request access: hello@getlago.com.
+## ☁️ Use our cloud-based product
+Contact our team at hello@getlago.com to get started with Lago Cloud. More information on [our website](https://www.getlago.com/pricing).
 
 ## 🚀 Getting the most out of Lago
 - See the [documentation](https://doc.getlago.com) to learn more about all the features;
@@ -126,9 +125,9 @@ Get started with our free Lago Cloud version, request access: hello@getlago.com.
 - Follow us on [Twitter](https://twitter.com/GetLago) for the latest news;
 - You can email us as well: hello@getlago.com.
 
-## 🧑‍💻 Contributing & Development Environment
+## 🧑‍💻 Contributions and development environment
 
-If you want to have a nice Lago Development Environment, you can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) on how to make it works on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we encourage your to look at the Lago public documentation.
+You can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) to set up a Lago development environment on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we recommend that you take a look at Lago's public documentation.
 
 You can contribute by following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
 
