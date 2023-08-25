@@ -43,7 +43,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## The programmable API for usage-based billing
-[<img width="705" alt="Lago Billing System Presentation" src="https://github.com/getlago/lago/assets/85290767/4a5612c9-1910-4e5d-83e4-d67ed116ef96">](https://youtu.be/dXnoMRetsr4)
+[![Lago Billing System Presentation](https://img.youtube.com/vi/dXnoMRetsr4/0.jpg)](https://www.youtube.com/watch?v=dXnoMRetsr4)
 
 ### The problem: Billing systems are still a nightmare for engineers
 ![Billing nightmare](https://uploads-ssl.webflow.com/6244531a40ad7ef5475ad9b3/62827b2f6fa52239b0db0fa4_Blog%20Post%20Image%20Standalone.png)
