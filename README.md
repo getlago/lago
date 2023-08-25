@@ -43,7 +43,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## The programmable API for usage-based billing
-https://user-images.githubusercontent.com/24354699/180470821-10f5e6e6-c57f-41d9-b1bd-f5a2ded60747.mov
+[<img width="705" alt="Capture d’écran 2023-08-25 à 12 24 29" src="https://github.com/getlago/lago/assets/85290767/4a5612c9-1910-4e5d-83e4-d67ed116ef96">](https://youtu.be/dXnoMRetsr4)
 
 ### The problem: Billing systems are still a nightmare for engineers
 ![Billing nightmare](https://uploads-ssl.webflow.com/6244531a40ad7ef5475ad9b3/62827b2f6fa52239b0db0fa4_Blog%20Post%20Image%20Standalone.png)
