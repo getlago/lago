@@ -136,6 +136,12 @@ services:
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
+    healthcheck:
+      test: ps aux | grep '[s]idekiq\ 7' || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
 
   api-clock:
     image: api
@@ -157,6 +163,12 @@ services:
       - ENCRYPTION_KEY_DERIVATION_SALT={ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
+    healthcheck:
+      test: ps aux | grep 'bin/clockwork\ ./clock.rb' || exit 1
+      interval: 60s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
 
   pdf:
     image: getlago/lago-gotenberg:7
