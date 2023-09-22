@@ -30,11 +30,12 @@ services:
     container_name: lago_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-lago}
       POSTGRES_USER: ${POSTGRES_USER:-lago}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       PGDATA: /data/postgres
+      POSTGRES_MULTIPLE_DATABASES: lago,lago_test
     volumes:
+      - ./pg-init-scripts:/docker-entrypoint-initdb.d
       - postgres_data:/data/postgres
     ports:
       - 5432:5432
@@ -86,6 +87,7 @@ services:
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - DATABASE_TEST_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_test}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_FRONT_URL=${FRONT_URL:-https://app.lago.dev}
