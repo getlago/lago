@@ -102,6 +102,8 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
+      - LAGO_SIDEKIQ_WEB=true
+      - SIDEKIQ_EVENTS=true
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
