@@ -275,7 +275,6 @@ services:
       - clickhouse_data:/var/lib/clickhouse
       - ./extra/clickhouse/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./extra/clickhouse/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./extra/clickhouse/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
       - 9000:9000
       - 8123:8123
