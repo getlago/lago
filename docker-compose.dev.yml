@@ -6,6 +6,7 @@ volumes:
   postgres_data:
   redis_data:
   redpanda_data:
+  clickhouse_data:
 
 services:
   traefik:
@@ -213,3 +214,97 @@ services:
       - "traefik.http.routers.mail.entrypoints=websecure"
       - "traefik.http.routers.mail.tls=true"
       - "traefik.http.services.mail.loadbalancer.server.port=8025"
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
+    container_name: redpanda
+    hostname: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+
+  redpandacreatetopics:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
+    depends_on:
+      - redpanda
+    entrypoint: >
+      rpk topic create events-raw --brokers redpanda:9092
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.3.1
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+          schemaRegistry:
+            enabled: false
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+    depends_on:
+      - redpanda
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.console.rule=Host(`console.lago.dev`)"
+      - "traefik.http.routers.console.entrypoints=websecure"
+      - "traefik.http.routers.console.tls=true"
+      - "traefik.http.services.console.loadbalancer.server.port=8080"
+  
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    container_name: clickhouse
+    hostname: clickhouse
+    user: '101:101'
+    depends_on:
+      - db
+      - minio
+      - miniocreatebuckets
+      - redpanda
+      - redpandacreatetopics
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./extra/clickhouse/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./extra/clickhouse/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+    ports:
+      - 9000:9000
+      - 8123:8123
+  
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    hostname: minio
+    command: server --address 0.0.0.0:10000 --console-address 0.0.0.0:10001 /data
+    ports:
+      - 10000:10000
+    environment:
+      MINIO_ROOT_USER: lago
+      MINIO_ROOT_PASSWORD: lagopassword
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`minio.lago.dev`)"
+      - "traefik.http.routers.minio.entrypoints=websecure"
+      - "traefik.http.routers.minio.tls=true"
+      - "traefik.http.services.minio.loadbalancer.server.port=10001"  
+  
+  miniocreatebuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set lagominio http://minio:10000 lago lagopassword;
+      /usr/bin/mc admin info lagominio;
+      /usr/bin/mc mb lagominio/clickhouse;
+      /usr/bin/mc policy set public lagominio/clickhouse;
+      exit 0;
+      "
