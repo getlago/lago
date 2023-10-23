@@ -41,16 +41,16 @@
             </s3_cache>
         </disks>
         <policies>
-            <default>
+            <hot_cold>
               <volumes>
-                <default>
+                <hot>
                   <disk>default</disk>
-                </default>
+                </hot>
                 <cold>
                   <disk>s3</disk>
                 </cold>
               </volumes>
-            </default>
+            </hot_cold>
         </policies>
     </storage_configuration>
 </clickhouse>
