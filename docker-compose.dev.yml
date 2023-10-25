@@ -106,6 +106,7 @@ services:
       - LAGO_SIDEKIQ_WEB=true
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
+      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -145,6 +146,7 @@ services:
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
+      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
 
   api-events-worker:
     image: api
@@ -173,6 +175,7 @@ services:
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
+      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
 
   api-clock:
     image: api
@@ -195,6 +198,7 @@ services:
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_CLICKHOUSE_ENABLED=true
+      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
 
   pdf:
     image: getlago/lago-gotenberg:7
