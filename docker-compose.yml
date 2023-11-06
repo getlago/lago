@@ -33,7 +33,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api:v0.50.0-beta
+    image: getlago/api:v0.51.0-beta
     restart: unless-stopped
     depends_on:
       - db
@@ -82,7 +82,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front:v0.50.0-beta
+    image: getlago/front:v0.51.0-beta
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -120,7 +120,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v0.50.0-beta
+    image: getlago/api:v0.51.0-beta
     restart: unless-stopped
     depends_on:
       - api
@@ -158,7 +158,7 @@ services:
       # - SIDEKIQ_EVENTS=true
     volumes:
       - lago_storage_data:/app/storage
-  
+
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
   #api-events-worker:
@@ -200,7 +200,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:v0.50.0-beta
+    image: getlago/api:v0.51.0-beta
     restart: unless-stopped
     depends_on:
       - api
