@@ -194,7 +194,7 @@ services:
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
       - ENCRYPTION_DETERMINISTIC_KEY=${ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
-      - ENCRYPTION_KEY_DERIVATION_SALT={ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
+      - ENCRYPTION_KEY_DERIVATION_SALT=${ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
       - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_CLICKHOUSE_ENABLED=true
