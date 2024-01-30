@@ -40,7 +40,12 @@ services:
       - redis
     command: ["./scripts/start.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: curl -f http://localhost:3000/health || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      # uncomment for a potentially faster startup if you have docker --version > 25.0.0
+      # start_interval: 2s
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}
@@ -87,7 +92,8 @@ services:
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       - API_URL=${LAGO_API_URL:-http://localhost:3000}
       - APP_ENV=${APP_ENV:-production}
@@ -123,7 +129,8 @@ services:
     image: getlago/api:v0.54.2-beta
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     command: ["./scripts/start.worker.sh"]
     healthcheck:
       test: ["CMD-SHELL", "bundle exec sidekiqmon | grep $(hostname) || exit 1"]
@@ -166,7 +173,8 @@ services:
   #  image: getlago/api:v0.54.1-beta
   #  restart: unless-stopped
   #  depends_on:
-  #    - api
+  #    api:
+  #      condition: service_healthy
   #  command: ["./scripts/start.events.worker.sh"]
   #  environment:
   #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
@@ -203,7 +211,8 @@ services:
     image: getlago/api:v0.54.2-beta
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     command: ["./scripts/start.clock.sh"]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
