@@ -107,6 +107,8 @@ services:
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
+      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -147,6 +149,8 @@ services:
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
+      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
 
   api-events-worker:
     image: api
@@ -176,6 +180,8 @@ services:
       - SIDEKIQ_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
+      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
 
   api-clock:
     image: api
@@ -199,6 +205,8 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
+      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
 
   pdf:
     image: getlago/lago-gotenberg:7
