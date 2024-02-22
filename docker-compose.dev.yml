@@ -224,6 +224,7 @@ services:
     image: mailhog/mailhog
     container_name: lago_mailhog
     restart: unless-stopped
+    platform: linux/amd64
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mail.rule=Host(`mail.lago.dev`)"
