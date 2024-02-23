@@ -56,6 +56,8 @@ services:
     container_name: lago_front
     stdin_open: true
     restart: unless-stopped
+    depends_on:
+      - api
     build:
       context: ./front
       dockerfile: $LAGO_PATH/front/Dockerfile.dev
@@ -81,6 +83,8 @@ services:
     container_name: lago_api
     restart: unless-stopped
     command: ["./scripts/start.dev.sh"]
+    depends_on:
+      - db
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
@@ -126,6 +130,8 @@ services:
     container_name: lago_api_worker
     restart: unless-stopped
     command: ["./scripts/start.worker.dev.sh"]
+    depends_on:
+      - api
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
@@ -155,6 +161,8 @@ services:
   api-events-worker:
     image: api
     container_name: lago_api_events_worker
+    depends_on:
+      - api
     restart: unless-stopped
     command: ["./scripts/start.events.worker.dev.sh"]
     build:
@@ -188,6 +196,8 @@ services:
     container_name: lago_api_clock
     restart: unless-stopped
     command: ["./scripts/start.clock.dev.sh"]
+    depends_on:
+      - api
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
