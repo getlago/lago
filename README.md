@@ -115,7 +115,7 @@ Your API Key can be found directly in the UI:
 ### Analytics and tracking
 Please note that Lago, by default, tracks basic actions performed on your self-hosted instance. If you do not disable tracking, you may receive specific communications or product updates. However, rest assured that Lago will not collect any personal information about your customers or financial information about your invoices.
 
-If you would like to know more about Lago's analytics or remove the entire tracking, please refer to [this page](https://doc.getlago.com/docs/guide/self-hosting/tracking) for comprehensive information.
+If you would like to know more about Lago's analytics or remove the entire tracking, please refer to [this page](https://doc.getlago.com/guide/self-hosted/tracking-analytics) for comprehensive information.
 
 ### Version, environment variables and components
 Docker images are always updated to the last stable version in the docker-compose.yml file. You can use a different tag if needed by checking the releases list.
