@@ -71,6 +71,7 @@ services:
       - APP_DOMAIN=https://app.lago.dev
       - CODEGEN_API=https://api.lago.dev:3000
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.lago.dev`)"
@@ -113,6 +114,7 @@ services:
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -157,6 +159,7 @@ services:
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   api-events-worker:
     image: api
@@ -190,6 +193,7 @@ services:
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   api-clock:
     image: api
@@ -217,6 +221,7 @@ services:
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   pdf:
     image: getlago/lago-gotenberg:7
