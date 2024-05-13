@@ -18,39 +18,4 @@
             <path>/var/lib/clickhouse/access/</path>
         </local_directory>
     </user_directories>
-    <storage_configuration>
-        <disks>
-            <default>
-            </default>
-            <s3>
-                <type>s3</type>
-                <endpoint>http://minio:10000/clickhouse/</endpoint>
-                <access_key_id>lago</access_key_id>
-                <secret_access_key>lagopassword</secret_access_key>
-                <region></region>
-                <metadata_path>/var/lib/clickhouse/disks/s3/</metadata_path>
-                <cache_enabled>true</cache_enabled>
-                <data_cache_enabled>true</data_cache_enabled>
-                <enable_filesystem_cache>true</enable_filesystem_cache>
-            </s3>
-            <s3_cache>
-                <type>cache</type>
-                <disk>s3</disk>
-                <path>/var/lib/clickhouse/disks/s3_cache/</path>
-                <max_size>10Gi</max_size>
-            </s3_cache>
-        </disks>
-        <policies>
-            <hot_cold>
-              <volumes>
-                <hot>
-                  <disk>default</disk>
-                </hot>
-                <cold>
-                  <disk>s3</disk>
-                </cold>
-              </volumes>
-            </hot_cold>
-        </policies>
-    </storage_configuration>
 </clickhouse>
