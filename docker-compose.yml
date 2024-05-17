@@ -2,7 +2,11 @@ version: '3.8'
 
 x-defaults: &defaults
     logging:
-        driver: 'json-file'
+        driver: gcplogs
+        options:
+            gcp-project: 'atom-pay-dev-be1b'
+            gcp-log-cmd: 'true'
+            labels: 'com.atomhq.container'
 
 volumes:
     lago_postgres_data:
@@ -11,7 +15,6 @@ volumes:
 
 services:
     db:
-        <<: *defaults
         image: postgres:14-alpine
         container_name: lago-db
         restart: unless-stopped
@@ -25,9 +28,11 @@ services:
             - lago_postgres_data:/data/postgres
         ports:
             - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+        labels:
+            com.atomhq.container: lago-db
+        <<: *defaults
 
     redis:
-        <<: *defaults
         image: redis:6-alpine
         container_name: lago-redis
         restart: unless-stopped
@@ -36,9 +41,11 @@ services:
             - lago_redis_data:/data
         ports:
             - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
+        labels:
+            com.atomhq.container: lago-redis
+        <<: *defaults
 
     api:
-        <<: *defaults
         container_name: lago-api
         image: getlago/api:v1.2.1
         restart: unless-stopped
@@ -92,9 +99,11 @@ services:
             #- gcs_keyfile.json:/app/gcs_keyfile.json
         ports:
             - ${API_PORT:-3000}:3000
+        labels:
+            com.atomhq.container: lago-api
+        <<: *defaults
 
     front:
-        <<: *defaults
         container_name: lago-front
         image: getlago/front:v1.2.1
         restart: unless-stopped
@@ -125,6 +134,9 @@ services:
         #   - ./extra/ssl/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
         #   - ./extra/ssl/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
         #   - ./extra/ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
+        labels:
+            com.atomhq.container: lago-front
+        <<: *defaults
 
     # Only used for SSL support with Let's Encrypt
     # certbot:
@@ -133,9 +145,11 @@ services:
     #   volumes:
     #     - ./extra/certbot/conf:/etc/letsencrypt
     #     - ./extra/certbot/www:/var/www/certbot
+    #  labels:
+    #       com.atomhq.container: lago-certbot
+    #   <<: *defaults
 
     api-worker:
-        <<: *defaults
         container_name: lago-worker
         image: getlago/api:v1.2.1
         restart: unless-stopped
@@ -177,6 +191,9 @@ services:
             # - SIDEKIQ_EVENTS=true
         volumes:
             - lago_storage_data:/app/storage
+        labels:
+            com.atomhq.container: lago-api-worker
+        <<: *defaults
 
     # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
     # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
@@ -218,9 +235,11 @@ services:
     #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
     #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
     #    - SIDEKIQ_EVENTS=true
+    #  labels:
+    #       com.atomhq.container: lago-api-events-worker
+    #   <<: *defaults
 
     api-clock:
-        <<: *defaults
         container_name: lago-clock
         image: getlago/api:v1.2.1
         restart: unless-stopped
@@ -243,7 +262,12 @@ services:
             - ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
             - ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
             - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+        labels:
+            com.atomhq.container: lago-api-clock
+        <<: *defaults
 
     pdf:
-        <<: *defaults
         image: getlago/lago-gotenberg:7.8.2
+        labels:
+            com.atomhq.container: lago-pdf
+        <<: *defaults
