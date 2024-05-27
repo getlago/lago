@@ -12,6 +12,7 @@ services:
   traefik:
     image: "traefik:v2.5.4"
     container_name: lago_traefik
+    restart: unless-stopped
     ports:
       - 80:80
       - 443:443
@@ -225,6 +226,7 @@ services:
 
   pdf:
     image: getlago/lago-gotenberg:7
+    restart: unless-stopped
     command:
       - "gotenberg"
       - "--log-level=debug"
@@ -250,6 +252,7 @@ services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
     container_name: redpanda
+    restart: unless-stopped
     hostname: redpanda
     command:
       - redpanda start
@@ -295,6 +298,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server
     container_name: clickhouse
+    restart: unless-stopped
     hostname: clickhouse
     user: '101:101'
     depends_on:
