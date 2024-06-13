@@ -169,8 +169,8 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
       - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
-      - SIDEKIQ_EVENTS=true
-      - SIDEKIQ_PDFS=true
+      # - SIDEKIQ_EVENTS=true
+      # - SIDEKIQ_PDFS=true
     volumes:
       - lago_storage_data:/app/storage
 
