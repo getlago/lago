@@ -206,7 +206,7 @@ services:
 
   api-pdfs-worker:
     image: api
-    container_name: lago_api_events_worker
+    container_name: lago_api_pdfs_worker
     depends_on:
       - api
     restart: unless-stopped
