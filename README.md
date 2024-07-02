@@ -88,7 +88,9 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 ### Run the app
 To start using Lago, run the following commands in a shell:
 
-```
+
+#### On a fresh install
+```bash
 # Get the code
 git clone https://github.com/getlago/lago.git
 
@@ -99,8 +101,21 @@ cd lago
 echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
 source .env
 
-# Start
-docker-compose up
+# Start the api
+docker compose up -d api
+
+# Create the database
+docker compose exec api rails db:create
+docker compose exec api rails db:migrate
+
+# Start all other components
+docker compose up
+```
+
+#### After an update
+
+```bash
+docker compose up
 ```
 
 You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.
