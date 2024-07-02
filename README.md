@@ -86,6 +86,7 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 3. Make sure Git is installed on your machine.
 
 ### Run the app
+⚠️ **Initial setup on Lago v1.6 with docker compose will fail. A [workaround](https://github.com/getlago/lago/issues/369) is available. Or use v1.5 instead**⚠️
 To start using Lago, run the following commands in a shell:
 
 ```
