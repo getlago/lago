@@ -312,6 +312,9 @@ services:
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
     volumes:
       - redpanda_data:/var/lib/redpanda/data
+    ports:
+      - 9092:9092
+      - 19092:19092
 
   redpandacreatetopics:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
