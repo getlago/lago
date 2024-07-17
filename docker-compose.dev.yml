@@ -1,17 +1,17 @@
 version: "3.8"
 
 volumes:
-  front_node_modules:
-  front_dist:
-  postgres_data:
-  redis_data:
-  redpanda_data:
-  clickhouse_data:
+  front_node_modules_dev:
+  front_dist_dev:
+  postgres_data_dev:
+  redis_data_dev:
+  redpanda_data_dev:
+  clickhouse_data_dev:
 
 services:
   traefik:
     image: "traefik:v2.5.4"
-    container_name: lago_traefik
+    container_name: lago_traefik_dev
     restart: unless-stopped
     ports:
       - 80:80
@@ -30,7 +30,7 @@ services:
 
   db:
     image: postgres:14.0-alpine
-    container_name: lago_db
+    container_name: lago_db_dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lago}
@@ -39,22 +39,22 @@ services:
       POSTGRES_MULTIPLE_DATABASES: lago,lago_test
     volumes:
       - ./pg-init-scripts:/docker-entrypoint-initdb.d
-      - postgres_data:/data/postgres
+      - postgres_data_dev:/data/postgres
     ports:
       - 5432:5432
 
   redis:
     image: redis:6.2-alpine
-    container_name: lago_redis
+    container_name: lago_redis_dev
     restart: unless-stopped
     volumes:
-      - redis_data:/data
+      - redis_data_dev:/data
     ports:
       - 6379:6379
 
   front:
-    image: front
-    container_name: lago_front
+    image: front_dev
+    container_name: lago_front_dev
     stdin_open: true
     restart: unless-stopped
     depends_on:
@@ -64,8 +64,8 @@ services:
       dockerfile: $LAGO_PATH/front/Dockerfile.dev
     volumes:
       - $LAGO_PATH/front:/app:delegated
-      - front_node_modules:/app/node_modules:delegated
-      - front_dist:/app/dist:delegated
+      - front_node_modules_dev:/app/node_modules:delegated
+      - front_dist_dev:/app/dist:delegated
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
@@ -81,8 +81,8 @@ services:
       - "traefik.http.services.app.loadbalancer.server.port=8080"
 
   api:
-    image: api
-    container_name: lago_api
+    image: api_dev
+    container_name: lago_api_dev
     restart: unless-stopped
     command: ["./scripts/start.dev.sh"]
     depends_on:
@@ -134,7 +134,7 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=3000"
 
   api-worker:
-    image: api
+    image: api_dev
     container_name: lago_api_worker
     restart: unless-stopped
     command: ["./scripts/start.worker.dev.sh"]
@@ -173,8 +173,8 @@ services:
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   api-events-worker:
-    image: api
-    container_name: lago_api_events_worker
+    image: api_deb
+    container_name: lago_api_events_worker_dev
     depends_on:
       - api
     restart: unless-stopped
@@ -211,8 +211,8 @@ services:
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   api-pdfs-worker:
-    image: api
-    container_name: lago_api_pdfs_worker
+    image: api_dev
+    container_name: lago_api_pdfs_worker_dev
     depends_on:
       - api
     restart: unless-stopped
@@ -249,8 +249,8 @@ services:
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
 
   api-clock:
-    image: api
-    container_name: lago_api_clock
+    image: api_dev
+    container_name: lago_api_clock_dev
     restart: unless-stopped
     command: ["./scripts/start.clock.dev.sh"]
     depends_on:
@@ -281,6 +281,7 @@ services:
 
   pdf:
     image: getlago/lago-gotenberg:7
+    container_name: lago_pdf_dev
     restart: unless-stopped
     command:
       - "gotenberg"
@@ -294,7 +295,7 @@ services:
 
   mailhog:
     image: mailhog/mailhog
-    container_name: lago_mailhog
+    container_name: lago_mailhog_dev
     restart: unless-stopped
     platform: linux/amd64
     labels:
@@ -306,7 +307,7 @@ services:
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
-    container_name: redpanda
+    container_name: lago_redpanda_dev
     restart: unless-stopped
     hostname: redpanda
     command:
@@ -316,7 +317,7 @@ services:
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
     volumes:
-      - redpanda_data:/var/lib/redpanda/data
+      - redpanda_data_dev:/var/lib/redpanda/data
     ports:
       - 9092:9092
       - 19092:19092
@@ -330,6 +331,7 @@ services:
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.3.1
+    container_name: lago_redpanda_console_dev
     entrypoint: /bin/sh
     command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
     environment:
@@ -355,7 +357,7 @@ services:
 
   clickhouse:
     image: clickhouse/clickhouse-server
-    container_name: clickhouse
+    container_name: lago_clickhouse_dev
     restart: unless-stopped
     hostname: clickhouse
     user: '101:101'
@@ -364,7 +366,7 @@ services:
       - redpanda
       - redpandacreatetopics
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_data_dev:/var/lib/clickhouse
       - ./extra/clickhouse/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./extra/clickhouse/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
     ports:
