@@ -171,6 +171,7 @@ services:
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-events-worker:
     image: api_deb
@@ -209,6 +210,7 @@ services:
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-pdfs-worker:
     image: api_dev
@@ -247,6 +249,7 @@ services:
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-clock:
     image: api_dev
@@ -278,6 +281,7 @@ services:
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   pdf:
     image: getlago/lago-gotenberg:7

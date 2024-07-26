@@ -169,6 +169,7 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
       - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
       # - SIDEKIQ_EVENTS=true
       # - SIDEKIQ_PDFS=true
     volumes:
@@ -215,6 +216,7 @@ services:
   #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
   #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
   #    - SIDEKIQ_EVENTS=true
+  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the invoices pdf creation.
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
@@ -257,6 +259,7 @@ services:
   #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
   #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
   #    - SIDEKIQ_PDFS=true
+  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-clock:
     container_name: lago-clock
@@ -283,6 +286,7 @@ services:
       - ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
       - ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   pdf:
     image: getlago/lago-gotenberg:7.8.2
