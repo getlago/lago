@@ -290,3 +290,18 @@ services:
 
   pdf:
     image: getlago/lago-gotenberg:7.8.2
+
+  migrate:
+    container_name: lago-migrate
+    image: getlago/api:v1.8.1
+    depends_on:
+      - db
+    command: ["./scripts/start.migrate.sh"]
+    volumes:
+      - lago_storage_data:/app/storage
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
