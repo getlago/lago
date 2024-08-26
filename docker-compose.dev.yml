@@ -1,5 +1,3 @@
-version: "3.8"
-
 volumes:
   front_node_modules_dev:
   front_dist_dev:
