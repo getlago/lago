@@ -1,0 +1,3 @@
+#!/command/with-contenv bash
+
+nginx -g "daemon off;"
