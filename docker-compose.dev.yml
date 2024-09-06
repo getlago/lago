@@ -70,7 +70,7 @@ services:
       - APP_DOMAIN=https://app.lago.dev
       - CODEGEN_API=https://api.lago.dev:3000
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.lago.dev`)"
@@ -118,9 +118,9 @@ services:
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
       - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
       - GOOGLE_AUTH_CLIENT_SECRET=${GOOGLE_AUTH_CLIENT_SECRET:-}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -170,7 +170,7 @@ services:
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-events-worker:
@@ -209,7 +209,7 @@ services:
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-pdfs-worker:
@@ -218,7 +218,7 @@ services:
     depends_on:
       - api
     restart: unless-stopped
-    command: [ "./scripts/start.pdfs.worker.dev.sh" ]
+    command: ["./scripts/start.pdfs.worker.dev.sh"]
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
@@ -248,7 +248,7 @@ services:
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-clock:
@@ -280,7 +280,7 @@ services:
       - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   pdf:
@@ -364,7 +364,7 @@ services:
     container_name: lago_clickhouse_dev
     restart: unless-stopped
     hostname: clickhouse
-    user: '101:101'
+    user: "101:101"
     depends_on:
       - db
       - redpanda
