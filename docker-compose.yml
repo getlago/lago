@@ -78,6 +78,8 @@ services:
       - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
       - LAGO_LICENSE=${LAGO_LICENSE:-}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
+      - GOOGLE_AUTH_CLIENT_SECRET=${GOOGLE_AUTH_CLIENT_SECRET:-}
       # - SIDEKIQ_EVENTS=true
       # - SIDEKIQ_PDFS=true
     volumes:
