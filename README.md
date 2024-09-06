@@ -92,7 +92,7 @@ To start using Lago, run the following commands in a shell:
 #### On a fresh install
 ```bash
 # Get the code
-git clone https://github.com/getlago/lago.git
+git clone --depth 1 https://github.com/getlago/lago.git
 
 # Go to Lago folder
 cd lago
