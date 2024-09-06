@@ -119,6 +119,8 @@ services:
       - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
       - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY}
+      - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
+      - GOOGLE_AUTH_CLIENT_SECRET=${GOOGLE_AUTH_CLIENT_SECRET:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
