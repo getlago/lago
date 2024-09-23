@@ -32,12 +32,12 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api:v1.11.2
+    image: getlago/api:v1.12.0
     restart: unless-stopped
     depends_on:
       - db
       - redis
-    command: ['./scripts/start.sh']
+    command: ["./scripts/start.sh"]
     healthcheck:
       test: curl -f http://localhost:3000/health || exit 1
       interval: 10s
@@ -91,7 +91,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front:v1.11.2
+    image: getlago/front:v1.12.0
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -131,14 +131,14 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v1.11.2
+    image: getlago/api:v1.12.0
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
-    command: ['./scripts/start.worker.sh']
+    command: ["./scripts/start.worker.sh"]
     healthcheck:
-      test: ['CMD-SHELL', 'bundle exec sidekiqmon | grep $(hostname) || exit 1']
+      test: ["CMD-SHELL", "bundle exec sidekiqmon | grep $(hostname) || exit 1"]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
@@ -179,7 +179,7 @@ services:
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
   #api-events-worker:
   #  container_name: lago-events-worker
-  #  image: getlago/api:v1.11.2
+  #  image: getlago/api:v1.12.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -222,7 +222,7 @@ services:
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
   #api-pdfs-worker:
   #  container_name: lago-pdfs-worker
-  #  image: getlago/api:v1.11.2
+  #  image: getlago/api:v1.12.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -263,12 +263,12 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:v1.11.2
+    image: getlago/api:v1.12.0
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
-    command: ['./scripts/start.clock.sh']
+    command: ["./scripts/start.clock.sh"]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
@@ -293,11 +293,11 @@ services:
 
   migrate:
     container_name: lago-migrate
-    image: getlago/api:v1.11.2
+    image: getlago/api:v1.12.0
     depends_on:
       - db
       - redis
-    command: ['./scripts/start.migrate.sh']
+    command: ["./scripts/start.migrate.sh"]
     volumes:
       - lago_storage_data:/app/storage
     environment:
