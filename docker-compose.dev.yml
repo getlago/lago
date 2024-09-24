@@ -68,7 +68,8 @@ services:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
       - APP_DOMAIN=https://app.lago.dev
-      - CODEGEN_API=https://api.lago.dev:3000
+      - CODEGEN_API_CUSTOMER_PORTAL=https://api.lago.dev/customer_portal/graphql
+      - CODEGEN_API_GRAPHQL=https://api.lago.dev/api/graphql
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
     labels:
