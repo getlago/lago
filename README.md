@@ -87,14 +87,11 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 | **Lago front**     | [![Lago front Testing Release](https://img.shields.io/github/v/release/getlago/lago-front)](https://github.com/getlago/lago-front/releases) |
 | **Lago Go Client**     | [![Lago Go Client Testing Release](https://img.shields.io/github/v/release/getlago/lago-go-client)](https://github.com/getlago/lago-go-client/releases) |
 | **lago-gotenberg**     | [![lago-gotenberg Release](https://img.shields.io/github/v/release/getlago/lago-gotenberg)](https://github.com/getlago/lago-gotenberg/releases) |
-| **lago-java-client**     | [![lago-java-client Release](https://img.shields.io/github/v/release/getlago/lago-java-client)](https://github.com/getlago/lago-java-client/releases) |
 | **Lago JavaScript Client**     | [![Lago JavaScript Client Release](https://img.shields.io/github/v/release/getlago/lago-javascript-client)](https://github.com/getlago/lago-javascript-client/releases) |
 | **Lago OpenAPI**     | [![Lago OpenAPI Release](https://img.shields.io/github/v/release/getlago/lago-openapi)](https://github.com/getlago/lago-openapi/releases) |
 | **OpenAPIClient-php**     | [![OpenAPIClient-php Release](https://img.shields.io/github/v/release/getlago/lago-php-client)](https://github.com/getlago/lago-php-client/releases) |
 | **Lago Python Client**     | [![Lago Python Client Release](https://img.shields.io/github/v/release/getlago/lago-python-client)](https://github.com/getlago/lago-python-client/releases) |
-| **Lago Ruby**     | [![Lago Ruby Release](https://img.shields.io/github/v/release/getlago/lago-ruby)](https://github.com/getlago/lago-ruby/releases) |
 | **Lago Ruby Client**     | [![Lago Ruby Client Release](https://img.shields.io/github/v/release/getlago/lago-ruby-client)](https://github.com/getlago/lago-ruby-client/releases) |
-| **Rust API client for openapi**     | [![Rust API client for openapi Release](https://img.shields.io/github/v/release/getlago/lago-rust-client)](https://github.com/getlago/lago-rust-client/releases) |
 
 
 ## 💻 Deploy locally
