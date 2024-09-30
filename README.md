@@ -89,7 +89,6 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 | **lago-gotenberg**     | [![lago-gotenberg Release](https://img.shields.io/github/v/release/getlago/lago-gotenberg)](https://github.com/getlago/lago-gotenberg/releases) |
 | **Lago JavaScript Client**     | [![Lago JavaScript Client Release](https://img.shields.io/github/v/release/getlago/lago-javascript-client)](https://github.com/getlago/lago-javascript-client/releases) |
 | **Lago OpenAPI**     | [![Lago OpenAPI Release](https://img.shields.io/github/v/release/getlago/lago-openapi)](https://github.com/getlago/lago-openapi/releases) |
-| **OpenAPIClient-php**     | [![OpenAPIClient-php Release](https://img.shields.io/github/v/release/getlago/lago-php-client)](https://github.com/getlago/lago-php-client/releases) |
 | **Lago Python Client**     | [![Lago Python Client Release](https://img.shields.io/github/v/release/getlago/lago-python-client)](https://github.com/getlago/lago-python-client/releases) |
 | **Lago Ruby Client**     | [![Lago Ruby Client Release](https://img.shields.io/github/v/release/getlago/lago-ruby-client)](https://github.com/getlago/lago-ruby-client/releases) |
 
