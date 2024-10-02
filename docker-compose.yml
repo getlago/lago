@@ -5,6 +5,139 @@ volumes:
   lago_redis_data:
   lago_storage_data:
 
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: ${PGDATA}
+      PGPORT: ${POSTGRES_PORT}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
+    volumes:
+      - lago_postgres_data:/data/postgres
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6-alpine
+    container_name: lago-redis
+    restart: unless-stopped
+    command: --port ${REDIS_PORT}
+    volumes:
+      - lago_redis_data:/data
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    container_name: lago-api
+    image: getlago/api:v1.12.2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ['./scripts/start.sh']
+    healthcheck:
+      test: curl -f http://localhost:3000/health || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      # uncomment for a potentially faster startup if you have docker --version > 25.0.0
+      # start_interval: 2s
+    environment:
+      <<: *api-environment
+
+    volumes:
+      - lago_storage_data:/app/storage
+      # If using GCS, you need to put the credentials keyfile here
+      # - gcs_keyfile.json:/app/gcs_keyfile.json
+    ports:
+      - ${API_PORT}:3000
+
+  front:
+    container_name: lago-front
+    image: getlago/front:v1.12.2
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      <<: *front-environment
+    ports:
+      - ${FRONT_PORT}:80
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONT_PORT}"] 
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  api-worker:
+    container_name: lago-worker
+    image: getlago/api:v1.12.2
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ['./scripts/start.worker.sh']
+    healthcheck:
+      test: ['CMD-SHELL', 'bundle exec sidekiqmon | grep $(hostname) || exit 1']
+    environment:
+      <<: *common-environment
+      # SIDEKIQ_EVENTS: ${SIDEKIQ_EVENTS}
+      # SIDEKIQ_PDFS: ${SIDEKIQ_PDFS}
+    volumes:
+      - lago_storage_data:/app/storage
+
+  api-clock:
+    container_name: lago-clock
+    image: getlago/api:v1.12.2
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ['./scripts/start.clock.sh']
+    environment:
+      <<: *common-environment
+
+  pdf:
+    image: getlago/lago-gotenberg:7.8.2
+
+  migrate:
+    container_name: lago-migrate
+    image: getlago/api:v1.12.2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ['./scripts/start.migrate.sh']
+    volumes:
+      - lago_storage_data:/app/storage
+    environment:
+      - RAILS_ENV=${RAILS_ENV}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY} # Should be base64 encoded
+      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+
 x-common-environment: &common-environment
   LAGO_API_URL: ${LAGO_API_URL}
   DATABASE_URL: ${DATABASE_URL}
@@ -52,124 +185,7 @@ x-front-environment: &front-environment
   SENTRY_DSN: ${SENTRY_DSN_FRONT}
   NANGO_SECRET_KEY: ${NANGO_SECRET_KEY}
 
-services:
-  db:
-    image: postgres:14-alpine
-    container_name: lago-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: ${PGDATA}
-      PGPORT: ${POSTGRES_PORT}
-      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
-    volumes:
-      - lago_postgres_data:/data/postgres
-    ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
-
-  redis:
-    image: redis:6-alpine
-    container_name: lago-redis
-    restart: unless-stopped
-    command: --port ${REDIS_PORT}
-    volumes:
-      - lago_redis_data:/data
-    ports:
-      - ${REDIS_PORT}:${REDIS_PORT}
-
-  api:
-    container_name: lago-api
-    image: getlago/api:v1.12.2
-    restart: unless-stopped
-    depends_on:
-      - db
-      - redis
-    command: ['./scripts/start.sh']
-    healthcheck:
-      test: curl -f http://localhost:3000/health || exit 1
-      interval: 10s
-      start_period: 30s
-      timeout: 60s
-      # uncomment for a potentially faster startup if you have docker --version > 25.0.0
-      # start_interval: 2s
-    environment:
-      <<: *api-environment
-
-    volumes:
-      - lago_storage_data:/app/storage
-      # If using GCS, you need to put the credentials keyfile here
-      # - gcs_keyfile.json:/app/gcs_keyfile.json
-    ports:
-      - ${API_PORT}:3000
-
-  front:
-    container_name: lago-front
-    image: getlago/front:v1.12.2
-    restart: unless-stopped
-    # Use this command if you want to use SSL with Let's Encrypt
-    # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-    depends_on:
-      api:
-        condition: service_healthy
-    environment:
-      <<: *front-environment
-    ports:
-      - ${FRONT_PORT}:80
-
-  api-worker:
-    container_name: lago-worker
-    image: getlago/api:v1.12.2
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    command: ['./scripts/start.worker.sh']
-    healthcheck:
-      test: ['CMD-SHELL', 'bundle exec sidekiqmon | grep $(hostname) || exit 1']
-    environment:
-      <<: *common-environment
-      # Variables spécifiques au worker, si nécessaire
-      # SIDEKIQ_EVENTS: ${SIDEKIQ_EVENTS}
-      # SIDEKIQ_PDFS: ${SIDEKIQ_PDFS}
-    volumes:
-      - lago_storage_data:/app/storage
-
-  api-clock:
-    container_name: lago-clock
-    image: getlago/api:v1.12.2
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    command: ['./scripts/start.clock.sh']
-    environment:
-      <<: *common-environment
-
-  pdf:
-    image: getlago/lago-gotenberg:7.8.2
-
-  migrate:
-    container_name: lago-migrate
-    image: getlago/api:v1.12.2
-    depends_on:
-      - db
-      - redis
-    command: ['./scripts/start.migrate.sh']
-    volumes:
-      - lago_storage_data:/app/storage
-    environment:
-      - RAILS_ENV=${RAILS_ENV}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
-      - RSA_PRIVATE_KEY=${RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-
-
-
+  
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
   # api-events-worker:
