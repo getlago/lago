@@ -54,26 +54,27 @@ services:
     container_name: traefik
     restart: unless-stopped
     command:
-      - "--api.insecure=true"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--certificatesresolvers.selfsigned.acme.tlschallenge=true"
-      - "--certificatesresolvers.selfsigned.acme.email=your-email@example.com"
-      - "--certificatesresolvers.selfsigned.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=your_email@domain.tld"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
-      - "8443:443"
+      - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - traefik_certificates:/letsencrypt
       - traefik_config:/traefik
-
     labels:
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.rule=Host(`localhost`)"
-      - "traefik.http.services.api.loadbalancer.server.port=3000"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   api:
     container_name: lago-api
@@ -94,12 +95,11 @@ services:
       interval: 10s
       timeout: 60s
       retries: 5
-    ports:
-        - ${API_PORT}:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.rule=Host(`localhost`)"
+      - "traefik.http.routers.api.rule=Host(`api.${DOMAIN}`)"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
     volumes:
       - lago_storage_data:/app/storage
@@ -114,19 +114,19 @@ services:
     environment:
       <<: *front-environment
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${FRONT_PORT}"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.front.entrypoints=websecure"
-      - "traefik.http.routers.front.rule=Host(`localhost`)"
+      - "traefik.http.routers.front.rule=Host(`app.${DOMAIN}`)"
+      - "traefik.http.routers.front.tls.certresolver=myresolver"
       - "traefik.http.services.front.loadbalancer.server.port=80"
     volumes:
       - lago_storage_data:/app/storage
-    ports:
-      - ${FRONT_PORT:-8080}:80
+
   db:
     image: postgres:14-alpine
     restart: unless-stopped
@@ -140,7 +140,7 @@ services:
     volumes:
       - lago_postgres_data:/data/postgres
     ports:
-      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -155,7 +155,7 @@ services:
     volumes:
       - lago_redis_data:/data
     ports:
-      - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -208,4 +208,3 @@ services:
     command: ['./scripts/start.migrate.sh']
     volumes:
       - lago_storage_data:/app/storage
-   

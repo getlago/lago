@@ -19,12 +19,14 @@ REDIS_PASSWORD=
 API_PORT=3000
 FRONT_PORT=80
 
+
 # Lago API Configuration
-LAGO_API_URL=http://localhost:3000
+DOMAIN=yourdomain.told
+LAGO_API_URL=https://api.yourdomain.tld
+LAGO_FRONT_URL=https://app.yourdomain.tld
 SECRET_KEY_BASE=your-secret-key-base-hex-64
 RAILS_ENV=production
 LAGO_RAILS_STDOUT=true
-LAGO_FRONT_URL=http://localhost
 LAGO_PDF_URL=http://pdf:3000
 LAGO_DISABLE_SIGNUP=false
 APP_ENV=production
