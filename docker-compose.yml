@@ -183,6 +183,36 @@ services:
       test: ['CMD-SHELL', 'bundle exec sidekiqmon | grep $(hostname) || exit 1']
     volumes:
       - lago_storage_data:/app/storage
+    
+
+  api-clock:
+    container_name: lago-clock
+    image: getlago/api:v1.12.3
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ['./scripts/start.clock.sh']
+    environment:
+      <<: *common-environment
+      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST}:${LAGO_REDIS_CACHE_PORT}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?search_path=${POSTGRES_SCHEMA}"
+      REDIS_URL: "redis://${REDIS_HOST}:${REDIS_PORT:-6379}"
+
+  pdf:
+    image: getlago/lago-gotenberg:7.8.2
+
+  migrate:
+    container_name: lago-migrate
+    image: getlago/api:v1.12.3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ['./scripts/start.migrate.sh']
+    volumes:
+      - lago_storage_data:/app/storage
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
@@ -269,32 +299,3 @@ services:
   #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
   #    - SIDEKIQ_PDFS=true
   #    - LAGO_LICENSE=${LAGO_LICENSE:-}
-
-  api-clock:
-    container_name: lago-clock
-    image: getlago/api:v1.12.3
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    command: ['./scripts/start.clock.sh']
-    environment:
-      <<: *common-environment
-      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST}:${LAGO_REDIS_CACHE_PORT}"
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?search_path=${POSTGRES_SCHEMA}"
-      REDIS_URL: "redis://${REDIS_HOST}:${REDIS_PORT:-6379}"
-
-  pdf:
-    image: getlago/lago-gotenberg:7.8.2
-
-  migrate:
-    container_name: lago-migrate
-    image: getlago/api:v1.12.3
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: ['./scripts/start.migrate.sh']
-    volumes:
-      - lago_storage_data:/app/storage
