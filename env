@@ -1,5 +1,6 @@
 #See more informations here : https://doc.getlago.com/guide/self-hosted/docker
 
+LAGO_VERSION=v1.13.1
 
 # PostgreSQL Configuration
 POSTGRES_DB=lago
