@@ -1,31 +1,37 @@
-##############################################
-#                                            #
-#               !!! WARNING !!!              #
-#                                            #
-#   This file 'docker-compose.old.yaml'      #
-#   is DEPRECATED and has been replaced by   #
-#   the new 'docker-compose.yml'.            #
-#                                            #
-#   Please migrate to the new version by     #
-#   following the steps below:               #
-#                                            #
-#   1. Perform a backup of the current       #
-#      volumes. This step is mandatory!      #
-#                                            #
-#   2. Most variables will be set in the     #
-#      '.env' file (see '.env.example'       #
-#      for more information).                #
-#                                            #
-#   3. Change the 'apiUrl' variable, which   #
-#      no longer uses 'api.', but now ends   #
-#      with '/api' after the domain name.    #
-#                                            #
-#   4. SSL certificate management is now     #
-#      automatic. There's nothing more to    #
-#      do on this subject unless you are     #
-#      using 'localhost'.                    #
-#                                            #
-##############################################
+############################################################
+#                                                          #
+#                   !!! WARNING !!!                        #
+#                                                          #
+#   This file 'docker-compose.old.yaml' is DEPRECATED      #
+#   and will be permanently removed from the repository    #
+#   on January 1st, 2025. The 'docker-compose.new.yaml'    #
+#   will then become 'docker-compose.yaml'.                #
+#                                                          #
+#   Please migrate to the new version by following         #
+#   the steps below:                                       #
+#                                                          #
+#   1. Perform a backup of the current volumes.            #
+#      This step is mandatory!                             #
+#                                                          #
+#   2. Most variables will be set in the '.env' file       #
+#      (see '.env.example' for more information).          #
+#                                                          #
+#   3. Change the 'apiUrl' variable, which no longer       #
+#      uses 'api.', but now ends with '/api' after         #
+#      the domain name.                                    #
+#                                                          #
+#   4. SSL certificate management is now automatic.        #
+#      There's nothing more to do on this subject unless   #
+#      you are using 'localhost'.                          #
+#                                                          #
+#   5. IMPORTANT: Only migrate to the new docker-compose   #
+#      if you are using a recent version of the            #
+#      application (at least v1.13.1). Otherwise, please   #
+#      first run 'docker-compose.old.yaml' with updated    #
+#      image versions before switching to the new one.     #
+#                                                          #
+############################################################
+
 
 
 volumes:
