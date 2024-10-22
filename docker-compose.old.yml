@@ -1,3 +1,33 @@
+##############################################
+#                                            #
+#               !!! WARNING !!!              #
+#                                            #
+#   This file 'docker-compose.old.yaml'      #
+#   is DEPRECATED and has been replaced by   #
+#   the new 'docker-compose.yml'.            #
+#                                            #
+#   Please migrate to the new version by     #
+#   following the steps below:               #
+#                                            #
+#   1. Perform a backup of the current       #
+#      volumes. This step is mandatory!      #
+#                                            #
+#   2. Most variables will be set in the     #
+#      '.env' file (see '.env.example'       #
+#      for more information).                #
+#                                            #
+#   3. Change the 'apiUrl' variable, which   #
+#      no longer uses 'api.', but now ends   #
+#      with '/api' after the domain name.    #
+#                                            #
+#   4. SSL certificate management is now     #
+#      automatic. There's nothing more to    #
+#      do on this subject unless you are     #
+#      using 'localhost'.                    #
+#                                            #
+##############################################
+
+
 volumes:
   lago_postgres_data:
   lago_redis_data:
