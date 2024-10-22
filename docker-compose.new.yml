@@ -61,7 +61,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.lagoresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.lagoresolver.acme.email=youremail@domain.tld"
+      - "--certificatesresolvers.lagoresolver.acme.email=youremail@lagoddomain.tld"
       - "--certificatesresolvers.lagoresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
@@ -71,7 +71,7 @@ services:
       - traefik_certificates:/letsencrypt
       - traefik_config:/traefik
     labels:
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${LAGO_DOMAIN}`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=lagoresolver"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
@@ -98,7 +98,7 @@ services:
     labels:
         - "traefik.enable=true"
         - "traefik.http.routers.api.entrypoints=websecure"
-        - "traefik.http.routers.api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api`)"
         - "traefik.http.routers.api.tls.certresolver=lagoresolver"
         - "traefik.http.routers.api.priority=100"
         - "traefik.http.services.api.loadbalancer.server.port=3000"
@@ -125,7 +125,7 @@ services:
       - "traefik.http.routers.front.priority=50"
       - "traefik.enable=true"
       - "traefik.http.routers.front.entrypoints=websecure"
-      - "traefik.http.routers.front.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.front.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/`)"
       - "traefik.http.routers.front.tls.certresolver=lagoresolver"
       - "traefik.http.services.front.loadbalancer.server.port=80"
     volumes:
