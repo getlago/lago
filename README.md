@@ -105,32 +105,55 @@ To start using Lago, run the following commands in a shell:
 
 
 #### On a fresh install
+
+##### 1 :Clone the Repository:
+
 ```bash
 # Get the code
 git clone --depth 1 https://github.com/getlago/lago.git
 
 # Go to Lago folder
 cd lago
+```
 
-# Set up environment configuration
-echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
-source .env
+##### 2 : Set Up Environment Variables: Run the following script to copy the example .env file, generate necessary keys, and populate the .env file:
 
-# Start the api
-docker compose up -d api
 
-# Create the database
+```bash
+# Copy the example .env file and populate keys
+cp .env.example .env
+echo "SECRET_KEY_BASE=\"$(openssl rand -hex 64)\"" >> .env
+echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | base64)\"" >> .env
+echo "LAGO_ENCRYPTION_PRIMARY_KEY=\"$(openssl rand -base64 32)\"" >> .env
+echo "LAGO_ENCRYPTION_DETERMINISTIC_KEY=\"$(openssl rand -base64 32)\"" >> .env
+echo "LAGO_ENCRYPTION_KEY_DERIVATION_SALT=\"$(openssl rand -base64 32)\"" >> .env
+```
+
+##### 3 : Launch the API Service:
+
+```bash
+docker compose -f docker-compose.new.yml up -d api
+```
+
+##### 4 : Create and Migrate the Database:
+
+```bash
 docker compose exec api rails db:create
 docker compose exec api rails db:migrate
-
-# Start all other components
-docker compose up
 ```
+
+##### 5 : Launch All Services:
+
+
+```bash
+docker compose -f docker-compose.new.yml up -d
+```
+
 
 #### After an update
 
 ```bash
-docker compose up
+docker compose -f docker-compose.new.yml up -d
 ```
 
 You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.

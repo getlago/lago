@@ -5,48 +5,49 @@ volumes:
   traefik_certificates:
   traefik_config:
 
-x-common-environment: &common-environment
-  LAGO_API_URL: ${LAGO_API_URL}
-  REDIS_PASSWORD: ${REDIS_PASSWORD}
-  SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-  RAILS_ENV: ${RAILS_ENV}
-  RAILS_LOG_TO_STDOUT: ${LAGO_RAILS_STDOUT}
-  SENTRY_DSN: ${SENTRY_DSN}
-  LAGO_FRONT_URL: ${LAGO_FRONT_URL}
+x-backend-x: &backend-environment
+  LAGO_API_URL: ${LAGO_API_URL:-http://localhost/api}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+  RAILS_ENV: ${RAILS_ENV:-production}
+  RAILS_LOG_TO_STDOUT: ${LAGO_RAILS_STDOUT:-true}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  LAGO_FRONT_URL: ${LAGO_FRONT_URL:-http://localhost}
   LAGO_RSA_PRIVATE_KEY: ${LAGO_RSA_PRIVATE_KEY}
-  LAGO_ENCRYPTION_PRIMARY_KEY: ${LAGO_ENCRYPTION_PRIMARY_KEY}
-  LAGO_ENCRYPTION_DETERMINISTIC_KEY: ${LAGO_ENCRYPTION_DETERMINISTIC_KEY}
-  LAGO_ENCRYPTION_KEY_DERIVATION_SALT: ${LAGO_ENCRYPTION_KEY_DERIVATION_SALT}
-  LAGO_USE_AWS_S3: ${LAGO_USE_AWS_S3}
-  LAGO_AWS_S3_ACCESS_KEY_ID: ${LAGO_AWS_S3_ACCESS_KEY_ID}
-  LAGO_AWS_S3_SECRET_ACCESS_KEY: ${LAGO_AWS_S3_SECRET_ACCESS_KEY}
-  LAGO_AWS_S3_REGION: ${LAGO_AWS_S3_REGION}
-  LAGO_AWS_S3_BUCKET: ${LAGO_AWS_S3_BUCKET}
-  LAGO_AWS_S3_ENDPOINT: ${LAGO_AWS_S3_ENDPOINT}
-  LAGO_USE_GCS: ${LAGO_USE_GCS}
-  LAGO_GCS_PROJECT: ${LAGO_GCS_PROJECT}
-  LAGO_GCS_BUCKET: ${LAGO_GCS_BUCKET}
-  LAGO_PDF_URL: ${LAGO_PDF_URL}
-  LAGO_REDIS_CACHE_PASSWORD: ${LAGO_REDIS_CACHE_PASSWORD}
-  LAGO_DISABLE_SEGMENT: ${LAGO_DISABLE_SEGMENT}
-  LAGO_DISABLE_WALLET_REFRESH: ${LAGO_DISABLE_WALLET_REFRESH}
-  NANGO_SECRET_KEY: ${NANGO_SECRET_KEY}
-  LAGO_LICENSE: ${LAGO_LICENSE}
+  LAGO_ENCRYPTION_PRIMARY_KEY: ${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
+  LAGO_ENCRYPTION_DETERMINISTIC_KEY: ${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
+  LAGO_ENCRYPTION_KEY_DERIVATION_SALT: ${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
+  LAGO_USE_AWS_S3: ${LAGO_USE_AWS_S3:-false}
+  LAGO_AWS_S3_ACCESS_KEY_ID: ${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
+  LAGO_AWS_S3_SECRET_ACCESS_KEY: ${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
+  LAGO_AWS_S3_REGION: ${LAGO_AWS_S3_REGION:-us-east-1}
+  LAGO_AWS_S3_BUCKET: ${LAGO_AWS_S3_BUCKET:-bucket}
+  LAGO_AWS_S3_ENDPOINT: ${LAGO_AWS_S3_ENDPOINT:-http://s3.amazonaws.com}
+  LAGO_USE_GCS: ${LAGO_USE_GCS:-false}
+  LAGO_GCS_PROJECT: ${LAGO_GCS_PROJECT:-your-gcs-project}
+  LAGO_GCS_BUCKET: ${LAGO_GCS_BUCKET:-your-gcs-bucket}
+  LAGO_PDF_URL: ${LAGO_PDF_URL:-http://pdf:3000}
+  LAGO_REDIS_CACHE_PASSWORD: ${LAGO_REDIS_CACHE_PASSWORD:-changeme}
+  LAGO_DISABLE_SEGMENT: ${LAGO_DISABLE_SEGMENT:-false}
+  LAGO_DISABLE_WALLET_REFRESH: ${LAGO_DISABLE_WALLET_REFRESH:-false}
+  NANGO_SECRET_KEY: ${NANGO_SECRET_KEY:-your-nango-secret-key}
+  LAGO_LICENSE: ${LAGO_LICENSE:-your-lago-license}
 
 x-api-environment: &api-environment
-  <<: *common-environment
-  LAGO_SIDEKIQ_WEB: ${LAGO_SIDEKIQ_WEB}
-  LAGO_OAUTH_PROXY_URL: ${LAGO_OAUTH_PROXY_URL}
-  GOOGLE_AUTH_CLIENT_ID: ${GOOGLE_AUTH_CLIENT_ID}
-  GOOGLE_AUTH_CLIENT_SECRET: ${GOOGLE_AUTH_CLIENT_SECRET}
+  <<: *backend-environment
+  LAGO_SIDEKIQ_WEB: ${LAGO_SIDEKIQ_WEB:-true}
+  LAGO_OAUTH_PROXY_URL: ${LAGO_OAUTH_PROXY_URL:-https://proxy.getlago.com}
+  GOOGLE_AUTH_CLIENT_ID: ${GOOGLE_AUTH_CLIENT_ID:-}
+  GOOGLE_AUTH_CLIENT_SECRET: ${GOOGLE_AUTH_CLIENT_SECRET:-}
 
 x-front-environment: &front-environment
-  API_URL: ${LAGO_API_URL}
-  APP_ENV: ${APP_ENV}
-  LAGO_DISABLE_SIGNUP: ${LAGO_DISABLE_SIGNUP}
-  LAGO_OAUTH_PROXY_URL: ${LAGO_OAUTH_PROXY_URL}
-  SENTRY_DSN: ${SENTRY_DSN_FRONT}
-  NANGO_SECRET_KEY: ${NANGO_SECRET_KEY}
+  API_URL: ${LAGO_API_URL:-http://localhost/api}
+  APP_ENV: ${APP_ENV:-production}
+  LAGO_DISABLE_SIGNUP: ${LAGO_DISABLE_SIGNUP:-false}
+  LAGO_OAUTH_PROXY_URL: ${LAGO_OAUTH_PROXY_URL:-https://proxy.getlago.com}
+  SENTRY_DSN: ${SENTRY_DSN_FRONT:-}
+  NANGO_SECRET_KEY: ${NANGO_SECRET_KEY:-}
+
 
 services:
   traefik:
@@ -71,14 +72,14 @@ services:
       - traefik_certificates:/letsencrypt
       - traefik_config:/traefik
     labels:
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${LAGO_DOMAIN}`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.rule=Host(`${LAGO_DOMAIN:-localhost}`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.routers.traefik.tls.certresolver=lagoresolver"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   api:
     container_name: lago-api
-    image: getlago/api:${LAGO_VERSION}
+    image: getlago/api:${LAGO_VERSION:-v1.15.1}
     restart: unless-stopped
     depends_on:
       db:
@@ -86,21 +87,24 @@ services:
       redis:
         condition: service_healthy
     command: ['./scripts/start.sh']
+    ports:
+      - ${API_PORT:-3000}:3000
     environment:
       <<: *api-environment
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?search_path=${POSTGRES_SCHEMA}"
-      REDIS_URL: "redis://${REDIS_HOST}:${REDIS_PORT:-6379}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}"
+      REDIS_URL: "redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       timeout: 60s
       retries: 5
     labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.api.entrypoints=websecure"
-        - "traefik.http.routers.api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api`)"
-        - "traefik.http.routers.api.tls.certresolver=lagoresolver"
+        # SSL
+        # - "traefik.http.routers.api.entrypoints=websecure"
+        - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.priority=100"
+        - "traefik.enable=true"
+        - "traefik.http.routers.api.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/api`)"
         - "traefik.http.services.api.loadbalancer.server.port=3000"
         - "traefik.http.middlewares.api-strip-prefix.stripprefix.prefixes=/api"
         - "traefik.http.routers.api.middlewares=api-strip-prefix"
@@ -109,7 +113,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front:${LAGO_VERSION}
+    image: getlago/front:${LAGO_VERSION:-v1.15.1}
     restart: unless-stopped
     depends_on:
       api:
@@ -124,9 +128,8 @@ services:
     labels:
       - "traefik.http.routers.front.priority=50"
       - "traefik.enable=true"
-      - "traefik.http.routers.front.entrypoints=websecure"
-      - "traefik.http.routers.front.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/`)"
-      - "traefik.http.routers.front.tls.certresolver=lagoresolver"
+      - "traefik.http.routers.front.entrypoints=web"
+      - "traefik.http.routers.front.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/`)"
       - "traefik.http.services.front.loadbalancer.server.port=80"
     volumes:
       - lago_storage_data:/app/storage
@@ -135,18 +138,18 @@ services:
     image: postgres:14-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: ${PGDATA}
-      PGPORT: ${POSTGRES_PORT}
-      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
+      POSTGRES_DB: ${POSTGRES_DB:-lago}
+      POSTGRES_USER: ${POSTGRES_USER:-lago}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: ${PGDATA:-/data/postgres}
+      PGPORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-public}
     volumes:
       - lago_postgres_data:/data/postgres
     ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+      - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lago}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -168,134 +171,55 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:${LAGO_VERSION}
+    image: getlago/api:${LAGO_VERSION:-v1.15.1}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     command: ['./scripts/start.worker.sh']
     environment:
-      <<: *common-environment
-      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST}:${LAGO_REDIS_CACHE_PORT}"
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?search_path=${POSTGRES_SCHEMA}"
-      REDIS_URL: "redis://${REDIS_HOST}:${REDIS_PORT:-6379}"
+      <<: *backend-environment
+      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}"
+      REDIS_URL: "redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}"
     healthcheck:
       test: ['CMD-SHELL', 'bundle exec sidekiqmon | grep $(hostname) || exit 1']
     volumes:
       - lago_storage_data:/app/storage
-    
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:${LAGO_VERSION}
+    image: getlago/api:${LAGO_VERSION:-v1.15.1}
     restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
     command: ['./scripts/start.clock.sh']
     environment:
-      <<: *common-environment
-      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST}:${LAGO_REDIS_CACHE_PORT}"
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?search_path=${POSTGRES_SCHEMA}"
-      REDIS_URL: "redis://${REDIS_HOST}:${REDIS_PORT:-6379}"
+      <<: *backend-environment
+      LAGO_REDIS_CACHE_URL: "redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}"
+      REDIS_URL: "redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}"
 
   pdf:
     image: getlago/lago-gotenberg:7.8.2
 
   migrate:
     container_name: lago-migrate
-    image: getlago/api:${LAGO_VERSION}
+    image: getlago/api:${LAGO_VERSION:-v1.15.1}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: ['./scripts/start.migrate.sh']
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - lago_storage_data:/app/storage
-
-  # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
-  # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
-  #api-events-worker:
-  #  container_name: lago-events-worker
-  #  image: getlago/api:${LAGO_VERSION}
-  #  restart: unless-stopped
-  #  depends_on:
-  #    api:
-  #      condition: service_healthy
-  #  command: ["./scripts/start.events.worker.sh"]
-  #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_EVENTS=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
-
-  # You can uncomment this if you want to use a dedicated Sidekiq worker for the invoices pdf creation.
-  # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
-  #api-pdfs-worker:
-  #  container_name: lago-pdfs-worker
-  #  image: getlago/api:${LAGO_VERSION}
-  #  restart: unless-stopped
-  #  depends_on:
-  #    api:
-  #      condition: service_healthy
-  #  command: ["./scripts/start.pdfs.worker.sh"]
-  #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_PDFS=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
