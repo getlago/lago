@@ -7,12 +7,12 @@ volumes:
 
 x-backend-x: &backend-environment
   LAGO_API_URL: ${LAGO_API_URL:-http://localhost/api}
+  LAGO_FRONT_URL: ${LAGO_FRONT_URL:-http://localhost}
   REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
   SECRET_KEY_BASE: ${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
   RAILS_ENV: ${RAILS_ENV:-production}
   RAILS_LOG_TO_STDOUT: ${LAGO_RAILS_STDOUT:-true}
   SENTRY_DSN: ${SENTRY_DSN:-}
-  LAGO_FRONT_URL: ${LAGO_FRONT_URL:-http://localhost}
   LAGO_RSA_PRIVATE_KEY: ${LAGO_RSA_PRIVATE_KEY}
   LAGO_ENCRYPTION_PRIMARY_KEY: ${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
   LAGO_ENCRYPTION_DETERMINISTIC_KEY: ${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
@@ -76,16 +76,17 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${LAGO_DOMAIN:-localhost}`)"
       # SSL
-      # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
-      # - "traefik.http.routers.api.entrypoints=websecure"
+      #- "traefik.http.routers.traefik-dashboard.tls.certresolver=lagoresolver"
+      #- "traefik.http.routers.traefik-dashboard.tls=true"
+      #- "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.entrypoints=web"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-      - "traefik.http.routers.traefik-dashboard.middlewares=test-auth"
+      - "traefik.http.routers.traefik-dashboard.middlewares=auth"
       # username : user
       # password : password
       # you can change it using echo $(htpasswd -nB user) | sed -e s/\\$/\\$\\$/g
-      - "traefik.http.middlewares.test-auth.basicauth.users=user:$$2y$$05$$m2rFNkFDITSrY7oawkzjU.dV.69/w8FmvEaSeBFCtmYpvMar9UMGa"
+      - "traefik.http.middlewares.auth.basicauth.users=user:$$2y$$05$$m2rFNkFDITSrY7oawkzjU.dV.69/w8FmvEaSeBFCtmYpvMar9UMGa"
 
 
 
@@ -112,6 +113,7 @@ services:
       retries: 5
     labels:
         # SSL
+        # - "traefik.http.routers.api.tls=true"
         # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
         # - "traefik.http.routers.api.entrypoints=websecure"
         - "traefik.http.routers.api.entrypoints=web"
@@ -142,8 +144,9 @@ services:
       - "traefik.http.routers.front.priority=50"
       - "traefik.enable=true"
       # SSL
-      # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
-      # - "traefik.http.routers.api.entrypoints=websecure"
+      # - "traefik.http.routers.front.tls=true"
+      # - "traefik.http.routers.front.tls.certresolver=lagoresolver"
+      # - "traefik.http.routers.front.entrypoints=websecure"
       - "traefik.http.routers.front.entrypoints=web"
       - "traefik.http.routers.front.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/`)"
       - "traefik.http.services.front.loadbalancer.server.port=80"
