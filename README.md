@@ -156,13 +156,12 @@ docker compose -f docker-compose.new.yml up -d
 docker compose -f docker-compose.new.yml up -d
 ```
 
-You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.
+You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost/api.
 
-Note that if our docker server is not at http://localhost, the following env variables must be set: `LAGO_API_URL`. This may be on the command line or in your .env file. For example:
+Note that if our docker server is not at http://localhost, the following env variables must be set: `LAGO_DOMAIN`. This may be on the command line or in your .env file. For example:
 
 ```
-LAGO_API_URL="http://192.168.122.71:3000"
-LAGO_FRONT_URL="http://192.168.122.71"
+LAGO_DOMAIN=yourdomain.tld"
 ```
 
 ### Find your API key
