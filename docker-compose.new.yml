@@ -55,7 +55,12 @@ services:
     container_name: traefik
     restart: unless-stopped
     command:
-      - "--api.insecure=false"
+    # WARNING: It is strongly discouraged to use Traefik with "--api.insecure=true" 
+    # as this exposes the Traefik dashboard publicly without any security measures, 
+    # which can lead to unauthorized access and potential security risks. 
+    # For a production setup, consider enabling secure access to the dashboard 
+    # by using authentication and restricting access to trusted IPs or networks.
+      - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -67,6 +72,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - traefik_certificates:/letsencrypt
