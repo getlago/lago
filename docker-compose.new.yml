@@ -75,6 +75,9 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${LAGO_DOMAIN:-localhost}`)"
+      # SSL
+      # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
+      # - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.entrypoints=web"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
