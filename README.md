@@ -138,8 +138,8 @@ docker compose -f docker-compose.new.yml up -d api
 ##### 4 : Create and Migrate the Database:
 
 ```bash
-docker compose exec api rails db:create
-docker compose exec api rails db:migrate
+docker compose -f docker-compose.new.yml exec api rails db:create
+docker compose -f docker-compose.new.yml exec api rails db:migrate
 ```
 
 ##### 5 : Launch All Services:
