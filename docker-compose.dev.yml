@@ -174,7 +174,7 @@ services:
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
   api-events-worker:
-    image: api_deb
+    image: api_dev
     container_name: lago_api_events_worker_dev
     depends_on:
       - api
