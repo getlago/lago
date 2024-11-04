@@ -55,12 +55,7 @@ services:
     container_name: traefik
     restart: unless-stopped
     command:
-    # WARNING: It is strongly discouraged to use Traefik with "--api.insecure=true" 
-    # as this exposes the Traefik dashboard publicly without any security measures, 
-    # which can lead to unauthorized access and potential security risks. 
-    # For a production setup, consider enabling secure access to the dashboard 
-    # by using authentication and restricting access to trusted IPs or networks.
-      - "--api.insecure=true"
+      - "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -78,12 +73,18 @@ services:
       - traefik_certificates:/letsencrypt
       - traefik_config:/traefik
     labels:
-      - "traefik.http.routers.traefik.rule=Host(`${LAGO_DOMAIN:-localhost}`)"
-      # SSL
-      # - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.traefik.entrypoints=web"
-      - "traefik.http.routers.traefik.tls.certresolver=lagoresolver"
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${LAGO_DOMAIN:-localhost}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik-dashboard.middlewares=test-auth"
+      # username : user
+      # password : password
+      # you can change it using echo $(htpasswd -nB user) | sed -e s/\\$/\\$\\$/g
+      - "traefik.http.middlewares.test-auth.basicauth.users=user:$$2y$$05$$m2rFNkFDITSrY7oawkzjU.dV.69/w8FmvEaSeBFCtmYpvMar9UMGa"
+
+
 
   api:
     container_name: lago-api

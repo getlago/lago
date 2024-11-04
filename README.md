@@ -164,6 +164,22 @@ Note that if our docker server is not at http://localhost, the following env var
 LAGO_DOMAIN=yourdomain.tld"
 ```
 
+##### Accessing Traefik Dashboard
+
+The Traefik dashboard is available at http://traefik.localhost (or replace `localhost` with your custom `LAGO_DOMAIN`). For security reasons, we have configured basic authentication for accessing the Traefik dashboard. The default username is `user` and the default password is `password`. We recommand you to change it :
+
+```shell
+echo $(htpasswd -nB user) | sed -e s/\\$/\\$\\$/g
+```
+
+And modify line with your new value:
+
+```yaml
+      - "traefik.http.middlewares.test-auth.basicauth.users=user:$$2y$$05$$m2rFNkFDITSrY7oawkzjU.dV.69/w8FmvEaSeBFCtmYpvMar9UMGa"
+```
+
+If you want to learn more about traefik auth [here](https://doc.traefik.io/traefik/operations/dashboard/#secure-mode)
+
 ### Find your API key
 Your API Key can be found directly in the UI:
 
