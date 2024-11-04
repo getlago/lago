@@ -73,6 +73,8 @@ services:
       - traefik_config:/traefik
     labels:
       - "traefik.http.routers.traefik.rule=Host(`${LAGO_DOMAIN:-localhost}`)"
+      # SSL
+      # - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.traefik.entrypoints=web"
       - "traefik.http.routers.traefik.tls.certresolver=lagoresolver"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
@@ -100,6 +102,7 @@ services:
       retries: 5
     labels:
         # SSL
+        # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
         # - "traefik.http.routers.api.entrypoints=websecure"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.priority=100"
@@ -128,6 +131,9 @@ services:
     labels:
       - "traefik.http.routers.front.priority=50"
       - "traefik.enable=true"
+      # SSL
+      # - "traefik.http.routers.api.tls.certresolver=lagoresolver"
+      # - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.front.entrypoints=web"
       - "traefik.http.routers.front.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/`)"
       - "traefik.http.services.front.loadbalancer.server.port=80"
