@@ -1,3 +1,5 @@
+name: Lago
+
 volumes:
   lago_postgres_data:
   lago_redis_data:
@@ -8,6 +10,15 @@ services:
     image: postgres:14-alpine
     container_name: lago-db
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-lago} -d ${POSTGRES_DB:-lago} -h localhost -p ${POSTGRES_PORT:-5432}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-lago}
       POSTGRES_USER: ${POSTGRES_USER:-lago}
@@ -25,19 +36,41 @@ services:
     container_name: lago-redis
     restart: unless-stopped
     command: --port ${REDIS_PORT:-6379}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - lago_redis_data:/data
     ports:
       - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
+
+  migrate:
+    container_name: lago-migrate
+    image: getlago/api:v1.18.0
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    command: ["./scripts/migrate.sh"]
+    environment:
+      - RAILS_ENV=production
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
 
   api:
     container_name: lago-api
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
-      - db
-      - redis
-    command: ["./scripts/start.sh"]
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: ["./scripts/start.api.sh"]
     healthcheck:
       test: curl -f http://localhost:3000/health || exit 1
       interval: 10s
@@ -437,21 +470,3 @@ services:
 
   pdf:
     image: getlago/lago-gotenberg:7.8.2
-
-  migrate:
-    container_name: lago-migrate
-    image: getlago/api:v1.18.0
-    depends_on:
-      - db
-      - redis
-    command: ["./scripts/migrate.sh"]
-    volumes:
-      - lago_storage_data:/app/storage
-    environment:
-      - RAILS_ENV=production
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
