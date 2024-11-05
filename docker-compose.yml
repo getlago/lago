@@ -68,8 +68,12 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
       redis:
         condition: service_healthy
+        restart: true
     command: ["./scripts/start.api.sh"]
     healthcheck:
       test: curl -f http://localhost:3000/health || exit 1
@@ -135,6 +139,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
+        restart: true
     environment:
       - API_URL=${LAGO_API_URL:-http://localhost:3000}
       - APP_ENV=${APP_ENV:-production}
@@ -170,8 +175,12 @@ services:
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
-      api:
+      db:
         condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
     command: ["./scripts/start.worker.sh"]
     healthcheck:
       test: ["CMD-SHELL", "bundle exec sidekiqmon | grep $(hostname) || exit 1"]
@@ -445,8 +454,12 @@ services:
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
-      api:
+      db:
         condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
     command: ["./scripts/start.clock.sh"]
     environment:
       - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
