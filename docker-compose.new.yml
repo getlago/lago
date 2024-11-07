@@ -119,9 +119,9 @@ services:
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.priority=100"
         - "traefik.enable=true"
-        - "traefik.http.routers.api.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/api`)"
+        - "traefik.http.routers.api.rule=Host(`${LAGO_DOMAIN:-localhost}`) && PathPrefix(`/api/`)"
         - "traefik.http.services.api.loadbalancer.server.port=3000"
-        - "traefik.http.middlewares.api-strip-prefix.stripprefix.prefixes=/api"
+        - "traefik.http.middlewares.api-strip-prefix.stripprefix.prefixes=/api/"
         - "traefik.http.routers.api.middlewares=api-strip-prefix"
     volumes:
       - lago_storage_data:/app/storage
