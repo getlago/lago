@@ -382,7 +382,7 @@ services:
     image: api_dev
     depends_on:
       - db
-    command: ["./scripts/start.migrate.dev.sh"]
+    command: ["./scripts/migrate.dev.sh"]
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
