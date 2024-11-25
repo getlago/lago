@@ -94,6 +94,7 @@ services:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
       - DATABASE_TEST_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_test}
+      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_FRONT_URL=${LAGO_FRONT_URL:-https://app.lago.dev}
@@ -110,8 +111,9 @@ services:
       - LAGO_LICENSE=${LAGO_LICENSE:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
       - LAGO_SIDEKIQ_WEB=true
-      - SIDEKIQ_EVENTS=true
-      - SIDEKIQ_PDFS=true
+      - LAGO_WORKER_EVENTS=true
+      - LAGO_WORKER_PDFS=true
+      - LAGO_JOB_DASHBOARD=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -148,6 +150,7 @@ services:
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
@@ -162,8 +165,8 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
-      - SIDEKIQ_EVENTS=true
-      - SIDEKIQ_PDFS=true
+      - LAGO_WORKER_EVENTS=true
+      - LAGO_WORKER_PDFS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -188,6 +191,7 @@ services:
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
@@ -202,7 +206,7 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
-      - SIDEKIQ_EVENTS=true
+      - LAGO_WORKER_EVENTS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -227,6 +231,7 @@ services:
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
@@ -241,7 +246,7 @@ services:
       - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
       - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH:-}
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
-      - SIDEKIQ_PDFS=true
+      - LAGO_WORKER_PDFS=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -266,6 +271,7 @@ services:
     environment:
       - LAGO_API_URL=https://api.lago.dev
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
       - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
