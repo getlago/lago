@@ -256,39 +256,6 @@ services:
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
       - LAGO_LICENSE=${LAGO_LICENSE:-}
 
-  api-clock:
-    image: api_dev
-    container_name: lago_api_clock_dev
-    restart: unless-stopped
-    command: ["./scripts/start.clock.dev.sh"]
-    depends_on:
-      - api
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    environment:
-      - LAGO_API_URL=https://api.lago.dev
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
-      - DATABASE_QUEUE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago_queue}
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
-      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
-      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
-      - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
-      - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
-      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH:-}
-      - LAGO_CLICKHOUSE_ENABLED=true
-      - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
-      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
-      - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
-      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-      - LAGO_LICENSE=${LAGO_LICENSE:-}
-
   pdf:
     image: getlago/lago-gotenberg:7
     container_name: lago_pdf_dev

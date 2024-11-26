@@ -261,33 +261,6 @@ services:
   #    - LAGO_WORKER_PDS=true
   #    - LAGO_LICENSE=${LAGO_LICENSE:-}
 
-  api-clock:
-    container_name: lago-clock
-    image: getlago/api:v1.16.0
-    restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_healthy
-    command: ["./scripts/start.clock.sh"]
-    environment:
-      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RAILS_ENV=production
-      - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-      - LAGO_LICENSE=${LAGO_LICENSE:-}
-
   pdf:
     image: getlago/lago-gotenberg:7.8.2
 
