@@ -105,42 +105,80 @@ To start using Lago, run the following commands in a shell:
 
 
 #### On a fresh install
+
+##### 1 :Clone the Repository:
+
 ```bash
 # Get the code
 git clone --depth 1 https://github.com/getlago/lago.git
 
 # Go to Lago folder
 cd lago
-
-# Set up environment configuration
-echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
-source .env
-
-# Start the api
-docker compose up -d api
-
-# Create the database
-docker compose exec api rails db:create
-docker compose exec api rails db:migrate
-
-# Start all other components
-docker compose up
 ```
+
+##### 2 : Set Up Environment Variables: Run the following script to copy the example .env file, generate necessary keys, and populate the .env file:
+
+
+```bash
+# Copy the example .env file and populate keys
+cp .env.example .env
+echo "SECRET_KEY_BASE=\"$(openssl rand -hex 64)\"" >> .env
+echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | base64)\"" >> .env
+echo "LAGO_ENCRYPTION_PRIMARY_KEY=\"$(openssl rand -base64 32)\"" >> .env
+echo "LAGO_ENCRYPTION_DETERMINISTIC_KEY=\"$(openssl rand -base64 32)\"" >> .env
+echo "LAGO_ENCRYPTION_KEY_DERIVATION_SALT=\"$(openssl rand -base64 32)\"" >> .env
+```
+
+##### 3 : Launch the API Service:
+
+```bash
+docker compose -f docker-compose.new.yml up -d api
+```
+
+##### 4 : Create and Migrate the Database:
+
+```bash
+docker compose -f docker-compose.new.yml exec api rails db:create
+docker compose -f docker-compose.new.yml exec api rails db:migrate
+```
+
+##### 5 : Launch All Services:
+
+
+```bash
+docker compose -f docker-compose.new.yml up -d
+```
+
 
 #### After an update
 
 ```bash
-docker compose up
+docker compose -f docker-compose.new.yml up -d
 ```
 
-You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.
+You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost/api.
 
-Note that if our docker server is not at http://localhost, the following env variables must be set: `LAGO_API_URL`. This may be on the command line or in your .env file. For example:
+Note that if our docker server is not at http://localhost, the following env variables must be set: `LAGO_DOMAIN`. This may be on the command line or in your .env file. For example:
 
 ```
-LAGO_API_URL="http://192.168.122.71:3000"
-LAGO_FRONT_URL="http://192.168.122.71"
+LAGO_DOMAIN=yourdomain.tld"
 ```
+
+##### Accessing Traefik Dashboard
+
+The Traefik dashboard is available at http://traefik.localhost (or replace `localhost` with your custom `LAGO_DOMAIN`). For security reasons, we have configured basic authentication for accessing the Traefik dashboard. The default username is `user` and the default password is `password`. We recommand you to change it :
+
+```shell
+echo $(htpasswd -nB user) | sed -e s/\\$/\\$\\$/g
+```
+
+And modify line with your new value:
+
+```yaml
+      - "traefik.http.middlewares.test-auth.basicauth.users=user:$$2y$$05$$m2rFNkFDITSrY7oawkzjU.dV.69/w8FmvEaSeBFCtmYpvMar9UMGa"
+```
+
+If you want to learn more about traefik auth [here](https://doc.traefik.io/traefik/operations/dashboard/#secure-mode)
 
 ### Find your API key
 Your API Key can be found directly in the UI:
