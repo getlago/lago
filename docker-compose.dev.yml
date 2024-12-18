@@ -114,6 +114,7 @@ services:
       - SIDEKIQ_PDFS=true
       - SIDEKIQ_BILLING=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -168,6 +169,7 @@ services:
       - SIDEKIQ_PDFS=true
       - SIDEKIQ_BILLING=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -209,6 +211,7 @@ services:
       - SIDEKIQ_EVENTS=true
       - SIDEKIQ_BILLING=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -249,6 +252,7 @@ services:
       - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
       - SIDEKIQ_PDFS=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -290,6 +294,7 @@ services:
       - SIDEKIQ_PDFS=true
       - SIDEKIQ_BILLING=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
@@ -331,6 +336,49 @@ services:
       - SIDEKIQ_PDFS=true
       - SIDEKIQ_BILLING=true
       - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
+      - LAGO_CLICKHOUSE_ENABLED=true
+      - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
+      - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - LAGO_KAFKA_RAW_EVENTS_TOPIC=events-raw
+      - LAGO_KAFKA_ENRICHED_EVENTS_TOPIC=events_enriched
+      - LAGO_KAFKA_CLICKHOUSE_CONSUMER_GROUP=clickhouse
+      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
+      - LAGO_LICENSE=${LAGO_LICENSE:-}
+
+  api-webhook-worker:
+    image: api_dev
+    container_name: lago_api_webhook_worker_dev
+    depends_on:
+      - api
+    restart: unless-stopped
+    command: bash -c "bundle install && ./scripts/start.webhook.worker.sh"
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app:delegated
+    environment:
+      - LAGO_API_URL=https://api.lago.dev
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+      - LAGO_ENCRYPTION_PRIMARY_KEY=${ENCRYPTION_PRIMARY_KEY:-your-encrpytion-primary-key}
+      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${ENCRYPTION_DETERMINISTIC_KEY:-your-encrpytion-deterministic-key}
+      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${ENCRYPTION_KEY_DERIVATION_SALT:-your-encrpytion-derivation-salt}
+      - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
+      - LAGO_FRONT_URL=${LAGO_FRONT_URL:-https://app.lago.dev}
+      - LAGO_PARALLEL_THREADS_COUNT=${LAGO_PARALLEL_THREADS_COUNT:-4}
+      - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
+      - LAGO_REDIS_CACHE_URL=redis://redis:6379
+      - SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY:-}
+      - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT:-}
+      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH:-}
+      - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-noreply@getlago.com}
+      - SIDEKIQ_PDFS=true
+      - SIDEKIQ_BILLING=true
+      - SIDEKIQ_CLOCK=true
+      - SIDEKIQ_WEBHOOK=true
       - LAGO_CLICKHOUSE_ENABLED=true
       - LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=true
       - LAGO_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
