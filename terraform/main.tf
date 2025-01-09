@@ -106,6 +106,11 @@ resource "aws_instance" "lago" {
     Name        = "lago"
     Description = "Billing Service"
   }
+
+  root_block_device {
+    volume_size = 50
+    volume_type = "gp3"
+  }
 }
 
 resource "aws_route53_record" "billing" {
