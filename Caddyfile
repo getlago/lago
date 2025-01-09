@@ -1,7 +1,7 @@
 billing.stakpak.dev {
-    reverse_proxy http://localhost:80
+    reverse_proxy localhost:80
 }
 
-:80 {
-    respond "Hello, World!"
+billing-api.stakpak.dev {
+    reverse_proxy localhost:3000
 }
