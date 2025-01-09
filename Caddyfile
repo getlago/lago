@@ -1,5 +1,5 @@
 billing.stakpak.dev {
-    reverse_proxy localhost:80
+    reverse_proxy localhost:8080
 }
 
 billing-api.stakpak.dev {
