@@ -30,6 +30,11 @@ variable "key_pair_name" {
   default = "etch@stakpak.dev"
 }
 
+variable "s3_bucket" {
+  type = string
+  default = "lago-storage-bucket"
+}
+
 variable "security_group_name" {
   type    = string
   default = "lago-security-group"
@@ -127,4 +132,61 @@ resource "aws_route53_record" "billing_api" {
   type    = "A"
   ttl     = 300
   records = [aws_eip.lago.public_ip]
+}
+
+resource "aws_s3_bucket" "lago_bucket" {
+  bucket = var.s3_bucket
+  
+  tags = {
+    Name        = "Lago storage bucket"
+  }
+}
+
+resource "aws_iam_user" "lago_user" {
+  name = "lago-s3-user"
+}
+
+resource "aws_iam_policy" "lago_s3_policy" {
+  name        = "LagoS3AccessPolicy"
+  description = "IAM policy to access the Lago S3 bucket"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "s3:*"
+        Resource = "arn:aws:s3:::${var.s3_bucket}/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${var.s3_bucket}"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "lago_user_policy" {
+  name       = "lago-s3-policy-attachment"
+  users      = [aws_iam_user.lago_user.name]
+  policy_arn = aws_iam_policy.lago_s3_policy.arn
+}
+
+resource "aws_iam_access_key" "lago_access_key" {
+  user = aws_iam_user.lago_user.name
+}
+
+
+output "LAGO_AWS_S3_ACCESS_KEY_ID" {
+  value = aws_iam_access_key.lago_access_key.id
+  sensitive = true
+}
+
+output "LAGO_AWS_S3_SECRET_ACCESS_KEY" {
+  value = aws_iam_access_key.lago_access_key.secret
+  sensitive = true
+}
+
+output "LAGO_AWS_S3_BUCKET" {
+  value = var.s3_bucket
 }
