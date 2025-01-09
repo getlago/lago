@@ -23,13 +23,17 @@ else
     echo "Shell not detected. You may need to manually source Nix in your shell configuration."
 fi
 
-echo "Using Nix"
+echo "Installing Docker and Caddy using Nix configuration..."
 if [[ ! -f default.nix ]]; then
     echo "default.nix file not found! Please create it in the same directory as this script."
     exit 1
 fi
 
-# Enter the Nix shell environment with Docker and Caddy
-nix-shell default.nix
+# Build and install the tools environment
+nix-env -i -f default.nix
 
-echo "Nix installation complete"
+echo "Verifying installations..."
+docker --version
+caddy version
+
+echo "Nix installation complete with Docker and Caddy installed globally."

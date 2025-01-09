@@ -1,10 +1,10 @@
-{
-  pkgs ? import <nixpkgs> {}
-}:
-
-pkgs.mkShell {
-  buildInputs = [
-    pkgs.docker
-    pkgs.caddy
+let
+  pkgs = import <nixpkgs> {};
+in
+pkgs.buildEnv {
+  name = "lago";
+  paths = with pkgs; [
+    docker
+    caddy
   ];
 }
