@@ -444,7 +444,7 @@ services:
     depends_on:
       - db
       - redis
-    command: ["./scripts/start.migrate.sh"]
+    command: ["./scripts/migrate.sh"]
     volumes:
       - lago_storage_data:/app/storage
     environment:
