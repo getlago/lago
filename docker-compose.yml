@@ -8,6 +8,15 @@ services:
     image: postgres:14-alpine
     container_name: lago-db
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-lago} -d ${POSTGRES_DB:-lago} -h localhost -p ${POSTGRES_PORT:-5432}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-lago}
       POSTGRES_USER: ${POSTGRES_USER:-lago}
@@ -25,6 +34,11 @@ services:
     container_name: lago-redis
     restart: unless-stopped
     command: --port ${REDIS_PORT:-6379}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - lago_redis_data:/data
     ports:
