@@ -149,7 +149,7 @@ services:
         condition: service_healthy
         restart: true
     environment:
-      <<: *frontend-env
+      <<: [*frontend-env, *lago-api-url, *lago-front-url]
     ports:
       - ${FRONT_PORT:-80}:80
     #  - 443:443
