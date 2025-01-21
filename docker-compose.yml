@@ -32,7 +32,7 @@ services:
 
   api:
     container_name: lago-api
-    image: getlago/api:v1.18.0
+    image: getlago/api:v1.19.0
     restart: unless-stopped
     depends_on:
       - db
@@ -95,7 +95,7 @@ services:
 
   front:
     container_name: lago-front
-    image: getlago/front:v1.18.0
+    image: getlago/front:v1.19.0
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -134,7 +134,7 @@ services:
 
   api-worker:
     container_name: lago-worker
-    image: getlago/api:v1.18.0
+    image: getlago/api:v1.19.0
     restart: unless-stopped
     depends_on:
       api:
@@ -185,7 +185,7 @@ services:
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
   #api-events-worker:
   #  container_name: lago-events-worker
-  #  image: getlago/api:v1.18.0
+  #  image: getlago/api:v1.19.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -230,7 +230,7 @@ services:
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
   #api-pdfs-worker:
   #  container_name: lago-pdfs-worker
-  #  image: getlago/api:v1.18.0
+  #  image: getlago/api:v1.19.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -275,7 +275,7 @@ services:
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
   #api-billing-worker:
   #  container_name: lago-billing-worker
-  #  image: getlago/api:v1.18.0
+  #  image: getlago/api:v1.19.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -320,7 +320,7 @@ services:
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the clock jobs.
   #api-clock-worker:
   #  container_name: lago-clock-worker
-  #  image: getlago/api:v1.18.0
+  #  image: getlago/api:v1.19.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -365,7 +365,7 @@ services:
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the webhook jobs.
   #api-webhook-worker:
   #  container_name: lago-webhook-worker
-  #  image: getlago/api:v1.18.0
+  #  image: getlago/api:v1.19.0
   #  restart: unless-stopped
   #  depends_on:
   #    api:
@@ -409,7 +409,7 @@ services:
 
   api-clock:
     container_name: lago-clock
-    image: getlago/api:v1.18.0
+    image: getlago/api:v1.19.0
     restart: unless-stopped
     depends_on:
       api:
@@ -440,7 +440,7 @@ services:
 
   migrate:
     container_name: lago-migrate
-    image: getlago/api:v1.18.0
+    image: getlago/api:v1.19.0
     depends_on:
       - db
       - redis
