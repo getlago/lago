@@ -1,3 +1,5 @@
+name: lago_dev
+
 volumes:
   front_node_modules_dev:
   front_dist_dev:
