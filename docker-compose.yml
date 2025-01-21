@@ -5,7 +5,7 @@ volumes:
 
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:14-alpine
     container_name: lago-db
     restart: unless-stopped
     healthcheck:
@@ -30,7 +30,7 @@ services:
       - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
 
   redis:
-    image: redis:7-alpine
+    image: redis:6-alpine
     container_name: lago-redis
     restart: unless-stopped
     command: --port ${REDIS_PORT:-6379}
@@ -175,8 +175,6 @@ services:
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       db:
         condition: service_healthy
         restart: true
