@@ -175,6 +175,8 @@ services:
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
         restart: true
@@ -454,6 +456,8 @@ services:
     image: getlago/api:v1.18.0
     restart: unless-stopped
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
         restart: true
