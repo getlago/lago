@@ -3,9 +3,51 @@ volumes:
   lago_redis_data:
   lago_storage_data:
 
+x-postgres-image: &postgres-image
+  image: postgres:14-alpine
+x-redis-image: &redis-image
+  image: redis:6-alpine
+x-backend-image: &backend-image
+  image: getlago/api:v1.19.0
+x-frontend-image: &frontend-image
+  image: getlago/front:v1.19.0
+
+x-lago-api-url: &lago-api-url
+  - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
+x-lago-front-url: &lago-front-url
+  - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
+
+x-backend-environment: &backend-env
+  - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
+  - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+  - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+  - RAILS_ENV=production
+  - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
+  - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+  - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
+  - LAGO_SIDEKIQ_WEB=${LAGO_SIDEKIQ_WEB:-true}
+  - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
+  - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
+  - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
+  - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
+  - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
+  - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
+  - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
+  - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
+  - LAGO_LICENSE=${LAGO_LICENSE:-}
+  # - SIDEKIQ_EVENTS=true
+  # - SIDEKIQ_PDFS=true
+  # - SIDEKIQ_BILLING=true
+  # - SIDEKIQ_CLOCK=true
+  # - SIDEKIQ_WEBHOOK=true
+x-frontend-environment: &frontend-env
+  - API_URL=${LAGO_API_URL:-http://localhost:3000}
+  - APP_ENV=production
+  - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
+
 services:
   db:
-    image: postgres:14-alpine
+    <<: *postgres-image
     container_name: lago-db
     restart: unless-stopped
     healthcheck:
@@ -30,7 +72,7 @@ services:
       - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
 
   redis:
-    image: redis:6-alpine
+    <<: *redis-image
     container_name: lago-redis
     restart: unless-stopped
     command: --port ${REDIS_PORT:-6379}
@@ -45,25 +87,19 @@ services:
       - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
 
   migrate:
+    <<: *backend-image
     container_name: lago-migrate
-    image: getlago/api:v1.20.1
     depends_on:
       db:
         condition: service_healthy
         restart: true
     command: ["./scripts/migrate.sh"]
     environment:
-      - RAILS_ENV=production
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      <<: *backend-env
 
   api:
+    <<: *backend-image
     container_name: lago-api
-    image: getlago/api:v1.20.1
     restart: unless-stopped
     depends_on:
       migrate:
@@ -80,59 +116,17 @@ services:
       interval: 10s
       start_period: 30s
       timeout: 60s
-      # uncomment for a potentially faster startup if you have docker --version > 25.0.0
-      # start_interval: 2s
+      start_interval: 2s
     environment:
-      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RAILS_ENV=production
-      - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_SIDEKIQ_WEB=${LAGO_SIDEKIQ_WEB}
-      - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-      - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-      - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-      - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-      - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-      - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-      - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-      - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-      - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-      - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-      - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-      - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-      - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-      - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-false}
-      - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
-      - LAGO_LICENSE=${LAGO_LICENSE:-}
-      - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
-      - GOOGLE_AUTH_CLIENT_SECRET=${GOOGLE_AUTH_CLIENT_SECRET:-}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-      # - SIDEKIQ_EVENTS=true
-      # - SIDEKIQ_PDFS=true
-      # - SIDEKIQ_BILLING=true
-      # - SIDEKIQ_CLOCK=true
-      # - SIDEKIQ_WEBHOOK=true
+      <<: [*backend-env, *lago-api-url, *lago-front-url]
     volumes:
       - lago_storage_data:/app/storage
-      # If using GCS, you need to put the credentials keyfile here
-      #- gcs_keyfile.json:/app/gcs_keyfile.json
     ports:
       - ${API_PORT:-3000}:3000
 
   front:
+    <<: *frontend-image
     container_name: lago-front
-    image: getlago/front:v1.20.1
     restart: unless-stopped
     # Use this command if you want to use SSL with Let's Encrypt
     # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
@@ -141,12 +135,7 @@ services:
         condition: service_healthy
         restart: true
     environment:
-      - API_URL=${LAGO_API_URL:-http://localhost:3000}
-      - APP_ENV=${APP_ENV:-production}
-      - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-false}
-      - LAGO_OAUTH_PROXY_URL=https://proxy.getlago.com
-      - SENTRY_DSN=${SENTRY_DSN_FRONT}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
+      <<: *frontend-env
     ports:
       - ${FRONT_PORT:-80}:80
     #  - 443:443
@@ -171,8 +160,8 @@ services:
   #     - ./extra/certbot/www:/var/www/certbot
 
   api-worker:
+    <<: *backend-image
     container_name: lago-worker
-    image: getlago/api:v1.20.1
     restart: unless-stopped
     depends_on:
       migrate:
@@ -187,273 +176,76 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "bundle exec sidekiqmon | grep $(hostname) || exit 1"]
     environment:
-      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RAILS_ENV=production
-      - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-      - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-      - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-      - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-      - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-      - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-      - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-      - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-      - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-      - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-      - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-      - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-      - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-      - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-      - LAGO_LICENSE=${LAGO_LICENSE:-}
-      # - SIDEKIQ_EVENTS=true
-      # - SIDEKIQ_PDFS=true
-      # - SIDEKIQ_BILLING=true
-      # - SIDEKIQ_CLOCK=true
-      # - SIDEKIQ_WEBHOOK=true
+      <<: [*backend-env, *lago-api-url]
     volumes:
       - lago_storage_data:/app/storage
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the event ingestion.
   # It is recommendend if you have a high usage of events to not impact the other Sidekiq Jobs.
   #api-events-worker:
+  #  <<: *backend-image
   #  container_name: lago-events-worker
-  #  image: getlago/api:v1.20.1
   #  restart: unless-stopped
   #  depends_on:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.events.worker.sh"]
   #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_EVENTS=true
-  #    - SIDEKIQ_CLOCK=true
-  #    - SIDEKIQ_WEBHOOK=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
+  #    <<: [*backend-env, *lago-api-url]
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the invoices pdf creation.
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
   #api-pdfs-worker:
+  #  <<: *backend-image
   #  container_name: lago-pdfs-worker
-  #  image: getlago/api:v1.20.1
   #  restart: unless-stopped
   #  depends_on:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.pdfs.worker.sh"]
   #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_PDFS=true
-  #    - SIDEKIQ_CLOCK=true
-  #    - SIDEKIQ_WEBHOOK=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
+  #    <<: [*backend-env, *lago-api-url]
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the invoices creation.
   # It is recommended if you have a high usage of invoices being created to not impact the other Sidekiq Jobs.
   #api-billing-worker:
+  #  <<: *backend-image
   #  container_name: lago-billing-worker
-  #  image: getlago/api:v1.20.1
   #  restart: unless-stopped
   #  depends_on:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.billing.worker.sh"]
   #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_PDFS=true
-  #    - SIDEKIQ_BILLING=true
-  #    - SIDEKIQ_CLOCK=true
-  #    - SIDEKIQ_WEBHOOK=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
+  #    <<: [*backend-env, *lago-api-url]
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the clock jobs.
   #api-clock-worker:
+  #  <<: *backend-image
   #  container_name: lago-clock-worker
-  #  image: getlago/api:v1.20.1
   #  restart: unless-stopped
   #  depends_on:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.clock.worker.sh"]
   #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_PDFS=true
-  #    - SIDEKIQ_BILLING=true
-  #    - SIDEKIQ_CLOCK=true
-  #    - SIDEKIQ_WEBHOOK=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
+  #    <<: [*backend-env, *lago-api-url]
 
   # You can uncomment this if you want to use a dedicated Sidekiq worker for the webhook jobs.
   #api-webhook-worker:
+  #  <<: *backend-image
   #  container_name: lago-webhook-worker
-  #  image: getlago/api:v1.20.1
   #  restart: unless-stopped
   #  depends_on:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.webhook.worker.sh"]
   #  environment:
-  #    - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-  #    - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-  #    - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  #    - REDIS_PASSWORD=${REDIS_PASSWORD}
-  #    - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-  #    - RAILS_ENV=production
-  #    - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-  #    - SENTRY_DSN=${SENTRY_DSN}
-  #    - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-  #    - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-  #    - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-  #    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-  #    - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
-  #    - LAGO_USE_AWS_S3=${LAGO_USE_AWS_S3:-false}
-  #    - LAGO_AWS_S3_ACCESS_KEY_ID=${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
-  #    - LAGO_AWS_S3_SECRET_ACCESS_KEY=${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
-  #    - LAGO_AWS_S3_REGION=${LAGO_AWS_S3_REGION:-us-east-1}
-  #    - LAGO_AWS_S3_BUCKET=${LAGO_AWS_S3_BUCKET:-bucket}
-  #    - LAGO_AWS_S3_ENDPOINT=${LAGO_AWS_S3_ENDPOINT}
-  #    - LAGO_USE_GCS=${LAGO_USE_GCS:-false}
-  #    - LAGO_GCS_PROJECT=${LAGO_GCS_PROJECT:-}
-  #    - LAGO_GCS_BUCKET=${LAGO_GCS_BUCKET:-}
-  #    - LAGO_PDF_URL=${LAGO_PDF_URL:-http://pdf:3000}
-  #    - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  #    - LAGO_REDIS_CACHE_PASSWORD=${LAGO_REDIS_CACHE_PASSWORD}
-  #    - LAGO_DISABLE_SEGMENT=${LAGO_DISABLE_SEGMENT}
-  #    - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-  #    - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-  #    - SIDEKIQ_PDFS=true
-  #    - SIDEKIQ_BILLING=true
-  #    - SIDEKIQ_CLOCK=true
-  #    - SIDEKIQ_WEBHOOK=true
-  #    - LAGO_LICENSE=${LAGO_LICENSE:-}
+  #    <<: [*backend-env, *lago-api-url]
 
   api-clock:
+    <<: *backend-image
     container_name: lago-clock
-    image: getlago/api:v1.20.1
     restart: unless-stopped
     depends_on:
       migrate:
@@ -466,24 +258,7 @@ services:
         restart: true
     command: ["./scripts/start.clock.sh"]
     environment:
-      - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
-      - RAILS_ENV=production
-      - RAILS_LOG_TO_STDOUT=${LAGO_RAILS_STDOUT:-true}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - LAGO_DISABLE_WALLET_REFRESH=${LAGO_DISABLE_WALLET_REFRESH}
-      - LAGO_REDIS_CACHE_URL=redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-      - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY} # Should be base64 encoded
-      - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
-      - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
-      - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
-      - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
-      - LAGO_LICENSE=${LAGO_LICENSE:-}
-      # - SIDEKIQ_CLOCK=true
+      <<: [*backend-env, *lago-api-url]
 
   pdf:
     image: getlago/lago-gotenberg:7.8.2
