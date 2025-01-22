@@ -5,15 +5,19 @@ volumes:
 
 x-postgres-image: &postgres-image
   image: postgres:14-alpine
+
 x-redis-image: &redis-image
   image: redis:6-alpine
+
 x-backend-image: &backend-image
   image: getlago/api:v1.19.0
+
 x-frontend-image: &frontend-image
   image: getlago/front:v1.19.0
 
 x-lago-api-url: &lago-api-url
   - LAGO_API_URL=${LAGO_API_URL:-http://localhost:3000}
+
 x-lago-front-url: &lago-front-url
   - LAGO_FRONT_URL=${LAGO_FRONT_URL:-http://localhost}
 
@@ -27,6 +31,11 @@ x-backend-environment: &backend-env
   - RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
   - LAGO_RSA_PRIVATE_KEY=${LAGO_RSA_PRIVATE_KEY}
   - LAGO_SIDEKIQ_WEB=${LAGO_SIDEKIQ_WEB:-true}
+  - LAGO_FROM_EMAIL=${LAGO_FROM_EMAIL:-}
+  - LAGO_SMTP_ADDRESS=${LAGO_SMTP_ADDRESS:-}
+  - LAGO_SMTP_PORT=${LAGO_SMTP_PORT:-587}
+  - LAGO_SMTP_USERNAME=${LAGO_SMTP_USERNAME:-}
+  - LAGO_SMTP_PASSWORD=${LAGO_SMTP_PASSWORD:-}
   - LAGO_ENCRYPTION_PRIMARY_KEY=${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
   - LAGO_ENCRYPTION_DETERMINISTIC_KEY=${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
   - LAGO_ENCRYPTION_KEY_DERIVATION_SALT=${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
@@ -54,6 +63,7 @@ x-backend-environment: &backend-env
   # - SIDEKIQ_BILLING=true
   # - SIDEKIQ_CLOCK=true
   # - SIDEKIQ_WEBHOOK=true
+
 x-frontend-environment: &frontend-env
   - API_URL=${LAGO_API_URL:-http://localhost:3000}
   - APP_ENV=production
