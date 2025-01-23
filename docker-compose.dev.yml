@@ -110,7 +110,7 @@ services:
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
 
-  api-worker:
+  api-worker: &api_worker
     image: api_dev
     container_name: lago_api_worker
     restart: unless-stopped
@@ -126,79 +126,29 @@ services:
       - .env.development
 
   api-events-worker:
-    image: api_dev
+    <<: *api_worker
     container_name: lago_api_events_worker_dev
-    depends_on:
-      - api
-    restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.events.worker.sh"
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    env_file:
-      - .env.development
 
   api-pdfs-worker:
-    image: api_dev
+    <<: *api_worker
     container_name: lago_api_pdfs_worker_dev
-    depends_on:
-      - api
-    restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.pdfs.worker.sh"
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    env_file:
-      - .env.development
 
   api-billing-worker:
-    image: api_dev
+    <<: *api_worker
     container_name: lago_api_billing_worker_dev
-    depends_on:
-      - api
-    restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.billing.worker.sh"
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    env_file:
-      - .env.development
 
   api-clock-worker:
-    image: api_dev
+    <<: *api_worker
     container_name: lago_api_clock_worker_dev
-    depends_on:
-      - api
-    restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.clock.worker.sh"
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    env_file:
-      - .env.development
 
   api-webhook-worker:
-    image: api_dev
+    <<: *api_worker
     container_name: lago_api_webhook_worker_dev
-    depends_on:
-      - api
-    restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.webhook.worker.sh"
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    env_file:
-      - .env.development
 
   api-clock:
     image: api_dev
