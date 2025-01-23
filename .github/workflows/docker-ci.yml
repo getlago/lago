@@ -1,0 +1,25 @@
+name: "Docker CI"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  docker-ci:
+    name: Docker CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker-compose.yml
+      - name: Launch all services with default configuration
+        env:
+          LAGO_RSA_PRIVATE_KEY: "test-rsa-private-key"
+        run: |
+          export LAGO_RSA_PRIVATE_KEY="`openssl genrsa 2048 | base64 | tr -d '\n'`"
+          docker compose up -d --wait
+      - name: cURL API
+        run: curl -f http://localhost:3000/health
+      - name: cURL Front
+        run: curl -f http://localhost:80
