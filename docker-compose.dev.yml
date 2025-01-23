@@ -93,7 +93,9 @@ services:
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
-      - .env.development
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     environment:
       - DATABASE_TEST_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/lago_test
       - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
@@ -123,7 +125,9 @@ services:
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
-      - .env.development
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
 
   api-events-worker:
     <<: *api_worker
@@ -163,7 +167,9 @@ services:
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
-      - .env.development
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
 
   pdf:
     image: getlago/lago-gotenberg:7
