@@ -20,7 +20,7 @@ x-lago-front-url: &lago-front-url
 x-backend-environment: &backend-env
   "DATABASE_URL": postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
   "REDIS_URL": redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
-  "REDIS_PASSWORD": ${REDIS_PASSWORD}
+  "REDIS_PASSWORD": ${REDIS_PASSWORD:-}
   "SECRET_KEY_BASE": ${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
   "RAILS_ENV": production
   "RAILS_LOG_TO_STDOUT": ${LAGO_RAILS_STDOUT:-true}
@@ -51,6 +51,11 @@ x-backend-environment: &backend-env
   "LAGO_DISABLE_SIGNUP": ${LAGO_DISABLE_SIGNUP:-false}
   "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
   "LAGO_LICENSE": ${LAGO_LICENSE:-}
+  "LAGO_CREATE_ORG": ${LAGO_CREATE_ORG:-false}
+  "LAGO_ORG_USER_PASSWORD": ${LAGO_ORG_USER_PASSWORD:-}
+  "LAGO_ORG_USER_EMAIL": ${LAGO_ORG_USER_EMAIL:-}
+  "LAGO_ORG_NAME": ${LAGO_ORG_NAME:-}
+  "LAGO_ORG_API_KEY": ${LAGO_ORG_API_KEY:-}
   "GOOGLE_AUTH_CLIENT_ID": ${GOOGLE_AUTH_CLIENT_ID:-}
   "GOOGLE_AUTH_CLIENT_SECRET": ${GOOGLE_AUTH_CLIENT_SECRET:-}
   # - SIDEKIQ_EVENTS=true
@@ -192,7 +197,11 @@ services:
         restart: true
     command: ["./scripts/start.worker.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "bundle exec sidekiqmon | grep $(hostname) || exit 1"]
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
     environment:
       <<: [*backend-env, *lago-api-url]
     volumes:
