@@ -1,6 +1,7 @@
 *.code-workspace
 .DS_Store
 .env
+.env.development
 .rsa_private.pem
 .vscode
 /extra/ssl/certbot
