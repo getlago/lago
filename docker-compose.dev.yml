@@ -197,6 +197,16 @@ services:
       - "traefik.http.routers.mail.tls=true"
       - "traefik.http.services.mail.loadbalancer.server.port=8025"
 
+  stripe-webhook:
+    image: stripe/stripe-cli
+    container_name: lago_stripe_webhook_dev
+    depends_on:
+      - api
+    restart: unless-stopped
+    command: "listen --skip-verify --forward-to http://api:3000/webhooks/stripe/${LAGO_ORG_ID}"
+    env_file:
+      - .env.development  # Make sure STRIPE_API_KEY, STRIPE_DEVICE_NAME are defined
+
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
     container_name: lago_redpanda_dev
