@@ -15,21 +15,20 @@ jobs:
             docker-compose.yml
       - name: Launch all services with default configuration
         env:
-          LAGO_RSA_PRIVATE_KEY: "test-rsa-private-key"
           LAGO_CREATE_ORG: "true"
           LAGO_ORG_NAME: "Lago"
           LAGO_ORG_USER_EMAIL: "foo@bar.com"
           LAGO_ORG_USER_PASSWORD: "foobar"
-          LAGO_ORG_API_KEY: "my-api-key"
+          LAGO_ORG_API_KEY: "test"
         run: |
           export LAGO_RSA_PRIVATE_KEY="`openssl genrsa 2048 | base64 | tr -d '\n'`"
-          docker compose up
+          docker compose up -d --wait
       - name: cURL API
         run: curl -f http://localhost:3000/health
       - name: cURL Front
         run: curl -f http://localhost:80
       - name: cURL API Customers
         run: |
-          curl -f --request GET "http://localhost:3000/api/v1/customers" --header "Authorization Bearer: my-api-key"
+          curl -f http://localhost:3000/api/v1/customers -H "Authorization: Bearer test"
       - name: Down services
         run: docker compose down
