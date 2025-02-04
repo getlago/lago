@@ -4,6 +4,7 @@
 .env.development
 .rsa_private.pem
 .vscode
+.zed
 /extra/ssl/certbot
 /extra/ssl/dhparam.pem
 /extra/ssl/nginx*
