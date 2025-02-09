@@ -1,8 +1,8 @@
 ARG NODE_VERSION=20
-ARG RUBY_VERSION=3.3.4
+ARG RUBY_VERSION=3.3.6
 
 # Front Build
-FROM node:$NODE_VERSION-alpine as front_build
+FROM node:$NODE_VERSION-alpine AS front_build
 
 WORKDIR /app
 
@@ -12,48 +12,60 @@ RUN apk add python3 build-base
 RUN yarn && yarn build && npm prune --omit=dev
 
 # # API Build
-FROM ruby:$RUBY_VERSION-slim as api_build
+FROM ruby:$RUBY_VERSION-slim AS api_build
 
 WORKDIR /app
 
-COPY ./api/Gemfile ./Gemfile
-COPY ./api/Gemfile.lock ./Gemfile.lock
+RUN apt update && apt upgrade -y
+RUN apt install nodejs curl build-essential git pkg-config libpq-dev libclang-dev curl -y && \
+    curl https://sh.rustup.rs -sSf | bash -s -- -y
 
-RUN apt update -qq && apt install build-essential git pkg-config libpq-dev curl -y
+COPY ./api/Gemfile /app/Gemfile
+COPY ./api/Gemfile.lock /app/Gemfile.lock
+
+COPY ./api .
+
 ENV BUNDLER_VERSION='2.5.5'
-ENV RAILS_ENV=production
+ENV PATH="$PATH:/root/.cargo/bin/"
 RUN gem install bundler --no-document -v '2.5.5'
+RUN gem install foreman
+
 RUN bundle config build.nokogiri --use-system-libraries &&\
     bundle install --jobs=3 --retry=3 --without development test
 
 # Final Image
 FROM ruby:$RUBY_VERSION-slim
-ARG S6_OVERLAY_VERSION=3.2.0.0
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y nginx xz-utils
+RUN apt-get update && apt upgrade -y
+RUN apt-get install curl ca-certificates gnupg software-properties-common -y
+
+RUN curl -fsSL https://postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /usr/share/keyrings/postgresql-archive-keyring.gpg > /dev/null
+RUN echo deb [arch=amd64,arm64,ppc64e1 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main | tee /etc/ap
+
+RUN curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+RUN chmod 644 /usr/share/keyrings/redis-archive-keyring.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list
+
+RUN apt-get update
+RUN apt-get install nginx xz-utils git libpq-dev postgresql-15 redis -y
+RUN apt-get remove software-properties-common apt-transport-https -y
+
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz
-
-COPY docker/rootfs /
 COPY ./front/nginx/nginx.conf /etc/nginx/sites-enabled/default
+COPY ./docker/redis.conf /etc/redis/redis.conf
 
 COPY --from=front_build /app/dist /usr/share/nginx/html
 COPY --from=api_build /usr/local/bundle/ /usr/local/bundle
 
 COPY ./front/.env.sh ./front/.env.sh
 COPY ./api ./api
-
-RUN bash -c ./front/.env.sh
-
-ENV RAILS_ENV=production
+COPY ./docker/Procfile ./api/Procfile
+COPY /docker/runner.sh ./runner.sh
 
 EXPOSE 80
 EXPOSE 3000
+VOLUME /data
 
-ENTRYPOINT ["/init"]
+ENTRYPOINT ["./runner.sh"]

@@ -1,3 +1,0 @@
-#!/command/execlineb -P
-cd /app/api
-./scripts/start.sh
