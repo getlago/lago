@@ -1,0 +1,3 @@
+web: bundle exec rails s -b :: -p 3000
+worker: bundle exec sidekiq -C config/sidekiq/sidekiq.yml
+clock: bundle exec clockwork ./clock.rb
