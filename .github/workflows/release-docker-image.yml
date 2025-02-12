@@ -26,6 +26,8 @@ jobs:
           platform=${{ matrix.platform.version }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Docker Meta
         id: meta
         uses: docker/metadata-action@v5
