@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/getlago/lago/events-processor/processor"
 	"github.com/joho/godotenv"
 )
 
@@ -15,5 +16,6 @@ func main() {
 		}
 	}
 
-	//cmd.Execute()
+	// start processing events & loop forever
+	processor.StartProcessingEvents()
 }
