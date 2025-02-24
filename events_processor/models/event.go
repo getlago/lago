@@ -1,5 +1,7 @@
 package models
 
+const HTTP_RUBY string = "http_ruby"
+
 type Event struct {
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionId  string         `json:"external_subscription_id"`
@@ -9,4 +11,5 @@ type Event struct {
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
 	Value                   *string        `json:"value"`
+	Source                  string         `json:"source,omotempty"`
 }
