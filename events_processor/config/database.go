@@ -1,8 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -14,23 +14,15 @@ type DB struct {
 }
 
 func NewConnection() (*DB, error) {
-	dsn := fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	logger := slog.Default()
+	logger = logger.With("component", "db")
+
+	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
 	if err != nil {
+		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
 		log.Fatalln(err)
 		return nil, err
 	}
 
 	return &DB{connection: db}, nil
-}
-
-func main() {
-
 }
