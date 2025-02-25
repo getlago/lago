@@ -1,28 +1,16 @@
 package processor
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"sync"
 
 	"github.com/getlago/lago-expression/expression-go"
-	"github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/utils"
 	"github.com/twmb/franz-go/pkg/kgo"
-)
-
-var (
-	ctx                     context.Context
-	logger                  *slog.Logger
-	err                     error
-	eventsEnrichedProducer  *kafka.Producer
-	eventsInAdvanceProducer *kafka.Producer
-	eventsDeadLetterQueue   *kafka.Producer
-	db                      *config.DB
 )
 
 func processEvents(records []*kgo.Record) []*kgo.Record {
@@ -58,31 +46,33 @@ func processEvent(record *kgo.Record) *kgo.Record {
 		return nil
 	}
 
-	bm, err := db.FetchBillableMetric(event.OrganizationID, event.Code)
-	if err != nil {
-		logger.Error("Error fetching billable metric", slog.String("error", err.Error()))
+	bmResult := db.FetchBillableMetric(event.OrganizationID, event.Code)
+	if bmResult.Failure() {
+		logger.Error("Error fetching billable metric", slog.String("error", bmResult.ErrorMsg()))
 		return nil
 	}
+	bm := bmResult.Value()
 
 	if event.Source != models.HTTP_RUBY {
-		sub, err := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
-		if err != nil {
+		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
+		if subResult.Failure() {
 			return nil
 		}
+		sub := subResult.Value()
 
-		if !enrichEventWithBM(&event, bm) {
+		if !evaluateExpression(&event, bm).Failure() {
 			// TODO: log
 			return nil
 		}
 
-		hasCharge, err := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
-		if err != nil {
+		hasInAdvanceChargeResult := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
+		if hasInAdvanceChargeResult.Failure() {
 			// TODO: log
 			return nil
 		}
 
-		if hasCharge {
-			go produceInAdvanceEvent(&event)
+		if hasInAdvanceChargeResult.Value() {
+			go produceChargedInAdvanceEvent(&event)
 		}
 	}
 
@@ -99,25 +89,26 @@ func pushToDeadLetterQueue(record *kgo.Record) {
 	})
 }
 
-func enrichEventWithBM(ev *models.Event, bm *models.BillableMetric) bool {
-	if bm.Expression != "" {
-		eventJson, err := json.Marshal(ev)
-		if err != nil {
-			logger.Error("error while marshaling events")
-			return false
-		}
-		eventJsonString := string(eventJson[:])
-
-		result := expression.Evaluate(bm.Expression, eventJsonString)
-		if result != nil {
-			ev.Properties[bm.FieldName] = *result
-		} else {
-			logger.Error(fmt.Sprintf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString))
-			return false
-		}
+func evaluateExpression(ev *models.Event, bm *models.BillableMetric) utils.Result[bool] {
+	if bm.Expression == "" {
+		return utils.SuccessResult(false)
 	}
 
-	return true
+	eventJson, err := json.Marshal(ev)
+	if err != nil {
+		logger.Error("error while marshaling events")
+		return utils.FailedBoolResult(err)
+	}
+	eventJsonString := string(eventJson[:])
+
+	result := expression.Evaluate(bm.Expression, eventJsonString)
+	if result != nil {
+		ev.Properties[bm.FieldName] = *result
+	} else {
+		return utils.FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString))
+	}
+
+	return utils.SuccessResult(true)
 }
 
 func produceEvent(ev *models.Event) {
@@ -135,7 +126,7 @@ func produceEvent(ev *models.Event) {
 	})
 }
 
-func produceInAdvanceEvent(ev *models.Event) {
+func produceChargedInAdvanceEvent(ev *models.Event) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
 		logger.Error("error while marshaling enriched events")
@@ -148,73 +139,4 @@ func produceInAdvanceEvent(ev *models.Event) {
 		Key:   []byte(msgKey),
 		Value: eventJson,
 	})
-}
-
-func StartProcessingEvents() {
-	ctx = context.Background()
-
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
-		With("service", "post_process")
-	slog.SetDefault(logger)
-
-	if os.Getenv("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC") == "" {
-		logger.Error("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC is required")
-		os.Exit(1)
-	}
-
-	if os.Getenv("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC") == "" {
-		logger.Error("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC is required")
-		os.Exit(1)
-	}
-
-	eventsEnrichedProducer, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC"),
-	})
-	if err != nil {
-		os.Exit(1)
-	}
-	err = eventsEnrichedProducer.Ping(ctx)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	eventsInAdvanceProducer, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"),
-	})
-	if err != nil {
-		os.Exit(1)
-	}
-	err = eventsInAdvanceProducer.Ping(ctx)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	eventsDeadLetterQueue, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE"),
-	})
-	if err != nil {
-		os.Exit(1)
-	}
-	err = eventsDeadLetterQueue.Ping(ctx)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	cg, err := kafka.NewConsumerGroup(&kafka.ConsumerGroupConfig{
-		Topic:         os.Getenv("LAGO_KAFKA_EVENTS_RAW_TOPIC"),
-		ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
-		ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
-			return processEvents(records)
-		},
-	})
-	if err != nil {
-		os.Exit(1)
-	}
-
-	db, err = config.NewConnection()
-	if err != nil {
-		os.Exit(1)
-	}
-
-	cg.Start()
 }
