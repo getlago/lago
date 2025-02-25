@@ -175,6 +175,22 @@ services:
       - path: ./.env.development
         required: false
 
+  events-processor:
+    image: events_processor_dev
+    container_name: lago_events_processor
+    restart: unless-stopped
+    command: ./events_processor
+    build:
+      context: ./events_processor
+      dockerfile: $LAGO_PATH/events_processor/Dockerfile
+    depends_on:
+      - db
+      - redpanda
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
+
   pdf:
     image: getlago/lago-gotenberg:7
     container_name: lago_pdf_dev
