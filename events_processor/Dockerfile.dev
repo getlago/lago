@@ -1,0 +1,17 @@
+FROM rust:1.82 AS rust-build
+
+RUN git clone https://github.com/getlago/lago-expression/
+WORKDIR /lago-expression/expression-go
+RUN cargo build --release
+
+FROM golang:1.24 AS go-build
+
+WORKDIR /app
+
+RUN go install github.com/air-verse/air@latest
+
+COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
+COPY go.mod go.sum ./
+RUN go mod download
+
+CMD ["air", "-c", ".air.toml"]

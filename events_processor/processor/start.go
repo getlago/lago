@@ -24,7 +24,7 @@ var (
 
 func initProducer(context context.Context, topic string) utils.Result[*kafka.Producer] {
 	if os.Getenv(topic) == "" {
-		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s is required", topic))
+		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topic))
 	}
 
 	producer, err := kafka.NewProducer(&kafka.ProducerConfig{
@@ -49,21 +49,21 @@ func StartProcessingEvents() {
 		With("service", "post_process")
 	slog.SetDefault(logger)
 
-	eventsEnrichedProducerResult := initProducer(ctx, os.Getenv("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC"))
+	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_ENRICHED_TOPIC")
 	if eventsEnrichedProducerResult.Failure() {
 		logger.Error(eventsEnrichedProducerResult.ErrorMsg())
 		os.Exit(1)
 	}
 	eventsEnrichedProducer = eventsEnrichedProducerResult.Value()
 
-	eventsInAdvanceProducerResult := initProducer(ctx, os.Getenv("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"))
+	eventsInAdvanceProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC")
 	if eventsInAdvanceProducerResult.Failure() {
 		logger.Error(eventsInAdvanceProducerResult.ErrorMsg())
 		os.Exit(1)
 	}
 	eventsInAdvanceProducer = eventsInAdvanceProducerResult.Value()
 
-	eventsDeadLetterQueueResult := initProducer(ctx, os.Getenv("LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE"))
+	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE")
 	if eventsDeadLetterQueueResult.Failure() {
 		logger.Error(eventsDeadLetterQueueResult.ErrorMsg())
 		os.Exit(1)
@@ -71,7 +71,7 @@ func StartProcessingEvents() {
 	eventsDeadLetterQueue = eventsDeadLetterQueueResult.Value()
 
 	cg, err := kafka.NewConsumerGroup(&kafka.ConsumerGroupConfig{
-		Topic:         os.Getenv("LAGO_KAFKA_EVENTS_RAW_TOPIC"),
+		Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
 		ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
 		ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
 			return processEvents(records)
