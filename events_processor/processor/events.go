@@ -157,18 +157,18 @@ func StartProcessingEvents() {
 		With("service", "post_process")
 	slog.SetDefault(logger)
 
-	if os.Getenv("KAFKA_EVENTS_ENRICHED_TOPIC") == "" {
-		logger.Error("KAFKA_EVENTS_ENRICHED_TOPIC is required")
+	if os.Getenv("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC") == "" {
+		logger.Error("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC is required")
 		os.Exit(1)
 	}
 
-	if os.Getenv("KAFKA_EVENTS_IN_ADVANCE_TOPIC") == "" {
-		logger.Error("KAFKA_EVENTS_IN_ADVANCE_TOPIC is required")
+	if os.Getenv("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC") == "" {
+		logger.Error("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC is required")
 		os.Exit(1)
 	}
 
 	eventsEnrichedProducer, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("KAFKA_EVENTS_ENRICHED_TOPIC"),
+		Topic: os.Getenv("LAGO_KAFKA_EVENTS_ENRICHED_TOPIC"),
 	})
 	if err != nil {
 		os.Exit(1)
@@ -179,7 +179,7 @@ func StartProcessingEvents() {
 	}
 
 	eventsInAdvanceProducer, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("KAFKA_EVENTS_IN_ADVANCE_TOPIC"),
+		Topic: os.Getenv("LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"),
 	})
 	if err != nil {
 		os.Exit(1)
@@ -190,7 +190,7 @@ func StartProcessingEvents() {
 	}
 
 	eventsDeadLetterQueue, err = kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: os.Getenv("KAFKA_EVENTS_DEAD_LETTER_QUEUE"),
+		Topic: os.Getenv("LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE"),
 	})
 	if err != nil {
 		os.Exit(1)
@@ -201,8 +201,8 @@ func StartProcessingEvents() {
 	}
 
 	cg, err := kafka.NewConsumerGroup(&kafka.ConsumerGroupConfig{
-		Topic:         os.Getenv("KAFKA_EVENTS_RAW_TOPIC"),
-		ConsumerGroup: os.Getenv("KAFKA_CONSUMER_GROUP"),
+		Topic:         os.Getenv("LAGO_KAFKA_EVENTS_RAW_TOPIC"),
+		ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
 		ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
 			return processEvents(records)
 		},
