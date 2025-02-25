@@ -41,7 +41,7 @@ func NewProducer(cfg *ProducerConfig) (*Producer, error) {
 	return pdr, nil
 }
 
-func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) {
+func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
 	record := &kgo.Record{
 		Topic: p.config.Topic,
 		Key:   msg.Key,
@@ -51,7 +51,11 @@ func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) {
 	pr := p.client.ProduceSync(ctx, record)
 	if err := pr.FirstErr(); err != nil {
 		p.logger.Error("record had a produce error while synchronously producing", slog.String("error", err.Error()))
+		// TODO: should return error?
+		return false
 	}
+
+	return true
 }
 
 func (p *Producer) Ping(ctx context.Context) error {
