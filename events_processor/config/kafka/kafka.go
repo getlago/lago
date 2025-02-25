@@ -23,14 +23,14 @@ const (
 )
 
 func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
-	scramAlgorithm := os.Getenv("KAFKA_SCRAM_ALGORITHM")
-	tls := os.Getenv("KAFKA_TLS") == "true"
+	scramAlgorithm := os.Getenv("LAGO_KAFKA_SCRAM_ALGORITHM")
+	tls := os.Getenv("LAGO_KAFKA_TLS") == "true"
 
 	logger := slog.Default()
 	logger = logger.With("component", "kafka")
 
 	opts := []kgo.Opt{
-		kgo.SeedBrokers(os.Getenv("KAFKA_BROKER")),
+		kgo.SeedBrokers(os.Getenv("LAGO_KAFKA_BOOTSTRAP_SERVERS")),
 		kgo.WithLogger(kslog.New(logger)),
 	}
 
@@ -70,8 +70,8 @@ func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
 		var scramOpt kgo.Opt
 
 		scramAuth := scram.Auth{
-			User: os.Getenv("KAFKA_USERNAME"),
-			Pass: os.Getenv("KAFKA_PASSWORD"),
+			User: os.Getenv("LAGO_KAFKA_USERNAME"),
+			Pass: os.Getenv("LAGO_KAFKA_PASSWORD"),
 		}
 
 		switch scramAlgorithm {
