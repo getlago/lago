@@ -3,10 +3,13 @@ package processor
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 
+	"github.com/getlago/lago-expression/expression-go"
+	"github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -19,6 +22,7 @@ var (
 	eventsEnrichedProducer  *kafka.Producer
 	eventsInAdvanceProducer *kafka.Producer
 	eventsDeadLetterQueue   *kafka.Producer
+	db                      *config.DB
 )
 
 func processEvents(records []*kgo.Record) []*kgo.Record {
@@ -31,7 +35,8 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 			defer wg.Done()
 
 			if ok := processEvent(record); ok == nil {
-				// TODO: do we need the mutex here?
+				// TODO: Do we need the mutex here?
+				// 			 How to handle some auto retry?
 				mu.Lock()
 				pushToDeadLetterQueue(record)
 				mu.Unlock()
@@ -53,11 +58,37 @@ func processEvent(record *kgo.Record) *kgo.Record {
 		return nil
 	}
 
-	if event.Source != models.HTTP_RUBY {
-		// TODO
+	bm, err := db.FetchBillableMetric(event.OrganizationID, event.Code)
+	if err != nil {
+		logger.Error("Error fetching billable metric", slog.String("error", err.Error()))
+		return nil
 	}
 
-	// TODO
+	if event.Source != models.HTTP_RUBY {
+		sub, err := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
+		if err != nil {
+			return nil
+		}
+
+		if !enrichEventWithBM(&event, bm) {
+			// TODO: log
+			return nil
+		}
+
+		hasCharge, err := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
+		if err != nil {
+			// TODO: log
+			return nil
+		}
+
+		if hasCharge {
+			go produceInAdvanceEvent(&event)
+		}
+	}
+
+	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
+	event.Value = &value
+	go produceEvent(&event)
 
 	return record
 }
@@ -65,6 +96,57 @@ func processEvent(record *kgo.Record) *kgo.Record {
 func pushToDeadLetterQueue(record *kgo.Record) {
 	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
 		Value: record.Value,
+	})
+}
+
+func enrichEventWithBM(ev *models.Event, bm *models.BillableMetric) bool {
+	if bm.Expression != "" {
+		eventJson, err := json.Marshal(ev)
+		if err != nil {
+			logger.Error("error while marshaling events")
+			return false
+		}
+		eventJsonString := string(eventJson[:])
+
+		result := expression.Evaluate(bm.Expression, eventJsonString)
+		if result != nil {
+			ev.Properties[bm.FieldName] = *result
+		} else {
+			logger.Error(fmt.Sprintf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString))
+			return false
+		}
+	}
+
+	return true
+}
+
+func produceEvent(ev *models.Event) {
+	eventJson, err := json.Marshal(ev)
+	if err != nil {
+		logger.Error("error while marshaling enriched events")
+	}
+
+	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
+
+	// TODO: how to ensure message has been produced?
+	eventsEnrichedProducer.Produce(ctx, &kafka.ProducerMessage{
+		Key:   []byte(msgKey),
+		Value: eventJson,
+	})
+}
+
+func produceInAdvanceEvent(ev *models.Event) {
+	eventJson, err := json.Marshal(ev)
+	if err != nil {
+		logger.Error("error while marshaling enriched events")
+	}
+
+	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
+
+	// TODO: how to ensure message has been produced?
+	eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
+		Key:   []byte(msgKey),
+		Value: eventJson,
 	})
 }
 
@@ -125,6 +207,11 @@ func StartProcessingEvents() {
 			return processEvents(records)
 		},
 	})
+	if err != nil {
+		os.Exit(1)
+	}
+
+	db, err = config.NewConnection()
 	if err != nil {
 		os.Exit(1)
 	}
