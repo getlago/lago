@@ -96,6 +96,8 @@ services:
       - path: ./.env.development.default
       - path: ./.env.development
         required: false
+    stdin_open: true
+    tty: true
     environment:
       - DATABASE_TEST_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/lago_test
       - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
@@ -128,6 +130,8 @@ services:
       - path: ./.env.development.default
       - path: ./.env.development
         required: false
+    stdin_open: true
+    tty: true
 
   api-events-worker:
     <<: *api_worker
