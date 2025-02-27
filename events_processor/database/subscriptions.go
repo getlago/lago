@@ -33,7 +33,7 @@ func (db *DB) FetchSubscription(organizationID string, externalID string, timest
 		Where(conditions, organizationID, externalID, timestamp, timestamp).
 		Order("terminated_at DESC NULLS FIRST, started_at DESC").
 		Limit(1).
-		Find(&sub)
+		First(&sub)
 
 	if result.Error != nil {
 		return failedSubscriptionResult(result.Error)
