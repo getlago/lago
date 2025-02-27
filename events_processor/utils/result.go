@@ -3,7 +3,7 @@ package utils
 type Result[T any] struct {
 	value   T
 	err     error
-	details ErrorDetails
+	details *ErrorDetails
 }
 
 type ErrorDetails struct {
@@ -19,6 +19,10 @@ func (r Result[T]) Failure() bool {
 	return r.err != nil
 }
 
+func (r Result[T]) Value() T {
+	return r.value
+}
+
 func (r Result[T]) ValueOrPanic() T {
 	if r.Failure() {
 		panic(r.err)
@@ -27,19 +31,19 @@ func (r Result[T]) ValueOrPanic() T {
 	return r.value
 }
 
-func (r Result[T]) Value() T {
-	return r.value
-}
-
 func (r Result[T]) Error() error {
 	return r.err
 }
 
 func (r Result[T]) ErrorMsg() string {
+	if r.Success() {
+		return ""
+	}
+
 	return r.err.Error()
 }
 
-func (r Result[T]) ErrorDetails() ErrorDetails {
+func (r Result[T]) ErrorDetails() *ErrorDetails {
 	return r.details
 }
 
