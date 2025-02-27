@@ -81,7 +81,7 @@ func StartProcessingEvents() {
 		os.Exit(1)
 	}
 
-	db, err = database.NewConnection()
+	db, err = database.NewConnection(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		os.Exit(1)
 	}
