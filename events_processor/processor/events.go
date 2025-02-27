@@ -24,11 +24,12 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 		go func(record *kgo.Record) {
 			defer wg.Done()
 
-			if ok := processEvent(record); ok == nil {
+			if _, err := processEvent(record); err != nil {
 				// TODO: Do we need the mutex here?
 				// 			 How to handle some auto retry?
+				// Enrich event with error message
 				mu.Lock()
-				pushToDeadLetterQueue(record)
+				pushToDeadLetterQueue(record, err)
 				mu.Unlock()
 			}
 		}(record)
@@ -40,37 +41,39 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	return records
 }
 
-func processEvent(record *kgo.Record) *kgo.Record {
+func processEvent(record *kgo.Record) (*kgo.Record, error) {
 	event := models.Event{}
 	err := json.Unmarshal(record.Value, &event)
 	if err != nil {
 		logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
-		return nil
+		return nil, err
 	}
 
 	bmResult := db.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
 		logger.Error("Error fetching billable metric", slog.String("error", bmResult.ErrorMsg()))
-		return nil
+		return nil, bmResult.Error()
 	}
 	bm := bmResult.Value()
 
 	if event.Source != models.HTTP_RUBY {
 		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
 		if subResult.Failure() {
-			return nil
+			logger.Error("Error fetching subscription", slog.String("error", subResult.ErrorMsg()))
+			return nil, subResult.Error()
 		}
 		sub := subResult.Value()
 
-		if !evaluateExpression(&event, bm).Failure() {
-			// TODO: log
-			return nil
+		expressionResult := evaluateExpression(&event, bm)
+		if expressionResult.Failure() {
+			logger.Error("Error evaluating custom expression", slog.String("error", expressionResult.ErrorMsg()))
+			return nil, expressionResult.Error()
 		}
 
 		hasInAdvanceChargeResult := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
-			// TODO: log
-			return nil
+			logger.Error("Error fetching in advance charges", slog.String("error", hasInAdvanceChargeResult.ErrorMsg()))
+			return nil, hasInAdvanceChargeResult.Error()
 		}
 
 		if hasInAdvanceChargeResult.Value() {
@@ -82,10 +85,12 @@ func processEvent(record *kgo.Record) *kgo.Record {
 	event.Value = &value
 	go produceEvent(&event)
 
-	return record
+	return record, nil
 }
 
-func pushToDeadLetterQueue(record *kgo.Record) {
+func pushToDeadLetterQueue(record *kgo.Record, err error) {
+	// TODO: enrich Value with error for future re-processing
+
 	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
 		Value: record.Value,
 	})

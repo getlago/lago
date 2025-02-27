@@ -22,10 +22,12 @@ var (
 	db                      *database.DB
 )
 
-func initProducer(context context.Context, topic string) utils.Result[*kafka.Producer] {
-	if os.Getenv(topic) == "" {
-		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topic))
+func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
+	if os.Getenv(topicEnv) == "" {
+		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topicEnv))
 	}
+
+	topic := os.Getenv(topicEnv)
 
 	producer, err := kafka.NewProducer(&kafka.ProducerConfig{
 		Topic: topic,
