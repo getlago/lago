@@ -18,7 +18,6 @@ type Charge struct {
 }
 
 func (db *DB) AnyInAdvanceCharge(planID string, billableMetricID string) utils.Result[bool] {
-	// TODO: take deleted records into account
 	var count int64
 
 	result := db.connection.Model(&Charge{}).
