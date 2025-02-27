@@ -22,6 +22,7 @@ func (db *DB) AnyInAdvanceCharge(planID string, billableMetricID string) utils.R
 
 	result := db.connection.Model(&Charge{}).
 		Where("plan_id = ? AND billable_metric_id = ?", planID, billableMetricID).
+		Where("pay_in_advance = true").
 		Count(&count)
 	if result.Error != nil {
 		return utils.FailedBoolResult(result.Error)

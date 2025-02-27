@@ -52,7 +52,7 @@ func TestFetchBillableMetric(t *testing.T) {
 		db, mock, cleanup := setupMockDB(t)
 		defer cleanup()
 
-		orgID := "org123"
+		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 		code := "api_calls"
 
 		// Expect the query but return error
@@ -75,7 +75,7 @@ func TestFetchBillableMetric(t *testing.T) {
 		db, mock, cleanup := setupMockDB(t)
 		defer cleanup()
 
-		orgID := "org123"
+		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 		code := "api_calls"
 		dbError := errors.New("database connection failed")
 
