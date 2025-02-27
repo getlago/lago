@@ -19,15 +19,13 @@ type BillableMetric struct {
 }
 
 func (db *DB) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
-	// TODO: take deleted records into account
-
-	var bm *BillableMetric
-	result := db.connection.First(bm, "organization_id = ? AND code = ?", organizationID, code)
+	var bm BillableMetric
+	result := db.connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
 	if result.Error != nil {
 		return failedBillabmeMetricResult(result.Error)
 	}
 
-	return utils.SuccessResult(bm)
+	return utils.SuccessResult(&bm)
 }
 
 func failedBillabmeMetricResult(err error) utils.Result[*BillableMetric] {
