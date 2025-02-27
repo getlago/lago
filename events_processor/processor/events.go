@@ -6,9 +6,11 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/getlago/lago/events-processor/processor/models"
+
 	"github.com/getlago/lago-expression/expression-go"
 	"github.com/getlago/lago/events-processor/config/kafka"
-	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/database"
 	"github.com/getlago/lago/events-processor/utils"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -89,7 +91,7 @@ func pushToDeadLetterQueue(record *kgo.Record) {
 	})
 }
 
-func evaluateExpression(ev *models.Event, bm *models.BillableMetric) utils.Result[bool] {
+func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Result[bool] {
 	if bm.Expression == "" {
 		return utils.SuccessResult(false)
 	}

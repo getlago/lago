@@ -1,14 +1,26 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 
-	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
-func (db *DB) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*models.Subscription] {
-	var sub *models.Subscription
+type Subscription struct {
+	ID                     string       `gorm:"primaryKey;->"`
+	SubscriptionID         string       `gorm:"->"`
+	ExternalSubscriptionID string       `gorm:"->"`
+	PlanID                 string       `gorm:"->"`
+	OrganizationID         string       `gorm:"->"`
+	CreatedAt              time.Time    `gorm:"->"`
+	UpdatedAt              time.Time    `gorm:"->"`
+	StartedAt              sql.NullTime `gorm:"->"`
+	TerminatedAt           sql.NullTime `gorm:"->"`
+}
+
+func (db *DB) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
+	var sub *Subscription
 
 	var conditions = `
 		customers.organization_id = ?
@@ -28,6 +40,6 @@ func (db *DB) FetchSubscription(organizationID string, externalID string, timest
 	return utils.SuccessResult(sub)
 }
 
-func failedSubscriptionResult(err error) utils.Result[*models.Subscription] {
-	return utils.FailedResult[*models.Subscription](err)
+func failedSubscriptionResult(err error) utils.Result[*Subscription] {
+	return utils.FailedResult[*Subscription](err)
 }
