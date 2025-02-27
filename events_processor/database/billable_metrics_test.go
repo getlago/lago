@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 	"time"
 
@@ -10,7 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
-var fetchBillableMetricQuery = `^SELECT \* FROM "billable_metrics" WHERE \(organization_id = \$1 AND code = \$2\) AND "billable_metrics"."deleted_at" IS NULL ORDER BY "billable_metrics"."id" LIMIT \$3$`
+var fetchBillableMetricQuery = regexp.QuoteMeta(`
+	SELECT * FROM "billable_metrics"
+	WHERE (organization_id = $1 AND code = $2)
+	AND "billable_metrics"."deleted_at" IS NULL
+	ORDER BY "billable_metrics"."id"
+	LIMIT $3`,
+)
 
 func TestFetchBillableMetric(t *testing.T) {
 	t.Run("should return billable metric when found", func(t *testing.T) {

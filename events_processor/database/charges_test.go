@@ -2,13 +2,19 @@ package database
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
 
-var anyInAdvanceChargeQuery = `^SELECT count\(\*\) FROM "charges" WHERE \(plan_id = \$1 AND billable_metric_id = \$2\) AND pay_in_advance = true AND "charges"."deleted_at" IS NULL$`
+var anyInAdvanceChargeQuery = regexp.QuoteMeta(`
+	SELECT count(*) FROM "charges"
+	WHERE (plan_id = $1 AND billable_metric_id = $2)
+	AND pay_in_advance = true
+	AND "charges"."deleted_at" IS NULL`,
+)
 
 func TestAnyInAdvanceCharge(t *testing.T) {
 	t.Run("should return true when in advance charge exists", func(t *testing.T) {
