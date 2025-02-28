@@ -21,6 +21,8 @@ func (ev *Event) TimestampAsTime() time.Time {
 }
 
 type FailedEvent struct {
-	Event        Event  `json:"event"`
-	ErrorMessage string `json:"error_message"`
+	Event               Event  `json:"event"`
+	InitialErrorMessage string `json:"initial_error_message"`
+	ErrorMessage        string `json:"error_message"`
+	ErrorCode           string `json:"error_code"`
 }

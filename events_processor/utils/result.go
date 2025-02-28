@@ -11,6 +11,15 @@ type ErrorDetails struct {
 	Message string
 }
 
+type AnyResult interface {
+	Success() bool
+	Failure() bool
+	Error() error
+	ErrorMsg() string
+	ErrorCode() string
+	ErrorMessage() string
+}
+
 func (r Result[T]) Success() bool {
 	return r.err == nil
 }
@@ -43,8 +52,32 @@ func (r Result[T]) ErrorMsg() string {
 	return r.err.Error()
 }
 
+func (r Result[T]) AddErrorDetails(code string, message string) Result[T] {
+	r.details = &ErrorDetails{
+		Code:    code,
+		Message: message,
+	}
+	return r
+}
+
 func (r Result[T]) ErrorDetails() *ErrorDetails {
 	return r.details
+}
+
+func (r Result[T]) ErrorCode() string {
+	if r.details == nil {
+		return ""
+	}
+
+	return r.details.Code
+}
+
+func (r Result[T]) ErrorMessage() string {
+	if r.details == nil {
+		return ""
+	}
+
+	return r.details.Message
 }
 
 func SuccessResult[T any](value T) Result[T] {
