@@ -62,9 +62,9 @@ func (pc *PartitionConsumer) consume() {
 
 			processedRecords := pc.processRecords(records)
 
-			// TODO: See https://pkg.go.dev/github.com/twmb/franz-go@v1.18.1/pkg/kgo#Client.CommitRecords
-			// CommitRecords should not be used in this context
-			err := pc.client.CommitRecords(ctx, processedRecords...)
+			// Commit the last processed record, to update the commit
+			lastRecord := processedRecords[len(processedRecords)-1]
+			err := pc.client.CommitRecords(ctx, lastRecord)
 			if err != nil {
 				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
 			}
