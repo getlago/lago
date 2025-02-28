@@ -2,8 +2,9 @@ package utils
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var successResult = Result[string]{value: "Success", err: nil}
@@ -32,9 +33,7 @@ var successTests = []booleanTest{
 
 func TestSuccess(t *testing.T) {
 	for _, test := range successTests {
-		if output := test.arg.Success(); output != test.expected {
-			t.Errorf("Output %q not equal to expected %q", strconv.FormatBool(output), strconv.FormatBool(test.expected))
-		}
+		assert.Equal(t, test.arg.Success(), test.expected)
 	}
 }
 
@@ -45,9 +44,7 @@ var failureTests = []booleanTest{
 
 func TestFailure(t *testing.T) {
 	for _, test := range failureTests {
-		if output := test.arg.Failure(); output != test.expected {
-			t.Errorf("Output %q not equal to expected %q", strconv.FormatBool(output), strconv.FormatBool(test.expected))
-		}
+		assert.Equal(t, test.arg.Failure(), test.expected)
 	}
 }
 
@@ -58,34 +55,18 @@ var valueTests = []stringTest{
 
 func TestValue(t *testing.T) {
 	for _, test := range valueTests {
-		if output := test.arg.Value(); output != test.expected {
-			t.Errorf("Output %q not equal to expected %q", output, test.expected)
-		}
+		assert.Equal(t, test.arg.Value(), test.expected)
 	}
 }
 
 func TestValueOrPanic(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-	failedResult.ValueOrPanic()
-
-	expected := "Success"
-	if output := successResult.ValueOrPanic(); output != "Success" {
-		t.Errorf("Output %q not equal to expected %q", output, expected)
-	}
+	assert.Panics(t, func() { failedResult.ValueOrPanic() })
+	assert.Equal(t, successResult.ValueOrPanic(), "Success")
 }
 
 func TestError(t *testing.T) {
-	if output := successResult.Error(); output != nil {
-		t.Errorf("Output %q not equal to expected nil", output)
-	}
-
-	if output := failedResult.Error(); output.Error() != "Failed result" {
-		t.Errorf("Output %q not equal to expected %q", output, "Failed result")
-	}
+	assert.Nil(t, successResult.Error())
+	assert.Error(t, failedResult.Error())
 }
 
 var errorMsgTests = []stringTest{
@@ -95,20 +76,13 @@ var errorMsgTests = []stringTest{
 
 func TestErrorMsg(t *testing.T) {
 	for _, test := range errorMsgTests {
-		if output := test.arg.ErrorMsg(); output != test.expected {
-			t.Errorf("Output %q not equal to expected %q", output, test.expected)
-		}
+		assert.Equal(t, test.arg.ErrorMsg(), test.expected)
 	}
 }
 
 func TestErrorDetails(t *testing.T) {
-	if output := successResult.ErrorDetails(); output != nil {
-		t.Errorf("Output %q not equal to expected nil", output)
-	}
-
-	if output := failedResult.ErrorDetails(); output == nil {
-		t.Errorf("Output %q not equal to expected not nil", output)
-	}
+	assert.Nil(t, successResult.ErrorDetails())
+	assert.NotNil(t, failedResult.ErrorDetails())
 }
 
 type resultTest struct {
@@ -138,20 +112,9 @@ var successResultTests = []resultTest{
 
 func TestResults(t *testing.T) {
 	for _, test := range successResultTests {
-		if output := test.arg.Success(); output != test.expectedSuccess {
-			t.Errorf("Output %q not equal to expected %q", strconv.FormatBool(output), strconv.FormatBool(test.expectedSuccess))
-		}
-
-		if output := test.arg.Failure(); output != test.expectedFailure {
-			t.Errorf("Output %q not equal to expected %q", strconv.FormatBool(output), strconv.FormatBool(test.expectedFailure))
-		}
-
-		if output := test.arg.Value(); output != test.expectedValue {
-			t.Errorf("Output %q not equal to expected %q", output, test.expectedValue)
-		}
-
-		if output := test.arg.ErrorMsg(); output != test.expectedErrorMsg {
-			t.Errorf("Output %q not equal to expected %q", output, test.expectedErrorMsg)
-		}
+		assert.Equal(t, test.arg.Success(), test.expectedSuccess)
+		assert.Equal(t, test.arg.Failure(), test.expectedFailure)
+		assert.Equal(t, test.arg.Value(), test.expectedValue)
+		assert.Equal(t, test.arg.ErrorMsg(), test.expectedErrorMsg)
 	}
 }
