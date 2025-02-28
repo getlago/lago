@@ -20,6 +20,7 @@ var (
 	eventsInAdvanceProducer *kafka.Producer
 	eventsDeadLetterQueue   *kafka.Producer
 	db                      *database.DB
+	kafkaConfig             kafka.ServerConfig
 )
 
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
@@ -29,9 +30,11 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 
 	topic := os.Getenv(topicEnv)
 
-	producer, err := kafka.NewProducer(&kafka.ProducerConfig{
-		Topic: topic,
-	})
+	producer, err := kafka.NewProducer(
+		kafkaConfig,
+		&kafka.ProducerConfig{
+			Topic: topic,
+		})
 	if err != nil {
 		return utils.FailedResult[*kafka.Producer](err)
 	}
@@ -50,6 +53,15 @@ func StartProcessingEvents() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
 		With("service", "post_process")
 	slog.SetDefault(logger)
+
+	kafkaConfig = kafka.ServerConfig{
+		ScramAlgorithm: os.Getenv("LAGO_KAFKA_SCRAM_ALGORITHM"),
+		TLS:            os.Getenv("LAGO_KAFKA_TLS") == "true",
+		Server:         os.Getenv("LAGO_KAFKA_BOOTSTRAP_SERVERS"),
+		UseTelemetry:   os.Getenv("ENV") == "production",
+		UserName:       os.Getenv("LAGO_KAFKA_USERNAME"),
+		Password:       os.Getenv("LAGO_KAFKA_PASSWORD"),
+	}
 
 	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_ENRICHED_TOPIC")
 	if eventsEnrichedProducerResult.Failure() {
@@ -72,13 +84,15 @@ func StartProcessingEvents() {
 	}
 	eventsDeadLetterQueue = eventsDeadLetterQueueResult.Value()
 
-	cg, err := kafka.NewConsumerGroup(&kafka.ConsumerGroupConfig{
-		Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
-		ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
-		ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
-			return processEvents(records)
-		},
-	})
+	cg, err := kafka.NewConsumerGroup(
+		kafkaConfig,
+		&kafka.ConsumerGroupConfig{
+			Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
+			ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
+			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
+				return processEvents(records)
+			},
+		})
 	if err != nil {
 		os.Exit(1)
 	}
