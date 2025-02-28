@@ -25,7 +25,6 @@ func NewConnection(dbUrl string) (*DB, error) {
 		Logger: gormLogger,
 	})
 	if err != nil {
-		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
 		return nil, err
 	}
 

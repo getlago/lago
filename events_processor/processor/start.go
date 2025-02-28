@@ -104,11 +104,13 @@ func StartProcessingEvents() {
 			},
 		})
 	if err != nil {
+		logger.Error("Error starting the event consumer", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
 	db, err = database.NewConnection(os.Getenv("DATABASE_URL"))
 	if err != nil {
+		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
