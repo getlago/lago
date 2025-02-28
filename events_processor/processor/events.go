@@ -24,12 +24,19 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 		go func(record *kgo.Record) {
 			defer wg.Done()
 
-			if _, err := processEvent(record); err != nil {
+			event := models.Event{}
+			err := json.Unmarshal(record.Value, &event)
+			if err != nil {
+				logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
+				return
+			}
+
+			if _, err := processEvent(&event); err != nil {
 				// TODO: Do we need the mutex here?
 				// 			 How to handle some auto retry?
-				// Enrich event with error message
+
 				mu.Lock()
-				pushToDeadLetterQueue(record, err)
+				produceToDeadLetterQueue(event, err)
 				mu.Unlock()
 			}
 		}(record)
@@ -41,14 +48,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	return records
 }
 
-func processEvent(record *kgo.Record) (*kgo.Record, error) {
-	event := models.Event{}
-	err := json.Unmarshal(record.Value, &event)
-	if err != nil {
-		logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
-		return nil, err
-	}
-
+func processEvent(event *models.Event) (*models.Event, error) {
 	bmResult := db.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
 		logger.Error("Error fetching billable metric", slog.String("error", bmResult.ErrorMsg()))
@@ -64,7 +64,7 @@ func processEvent(record *kgo.Record) (*kgo.Record, error) {
 		}
 		sub := subResult.Value()
 
-		expressionResult := evaluateExpression(&event, bm)
+		expressionResult := evaluateExpression(event, bm)
 		if expressionResult.Failure() {
 			logger.Error("Error evaluating custom expression", slog.String("error", expressionResult.ErrorMsg()))
 			return nil, expressionResult.Error()
@@ -77,23 +77,15 @@ func processEvent(record *kgo.Record) (*kgo.Record, error) {
 		}
 
 		if hasInAdvanceChargeResult.Value() {
-			go produceChargedInAdvanceEvent(&event)
+			go produceChargedInAdvanceEvent(event)
 		}
 	}
 
 	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
 	event.Value = &value
-	go produceEvent(&event)
+	go produceEnrichedEvent(event)
 
-	return record, nil
-}
-
-func pushToDeadLetterQueue(record *kgo.Record, err error) {
-	// TODO: enrich Value with error for future re-processing
-
-	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
-		Value: record.Value,
-	})
+	return event, nil
 }
 
 func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Result[bool] {
@@ -118,7 +110,7 @@ func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Res
 	return utils.SuccessResult(true)
 }
 
-func produceEvent(ev *models.Event) {
+func produceEnrichedEvent(ev *models.Event) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
 		logger.Error("error while marshaling enriched events")
@@ -144,6 +136,22 @@ func produceChargedInAdvanceEvent(ev *models.Event) {
 	// TODO: how to ensure message has been produced?
 	eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
 		Key:   []byte(msgKey),
+		Value: eventJson,
+	})
+}
+
+func produceToDeadLetterQueue(event models.Event, err error) {
+	failedEvent := models.FailedEvent{
+		Event:        event,
+		ErrorMessage: err.Error(),
+	}
+
+	eventJson, err := json.Marshal(failedEvent)
+	if err != nil {
+		logger.Error("error while marshaling failed events")
+	}
+
+	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
 		Value: eventJson,
 	})
 }

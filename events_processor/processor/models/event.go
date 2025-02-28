@@ -19,3 +19,8 @@ type Event struct {
 func (ev *Event) TimestampAsTime() time.Time {
 	return time.Unix(int64(ev.Timestamp), 0)
 }
+
+type FailedEvent struct {
+	Event        Event  `json:"event"`
+	ErrorMessage string `json:"error_message"`
+}
