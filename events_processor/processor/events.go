@@ -45,9 +45,6 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 
 			result := processEvent(&event)
 			if result.Failure() {
-				// TODO: Do we need the mutex here?
-				// 			 How to handle some auto retry?
-
 				logger.Error(
 					result.ErrorMessage(),
 					slog.String("error_code", result.ErrorCode()),
@@ -109,7 +106,6 @@ func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Res
 
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
-		logger.Error("error while marshaling events")
 		return utils.FailedBoolResult(err)
 	}
 	eventJsonString := string(eventJson[:])
@@ -142,7 +138,7 @@ func produceEnrichedEvent(ev *models.Event) {
 func produceChargedInAdvanceEvent(ev *models.Event) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
-		logger.Error("error while marshaling enriched events")
+		logger.Error("error while marshaling charged in advance events")
 	}
 
 	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
@@ -164,7 +160,7 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 
 	eventJson, err := json.Marshal(failedEvent)
 	if err != nil {
-		logger.Error("error while marshaling failed events")
+		logger.Error("error while marshaling failed event with error details")
 	}
 
 	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{

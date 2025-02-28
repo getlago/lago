@@ -55,7 +55,6 @@ func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
 	pr := p.client.ProduceSync(ctx, record)
 	if err := pr.FirstErr(); err != nil {
 		p.logger.Error("record had a produce error while synchronously producing", slog.String("error", err.Error()))
-		// TODO: should return error?
 		return false
 	}
 

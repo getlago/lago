@@ -46,14 +46,14 @@ func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, e
 	if serverConfig.UseTelemetry {
 		meterProvider, err := initMeterProvider(context.Background())
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		meterOpts := []kotel.MeterOpt{kotel.MeterProvider(meterProvider)}
 		meter := kotel.NewMeter(meterOpts...)
 
 		tracerProvider, err := initTracerProvider(context.Background())
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		tracerOpts := []kotel.TracerOpt{
 			kotel.TracerProvider(tracerProvider),
