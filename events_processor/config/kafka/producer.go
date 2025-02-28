@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -42,6 +43,9 @@ func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, err
 }
 
 func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
+	span := tracer.GetTracerSpan(ctx, "post_process", "Producer.Produce")
+	defer span.End()
+
 	record := &kgo.Record{
 		Topic: p.config.Topic,
 		Key:   msg.Key,

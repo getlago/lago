@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/database"
 	"github.com/getlago/lago/events-processor/utils"
@@ -53,6 +54,15 @@ func StartProcessingEvents() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
 		With("service", "post_process")
 	slog.SetDefault(logger)
+
+	if os.Getenv("ENV") == "production" {
+		telemetryCfg := tracer.TracerConfig{
+			ServiceName: os.Getenv("OTEL_SERVICE_NAME"),
+			EndpointURL: os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+			Insecure:    os.Getenv("OTEL_INSECURE"),
+		}
+		tracer.InitOTLPTracer(telemetryCfg)
+	}
 
 	kafkaConfig = kafka.ServerConfig{
 		ScramAlgorithm: os.Getenv("LAGO_KAFKA_SCRAM_ALGORITHM"),

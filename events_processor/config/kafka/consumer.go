@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"sync"
 
+	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type ConsumerGroupConfig struct {
@@ -52,11 +54,17 @@ func (pc *PartitionConsumer) consume() {
 			return
 
 		case records := <-pc.records:
+			ctx := context.Background()
+			span := tracer.GetTracerSpan(ctx, "post_process", "Consumer.Consume")
+			recordsAttr := attribute.Int("records.length", len(records))
+			span.SetAttributes(recordsAttr)
+			defer span.End()
+
 			processedRecords := pc.processRecords(records)
 
 			// TODO: See https://pkg.go.dev/github.com/twmb/franz-go@v1.18.1/pkg/kgo#Client.CommitRecords
 			// CommitRecords should not be used in this context
-			err := pc.client.CommitRecords(context.Background(), processedRecords...)
+			err := pc.client.CommitRecords(ctx, processedRecords...)
 			if err != nil {
 				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
 			}

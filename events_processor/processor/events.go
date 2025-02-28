@@ -1,14 +1,17 @@
 package processor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
 
 	"github.com/getlago/lago/events-processor/processor/models"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/getlago/lago-expression/expression-go"
+	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/database"
 	"github.com/getlago/lago/events-processor/utils"
@@ -16,6 +19,12 @@ import (
 )
 
 func processEvents(records []*kgo.Record) []*kgo.Record {
+	ctx := context.Background()
+	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
+	recordsAttr := attribute.Int("records.length", len(records))
+	span.SetAttributes(recordsAttr)
+	defer span.End()
+
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 	wg.Add(len(records))
@@ -23,6 +32,9 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
+
+			sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
+			defer sp.End()
 
 			event := models.Event{}
 			err := json.Unmarshal(record.Value, &event)
