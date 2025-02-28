@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -51,20 +52,11 @@ func setupMockDB(t *testing.T) (*DB, sqlmock.Sqlmock, func()) {
 
 func TestNewConnection(t *testing.T) {
 	_, err := NewConnection("invalid connection")
-	if err == nil {
-		t.Errorf("Expecting an error")
-	}
+	assert.Error(t, err)
 
 	db, err := NewConnection(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Errorf("Unexpected connection error %q", err.Error())
-	}
-
-	if db.connection == nil {
-		t.Errorf("DB connection should be established")
-	}
-
-	if db.logger == nil {
-		t.Errorf("DB logger should be initialized")
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
+	assert.NotNil(t, db.connection)
+	assert.NotNil(t, db.logger)
 }
