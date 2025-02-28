@@ -43,12 +43,19 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				return
 			}
 
-			if _, err := processEvent(&event); err != nil {
+			result := processEvent(&event)
+			if result.Failure() {
 				// TODO: Do we need the mutex here?
 				// 			 How to handle some auto retry?
 
+				logger.Error(
+					result.ErrorMessage(),
+					slog.String("error_code", result.ErrorCode()),
+					slog.String("error", result.ErrorMsg()),
+				)
+
 				mu.Lock()
-				produceToDeadLetterQueue(event, err)
+				produceToDeadLetterQueue(event, result)
 				mu.Unlock()
 			}
 		}(record)
@@ -56,36 +63,31 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 
 	wg.Wait()
 
-	// TODO: only return a status / offset, to allow commit
 	return records
 }
 
-func processEvent(event *models.Event) (*models.Event, error) {
+func processEvent(event *models.Event) utils.AnyResult {
 	bmResult := db.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		logger.Error("Error fetching billable metric", slog.String("error", bmResult.ErrorMsg()))
-		return nil, bmResult.Error()
+		return bmResult.AddErrorDetails("fetch_billable_metric", "Error fetching billable metric")
 	}
 	bm := bmResult.Value()
 
 	if event.Source != models.HTTP_RUBY {
 		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
 		if subResult.Failure() {
-			logger.Error("Error fetching subscription", slog.String("error", subResult.ErrorMsg()))
-			return nil, subResult.Error()
+			return subResult.AddErrorDetails("fetch_subscription", "Error fetching subscription")
 		}
 		sub := subResult.Value()
 
 		expressionResult := evaluateExpression(event, bm)
 		if expressionResult.Failure() {
-			logger.Error("Error evaluating custom expression", slog.String("error", expressionResult.ErrorMsg()))
-			return nil, expressionResult.Error()
+			return expressionResult.AddErrorDetails("evaluate_expressionh", "Error evaluating custom expression")
 		}
 
 		hasInAdvanceChargeResult := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
-			logger.Error("Error fetching in advance charges", slog.String("error", hasInAdvanceChargeResult.ErrorMsg()))
-			return nil, hasInAdvanceChargeResult.Error()
+			return hasInAdvanceChargeResult.AddErrorDetails("fetch_in_advance_charges", "Error fetching in advance charges")
 		}
 
 		if hasInAdvanceChargeResult.Value() {
@@ -97,7 +99,7 @@ func processEvent(event *models.Event) (*models.Event, error) {
 	event.Value = &value
 	go produceEnrichedEvent(event)
 
-	return event, nil
+	return utils.SuccessResult(event)
 }
 
 func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Result[bool] {
@@ -152,10 +154,12 @@ func produceChargedInAdvanceEvent(ev *models.Event) {
 	})
 }
 
-func produceToDeadLetterQueue(event models.Event, err error) {
+func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 	failedEvent := models.FailedEvent{
-		Event:        event,
-		ErrorMessage: err.Error(),
+		Event:               event,
+		InitialErrorMessage: errorResult.ErrorMsg(),
+		ErrorCode:           errorResult.ErrorCode(),
+		ErrorMessage:        errorResult.ErrorMessage(),
 	}
 
 	eventJson, err := json.Marshal(failedEvent)
