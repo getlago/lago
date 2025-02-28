@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/getlago/lago/events-processor/utils"
+	"gorm.io/gorm"
 )
 
 type Subscription struct {
@@ -33,10 +34,13 @@ func (db *DB) FetchSubscription(organizationID string, externalID string, timest
 		Where(conditions, organizationID, externalID, timestamp, timestamp).
 		Order("terminated_at DESC NULLS FIRST, started_at DESC").
 		Limit(1).
-		First(&sub)
+		Find(&sub)
 
 	if result.Error != nil {
 		return failedSubscriptionResult(result.Error)
+	}
+	if sub.ID == "" {
+		return failedSubscriptionResult(gorm.ErrRecordNotFound)
 	}
 
 	return utils.SuccessResult(&sub)
