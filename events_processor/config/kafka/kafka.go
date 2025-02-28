@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -22,15 +21,21 @@ const (
 	Scram512 string = "SCRAM-SHA-512"
 )
 
-func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
-	scramAlgorithm := os.Getenv("LAGO_KAFKA_SCRAM_ALGORITHM")
-	tls := os.Getenv("LAGO_KAFKA_TLS") == "true"
+type ServerConfig struct {
+	ScramAlgorithm string
+	TLS            bool
+	Server         string
+	UseTelemetry   bool
+	UserName       string
+	Password       string
+}
 
+func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, error) {
 	logger := slog.Default()
 	logger = logger.With("component", "kafka")
 
 	opts := []kgo.Opt{
-		kgo.SeedBrokers(os.Getenv("LAGO_KAFKA_BOOTSTRAP_SERVERS")),
+		kgo.SeedBrokers(serverConfig.Server),
 		kgo.WithLogger(kslog.New(logger)),
 	}
 
@@ -38,7 +43,7 @@ func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
 		opts = append(opts, config...)
 	}
 
-	if os.Getenv("ENV") == "production" {
+	if serverConfig.UseTelemetry {
 		meterProvider, err := initMeterProvider(context.Background())
 		if err != nil {
 			panic(err)
@@ -66,15 +71,15 @@ func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
 		opts = append(opts, kotelOpt)
 	}
 
-	if scramAlgorithm != "" {
+	if serverConfig.ScramAlgorithm != "" {
 		var scramOpt kgo.Opt
 
 		scramAuth := scram.Auth{
-			User: os.Getenv("LAGO_KAFKA_USERNAME"),
-			Pass: os.Getenv("LAGO_KAFKA_PASSWORD"),
+			User: serverConfig.UserName,
+			Pass: serverConfig.Password,
 		}
 
-		switch scramAlgorithm {
+		switch serverConfig.ScramAlgorithm {
 		case Scram256:
 			scramOpt = kgo.SASL(scramAuth.AsSha256Mechanism())
 		case Scram512:
@@ -84,7 +89,7 @@ func NewKafkaClient(config []kgo.Opt) (*kgo.Client, error) {
 		opts = append(opts, scramOpt)
 	}
 
-	if tls {
+	if serverConfig.TLS {
 		tlsOpt := kgo.DialTLS()
 		opts = append(opts, tlsOpt)
 	}
