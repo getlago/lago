@@ -22,9 +22,9 @@ type ProducerMessage struct {
 	Value []byte
 }
 
-func NewProducer(cfg *ProducerConfig) (*Producer, error) {
+func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, error) {
 	opts := make([]kgo.Opt, 0)
-	kcl, err := NewKafkaClient(opts)
+	kcl, err := NewKafkaClient(serverConfig, opts)
 	if err != nil {
 		return nil, err
 	}

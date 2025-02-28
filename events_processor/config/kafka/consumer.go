@@ -123,7 +123,7 @@ func (cg *ConsumerGroup) poll() {
 	}
 }
 
-func NewConsumerGroup(cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
+func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
 	logger := slog.Default()
 	logger = logger.With("kafka-topic-consumer", cfg.Topic)
 
@@ -144,7 +144,7 @@ func NewConsumerGroup(cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
 		kgo.BlockRebalanceOnPoll(),
 	}
 
-	kcl, err := NewKafkaClient(opts)
+	kcl, err := NewKafkaClient(serverConfig, opts)
 	if err != nil {
 		return nil, err
 	}
