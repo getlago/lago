@@ -16,6 +16,20 @@ jobs:
     defaults:
       run:
         working-directory: ./events_processor
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: lago
+          POSTGRES_USER: lago
+          POSTGRES_PASSWORD: lago
+
+    env:
+      DATABASE_URL: "postgres://lago:lago@localhost:5432/lago"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -35,5 +49,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Tun tests
+      - name: Run tests
         run: go test -v ./...
