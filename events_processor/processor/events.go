@@ -7,15 +7,15 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/getlago/lago/events-processor/processor/models"
+	"github.com/getlago/lago-expression/expression-go"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/getlago/lago-expression/expression-go"
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/database"
+	"github.com/getlago/lago/events-processor/processor/models"
 	"github.com/getlago/lago/events-processor/utils"
-	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func processEvents(records []*kgo.Record) []*kgo.Record {

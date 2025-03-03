@@ -4,8 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	tracer "github.com/getlago/lago/events-processor/config"
 )
 
 type ProducerConfig struct {
