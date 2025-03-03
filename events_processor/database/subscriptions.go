@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/getlago/lago/events-processor/utils"
 	"gorm.io/gorm"
+
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 type Subscription struct {

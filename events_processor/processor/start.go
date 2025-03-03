@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/twmb/franz-go/pkg/kgo"
+
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/database"
 	"github.com/getlago/lago/events-processor/utils"
-	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 var (
