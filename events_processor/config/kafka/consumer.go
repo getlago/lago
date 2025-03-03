@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"sync"
 
-	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
+
+	tracer "github.com/getlago/lago/events-processor/config"
 )
 
 type ConsumerGroupConfig struct {
