@@ -17,7 +17,7 @@ type Event struct {
 }
 
 func (ev *Event) TimestampAsTime() time.Time {
-	return time.Unix(int64(ev.Timestamp), 0)
+	return time.Unix(int64(ev.Timestamp), 0).In(time.UTC)
 }
 
 type FailedEvent struct {
