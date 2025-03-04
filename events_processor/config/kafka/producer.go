@@ -24,6 +24,10 @@ type ProducerMessage struct {
 	Value []byte
 }
 
+type MessageProducer interface {
+	Produce(context.Context, *ProducerMessage) bool
+}
+
 func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, error) {
 	opts := make([]kgo.Opt, 0)
 	kcl, err := NewKafkaClient(serverConfig, opts)
