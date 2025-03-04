@@ -18,9 +18,9 @@ var (
 	ctx                     context.Context
 	logger                  *slog.Logger
 	err                     error
-	eventsEnrichedProducer  *kafka.Producer
-	eventsInAdvanceProducer *kafka.Producer
-	eventsDeadLetterQueue   *kafka.Producer
+	eventsEnrichedProducer  kafka.MessageProducer
+	eventsInAdvanceProducer kafka.MessageProducer
+	eventsDeadLetterQueue   kafka.MessageProducer
 	db                      *database.DB
 	kafkaConfig             kafka.ServerConfig
 )
