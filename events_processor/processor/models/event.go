@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"time"
 
@@ -61,9 +60,4 @@ type FailedEvent struct {
 	InitialErrorMessage string `json:"initial_error_message"`
 	ErrorMessage        string `json:"error_message"`
 	ErrorCode           string `json:"error_code"`
-}
-
-func roundToDecimalPlaces(num float64, places int) float64 {
-	shift := math.Pow10(places)
-	return math.Round(num*shift) / shift
 }

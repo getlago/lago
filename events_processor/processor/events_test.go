@@ -16,7 +16,7 @@ import (
 
 func TestEvaluateExpression(t *testing.T) {
 	bm := database.BillableMetric{}
-	event := models.Event{}
+	event := models.Event{Timestamp: 1741007009}
 
 	// Without expression
 	result := evaluateExpression(&event, &bm)
@@ -24,7 +24,7 @@ func TestEvaluateExpression(t *testing.T) {
 
 	// With an expression but witout required fields
 	bm.Expression = "round(event.properties.value * event.properties.units)"
-	bm.FieldName = "value"
+	bm.FieldName = "total_value"
 	result = evaluateExpression(&event, &bm)
 	assert.False(t, result.Success())
 	assert.Contains(
@@ -36,13 +36,13 @@ func TestEvaluateExpression(t *testing.T) {
 
 	// With an expression and with required fields
 	properties := map[string]any{
-		"value": 12,
+		"value": "12.0",
 		"units": 3,
 	}
 	event.Properties = properties
 	result = evaluateExpression(&event, &bm)
 	assert.True(t, result.Success())
-	assert.Equal(t, "36", event.Properties["value"])
+	assert.Equal(t, "36", event.Properties["total_value"])
 }
 
 // Definition of the mocked message producer
