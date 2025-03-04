@@ -1,18 +1,53 @@
 package models
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTimeStampAsTime(t *testing.T) {
-	expectedTime, _ := time.Parse(time.RFC3339, "2025-03-03T14:03:29Z")
+type expectedTimestamp struct {
+	timestamp   any
+	parsedValue time.Time
+}
 
-	event := Event{
-		Timestamp: int(expectedTime.Unix()),
+func TestTimeStampAsTime(t *testing.T) {
+	valueInt, _ := time.Parse(time.RFC3339, "2025-03-03T13:03:29Z")
+	valueFloat, _ := time.Parse(time.RFC3339, "2025-03-03T13:03:29.344Z")
+
+	expectations := []expectedTimestamp{
+		expectedTimestamp{
+			timestamp:   1741007009,
+			parsedValue: valueInt,
+		},
+		expectedTimestamp{
+			timestamp:   int64(1741007009),
+			parsedValue: valueInt,
+		},
+		expectedTimestamp{
+			timestamp:   float64(1741007009.344),
+			parsedValue: valueFloat,
+		},
+		expectedTimestamp{
+			timestamp:   fmt.Sprintf("%f", 1741007009.344),
+			parsedValue: valueFloat,
+		},
 	}
 
-	assert.Equal(t, expectedTime, event.TimestampAsTime())
+	for _, test := range expectations {
+		event := Event{Timestamp: test.timestamp}
+
+		result := event.TimestampAsTime()
+		assert.True(t, result.Success())
+		assert.Equal(t, test.parsedValue, result.Value())
+	}
+}
+
+func TestTimeStampAsTimeWithUnsuportedFormat(t *testing.T) {
+	event := Event{Timestamp: "2025-03-03T13:03:29Z"}
+	result := event.TimestampAsTime()
+	assert.False(t, result.Success())
+	assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
 }
