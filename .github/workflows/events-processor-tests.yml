@@ -37,6 +37,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Checkout lago expression code
+        uses: actions/checkout@v3
+        with:
+          repository: getlago/lago-expression
+          path: lago-expression
+
+      - name: Build lago-expression
+        working-directory: ./lago-expression
+        run: cargo build --release
+
+      - name: Copy lago-expression shared library
+        working-directory: ./lago-expression
+        run: |
+          mkdir -p /tmp/libs
+          sudo cp ./target/release/libexpression_go.so /usr/local/lib/libexpression_go.so
+          sudo ldconfig
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
