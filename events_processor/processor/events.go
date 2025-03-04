@@ -71,7 +71,12 @@ func processEvent(event *models.Event) utils.AnyResult {
 	bm := bmResult.Value()
 
 	if event.Source != models.HTTP_RUBY {
-		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, event.TimestampAsTime())
+		timestampResult := event.TimestampAsTime()
+		if timestampResult.Failure() {
+			return timestampResult.AddErrorDetails("parse_timestamp", "Error parsing event timestamp")
+		}
+
+		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestampResult.Value())
 		if subResult.Failure() {
 			return subResult.AddErrorDetails("fetch_subscription", "Error fetching subscription")
 		}
