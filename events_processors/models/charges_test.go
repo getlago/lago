@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ var anyInAdvanceChargeQuery = regexp.QuoteMeta(`
 func TestAnyInAdvanceCharge(t *testing.T) {
 	t.Run("should return true when in advance charge exists", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -33,7 +33,7 @@ func TestAnyInAdvanceCharge(t *testing.T) {
 			WillReturnRows(countRows)
 
 		// Execute
-		result := db.AnyInAdvanceCharge(planID, bmID)
+		result := store.AnyInAdvanceCharge(planID, bmID)
 
 		// Assert
 		assert.True(t, result.Success())
@@ -42,7 +42,7 @@ func TestAnyInAdvanceCharge(t *testing.T) {
 
 	t.Run("should return false when no in advance charge exists", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -56,7 +56,7 @@ func TestAnyInAdvanceCharge(t *testing.T) {
 			WillReturnRows(countRows)
 
 		// Execute
-		result := db.AnyInAdvanceCharge(planID, bmID)
+		result := store.AnyInAdvanceCharge(planID, bmID)
 
 		// Assert
 		assert.True(t, result.Success())
@@ -65,7 +65,7 @@ func TestAnyInAdvanceCharge(t *testing.T) {
 
 	t.Run("should handle database connection error", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -78,7 +78,7 @@ func TestAnyInAdvanceCharge(t *testing.T) {
 			WillReturnError(dbError)
 
 		// Execute
-		result := db.AnyInAdvanceCharge(planID, bmID)
+		result := store.AnyInAdvanceCharge(planID, bmID)
 
 		// Assert
 		assert.False(t, result.Success())

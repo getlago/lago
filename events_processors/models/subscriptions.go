@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"database/sql"
@@ -19,7 +19,7 @@ type Subscription struct {
 	TerminatedAt sql.NullTime `gorm:"->"`
 }
 
-func (db *DB) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
+func (store *ApiStore) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
 	var sub Subscription
 
 	var conditions = `
@@ -28,7 +28,7 @@ func (db *DB) FetchSubscription(organizationID string, externalID string, timest
 		AND date_trunc('millisecond', subscriptions.started_at::timestamp) <= ?::timestamp
 		AND (subscriptions.terminated_at IS NULL OR date_trunc('millisecond', subscriptions.terminated_at::timestamp) >= ?)
 	`
-	result := db.connection.
+	result := store.db.Connection.
 		Table("subscriptions").
 		Unscoped().
 		Joins("INNER JOIN customers ON customers.id = subscriptions.customer_id").

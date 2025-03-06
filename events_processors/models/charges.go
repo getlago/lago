@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"time"
@@ -18,10 +18,10 @@ type Charge struct {
 	DeletedAt        gorm.DeletedAt `gorm:"index;->"`
 }
 
-func (db *DB) AnyInAdvanceCharge(planID string, billableMetricID string) utils.Result[bool] {
+func (store *ApiStore) AnyInAdvanceCharge(planID string, billableMetricID string) utils.Result[bool] {
 	var count int64
 
-	result := db.connection.Model(&Charge{}).
+	result := store.db.Connection.Model(&Charge{}).
 		Where("plan_id = ? AND billable_metric_id = ?", planID, billableMetricID).
 		Where("pay_in_advance = true").
 		Count(&count)
