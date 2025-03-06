@@ -11,9 +11,9 @@ This service need to be configured with Clickhouse and Redpanda. Please contact 
 With the docker compose environment:
 
 ```shell
-go build -o event_processor .
+go build -o event_processors .
 
-./lago-ingest
+./event_processors
 ```
 
 ## Configuration

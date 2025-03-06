@@ -1,4 +1,4 @@
-package processor
+package processors
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
-	tracer "github.com/getlago/lago/events-processor/config"
-	"github.com/getlago/lago/events-processor/config/kafka"
-	"github.com/getlago/lago/events-processor/database"
-	"github.com/getlago/lago/events-processor/processor/models"
-	"github.com/getlago/lago/events-processor/utils"
+	tracer "github.com/getlago/lago/events-processors/config"
+	"github.com/getlago/lago/events-processors/config/kafka"
+	"github.com/getlago/lago/events-processors/database"
+	"github.com/getlago/lago/events-processors/processors/models"
+	"github.com/getlago/lago/events-processors/utils"
 )
 
 func processEvents(records []*kgo.Record) []*kgo.Record {

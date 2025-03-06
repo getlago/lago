@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/getlago/lago/events-processor/processor"
-)
+import "github.com/getlago/lago/events-processors/processors"
 
 func main() {
 	// if os.Getenv("ENV") != "production" {
@@ -13,5 +11,5 @@ func main() {
 	// }
 
 	// start processing events & loop forever
-	processor.StartProcessingEvents()
+	processors.StartProcessingEvents()
 }

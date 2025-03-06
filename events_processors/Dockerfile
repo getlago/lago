@@ -12,7 +12,7 @@ COPY . /app/
 
 RUN go mod download
 COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
-RUN go build -o event_processor .
+RUN go build -o event_processors .
 
 FROM debian:bookworm
 
@@ -20,5 +20,5 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y ca-certificates
 
 WORKDIR /app
 COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
-COPY --from=go-build /app/event_processor /app/event_processor
-ENTRYPOINT ["./event_processor"]
+COPY --from=go-build /app/event_processors /app/event_processors
+ENTRYPOINT ["./event_processors"]

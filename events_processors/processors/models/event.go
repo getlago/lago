@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/getlago/lago/events-processor/utils"
+	"github.com/getlago/lago/events-processors/utils"
 )
 
 const HTTP_RUBY string = "http_ruby"
