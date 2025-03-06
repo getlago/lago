@@ -175,13 +175,18 @@ services:
       - path: ./.env.development
         required: false
 
+  api-events-consumer:
+    <<: *api_worker
+    container_name: lago_api_events_consumer_dev
+    command: bash -c "bundle install && ./scripts/start.events.consumer.sh"
+
   events-processor:
     image: events_processor_dev
     container_name: lago_events_processor
     restart: unless-stopped
     build:
-      context: ./events_processor
-      dockerfile: $LAGO_PATH/events_processor/Dockerfile.dev
+      context: ./events_processors
+      dockerfile: $LAGO_PATH/events_processors/Dockerfile.dev
     depends_on:
       - db
       - redpanda
@@ -190,7 +195,7 @@ services:
       - path: ./.env.development
         required: false
     volumes:
-      - $LAGO_PATH/events_processor:/app:delegated
+      - $LAGO_PATH/events_processors:/app:delegated
 
   pdf:
     image: getlago/lago-gotenberg:7
