@@ -74,7 +74,7 @@ func StartProcessingEvents() {
 		Password:       os.Getenv("LAGO_KAFKA_PASSWORD"),
 	}
 
-	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_ENRICHED_TOPIC")
+	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC")
 	if eventsEnrichedProducerResult.Failure() {
 		logger.Error(eventsEnrichedProducerResult.ErrorMsg())
 		os.Exit(1)
