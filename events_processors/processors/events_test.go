@@ -7,8 +7,11 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processors/config/kafka"
 	"github.com/getlago/lago/events-processors/models"
@@ -30,54 +33,253 @@ func (mp *mockMessageProducer) Produce(ctx context.Context, msg *kafka.ProducerM
 	return true
 }
 
-func setupTestEnv(t *testing.T) func() {
+func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, func()) {
 	ctx = context.Background()
 
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	db, _, delete := tests.SetupMockStore(t)
+	db, mock, delete := tests.SetupMockStore(t)
 	apiStore = models.NewApiStore(db)
 
-	return delete
+	return mock, delete
+}
+
+func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
+	columns := []string{"id", "organization_id", "code", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+
+	rows := sqlmock.NewRows(columns).
+		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
+
+	sqlmock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
+}
+
+func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
+	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
+
+	rows := sqlmock.NewRows(columns).
+		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
+
+	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
+}
+
+func mockChargeCount(sqlmock sqlmock.Sqlmock, chargeCount int) {
+	row := sqlmock.NewRows([]string{"count"}).AddRow(chargeCount)
+	sqlmock.ExpectQuery(".* FROM \"charges\"").WillReturnRows(row)
 }
 
 func TestProcessEvent(t *testing.T) {
-	// t.Run("Without Billable Metric", func(t *testing.T) {
+	t.Run("Without Billable Metric", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
 
-	// 	delete := setupTestEnv(t)
-	// 	defer delete()
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+		}
 
-	// 	event := models.Event{
-	// 		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-	// 		ExternalSubscriptionID: "sub_id",
-	// 		Code:                   "api_calls",
-	// 		Timestamp:              1741007009,
-	// 	}
+		sqlmock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
 
-	// 	result := processEvent(&event)
-	// 	assert.False(t, result.Success())
-	// 	assert.Equal(t, "record not found", result.ErrorMsg())
-	// 	assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
-	// 	assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
-	// })
+		result := processEvent(&event)
+		assert.False(t, result.Success())
+		assert.Equal(t, "record not found", result.ErrorMsg())
+		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
+		assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
+	})
 
-	// t.Run("When event source is HTTP_RUBY", func(t *testing.T) {
-	// 	event := models.Event{
-	// 		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-	// 		ExternalSubscriptionID: "sub_id",
-	// 		Code:                   "api_calls",
-	// 		Timestamp:              1741007009,
-	// 		Source:                 models.HTTP_RUBY,
-	// 	}
+	t.Run("When event source is HTTP_RUBY", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
 
-	// 	enrichedProducer := mockMessageProducer{}
-	// 	eventsEnrichedProducer = &enrichedProducer
+		properties := map[string]any{
+			"api_requests": "12.0",
+		}
 
-	// 	result := processEvent(&event)
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Source:                 models.HTTP_RUBY,
+			Properties:             properties,
+		}
 
-	// 	assert.True(t, result.Success())
-	// })
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		enrichedProducer := mockMessageProducer{}
+		eventsEnrichedProducer = &enrichedProducer
+
+		result := processEvent(&event)
+
+		assert.True(t, result.Success())
+		assert.Equal(t, "12.0", *event.Value)
+
+		// Give some time to the go routine to complete
+		// TODO: Improve this by using channels in the producers methods
+		time.Sleep(50 * time.Millisecond)
+		assert.Equal(t, 1, enrichedProducer.executionCount)
+	})
+
+	t.Run("When event source is not HTTP_RUBY when timestamp is invalid", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              "2025-03-06T12:00:00Z",
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		result := processEvent(&event)
+		assert.False(t, result.Success())
+		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
+		assert.Equal(t, "parse_timestamp", result.ErrorCode())
+		assert.Equal(t, "Error parsing event timestamp", result.ErrorMessage())
+	})
+
+	t.Run("When event source is not HTTP_RUBY when no subscriptions are found", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sqlmock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
+
+		result := processEvent(&event)
+		assert.False(t, result.Success())
+		assert.Equal(t, "record not found", result.ErrorMsg())
+		assert.Equal(t, "fetch_subscription", result.ErrorCode())
+		assert.Equal(t, "Error fetching subscription", result.ErrorMessage())
+	})
+
+	t.Run("When event source is not HTTP_RUBY when expression failed to evaluate", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		// properties := map[string]any{
+		// 	"value": "12.12",
+		// }
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              "1741007009.123",
+			//Properties:             properties,
+			Source: "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "round(event.properties.value)",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
+		result := processEvent(&event)
+		assert.False(t, result.Success())
+		assert.Contains(t, result.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
+		assert.Equal(t, "evaluate_expression", result.ErrorCode())
+		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
+	})
+
+	t.Run("When event source is not HTTP_RUBY and events belongs to an in advance charge", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"value": "12.12",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "round(event.properties.value)",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
+		mockChargeCount(sqlmock, 3)
+
+		inAdvanceProducer := mockMessageProducer{}
+		eventsInAdvanceProducer = &inAdvanceProducer
+		enrichedProducer := mockMessageProducer{}
+		eventsEnrichedProducer = &enrichedProducer
+
+		result := processEvent(&event)
+
+		assert.True(t, result.Success())
+		assert.Equal(t, "12", *event.Value)
+
+		// Give some time to the go routine to complete
+		// TODO: Improve this by using channels in the producers methods
+		time.Sleep(50 * time.Millisecond)
+		assert.Equal(t, 1, inAdvanceProducer.executionCount)
+		assert.Equal(t, 1, enrichedProducer.executionCount)
+	})
 }
 
 func TestEvaluateExpression(t *testing.T) {
