@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ var fetchSubscriptionQuery = regexp.QuoteMeta(`
 func TestFetchSubscription(t *testing.T) {
 	t.Run("should return subscription when found", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -44,7 +44,7 @@ func TestFetchSubscription(t *testing.T) {
 			WillReturnRows(rows)
 
 		// Execute
-		result := db.FetchSubscription(orgID, externalID, timestamp)
+		result := store.FetchSubscription(orgID, externalID, timestamp)
 
 		// Assert
 		assert.True(t, result.Success())
@@ -58,7 +58,7 @@ func TestFetchSubscription(t *testing.T) {
 
 	t.Run("should return error subscription not found", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -71,7 +71,7 @@ func TestFetchSubscription(t *testing.T) {
 			WillReturnError(gorm.ErrRecordNotFound)
 
 		// Execute
-		result := db.FetchSubscription(orgID, externalID, timestamp)
+		result := store.FetchSubscription(orgID, externalID, timestamp)
 
 		// Assert
 		assert.False(t, result.Success())
@@ -82,7 +82,7 @@ func TestFetchSubscription(t *testing.T) {
 
 	t.Run("should handle database connection error", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -96,7 +96,7 @@ func TestFetchSubscription(t *testing.T) {
 			WillReturnError(dbError)
 
 		// Execute
-		result := db.FetchSubscription(orgID, externalID, timestamp)
+		result := store.FetchSubscription(orgID, externalID, timestamp)
 
 		// Assert
 		assert.False(t, result.Success())

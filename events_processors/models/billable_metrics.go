@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"time"
@@ -19,9 +19,9 @@ type BillableMetric struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index;->"`
 }
 
-func (db *DB) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
+func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
 	var bm BillableMetric
-	result := db.connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
+	result := store.db.Connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
 	if result.Error != nil {
 		return failedBillabmeMetricResult(result.Error)
 	}

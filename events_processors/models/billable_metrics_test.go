@@ -1,4 +1,4 @@
-package database
+package models
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ var fetchBillableMetricQuery = regexp.QuoteMeta(`
 func TestFetchBillableMetric(t *testing.T) {
 	t.Run("should return billable metric when found", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -40,7 +40,7 @@ func TestFetchBillableMetric(t *testing.T) {
 			WillReturnRows(rows)
 
 		// Execute
-		result := db.FetchBillableMetric(orgID, code)
+		result := store.FetchBillableMetric(orgID, code)
 
 		// Assert
 		assert.True(t, result.Success())
@@ -56,7 +56,7 @@ func TestFetchBillableMetric(t *testing.T) {
 
 	t.Run("should return error when billable metric not found", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -68,7 +68,7 @@ func TestFetchBillableMetric(t *testing.T) {
 			WillReturnError(gorm.ErrRecordNotFound)
 
 		// Execute
-		result := db.FetchBillableMetric(orgID, code)
+		result := store.FetchBillableMetric(orgID, code)
 
 		// Assert
 		assert.False(t, result.Success())
@@ -79,7 +79,7 @@ func TestFetchBillableMetric(t *testing.T) {
 
 	t.Run("should handle database connection error", func(t *testing.T) {
 		// Setup
-		db, mock, cleanup := setupMockDB(t)
+		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
 		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
@@ -92,7 +92,7 @@ func TestFetchBillableMetric(t *testing.T) {
 			WillReturnError(dbError)
 
 		// Execute
-		result := db.FetchBillableMetric(orgID, code)
+		result := store.FetchBillableMetric(orgID, code)
 
 		// Assert
 		assert.False(t, result.Success())

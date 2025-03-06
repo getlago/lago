@@ -13,8 +13,7 @@ import (
 
 	tracer "github.com/getlago/lago/events-processors/config"
 	"github.com/getlago/lago/events-processors/config/kafka"
-	"github.com/getlago/lago/events-processors/database"
-	"github.com/getlago/lago/events-processors/processors/models"
+	"github.com/getlago/lago/events-processors/models"
 	"github.com/getlago/lago/events-processors/utils"
 )
 
@@ -64,7 +63,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 }
 
 func processEvent(event *models.Event) utils.AnyResult {
-	bmResult := db.FetchBillableMetric(event.OrganizationID, event.Code)
+	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
 		return bmResult.AddErrorDetails("fetch_billable_metric", "Error fetching billable metric")
 	}
@@ -76,7 +75,7 @@ func processEvent(event *models.Event) utils.AnyResult {
 			return timestampResult.AddErrorDetails("parse_timestamp", "Error parsing event timestamp")
 		}
 
-		subResult := db.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestampResult.Value())
+		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestampResult.Value())
 		if subResult.Failure() {
 			return subResult.AddErrorDetails("fetch_subscription", "Error fetching subscription")
 		}
@@ -87,7 +86,7 @@ func processEvent(event *models.Event) utils.AnyResult {
 			return expressionResult.AddErrorDetails("evaluate_expressionh", "Error evaluating custom expression")
 		}
 
-		hasInAdvanceChargeResult := db.AnyInAdvanceCharge(sub.PlanID, bm.ID)
+		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
 			return hasInAdvanceChargeResult.AddErrorDetails("fetch_in_advance_charges", "Error fetching in advance charges")
 		}
@@ -104,7 +103,7 @@ func processEvent(event *models.Event) utils.AnyResult {
 	return utils.SuccessResult(event)
 }
 
-func evaluateExpression(ev *models.Event, bm *database.BillableMetric) utils.Result[bool] {
+func evaluateExpression(ev *models.Event, bm *models.BillableMetric) utils.Result[bool] {
 	if bm.Expression == "" {
 		return utils.SuccessResult(false)
 	}

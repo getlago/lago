@@ -9,7 +9,7 @@ import (
 )
 
 type DB struct {
-	connection *gorm.DB
+	Connection *gorm.DB
 	logger     *slog.Logger
 }
 
@@ -17,16 +17,23 @@ func NewConnection(dbUrl string) (*DB, error) {
 	logger := slog.Default()
 	logger = logger.With("component", "db")
 
+	dialector := postgres.Open(dbUrl)
+
+	return OpenConnection(logger, dialector)
+}
+
+func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) {
 	gormLogger := slogGorm.New(
 		slogGorm.WithHandler(logger.Handler()),
 	)
 
-	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{
+	db, err := gorm.Open(dialector, &gorm.Config{
 		Logger: gormLogger,
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	return &DB{connection: db, logger: logger}, nil
+	return &DB{Connection: db, logger: logger}, nil
 }

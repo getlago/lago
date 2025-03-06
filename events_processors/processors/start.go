@@ -9,8 +9,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	tracer "github.com/getlago/lago/events-processors/config"
+	"github.com/getlago/lago/events-processors/config/database"
 	"github.com/getlago/lago/events-processors/config/kafka"
-	"github.com/getlago/lago/events-processors/database"
+	"github.com/getlago/lago/events-processors/models"
 	"github.com/getlago/lago/events-processors/utils"
 )
 
@@ -21,7 +22,7 @@ var (
 	eventsEnrichedProducer  kafka.MessageProducer
 	eventsInAdvanceProducer kafka.MessageProducer
 	eventsDeadLetterQueue   kafka.MessageProducer
-	db                      *database.DB
+	apiStore                *models.ApiStore
 	kafkaConfig             kafka.ServerConfig
 )
 
@@ -109,11 +110,12 @@ func StartProcessingEvents() {
 		os.Exit(1)
 	}
 
-	db, err = database.NewConnection(os.Getenv("DATABASE_URL"))
+	db, err := database.NewConnection(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	apiStore = models.NewApiStore(db)
 
 	cg.Start()
 }
