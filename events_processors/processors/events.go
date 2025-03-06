@@ -83,7 +83,7 @@ func processEvent(event *models.Event) utils.AnyResult {
 
 		expressionResult := evaluateExpression(event, bm)
 		if expressionResult.Failure() {
-			return expressionResult.AddErrorDetails("evaluate_expressionh", "Error evaluating custom expression")
+			return expressionResult.AddErrorDetails("evaluate_expression", "Error evaluating custom expression")
 		}
 
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
