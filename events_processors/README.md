@@ -16,6 +16,12 @@ go build -o event_processors .
 ./event_processors
 ```
 
+## In development
+
+```
+lago up -d events-processor
+```
+
 ## Configuration
 
 This app requires some env vars
@@ -30,7 +36,7 @@ This app requires some env vars
 | LAGO_KAFKA_SCRAM_ALGORITHM | Your Broker SCRAM algo, supported values are `SCRAM-SHA-256` and `SCRAM-SHA-512`. If your provide a SCRAM Algo, `KAFKA_USERNAME` and `KAFKA_PASSWORD` are required |
 | LAGO_KAFKA_TLS | Set to `true` if your broker use a TLS termination |
 | LAGO_KAFKA_RAW_EVENTS_TOPIC | Events Kafka Topic (eg: `events_raw`) |
-| LAGO_KAFKA_EVENTS_ENRICHED_TOPIC | Events Enriched Kafka Topic (eg: `events_enriched`) |
+| LAGO_KAFKA_ENRICHED_EVENTS_TOPIC | Events Enriched Kafka Topic (eg: `events_enriched`) |
 | LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC | Events Charge In Advance Kafka Topic (eg: `events_charge_in_advance`) |
 | LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE | Events Dead Letter Queue  (eg: `events_dead_letter_queue`) |
 | LAGO_KAFKA_CONSUMER_GROUP | Kafka Consumer Group Name for Post Processing |
