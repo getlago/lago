@@ -1,4 +1,4 @@
-package processor
+package processors
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	tracer "github.com/getlago/lago/events-processor/config"
-	"github.com/getlago/lago/events-processor/config/kafka"
-	"github.com/getlago/lago/events-processor/database"
-	"github.com/getlago/lago/events-processor/utils"
+	tracer "github.com/getlago/lago/events-processors/config"
+	"github.com/getlago/lago/events-processors/config/kafka"
+	"github.com/getlago/lago/events-processors/database"
+	"github.com/getlago/lago/events-processors/utils"
 )
 
 var (

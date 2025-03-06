@@ -6,7 +6,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	tracer "github.com/getlago/lago/events-processor/config"
+	tracer "github.com/getlago/lago/events-processors/config"
 )
 
 type ProducerConfig struct {

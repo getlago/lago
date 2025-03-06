@@ -1,4 +1,4 @@
-package processor
+package processors
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/getlago/lago/events-processor/config/kafka"
-	"github.com/getlago/lago/events-processor/database"
-	"github.com/getlago/lago/events-processor/processor/models"
-	"github.com/getlago/lago/events-processor/utils"
+	"github.com/getlago/lago/events-processors/config/kafka"
+	"github.com/getlago/lago/events-processors/database"
+	"github.com/getlago/lago/events-processors/processors/models"
+	"github.com/getlago/lago/events-processors/utils"
 )
 
 func TestEvaluateExpression(t *testing.T) {
