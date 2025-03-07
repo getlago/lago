@@ -196,6 +196,13 @@ services:
         required: false
     volumes:
       - $LAGO_PATH/events_processors:/app:delegated
+    # Debugger options
+    ports:
+      - "2345:2345"
+    security_opt:
+      - "seccomp:unconfined"
+    cap_add:
+      - SYS_PTRACE
 
   pdf:
     image: getlago/lago-gotenberg:7

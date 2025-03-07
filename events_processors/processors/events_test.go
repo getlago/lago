@@ -123,7 +123,7 @@ func TestProcessEvent(t *testing.T) {
 		result := processEvent(&event)
 
 		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *event.Value)
+		assert.Equal(t, "12.0", *result.Value().Value)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -157,8 +157,8 @@ func TestProcessEvent(t *testing.T) {
 		result := processEvent(&event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
-		assert.Equal(t, "parse_timestamp", result.ErrorCode())
-		assert.Equal(t, "Error parsing event timestamp", result.ErrorMessage())
+		assert.Equal(t, "build_enriched_event", result.ErrorCode())
+		assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 	})
 
 	t.Run("When event source is not HTTP_RUBY when no subscriptions are found", func(t *testing.T) {
@@ -243,7 +243,7 @@ func TestProcessEvent(t *testing.T) {
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 			ExternalSubscriptionID: "sub_id",
 			Code:                   "api_calls",
-			Timestamp:              1741007009,
+			Timestamp:              1741007009.0,
 			Properties:             properties,
 			Source:                 "SQS",
 		}
@@ -270,9 +270,9 @@ func TestProcessEvent(t *testing.T) {
 		eventsEnrichedProducer = &enrichedProducer
 
 		result := processEvent(&event)
-
+		fmt.Println(result.Error())
 		assert.True(t, result.Success())
-		assert.Equal(t, "12", *event.Value)
+		assert.Equal(t, "12", *result.Value().Value)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -284,7 +284,7 @@ func TestProcessEvent(t *testing.T) {
 
 func TestEvaluateExpression(t *testing.T) {
 	bm := models.BillableMetric{}
-	event := models.Event{Timestamp: 1741007009}
+	event := models.EnrichedEvent{Timestamp: 1741007009.0}
 
 	// Without expression
 	result := evaluateExpression(&event, &bm)
@@ -318,7 +318,7 @@ func TestProduceEnrichedEvent(t *testing.T) {
 	eventsEnrichedProducer = &producer
 	ctx = context.Background()
 
-	event := models.Event{
+	event := models.EnrichedEvent{
 		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 		ExternalSubscriptionID: "sub_id",
 		Code:                   "api_calls",

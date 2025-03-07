@@ -62,33 +62,34 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	return records
 }
 
-func processEvent(event *models.Event) utils.AnyResult {
+func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
+	enrichedEventResult := event.ToEnrichedEvent()
+	if enrichedEventResult.Failure() {
+		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+	}
+	enrichedEvent := enrichedEventResult.Value()
+
 	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		return bmResult.AddErrorDetails("fetch_billable_metric", "Error fetching billable metric")
+		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 	bm := bmResult.Value()
 
 	if event.Source != models.HTTP_RUBY {
-		timestampResult := event.TimestampAsTime()
-		if timestampResult.Failure() {
-			return timestampResult.AddErrorDetails("parse_timestamp", "Error parsing event timestamp")
-		}
-
-		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestampResult.Value())
+		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 		if subResult.Failure() {
-			return subResult.AddErrorDetails("fetch_subscription", "Error fetching subscription")
+			return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
 		}
 		sub := subResult.Value()
 
-		expressionResult := evaluateExpression(event, bm)
+		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {
-			return expressionResult.AddErrorDetails("evaluate_expression", "Error evaluating custom expression")
+			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
 		}
 
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
-			return hasInAdvanceChargeResult.AddErrorDetails("fetch_in_advance_charges", "Error fetching in advance charges")
+			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
 		}
 
 		if hasInAdvanceChargeResult.Value() {
@@ -97,16 +98,22 @@ func processEvent(event *models.Event) utils.AnyResult {
 	}
 
 	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
-	event.Value = &value
-	go produceEnrichedEvent(event)
+	enrichedEvent.Value = &value
+	go produceEnrichedEvent(enrichedEvent)
 
-	return utils.SuccessResult(event)
+	return utils.SuccessResult(enrichedEvent)
 }
 
-func evaluateExpression(ev *models.Event, bm *models.BillableMetric) utils.Result[bool] {
+func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
+	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+}
+
+func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
 	if bm.Expression == "" {
 		return utils.SuccessResult(false)
 	}
+
+	fmt.Println(ev.Timestamp)
 
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
@@ -124,7 +131,7 @@ func evaluateExpression(ev *models.Event, bm *models.BillableMetric) utils.Resul
 	return utils.SuccessResult(true)
 }
 
-func produceEnrichedEvent(ev *models.Event) {
+func produceEnrichedEvent(ev *models.EnrichedEvent) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
 		logger.Error("error while marshaling enriched events")
