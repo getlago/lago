@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/getlago/lago/events-processors/utils"
@@ -14,45 +12,24 @@ type Event struct {
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
 	TransactionID           string         `json:"transaction_id"`
-	Timestamp               any            `json:"timestamp"`
 	Code                    string         `json:"code"`
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
-	Value                   *string        `json:"value"`
 	Source                  string         `json:"source,omotempty"`
+	Timestamp               any            `json:"timestamp"`
 }
 
-func (ev *Event) TimestampAsTime() utils.Result[time.Time] {
-	var seconds int64
-	var nanoseconds int64
-
-	switch timestamp := ev.Timestamp.(type) {
-	case string:
-		floatTimestamp, err := strconv.ParseFloat(timestamp, 64)
-		if err != nil {
-			return utils.FailedResult[time.Time](err)
-		}
-
-		seconds = int64(floatTimestamp)
-		nanoseconds = int64((floatTimestamp - float64(seconds)) * 1e9)
-
-	case int:
-		seconds = int64(timestamp)
-		nanoseconds = 0
-
-	case int64:
-		seconds = timestamp
-		nanoseconds = 0
-
-	case float64:
-		seconds = int64(timestamp)
-		nanoseconds = int64((timestamp - float64(seconds)) * 1e9)
-
-	default:
-		return utils.FailedResult[time.Time](fmt.Errorf("Unsupported timestamp type: %T", ev.Timestamp))
-	}
-
-	return utils.SuccessResult(time.Unix(seconds, nanoseconds).In(time.UTC).Truncate(time.Millisecond))
+type EnrichedEvent struct {
+	OrganizationID          string         `json:"organization_id"`
+	ExternalSubscriptionID  string         `json:"external_subscription_id"`
+	TransactionID           string         `json:"transaction_id"`
+	Code                    string         `json:"code"`
+	Properties              map[string]any `json:"properties"`
+	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
+	Source                  string         `json:"source,omotempty"`
+	Timestamp               float64        `json:"timestamp"`
+	Value                   *string        `json:"value"`
+	Time                    time.Time
 }
 
 type FailedEvent struct {
@@ -60,4 +37,30 @@ type FailedEvent struct {
 	InitialErrorMessage string `json:"initial_error_message"`
 	ErrorMessage        string `json:"error_message"`
 	ErrorCode           string `json:"error_code"`
+}
+
+func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
+	er := &EnrichedEvent{
+		OrganizationID:          ev.OrganizationID,
+		ExternalSubscriptionID:  ev.ExternalSubscriptionID,
+		TransactionID:           ev.TransactionID,
+		Code:                    ev.Code,
+		Properties:              ev.Properties,
+		PreciseTotalAmountCents: ev.PreciseTotalAmountCents,
+		Source:                  ev.Source,
+	}
+
+	timestampResult := utils.ToFloat64Timestamp(ev.Timestamp)
+	if timestampResult.Failure() {
+		return utils.FailedResult[*EnrichedEvent](timestampResult.Error())
+	}
+	er.Timestamp = timestampResult.Value()
+
+	timeResult := utils.ToTime(ev.Timestamp)
+	if timeResult.Failure() {
+		return utils.FailedResult[*EnrichedEvent](timeResult.Error())
+	}
+	er.Time = timeResult.Value()
+
+	return utils.SuccessResult(er)
 }
