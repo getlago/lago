@@ -51,7 +51,7 @@ func (pc *PartitionConsumer) consume() {
 	for {
 		select {
 		case <-pc.quit:
-			pc.logger.Info("partition consmer quit")
+			pc.logger.Info("partition consumer quit")
 			return
 
 		case records := <-pc.records:
@@ -63,7 +63,7 @@ func (pc *PartitionConsumer) consume() {
 
 			processedRecords := pc.processRecords(records)
 
-			// Commit the last processed record, to update the commit
+			// Commit the last processed record, to update the commit offset
 			lastRecord := processedRecords[len(processedRecords)-1]
 			err := pc.client.CommitRecords(ctx, lastRecord)
 			if err != nil {
