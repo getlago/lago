@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/getlago/lago/events-processors/utils"
@@ -20,7 +21,7 @@ type Event struct {
 }
 
 type EnrichedEvent struct {
-	IntialEvent *Event
+	IntialEvent *Event `json:"-"`
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
@@ -29,9 +30,10 @@ type EnrichedEvent struct {
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
 	Source                  string         `json:"source,omotempty"`
+	TimestampStr            string         `json:"-"`
 	Timestamp               float64        `json:"timestamp"`
 	Value                   *string        `json:"value"`
-	Time                    time.Time
+	Time                    time.Time      `json:"-"`
 }
 
 type FailedEvent struct {
@@ -58,6 +60,7 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 		return utils.FailedResult[*EnrichedEvent](timestampResult.Error())
 	}
 	er.Timestamp = timestampResult.Value()
+	er.TimestampStr = fmt.Sprintf("%f", er.Timestamp)
 
 	timeResult := utils.ToTime(ev.Timestamp)
 	if timeResult.Failure() {
