@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/getlago/lago-expression/expression-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -25,7 +26,6 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	defer span.End()
 
 	wg := sync.WaitGroup{}
-	mu := sync.Mutex{}
 	wg.Add(len(records))
 
 	for _, record := range records {
@@ -49,10 +49,9 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					slog.String("error_code", result.ErrorCode()),
 					slog.String("error", result.ErrorMsg()),
 				)
+				sentry.CaptureException(result.Error())
 
-				mu.Lock()
-				produceToDeadLetterQueue(event, result)
-				mu.Unlock()
+				go produceToDeadLetterQueue(event, result)
 			}
 		}(record)
 	}
@@ -139,11 +138,14 @@ func produceEnrichedEvent(ev *models.EnrichedEvent) {
 
 	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
 
-	// TODO: how to ensure message has been produced?
-	eventsEnrichedProducer.Produce(ctx, &kafka.ProducerMessage{
+	pushed := eventsEnrichedProducer.Produce(ctx, &kafka.ProducerMessage{
 		Key:   []byte(msgKey),
 		Value: eventJson,
 	})
+
+	if !pushed {
+		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsEnrichedProducer.GetTopic())))
+	}
 }
 
 func produceChargedInAdvanceEvent(ev *models.Event) {
@@ -154,11 +156,14 @@ func produceChargedInAdvanceEvent(ev *models.Event) {
 
 	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
 
-	// TODO: how to ensure message has been produced?
-	eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
+	pushed := eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
 		Key:   []byte(msgKey),
 		Value: eventJson,
 	})
+
+	if !pushed {
+		produceToDeadLetterQueue(*ev, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
+	}
 }
 
 func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
@@ -174,7 +179,12 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 		logger.Error("error while marshaling failed event with error details")
 	}
 
-	eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
+	pushed := eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
 		Value: eventJson,
 	})
+
+	if !pushed {
+		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
+		sentry.CaptureException(errorResult.Error())
+	}
 }

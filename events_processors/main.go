@@ -1,14 +1,28 @@
 package main
 
-import "github.com/getlago/lago/events-processors/processors"
+import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/getsentry/sentry-go"
+
+	"github.com/getlago/lago/events-processors/processors"
+)
 
 func main() {
-	// if os.Getenv("ENV") != "production" {
-	// 	err := godotenv.Load()
-	// 	if err != nil {
-	// 		log.Fatal("Error loading .env file")
-	// 	}
-	// }
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DSN"),
+		Environment:      os.Getenv("ENVIRONMENT"),
+		Debug:            false,
+		AttachStacktrace: true,
+	})
+
+	if err != nil {
+		fmt.Printf("Sentry initialization failed: %v\n", err)
+	}
+
+	defer sentry.Flush(2 * time.Second)
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents()

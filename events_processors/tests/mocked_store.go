@@ -22,12 +22,6 @@ func SetupMockStore(t *testing.T) (*database.DB, sqlmock.Sqlmock, func()) {
 		DriverName: "postgres",
 	})
 
-	// silentLogger := logger.Config{
-	// 	SlowThreshold:             time.Second,
-	// 	LogLevel:                  logger.Silent,
-	// 	IgnoreRecordNotFoundError: true,
-	// 	Colorful:                  false,
-	// }
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.Level(-4)}))
 
 	db, err := database.OpenConnection(logger, dialector)
