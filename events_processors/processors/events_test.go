@@ -13,25 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
-	"github.com/getlago/lago/events-processors/config/kafka"
 	"github.com/getlago/lago/events-processors/models"
-	"github.com/getlago/lago/events-processors/tests"
 	"github.com/getlago/lago/events-processors/utils"
+
+	"github.com/getlago/lago/events-processors/tests"
 )
-
-// Definition of the mocked message producer
-type mockMessageProducer struct {
-	key            []byte
-	value          []byte
-	executionCount int
-}
-
-func (mp *mockMessageProducer) Produce(ctx context.Context, msg *kafka.ProducerMessage) bool {
-	mp.key = msg.Key
-	mp.value = msg.Value
-	mp.executionCount++
-	return true
-}
 
 func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, func()) {
 	ctx = context.Background()
@@ -117,7 +103,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockBmLookup(sqlmock, &bm)
 
-		enrichedProducer := mockMessageProducer{}
+		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
 		result := processEvent(&event)
@@ -128,7 +114,7 @@ func TestProcessEvent(t *testing.T) {
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, enrichedProducer.executionCount)
+		assert.Equal(t, 1, enrichedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not HTTP_RUBY when timestamp is invalid", func(t *testing.T) {
@@ -264,9 +250,9 @@ func TestProcessEvent(t *testing.T) {
 
 		mockChargeCount(sqlmock, 3)
 
-		inAdvanceProducer := mockMessageProducer{}
+		inAdvanceProducer := tests.MockMessageProducer{}
 		eventsInAdvanceProducer = &inAdvanceProducer
-		enrichedProducer := mockMessageProducer{}
+		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
 		result := processEvent(&event)
@@ -277,8 +263,8 @@ func TestProcessEvent(t *testing.T) {
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, inAdvanceProducer.executionCount)
-		assert.Equal(t, 1, enrichedProducer.executionCount)
+		assert.Equal(t, 1, inAdvanceProducer.ExecutionCount)
+		assert.Equal(t, 1, enrichedProducer.ExecutionCount)
 	})
 }
 
@@ -314,7 +300,7 @@ func TestEvaluateExpression(t *testing.T) {
 }
 
 func TestProduceEnrichedEvent(t *testing.T) {
-	producer := mockMessageProducer{}
+	producer := tests.MockMessageProducer{}
 	eventsEnrichedProducer = &producer
 	ctx = context.Background()
 
@@ -326,19 +312,19 @@ func TestProduceEnrichedEvent(t *testing.T) {
 
 	produceEnrichedEvent(&event)
 
-	assert.Equal(t, 1, producer.executionCount)
+	assert.Equal(t, 1, producer.ExecutionCount)
 	assert.Equal(
 		t,
 		[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls"),
-		producer.key,
+		producer.Key,
 	)
 
 	eventJson, _ := json.Marshal(event)
-	assert.Equal(t, eventJson, producer.value)
+	assert.Equal(t, eventJson, producer.Value)
 }
 
 func TestProduceChargedInAdvanceEvent(t *testing.T) {
-	producer := mockMessageProducer{}
+	producer := tests.MockMessageProducer{}
 	eventsInAdvanceProducer = &producer
 	ctx = context.Background()
 
@@ -350,19 +336,19 @@ func TestProduceChargedInAdvanceEvent(t *testing.T) {
 
 	produceChargedInAdvanceEvent(&event)
 
-	assert.Equal(t, 1, producer.executionCount)
+	assert.Equal(t, 1, producer.ExecutionCount)
 	assert.Equal(
 		t,
 		[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls"),
-		producer.key,
+		producer.Key,
 	)
 
 	eventJson, _ := json.Marshal(event)
-	assert.Equal(t, eventJson, producer.value)
+	assert.Equal(t, eventJson, producer.Value)
 }
 
 func TestProduceToDeadLetterQueue(t *testing.T) {
-	producer := mockMessageProducer{}
+	producer := tests.MockMessageProducer{}
 	eventsDeadLetterQueue = &producer
 	ctx = context.Background()
 
@@ -382,8 +368,8 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 
 	produceToDeadLetterQueue(event, result)
 
-	assert.Equal(t, 1, producer.executionCount)
+	assert.Equal(t, 1, producer.ExecutionCount)
 
 	eventJson, _ := json.Marshal(failedEvent)
-	assert.Equal(t, eventJson, producer.value)
+	assert.Equal(t, eventJson, producer.Value)
 }

@@ -20,6 +20,8 @@ type Event struct {
 }
 
 type EnrichedEvent struct {
+	IntialEvent *Event
+
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
 	TransactionID           string         `json:"transaction_id"`
@@ -41,6 +43,7 @@ type FailedEvent struct {
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er := &EnrichedEvent{
+		IntialEvent:             ev,
 		OrganizationID:          ev.OrganizationID,
 		ExternalSubscriptionID:  ev.ExternalSubscriptionID,
 		TransactionID:           ev.TransactionID,

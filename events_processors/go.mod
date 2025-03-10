@@ -2,10 +2,7 @@ module github.com/getlago/lago/events-processors
 
 go 1.24.0
 
-require (
-	github.com/joho/godotenv v1.5.1
-	gorm.io/gorm v1.25.12
-)
+require gorm.io/gorm v1.25.12
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
@@ -13,6 +10,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getlago/lago-expression/expression-go v0.1.4 // indirect
+	github.com/getsentry/sentry-go v0.31.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect

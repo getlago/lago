@@ -26,6 +26,7 @@ type ProducerMessage struct {
 
 type MessageProducer interface {
 	Produce(context.Context, *ProducerMessage) bool
+	GetTopic() string
 }
 
 func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, error) {
@@ -68,4 +69,8 @@ func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
 
 func (p *Producer) Ping(ctx context.Context) error {
 	return p.client.Ping(ctx)
+}
+
+func (p *Producer) GetTopic() string {
+	return p.config.Topic
 }
