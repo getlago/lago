@@ -92,7 +92,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 		}
 
 		if hasInAdvanceChargeResult.Value() {
-			go produceChargedInAdvanceEvent(event)
+			go produceChargedInAdvanceEvent(enrichedEvent)
 		}
 	}
 
@@ -111,8 +111,6 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 	if bm.Expression == "" {
 		return utils.SuccessResult(false)
 	}
-
-	fmt.Println(ev.Timestamp)
 
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
@@ -148,7 +146,7 @@ func produceEnrichedEvent(ev *models.EnrichedEvent) {
 	}
 }
 
-func produceChargedInAdvanceEvent(ev *models.Event) {
+func produceChargedInAdvanceEvent(ev *models.EnrichedEvent) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
 		logger.Error("error while marshaling charged in advance events")
@@ -162,7 +160,7 @@ func produceChargedInAdvanceEvent(ev *models.Event) {
 	})
 
 	if !pushed {
-		produceToDeadLetterQueue(*ev, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
+		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
 	}
 }
 

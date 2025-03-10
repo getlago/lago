@@ -256,7 +256,6 @@ func TestProcessEvent(t *testing.T) {
 		eventsEnrichedProducer = &enrichedProducer
 
 		result := processEvent(&event)
-		fmt.Println(result.Error())
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
 
@@ -270,7 +269,7 @@ func TestProcessEvent(t *testing.T) {
 
 func TestEvaluateExpression(t *testing.T) {
 	bm := models.BillableMetric{}
-	event := models.EnrichedEvent{Timestamp: 1741007009.0}
+	event := models.EnrichedEvent{Timestamp: 1741007009.0, Code: "foo"}
 
 	// Without expression
 	result := evaluateExpression(&event, &bm)
@@ -328,7 +327,7 @@ func TestProduceChargedInAdvanceEvent(t *testing.T) {
 	eventsInAdvanceProducer = &producer
 	ctx = context.Background()
 
-	event := models.Event{
+	event := models.EnrichedEvent{
 		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 		ExternalSubscriptionID: "sub_id",
 		Code:                   "api_calls",
