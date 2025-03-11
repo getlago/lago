@@ -1,0 +1,63 @@
+name: Events Processor Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - "events_processor/**"
+
+jobs:
+  test:
+    name: Run go tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./events_processor
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: lago
+          POSTGRES_USER: lago
+          POSTGRES_PASSWORD: lago
+
+    env:
+      DATABASE_URL: "postgres://lago:lago@localhost:5432/lago"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Checkout lago expression code
+        uses: actions/checkout@v3
+        with:
+          repository: getlago/lago-expression
+          path: lago-expression
+
+      - name: Build lago-expression
+        working-directory: ./lago-expression
+        run: cargo build --release
+
+      - name: Copy lago-expression shared library
+        working-directory: ./lago-expression
+        run: |
+          mkdir -p /tmp/libs
+          sudo cp ./target/release/libexpression_go.so /usr/local/lib/libexpression_go.so
+          sudo ldconfig
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.0"
+
+      - name: Run tests
+        run: go test -v ./...

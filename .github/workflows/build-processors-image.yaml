@@ -1,0 +1,39 @@
+name: "Build Events Processor Production Image"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  build-processor-image:
+    runs-on: ubuntu-latest
+    name: Build Events Processor Image
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Set short sha
+        id: sha_short
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker tag
+        id: docker_tag
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lago-events-processor
+          IMAGE_TAG: ${{ steps.sha_short.outputs.sha_short }}
+        run: echo "tag=$(echo $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG)" >> $GITHUB_OUTPUT
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./events_processor
+          push: true
+          tags: ${{ steps.docker_tag.outputs.tag }}

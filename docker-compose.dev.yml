@@ -175,6 +175,35 @@ services:
       - path: ./.env.development
         required: false
 
+  api-events-consumer:
+    <<: *api_worker
+    container_name: lago_api_events_consumer_dev
+    command: bash -c "bundle install && ./scripts/start.events.consumer.sh"
+
+  events-processor:
+    image: events_processor_dev
+    container_name: lago_events_processor
+    restart: unless-stopped
+    build:
+      context: ./events_processors
+      dockerfile: $LAGO_PATH/events_processors/Dockerfile.dev
+    depends_on:
+      - db
+      - redpanda
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
+    volumes:
+      - $LAGO_PATH/events_processors:/app:delegated
+    # Debugger options
+    ports:
+      - "2345:2345"
+    security_opt:
+      - "seccomp:unconfined"
+    cap_add:
+      - SYS_PTRACE
+
   pdf:
     image: getlago/lago-gotenberg:7
     container_name: lago_pdf_dev
@@ -223,7 +252,7 @@ services:
     depends_on:
       - redpanda
     entrypoint: >
-      rpk topic create events-raw --brokers redpanda:9092
+      rpk topic create events-raw events_enriched events_charged_in_advance events_dead_letter --brokers redpanda:9092
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.3.1
