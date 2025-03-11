@@ -10,7 +10,7 @@ on:
       - synchronize
       - reopened
     paths:
-      - "events_processors/**"
+      - "events_processor/**"
 
 jobs:
   test:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./events_processors
+        working-directory: ./events_processor
 
     services:
       postgres:
