@@ -89,7 +89,7 @@ func StartProcessingEvents() {
 	}
 	eventsInAdvanceProducer = eventsInAdvanceProducerResult.Value()
 
-	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_QUEUE")
+	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC")
 	if eventsDeadLetterQueueResult.Failure() {
 		logger.Error(eventsDeadLetterQueueResult.ErrorMsg())
 		os.Exit(1)

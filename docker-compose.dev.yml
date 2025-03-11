@@ -252,7 +252,7 @@ services:
     depends_on:
       - redpanda
     entrypoint: >
-      rpk topic create events-raw events_enriched events_charged_in_advance events_dead_letter_queue --brokers redpanda:9092
+      rpk topic create events-raw events_enriched events_charged_in_advance events_dead_letter --brokers redpanda:9092
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.3.1
