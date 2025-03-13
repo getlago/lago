@@ -185,8 +185,8 @@ services:
     container_name: lago_events_processor
     restart: unless-stopped
     build:
-      context: ./events_processors
-      dockerfile: $LAGO_PATH/events_processors/Dockerfile.dev
+      context: ./events_processor
+      dockerfile: $LAGO_PATH/events_processor/Dockerfile.dev
     depends_on:
       - db
       - redpanda
@@ -195,7 +195,7 @@ services:
       - path: ./.env.development
         required: false
     volumes:
-      - $LAGO_PATH/events_processors:/app:delegated
+      - $LAGO_PATH/events_processor:/app:delegated
     # Debugger options
     ports:
       - "2345:2345"
