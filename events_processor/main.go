@@ -13,7 +13,7 @@ import (
 func main() {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("SENTRY_DSN"),
-		Environment:      os.Getenv("ENVIRONMENT"),
+		Environment:      os.Getenv("ENV"),
 		Debug:            false,
 		AttachStacktrace: true,
 	})
