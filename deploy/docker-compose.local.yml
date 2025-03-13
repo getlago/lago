@@ -11,9 +11,9 @@ x-postgres-image: &postgres-image
 x-redis-image: &redis-image
   image: redis:6-alpine
 x-backend-image: &backend-image
-  image: getlago/api:test
+  image: getlago/api:v1.23.0
 x-frontend-image: &frontend-image
-  image: getlago/front:v1.22.1
+  image: getlago/front:v1.23.0
 
 x-lago-api-url: &lago-api-url
   "LAGO_API_URL": ${LAGO_API_URL:-http://localhost:3000}
@@ -27,7 +27,7 @@ x-backend-environment: &backend-env
   "SECRET_KEY_BASE": ${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
   "RAILS_ENV": production
   "RAILS_LOG_TO_STDOUT": ${LAGO_RAILS_STDOUT:-true}
-  "LAGO_RSA_PRIVATE_KEY": ${LAGO_RSA_PRIVATE_KEY}
+  "LAGO_RSA_PRIVATE_KEY": ${LAGO_RSA_PRIVATE_KEY:-}
   "LAGO_SIDEKIQ_WEB": ${LAGO_SIDEKIQ_WEB:-true}
   "LAGO_ENCRYPTION_PRIMARY_KEY": ${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
   "LAGO_ENCRYPTION_DETERMINISTIC_KEY": ${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
@@ -37,7 +37,7 @@ x-backend-environment: &backend-env
   "LAGO_AWS_S3_SECRET_ACCESS_KEY": ${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
   "LAGO_AWS_S3_REGION": ${LAGO_AWS_S3_REGION:-us-east-1}
   "LAGO_AWS_S3_BUCKET": ${LAGO_AWS_S3_BUCKET:-bucket}
-  "LAGO_AWS_S3_ENDPOINT": ${LAGO_AWS_S3_ENDPOINT}
+  "LAGO_AWS_S3_ENDPOINT": ${LAGO_AWS_S3_ENDPOINT:-}
   "LAGO_USE_GCS": ${LAGO_USE_GCS:-false}
   "LAGO_GCS_PROJECT": ${LAGO_GCS_PROJECT:-}
   "LAGO_GCS_BUCKET": ${LAGO_GCS_BUCKET:-}
@@ -48,9 +48,9 @@ x-backend-environment: &backend-env
   "LAGO_SMTP_PASSWORD": ${LAGO_SMTP_PASSWORD:-}
   "LAGO_PDF_URL": ${LAGO_PDF_URL:-http://pdf:3000}
   "LAGO_REDIS_CACHE_URL": redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
-  "LAGO_REDIS_CACHE_PASSWORD": ${LAGO_REDIS_CACHE_PASSWORD}
-  "LAGO_DISABLE_SEGMENT": ${LAGO_DISABLE_SEGMENT}
-  "LAGO_DISABLE_WALLET_REFRESH": ${LAGO_DISABLE_WALLET_REFRESH}
+  "LAGO_REDIS_CACHE_PASSWORD": ${LAGO_REDIS_CACHE_PASSWORD:-}
+  "LAGO_DISABLE_SEGMENT": ${LAGO_DISABLE_SEGMENT:-}
+  "LAGO_DISABLE_WALLET_REFRESH": ${LAGO_DISABLE_WALLET_REFRESH:-}
   "LAGO_DISABLE_SIGNUP": ${LAGO_DISABLE_SIGNUP:-false}
   "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
   "LAGO_LICENSE": ${LAGO_LICENSE:-}
