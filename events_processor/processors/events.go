@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/getlago/lago-expression/expression-go"
-	"github.com/getsentry/sentry-go"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -49,7 +48,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					slog.String("error_code", result.ErrorCode()),
 					slog.String("error", result.ErrorMsg()),
 				)
-				sentry.CaptureException(result.Error())
+				utils.CaptureErrorResult(result)
 
 				go produceToDeadLetterQueue(event, result)
 			}
@@ -183,6 +182,6 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 
 	if !pushed {
 		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
-		sentry.CaptureException(errorResult.Error())
+		utils.CaptureErrorResult(errorResult)
 	}
 }

@@ -78,21 +78,24 @@ func StartProcessingEvents() {
 	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC")
 	if eventsEnrichedProducerResult.Failure() {
 		logger.Error(eventsEnrichedProducerResult.ErrorMsg())
-		os.Exit(1)
+		utils.CaptureErrorResult(eventsEnrichedProducerResult)
+		panic(eventsEnrichedProducerResult.ErrorMessage())
 	}
 	eventsEnrichedProducer = eventsEnrichedProducerResult.Value()
 
 	eventsInAdvanceProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC")
 	if eventsInAdvanceProducerResult.Failure() {
 		logger.Error(eventsInAdvanceProducerResult.ErrorMsg())
-		os.Exit(1)
+		utils.CaptureErrorResult(eventsInAdvanceProducerResult)
+		panic(eventsInAdvanceProducerResult.ErrorMessage())
 	}
 	eventsInAdvanceProducer = eventsInAdvanceProducerResult.Value()
 
 	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC")
 	if eventsDeadLetterQueueResult.Failure() {
 		logger.Error(eventsDeadLetterQueueResult.ErrorMsg())
-		os.Exit(1)
+		utils.CaptureErrorResult(eventsDeadLetterQueueResult)
+		panic(eventsDeadLetterQueueResult.ErrorMessage())
 	}
 	eventsDeadLetterQueue = eventsDeadLetterQueueResult.Value()
 
@@ -107,13 +110,15 @@ func StartProcessingEvents() {
 		})
 	if err != nil {
 		logger.Error("Error starting the event consumer", slog.String("error", err.Error()))
-		os.Exit(1)
+		utils.CaptureError(err)
+		panic(err.Error())
 	}
 
 	db, err := database.NewConnection(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
-		os.Exit(1)
+		utils.CaptureError(err)
+		panic(err.Error())
 	}
 	apiStore = models.NewApiStore(db)
 
