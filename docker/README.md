@@ -1,7 +1,7 @@
 # Lago Docker Image
 
 This is the official one docker image for Lago.
-We do not recommend to use it in production for heavy usage, please check the `docker-compose` file in the root of the repository
+We do not recommend to use it in production for heavy usage, please check the `deploy` folder
 or our [helm chart](https://github.com/getlago/lago-helm-charts) for a more robust deployment.
 
 ## Features
@@ -20,6 +20,17 @@ Here are the services that are running into the container :
 ```bash
 docker run -d --name lago-p 80:80 -p 3000:3000 getlago/lago:latest
 ```
+
+## Using External Services
+
+You can use external services for the database and Redis instance.
+Here are the env var you should pass to the container to use them :
+
+| Env Var | Description | Default |
+|---------|-------------|---------|
+| DATABASE_URL | The URL of the database | postgres://lago:lago@localhost:5432/lago |
+| REDIS_URL | The URL of the Redis instance | redis://localhost:6379/0 |
+
 
 ## Storage
 
