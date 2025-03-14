@@ -42,6 +42,7 @@ jobs:
         with:
           repository: getlago/lago-expression
           path: lago-expression
+          ref: v0.1.4
 
       - name: Build lago-expression
         working-directory: ./lago-expression
