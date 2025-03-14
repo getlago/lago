@@ -2,7 +2,7 @@ FROM rust:1.82 AS rust-build
 
 RUN git clone https://github.com/getlago/lago-expression/
 WORKDIR /lago-expression/expression-go
-RUN cargo build --release
+RUN git checkout v0.1.4 && cargo build --release
 
 FROM golang:1.24 AS go-build
 
