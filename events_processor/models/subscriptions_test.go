@@ -13,7 +13,7 @@ import (
 
 var fetchSubscriptionQuery = regexp.QuoteMeta(`
 	SELECT
-	"subscriptions"."id","subscriptions"."external_id","subscriptions"."plan_id","subscriptions"."created_at","subscriptions"."updated_at","subscriptions"."started_at","subscriptions"."terminated_at"
+	"subscriptions"."id","subscriptions"."external_id","subscriptions"."customer_id","subscriptions"."plan_id","subscriptions"."created_at","subscriptions"."updated_at","subscriptions"."started_at","subscriptions"."terminated_at"
 	FROM "subscriptions"
 		INNER JOIN customers ON customers.id = subscriptions.customer_id
 	WHERE customers.organization_id = $1

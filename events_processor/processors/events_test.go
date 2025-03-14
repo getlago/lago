@@ -41,10 +41,10 @@ func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
 }
 
 func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
-	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
+	columns := []string{"id", "external_id", "customer_id", "plan_id", "created_at", "updated_at", "terminated_at"}
 
 	rows := sqlmock.NewRows(columns).
-		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
+		AddRow(sub.ID, sub.ExternalID, sub.CustomerID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
 
 	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
 }
@@ -106,10 +106,15 @@ func TestProcessEvent(t *testing.T) {
 		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
+		sub := models.Subscription{ID: "sub123", CustomerID: "cus123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
 		result := processEvent(&event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
+		assert.Equal(t, "sub123", result.Value().SubscriptionID)
+		assert.Equal(t, "cus123", result.Value().CustomerID)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods

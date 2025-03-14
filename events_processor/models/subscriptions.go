@@ -12,6 +12,7 @@ import (
 type Subscription struct {
 	ID           string       `gorm:"primaryKey;->"`
 	ExternalID   string       `gorm:"->"`
+	CustomerID   string       `gorm:"->"`
 	PlanID       string       `gorm:"->"`
 	CreatedAt    time.Time    `gorm:"->"`
 	UpdatedAt    time.Time    `gorm:"->"`

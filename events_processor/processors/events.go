@@ -53,6 +53,8 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 
 				go produceToDeadLetterQueue(event, result)
 			}
+
+			// If not a failure, extract the distinct customer/subscription values in collection to send them to refresh queues
 		}(record)
 	}
 
@@ -74,13 +76,17 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	bm := bmResult.Value()
 
-	if event.Source != models.HTTP_RUBY {
-		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-		if subResult.Failure() {
-			return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
-		}
-		sub := subResult.Value()
+	// Fetch subscription, to enrich event and allow flagging for refresh or lifetime usage and wallets
+	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	if subResult.Failure() {
+		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+	}
+	sub := subResult.Value()
 
+	enrichedEvent.SubscriptionID = sub.ID
+	enrichedEvent.CustomerID = sub.CustomerID
+
+	if event.Source != models.HTTP_RUBY {
 		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {
 			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")

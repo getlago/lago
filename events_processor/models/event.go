@@ -30,10 +30,13 @@ type EnrichedEvent struct {
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
 	Source                  string         `json:"source,omotempty"`
-	TimestampStr            string         `json:"-"`
 	Timestamp               float64        `json:"timestamp"`
 	Value                   *string        `json:"value"`
-	Time                    time.Time      `json:"-"`
+
+	TimestampStr   string    `json:"-"`
+	Time           time.Time `json:"-"`
+	SubscriptionID string    `json:"-"`
+	CustomerID     string    `json:"-"`
 }
 
 type FailedEvent struct {
