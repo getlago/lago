@@ -370,17 +370,17 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 	}
 
 	result := utils.FailedResult[string](fmt.Errorf("Error Message"))
-	failedEvent := models.FailedEvent{
-		Event:               event,
-		InitialErrorMessage: "Error Message",
-		ErrorCode:           "",
-		ErrorMessage:        "",
-	}
-
 	produceToDeadLetterQueue(event, result)
 
+	var producedEvent models.FailedEvent
+	err := json.Unmarshal(producer.Value, &producedEvent)
+
+	assert.NoError(t, err)
 	assert.Equal(t, 1, producer.ExecutionCount)
 
-	eventJson, _ := json.Marshal(failedEvent)
-	assert.Equal(t, eventJson, producer.Value)
+	assert.Equal(t, event, producedEvent.Event)
+	assert.Equal(t, "Error Message", producedEvent.InitialErrorMessage)
+	assert.Equal(t, "", producedEvent.ErrorCode)
+	assert.Equal(t, "", producedEvent.ErrorMessage)
+	assert.WithinDuration(t, time.Now(), producedEvent.FailedAt, 5*time.Second)
 }

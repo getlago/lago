@@ -37,10 +37,11 @@ type EnrichedEvent struct {
 }
 
 type FailedEvent struct {
-	Event               Event  `json:"event"`
-	InitialErrorMessage string `json:"initial_error_message"`
-	ErrorMessage        string `json:"error_message"`
-	ErrorCode           string `json:"error_code"`
+	Event               Event     `json:"event"`
+	InitialErrorMessage string    `json:"initial_error_message"`
+	ErrorMessage        string    `json:"error_message"`
+	ErrorCode           string    `json:"error_code"`
+	FailedAt            time.Time `json:"failed_at"`
 }
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
