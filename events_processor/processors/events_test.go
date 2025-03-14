@@ -106,10 +106,14 @@ func TestProcessEvent(t *testing.T) {
 		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
 		result := processEvent(&event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
+		assert.Equal(t, "sub123", result.Value().SubscriptionID)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods

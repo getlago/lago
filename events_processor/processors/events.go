@@ -28,6 +28,8 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	refreshedSubs := models.RefreshedSubscriptions{}
+
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
@@ -52,11 +54,15 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				utils.CaptureErrorResult(result)
 
 				go produceToDeadLetterQueue(event, result)
+			} else {
+				refreshedSubs.PushUnique(result.Value().SubscriptionID)
 			}
 		}(record)
 	}
 
 	wg.Wait()
+
+	// TODO: push list of unique subscription ids to kafka
 
 	return records
 }
@@ -74,13 +80,16 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	bm := bmResult.Value()
 
-	if event.Source != models.HTTP_RUBY {
-		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-		if subResult.Failure() {
-			return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
-		}
-		sub := subResult.Value()
+	// Fetch subscription, to enrich event and allow flagging for refresh or lifetime usage and wallets
+	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	if subResult.Failure() {
+		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+	}
+	sub := subResult.Value()
 
+	enrichedEvent.SubscriptionID = sub.ID
+
+	if event.Source != models.HTTP_RUBY {
 		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {
 			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
@@ -142,6 +151,7 @@ func produceEnrichedEvent(ev *models.EnrichedEvent) {
 	})
 
 	if !pushed {
+		// NOTE: Should be pushed to a channel, avoiding commiting the record and allowing automatic reprocess
 		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsEnrichedProducer.GetTopic())))
 	}
 }
@@ -160,6 +170,7 @@ func produceChargedInAdvanceEvent(ev *models.EnrichedEvent) {
 	})
 
 	if !pushed {
+		// NOTE: Should be pushed to a channel, avoiding commiting the record and allowing automatic reprocess
 		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
 	}
 }
