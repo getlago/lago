@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -169,6 +170,7 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 		InitialErrorMessage: errorResult.ErrorMsg(),
 		ErrorCode:           errorResult.ErrorCode(),
 		ErrorMessage:        errorResult.ErrorMessage(),
+		FailedAt:            time.Now(),
 	}
 
 	eventJson, err := json.Marshal(failedEvent)
