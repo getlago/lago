@@ -28,8 +28,6 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
-	refreshedSubs := models.RefreshedSubscriptions{}
-
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
@@ -55,14 +53,17 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 
 				go produceToDeadLetterQueue(event, result)
 			} else {
-				refreshedSubs.PushUnique(result.Value().SubscriptionID)
+				refresh := &models.RefreshedSubscription{
+					ID:             result.Value().SubscriptionID,
+					OrganizationID: event.OrganizationID,
+					RefreshedAt:    time.Now(),
+				}
+				go produceRefreshedSubscription(refresh)
 			}
 		}(record)
 	}
 
 	wg.Wait()
-
-	// TODO: push list of unique subscription ids to kafka
 
 	return records
 }
@@ -196,5 +197,24 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 	if !pushed {
 		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
 		utils.CaptureErrorResult(errorResult)
+	}
+}
+
+func produceRefreshedSubscription(refresh *models.RefreshedSubscription) {
+	subJson, err := json.Marshal(refresh)
+	if err != nil {
+		logger.Error("error while marshaling refreshed subscription")
+	}
+
+	msgKey := fmt.Sprintf("%s-%s", refresh.OrganizationID, refresh.ID)
+
+	pushed := refreshedSubscriptionProducer.Produce(ctx, &kafka.ProducerMessage{
+		Key:   []byte(msgKey),
+		Value: subJson,
+	})
+
+	if !pushed {
+		logger.Error("error while pushing to refreshed subscription topic", slog.String("topic", refreshedSubscriptionProducer.GetTopic()))
+		utils.CaptureError(err)
 	}
 }

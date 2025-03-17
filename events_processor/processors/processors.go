@@ -16,14 +16,15 @@ import (
 )
 
 var (
-	ctx                     context.Context
-	logger                  *slog.Logger
-	err                     error
-	eventsEnrichedProducer  kafka.MessageProducer
-	eventsInAdvanceProducer kafka.MessageProducer
-	eventsDeadLetterQueue   kafka.MessageProducer
-	apiStore                *models.ApiStore
-	kafkaConfig             kafka.ServerConfig
+	ctx                           context.Context
+	logger                        *slog.Logger
+	err                           error
+	eventsEnrichedProducer        kafka.MessageProducer
+	eventsInAdvanceProducer       kafka.MessageProducer
+	refreshedSubscriptionProducer kafka.MessageProducer
+	eventsDeadLetterQueue         kafka.MessageProducer
+	apiStore                      *models.ApiStore
+	kafkaConfig                   kafka.ServerConfig
 )
 
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
@@ -90,6 +91,14 @@ func StartProcessingEvents() {
 		panic(eventsInAdvanceProducerResult.ErrorMessage())
 	}
 	eventsInAdvanceProducer = eventsInAdvanceProducerResult.Value()
+
+	refreshedSubscriptionProducerResult := initProducer(ctx, "LAGO_KAFKA_REFRESHED_SUBSCRIPTIONS_TOPIC")
+	if refreshedSubscriptionProducerResult.Failure() {
+		logger.Error(refreshedSubscriptionProducerResult.ErrorMsg())
+		utils.CaptureErrorResult(refreshedSubscriptionProducerResult)
+		panic(refreshedSubscriptionProducerResult.ErrorMessage())
+	}
+	refreshedSubscriptionProducer = refreshedSubscriptionProducerResult.Value()
 
 	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC")
 	if eventsDeadLetterQueueResult.Failure() {

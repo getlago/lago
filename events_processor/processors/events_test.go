@@ -388,3 +388,26 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 	assert.Equal(t, "", producedEvent.ErrorMessage)
 	assert.WithinDuration(t, time.Now(), producedEvent.FailedAt, 5*time.Second)
 }
+
+func TestProduceRefreshedSubscriptions(t *testing.T) {
+	producer := tests.MockMessageProducer{}
+	refreshedSubscriptionProducer = &producer
+	ctx = context.Background()
+
+	refreshedSub := models.RefreshedSubscription{
+		ID:             "sub_id",
+		OrganizationID: "org_id",
+		RefreshedAt:    time.Now(),
+	}
+
+	produceRefreshedSubscription(&refreshedSub)
+
+	assert.Equal(t, 1, producer.ExecutionCount)
+	assert.Equal(
+		t,
+		[]byte("org_id-sub_id"),
+		producer.Key,
+	)
+	refreshedJson, _ := json.Marshal(refreshedSub)
+	assert.Equal(t, refreshedJson, producer.Value)
+}
