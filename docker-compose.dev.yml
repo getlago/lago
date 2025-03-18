@@ -72,6 +72,7 @@ services:
       - APP_DOMAIN=https://app.lago.dev
       - CODEGEN_API=http://api:3000/graphql
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-}
+      - LAGO_DISABLE_PDF_GENERATION=${LAGO_DISABLE_PDF_GENERATION:-false}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
     labels:
       - "traefik.enable=true"
