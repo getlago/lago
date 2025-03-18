@@ -394,20 +394,31 @@ func TestProduceRefreshedSubscriptions(t *testing.T) {
 	refreshedSubscriptionProducer = &producer
 	ctx = context.Background()
 
-	refreshedSub := models.RefreshedSubscription{
-		ID:             "sub_id",
-		OrganizationID: "org_id",
+	values := make(map[string]models.RefreshedSubscription)
+	refreshedValues := models.RefreshedSubscriptions{Values: values}
+
+	sub1 := models.RefreshedSubscription{
+		ID:             "sub_123",
+		OrganizationID: "org_123",
 		RefreshedAt:    time.Now(),
 	}
+	refreshedValues.Values[sub1.ID] = sub1
 
-	produceRefreshedSubscription(&refreshedSub)
+	sub2 := models.RefreshedSubscription{
+		ID:             "sub_456",
+		OrganizationID: "org_456",
+		RefreshedAt:    time.Now(),
+	}
+	refreshedValues.Values[sub2.ID] = sub2
 
-	assert.Equal(t, 1, producer.ExecutionCount)
+	produceRefreshedSubscriptions(&refreshedValues)
+
+	assert.Equal(t, 2, producer.ExecutionCount)
 	assert.Equal(
 		t,
-		[]byte("org_id-sub_id"),
+		[]byte("org_456-sub_456"),
 		producer.Key,
 	)
-	refreshedJson, _ := json.Marshal(refreshedSub)
+	refreshedJson, _ := json.Marshal(sub2)
 	assert.Equal(t, refreshedJson, producer.Value)
 }

@@ -28,6 +28,10 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	refreshedSubscriptions := models.RefreshedSubscriptions{
+		Values: make(map[string]models.RefreshedSubscription),
+	}
+
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
@@ -53,15 +57,18 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 
 				go produceToDeadLetterQueue(event, result)
 			} else {
-				refresh := &models.RefreshedSubscription{
+				refresh := models.RefreshedSubscription{
 					ID:             result.Value().SubscriptionID,
 					OrganizationID: event.OrganizationID,
 					RefreshedAt:    time.Now(),
 				}
-				go produceRefreshedSubscription(refresh)
+
+				refreshedSubscriptions.Values[refresh.ID] = refresh
 			}
 		}(record)
 	}
+
+	go produceRefreshedSubscriptions(&refreshedSubscriptions)
 
 	wg.Wait()
 
@@ -200,21 +207,23 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 	}
 }
 
-func produceRefreshedSubscription(refresh *models.RefreshedSubscription) {
-	subJson, err := json.Marshal(refresh)
-	if err != nil {
-		logger.Error("error while marshaling refreshed subscription")
-	}
+func produceRefreshedSubscriptions(refreshed *models.RefreshedSubscriptions) {
+	for _, refresh := range refreshed.GetValues() {
+		subJson, err := json.Marshal(refresh)
+		if err != nil {
+			logger.Error("error while marshaling refreshed subscription")
+		}
 
-	msgKey := fmt.Sprintf("%s-%s", refresh.OrganizationID, refresh.ID)
+		msgKey := fmt.Sprintf("%s-%s", refresh.OrganizationID, refresh.ID)
 
-	pushed := refreshedSubscriptionProducer.Produce(ctx, &kafka.ProducerMessage{
-		Key:   []byte(msgKey),
-		Value: subJson,
-	})
+		pushed := refreshedSubscriptionProducer.Produce(ctx, &kafka.ProducerMessage{
+			Key:   []byte(msgKey),
+			Value: subJson,
+		})
 
-	if !pushed {
-		logger.Error("error while pushing to refreshed subscription topic", slog.String("topic", refreshedSubscriptionProducer.GetTopic()))
-		utils.CaptureError(err)
+		if !pushed {
+			logger.Error("error while pushing to refreshed subscription topic", slog.String("topic", refreshedSubscriptionProducer.GetTopic()))
+			utils.CaptureError(err)
+		}
 	}
 }
