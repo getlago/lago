@@ -1,4 +1,4 @@
-name: lago-local
+name: lago-traefik
 
 volumes:
   lago_rsa_data:
