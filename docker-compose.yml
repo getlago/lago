@@ -51,6 +51,7 @@ x-backend-environment: &backend-env
   "LAGO_DISABLE_SEGMENT": ${LAGO_DISABLE_SEGMENT}
   "LAGO_DISABLE_WALLET_REFRESH": ${LAGO_DISABLE_WALLET_REFRESH}
   "LAGO_DISABLE_SIGNUP": ${LAGO_DISABLE_SIGNUP:-false}
+  "LAGO_DISABLE_PDF_GENERATION": ${LAGO_DISABLE_PDF_GENERATION:-false}
   "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
   "LAGO_LICENSE": ${LAGO_LICENSE:-}
   "LAGO_CREATE_ORG": ${LAGO_CREATE_ORG:-false}
@@ -69,6 +70,7 @@ x-frontend-environment: &frontend-env
   "API_URL": ${LAGO_API_URL:-http://localhost:3000}
   "APP_ENV": production
   "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
+  "LAGO_DISABLE_PDF_GENERATION": ${LAGO_DISABLE_PDF_GENERATION:-false}
 
 services:
   db:
