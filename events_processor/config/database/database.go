@@ -1,8 +1,11 @@
 package database
 
 import (
+	"context"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	slogGorm "github.com/orandin/slog-gorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -17,7 +20,22 @@ func NewConnection(dbUrl string) (*DB, error) {
 	logger := slog.Default()
 	logger = logger.With("component", "db")
 
-	dialector := postgres.Open(dbUrl)
+	poolConfig, err := pgxpool.ParseConfig(dbUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	poolConfig.MaxConns = 200
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		return nil, err
+	}
+	//defer pool.Close()
+
+	dialector := postgres.New(postgres.Config{
+		Conn: stdlib.OpenDBFromPool(pool),
+	})
 
 	return OpenConnection(logger, dialector)
 }
