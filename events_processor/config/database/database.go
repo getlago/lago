@@ -14,6 +14,7 @@ import (
 type DB struct {
 	Connection *gorm.DB
 	logger     *slog.Logger
+	pool       *pgxpool.Pool
 }
 
 func NewConnection(dbUrl string) (*DB, error) {
@@ -31,13 +32,16 @@ func NewConnection(dbUrl string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	//defer pool.Close()
 
 	dialector := postgres.New(postgres.Config{
 		Conn: stdlib.OpenDBFromPool(pool),
 	})
 
-	return OpenConnection(logger, dialector)
+	conn, err := OpenConnection(logger, dialector)
+	if err == nil {
+		conn.pool = pool
+	}
+	return conn, err
 }
 
 func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) {
@@ -54,4 +58,8 @@ func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) 
 	}
 
 	return &DB{Connection: db, logger: logger}, nil
+}
+
+func (db *DB) Close() {
+	db.pool.Close()
 }

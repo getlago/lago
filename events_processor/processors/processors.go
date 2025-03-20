@@ -121,6 +121,7 @@ func StartProcessingEvents() {
 		panic(err.Error())
 	}
 	apiStore = models.NewApiStore(db)
+	defer db.Close()
 
 	cg.Start()
 }
