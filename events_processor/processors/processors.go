@@ -8,11 +8,11 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	tracer "github.com/getlago/lago/events-processors/config"
-	"github.com/getlago/lago/events-processors/config/database"
-	"github.com/getlago/lago/events-processors/config/kafka"
-	"github.com/getlago/lago/events-processors/models"
-	"github.com/getlago/lago/events-processors/utils"
+	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/database"
+	"github.com/getlago/lago/events-processor/config/kafka"
+	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 var (

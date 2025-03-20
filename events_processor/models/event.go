@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/getlago/lago/events-processors/utils"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 const HTTP_RUBY string = "http_ruby"

@@ -1,4 +1,4 @@
-module github.com/getlago/lago/events-processors
+module github.com/getlago/lago/events-processor
 
 go 1.24.0
 

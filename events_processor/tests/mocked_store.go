@@ -8,7 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
 
-	"github.com/getlago/lago/events-processors/config/database"
+	"github.com/getlago/lago/events-processor/config/database"
 )
 
 func SetupMockStore(t *testing.T) (*database.DB, sqlmock.Sqlmock, func()) {

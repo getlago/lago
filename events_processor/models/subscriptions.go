@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/getlago/lago/events-processors/utils"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 type Subscription struct {

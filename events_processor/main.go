@@ -7,7 +7,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 
-	"github.com/getlago/lago/events-processors/processors"
+	"github.com/getlago/lago/events-processor/processors"
 )
 
 func main() {
