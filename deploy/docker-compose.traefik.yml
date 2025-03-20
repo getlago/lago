@@ -199,12 +199,26 @@ services:
       # API Routes
       - "traefik.http.routers.lago-api.priority=100"
       - "traefik.http.routers.lago-api.entrypoints=websecure"
-      - "traefik.http.routers.lago-api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.lago-api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api/`)"
       - "traefik.http.routers.lago-api.middlewares=lago-api-stripprefix"
       - "traefik.http.middlewares.lago-api-stripprefix.stripprefix.prefixes=/api"
       - "traefik.http.routers.lago-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.lago-api.service=lago-api-service"
       - "traefik.http.services.lago-api-service.loadbalancer.server.port=3000"
+
+      # API Versioned Routes
+      - "traefik.http.routers.lago-api-versioned.priority=110"
+      - "traefik.http.routers.lago-api-versioned.entrypoints=websecure"
+      - "traefik.http.routers.lago-api-versioned.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api/v`)"
+      - "traefik.http.routers.lago-api-versioned.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-api-versioned.service=lago-api-service"
+
+      # API Rails Assets
+      - "traefik.http.routers.lago-api-rails.priority=100"
+      - "traefik.http.routers.lago-api-rails.entrypoints=websecure"
+      - "traefik.http.routers.lago-api-rails.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/rails`)"
+      - "traefik.http.routers.lago-api-rails.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-api-rails.service=lago-api-service"
 
       # GraphQL Routes
       - "traefik.http.routers.lago-graphql.priority=100"
