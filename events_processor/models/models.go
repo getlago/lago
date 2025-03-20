@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/getlago/lago/events-processors/config/database"
+	"github.com/getlago/lago/events-processor/config/database"
 )
 
 type ApiStore struct {

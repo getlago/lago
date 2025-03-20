@@ -3,7 +3,7 @@ package tests
 import (
 	"context"
 
-	"github.com/getlago/lago/events-processors/config/kafka"
+	"github.com/getlago/lago/events-processor/config/kafka"
 )
 
 type MockMessageProducer struct {

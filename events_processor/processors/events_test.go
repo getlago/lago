@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
-	"github.com/getlago/lago/events-processors/models"
-	"github.com/getlago/lago/events-processors/utils"
+	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/utils"
 
-	"github.com/getlago/lago/events-processors/tests"
+	"github.com/getlago/lago/events-processor/tests"
 )
 
 func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, func()) {
