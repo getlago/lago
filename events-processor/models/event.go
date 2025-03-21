@@ -10,14 +10,19 @@ import (
 const HTTP_RUBY string = "http_ruby"
 
 type Event struct {
-	OrganizationID          string         `json:"organization_id"`
-	ExternalSubscriptionID  string         `json:"external_subscription_id"`
-	TransactionID           string         `json:"transaction_id"`
-	Code                    string         `json:"code"`
-	Properties              map[string]any `json:"properties"`
-	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
-	Source                  string         `json:"source,omotempty"`
-	Timestamp               any            `json:"timestamp"`
+	OrganizationID          string          `json:"organization_id"`
+	ExternalSubscriptionID  string          `json:"external_subscription_id"`
+	TransactionID           string          `json:"transaction_id"`
+	Code                    string          `json:"code"`
+	Properties              map[string]any  `json:"properties"`
+	PreciseTotalAmountCents string          `json:"precise_total_amount_cents"`
+	Source                  string          `json:"source,omotempty"`
+	Timestamp               any             `json:"timestamp"`
+	SourceMetadata          *SourceMetadata `json:"source_metadata"`
+}
+
+type SourceMetadata struct {
+	ApiPostProcess bool `json:"api_post_processed"`
 }
 
 type EnrichedEvent struct {
@@ -30,9 +35,9 @@ type EnrichedEvent struct {
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
 	Source                  string         `json:"source,omotempty"`
-	TimestampStr            string         `json:"-"`
-	Timestamp               float64        `json:"timestamp"`
 	Value                   *string        `json:"value"`
+	Timestamp               float64        `json:"timestamp"`
+	TimestampStr            string         `json:"-"`
 	Time                    time.Time      `json:"-"`
 }
 
@@ -70,4 +75,12 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er.Time = timeResult.Value()
 
 	return utils.SuccessResult(er)
+}
+
+func (ev *Event) ShouldCheckInAdvanceBilling() bool {
+	if ev.Source != HTTP_RUBY {
+		return true
+	}
+
+	return ev.SourceMetadata == nil || !ev.SourceMetadata.ApiPostProcess
 }

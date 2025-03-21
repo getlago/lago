@@ -54,3 +54,34 @@ func TestToEnrichedEvent(t *testing.T) {
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
 	})
 }
+
+func TestShouldCheckInAdvanceBilling(t *testing.T) {
+	t.Run("When event source is not HTTP_RUBY", func(t *testing.T) {
+		event := Event{
+			Source: "REDPANDA_CONNECT",
+		}
+
+		assert.True(t, event.ShouldCheckInAdvanceBilling())
+	})
+
+	t.Run("When event source is HTTP_RUBY without source metadata", func(t *testing.T) {
+		event := Event{
+			Source: HTTP_RUBY,
+		}
+
+		assert.True(t, event.ShouldCheckInAdvanceBilling())
+	})
+
+	t.Run("When event source is HTTP_RUBY with source metadata", func(t *testing.T) {
+		event := Event{
+			Source: HTTP_RUBY,
+			SourceMetadata: &SourceMetadata{
+				ApiPostProcess: true,
+			},
+		}
+		assert.False(t, event.ShouldCheckInAdvanceBilling())
+
+		event.SourceMetadata.ApiPostProcess = false
+		assert.True(t, event.ShouldCheckInAdvanceBilling())
+	})
+}

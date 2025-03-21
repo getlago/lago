@@ -74,18 +74,25 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	bm := bmResult.Value()
 
-	if event.Source != models.HTTP_RUBY {
-		subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-		if subResult.Failure() {
-			return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
-		}
-		sub := subResult.Value()
+	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	if subResult.Failure() {
+		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+	}
+	sub := subResult.Value()
 
+	if event.Source != models.HTTP_RUBY {
 		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {
 			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
 		}
+	}
 
+	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
+	enrichedEvent.Value = &value
+
+	go produceEnrichedEvent(enrichedEvent)
+
+	if event.ShouldCheckInAdvanceBilling() {
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
 			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
@@ -95,10 +102,6 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 			go produceChargedInAdvanceEvent(enrichedEvent)
 		}
 	}
-
-	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
-	enrichedEvent.Value = &value
-	go produceEnrichedEvent(enrichedEvent)
 
 	return utils.SuccessResult(enrichedEvent)
 }
