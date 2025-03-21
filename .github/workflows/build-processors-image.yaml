@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - "events_processor/**"
+      - "events-processor/**"
   workflow_dispatch:
 
 jobs:
@@ -37,6 +37,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./events_processor
+          context: ./events-processor
           push: true
           tags: ${{ steps.docker_tag.outputs.tag }}

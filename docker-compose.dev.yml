@@ -182,12 +182,12 @@ services:
     command: bash -c "bundle install && ./scripts/start.events.consumer.sh"
 
   events-processor:
-    image: events_processor_dev
-    container_name: lago_events_processor
+    image: events-processor_dev
+    container_name: lago_events-processor
     restart: unless-stopped
     build:
-      context: ./events_processor
-      dockerfile: $LAGO_PATH/events_processor/Dockerfile.dev
+      context: ./events-processor
+      dockerfile: $LAGO_PATH/events-processor/Dockerfile.dev
     depends_on:
       - db
       - redpanda
@@ -196,7 +196,7 @@ services:
       - path: ./.env.development
         required: false
     volumes:
-      - $LAGO_PATH/events_processor:/app:delegated
+      - $LAGO_PATH/events-processor:/app:delegated
 
   pdf:
     image: getlago/lago-gotenberg:7
