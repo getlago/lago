@@ -84,7 +84,12 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() {
-		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+		return failedResultWithOptionalCapture(
+			subResult,
+			"fetch_subscription",
+			"Error fetching subscription",
+			subResult.ErrorMsg() != models.ERROR_NOT_FOUND,
+		)
 	}
 	sub := subResult.Value()
 
