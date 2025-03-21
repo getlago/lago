@@ -61,7 +61,7 @@ done
 echo ""
 
 while true; do
-    read -p "${CYAN}👉 Enter your choice [1-$((${#templates[@]}))]: ${NORMAL}" choice
+    read -p "${CYAN}👉 Enter your choice [1-$((${#templates[@]}))]: ${NORMAL}" choice </dev/tty
     if [[ "$choice" =~ ^[1-9][0-9]*$ ]] && (( choice >= 1 && choice <= ${#templates[@]} )); then
         selected="${templates[$((choice-1))]}"
         IFS='|' read -r selected_key selected_desc <<< "$selected"
