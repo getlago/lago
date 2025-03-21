@@ -9,6 +9,7 @@ type Result[T any] struct {
 type ErrorDetails struct {
 	Code    string
 	Message string
+	Capture bool
 }
 
 type AnyResult interface {
@@ -52,10 +53,11 @@ func (r Result[T]) ErrorMsg() string {
 	return r.err.Error()
 }
 
-func (r Result[T]) AddErrorDetails(code string, message string) Result[T] {
+func (r Result[T]) AddErrorDetails(code string, message string, capture bool) Result[T] {
 	r.details = &ErrorDetails{
 		Code:    code,
 		Message: message,
+		Capture: capture,
 	}
 	return r
 }

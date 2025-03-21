@@ -49,7 +49,10 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					slog.String("error_code", result.ErrorCode()),
 					slog.String("error", result.ErrorMsg()),
 				)
-				utils.CaptureErrorResult(result)
+
+				if result.ErrorDetails().Capture {
+					utils.CaptureErrorResult(result)
+				}
 
 				go produceToDeadLetterQueue(event, result)
 			}
@@ -70,13 +73,23 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
+		return failedResultWithOptionalCapture(
+			bmResult,
+			"fetch_billable_metric",
+			"Error fetching billable metric",
+			bmResult.ErrorMsg() != models.ERROR_NOT_FOUND,
+		)
 	}
 	bm := bmResult.Value()
 
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() {
-		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+		return failedResultWithOptionalCapture(
+			subResult,
+			"fetch_subscription",
+			"Error fetching subscription",
+			subResult.ErrorMsg() != models.ERROR_NOT_FOUND,
+		)
 	}
 	sub := subResult.Value()
 
@@ -107,7 +120,11 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
-	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, true)
+}
+
+func failedResultWithOptionalCapture(r utils.AnyResult, code string, message string, capture bool) utils.Result[*models.EnrichedEvent] {
+	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, capture)
 }
 
 func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
