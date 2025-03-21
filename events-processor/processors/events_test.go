@@ -75,7 +75,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
 	})
 
-	t.Run("When event source is HTTP_RUBY", func(t *testing.T) {
+	t.Run("When event source is post processed on API", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
 		defer delete()
 
@@ -90,6 +90,9 @@ func TestProcessEvent(t *testing.T) {
 			Timestamp:              1741007009,
 			Source:                 models.HTTP_RUBY,
 			Properties:             properties,
+			SourceMetadata: &models.SourceMetadata{
+				ApiPostProcess: true,
+			},
 		}
 
 		bm := models.BillableMetric{
@@ -102,6 +105,9 @@ func TestProcessEvent(t *testing.T) {
 			UpdatedAt:      time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
 
 		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
@@ -117,7 +123,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, 1, enrichedProducer.ExecutionCount)
 	})
 
-	t.Run("When event source is not HTTP_RUBY when timestamp is invalid", func(t *testing.T) {
+	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
 		defer delete()
 
@@ -147,7 +153,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 	})
 
-	t.Run("When event source is not HTTP_RUBY when no subscriptions are found", func(t *testing.T) {
+	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
 		defer delete()
 
@@ -179,7 +185,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, "Error fetching subscription", result.ErrorMessage())
 	})
 
-	t.Run("When event source is not HTTP_RUBY when expression failed to evaluate", func(t *testing.T) {
+	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
 		defer delete()
 
@@ -217,7 +223,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
 	})
 
-	t.Run("When event source is not HTTP_RUBY and events belongs to an in advance charge", func(t *testing.T) {
+	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
 		defer delete()
 
