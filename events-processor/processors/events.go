@@ -80,9 +80,11 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	sub := subResult.Value()
 
-	expressionResult := evaluateExpression(enrichedEvent, bm)
-	if expressionResult.Failure() {
-		return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
+	if event.Source != models.HTTP_RUBY {
+		expressionResult := evaluateExpression(enrichedEvent, bm)
+		if expressionResult.Failure() {
+			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
+		}
 	}
 
 	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
