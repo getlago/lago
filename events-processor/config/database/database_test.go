@@ -8,10 +8,17 @@ import (
 )
 
 func TestNewConnection(t *testing.T) {
-	_, err := NewConnection("invalid connection")
+	config := DBConfig{
+		Url:      "invalid connection",
+		MaxConns: 200,
+	}
+
+	_, err := NewConnection(config)
 	assert.Error(t, err)
 
-	db, err := NewConnection(os.Getenv("DATABASE_URL"))
+	config.Url = os.Getenv("DATABASE_URL")
+
+	db, err := NewConnection(config)
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 	assert.NotNil(t, db.Connection)
