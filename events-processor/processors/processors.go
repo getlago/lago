@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -114,7 +115,23 @@ func StartProcessingEvents() {
 		panic(err.Error())
 	}
 
-	db, err := database.NewConnection(os.Getenv("DATABASE_URL"))
+	maxConns := 200
+	maxConnsStr := os.Getenv("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNEXIONS")
+	if maxConnsStr != "" {
+		value, err := strconv.Atoi(maxConnsStr)
+		if err != nil {
+			logger.Error("Error converting max connections into integer", slog.String("error", err.Error()))
+		}
+
+		maxConns = value
+	}
+
+	dbConfig := database.DBConfig{
+		Url:      os.Getenv("DATABASE_URL"),
+		MaxConns: int32(maxConns),
+	}
+
+	db, err := database.NewConnection(dbConfig)
 	if err != nil {
 		logger.Error("Error connecting to the database", slog.String("error", err.Error()))
 		utils.CaptureError(err)

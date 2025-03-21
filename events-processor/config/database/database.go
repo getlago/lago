@@ -17,16 +17,21 @@ type DB struct {
 	pool       *pgxpool.Pool
 }
 
-func NewConnection(dbUrl string) (*DB, error) {
+type DBConfig struct {
+	Url      string
+	MaxConns int32
+}
+
+func NewConnection(config DBConfig) (*DB, error) {
 	logger := slog.Default()
 	logger = logger.With("component", "db")
 
-	poolConfig, err := pgxpool.ParseConfig(dbUrl)
+	poolConfig, err := pgxpool.ParseConfig(config.Url)
 	if err != nil {
 		return nil, err
 	}
 
-	poolConfig.MaxConns = 200
+	poolConfig.MaxConns = config.MaxConns
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
 	if err != nil {
