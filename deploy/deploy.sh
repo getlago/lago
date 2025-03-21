@@ -65,11 +65,11 @@ while true; do
     if [[ "$choice" =~ ^[1-9][0-9]*$ ]] && (( choice >= 1 && choice <= ${#templates[@]} )); then
         selected="${templates[$((choice-1))]}"
         IFS='|' read -r selected_key selected_desc <<< "$selected"
-        echo ""
-        echo "${GREEN}✅ You selected: ${BOLD}$selected_key${NORMAL}${GREEN} - $selected_desc${NORMAL}"
         break
     else
-        echo "${RED}⚠️ Invalid choice, please try again.${NORMAL}"
+        echo ""
+        echo "${RED}⚠️  Invalid choice, please try again.${NORMAL}"
+        echo ""
     fi
 done
 
@@ -77,11 +77,11 @@ echo ""
 
 # Execute selected deployment
 case "$selected_key" in
-    quickstart)
+    Quickstart)
         echo "${CYAN}🚧 Running quickstart Docker container...${NORMAL}"
         docker run -d --name lago-quickstart -p 3000:3000 -p 80:80 getlago/lago:latest
         ;;
-    production)
-        echo "${RED}⚠️ Production deployment is not available yet."
+    Production)
+        echo "${RED}⚠️  Production deployment is not available yet."
         ;;
 esac
