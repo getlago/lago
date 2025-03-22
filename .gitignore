@@ -9,3 +9,4 @@
 /extra/ssl/dhparam.pem
 /extra/ssl/nginx*
 /traefik/certs/*
+/deploy/letsencrypt

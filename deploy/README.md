@@ -24,6 +24,34 @@ docker compose up --profile all
 docker compose up -d --profile all
 ```
 
+## Docker Compose Traefik
+
+This configuration provide Traefik as a reverse proxy to ease your deployment.
+It supports SSL with Let's Encrypt. :warning: You need a valid domain (with at least one A or AAA record)!
+
+1. Get the docker compose file
+
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.traefik.yml
+curl -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.traefik.example
+```
+
+2. Replace the .env values with yours
+
+```bash
+LAGO_DOMAIN=domain.tld
+LAGO_ACME_EMAIL=email@domain.tld
+```
+
+3. Run the following command to start the project
+
+```bash
+docker compose up --profile all
+
+# If you want to run it in the background
+docker compose up -d --profile all
+```
+
 ## Configuration
 
 ### Profiles
