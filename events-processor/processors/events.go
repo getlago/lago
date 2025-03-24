@@ -51,7 +51,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				)
 
 				if result.ErrorDetails().Capture {
-					utils.CaptureErrorResult(result)
+					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
 				go produceToDeadLetterQueue(event, result)
@@ -204,6 +204,6 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 
 	if !pushed {
 		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
-		utils.CaptureErrorResult(errorResult)
+		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
 	}
 }
