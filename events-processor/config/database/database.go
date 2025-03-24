@@ -2,8 +2,13 @@ package database
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"net"
+	"strings"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	slogGorm "github.com/orandin/slog-gorm"
@@ -67,4 +72,53 @@ func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) 
 
 func (db *DB) Close() {
 	db.pool.Close()
+}
+
+func IsTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		// Error is a network temporary error
+		return true
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(err, context.Canceled) {
+		// Context cancellation and timeouts
+		return true
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		// Check PostgreSQL error classes that indicate temporary issues
+		switch pgErr.Code[:2] {
+		case "08", // Connection Exception
+			"40", // Transaction Rollback
+			"53", // Insufficient Resources
+			"57", // Operator Intervention
+			"58": // System Error
+			return true
+		default:
+			// All other PostgreSQL errors are likely not temporary
+			return false
+		}
+	}
+
+	// Other errors connection errors from pgx
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "connect") ||
+		strings.Contains(msg, "timeout") ||
+		strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "closed") {
+		return true
+	}
+
+	return false
 }

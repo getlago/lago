@@ -63,11 +63,12 @@ func (pc *PartitionConsumer) consume() {
 
 			processedRecords := pc.processRecords(records)
 
-			// Commit the last processed record, to update the commit offset
-			lastRecord := processedRecords[len(processedRecords)-1]
-			err := pc.client.CommitRecords(ctx, lastRecord)
-			if err != nil {
-				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
+			if len(processedRecords) > 0 {
+				// Commit the last processed records
+				err := pc.client.CommitRecords(ctx, processedRecords...)
+				if err != nil {
+					pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, processedRecords[len(processedRecords)-1].Offset+1))
+				}
 			}
 		}
 	}

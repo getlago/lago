@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
@@ -28,9 +29,18 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	var mu sync.Mutex
+	shouldCommit := true
+	processedRecords := make([]*kgo.Record, 0)
+
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
+
+			if !shouldCommit {
+				// Stop processing the batch because of a transient error
+				return
+			}
 
 			sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
 			defer sp.End()
@@ -54,14 +64,24 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
+				if database.IsTransientError(result.Error()) {
+					// Force reprocessing of the batch starting at the failed record
+					shouldCommit = false
+					return
+				}
+
 				go produceToDeadLetterQueue(event, result)
 			}
+
+			mu.Lock()
+			processedRecords = append(processedRecords, record)
+			mu.Unlock()
 		}(record)
 	}
 
 	wg.Wait()
 
-	return records
+	return processedRecords
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
