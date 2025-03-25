@@ -112,6 +112,9 @@ func TestProcessEvent(t *testing.T) {
 		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
+		flagStore := tests.MockFlagStore{}
+		subscriptionFlagStore = &flagStore
+
 		result := processEvent(&event)
 
 		assert.True(t, result.Success())
@@ -121,6 +124,7 @@ func TestProcessEvent(t *testing.T) {
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, enrichedProducer.ExecutionCount)
+		assert.Equal(t, 1, flagStore.ExecutionCount)
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
@@ -389,4 +393,23 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 	assert.Equal(t, "", producedEvent.ErrorCode)
 	assert.Equal(t, "", producedEvent.ErrorMessage)
 	assert.WithinDuration(t, time.Now(), producedEvent.FailedAt, 5*time.Second)
+}
+
+func TestFlagSubscriptionRefresh(t *testing.T) {
+	flagStore := tests.MockFlagStore{}
+	subscriptionFlagStore = &flagStore
+
+	orgId := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+	sub := models.Subscription{ID: "sub_id"}
+
+	result := flagSubscriptionRefresh(orgId, &sub)
+	assert.Equal(t, 1, flagStore.ExecutionCount)
+	assert.True(t, result.Success())
+	assert.True(t, result.Value())
+
+	flagStore.ReturnedError = fmt.Errorf("Failed to flag subscription")
+	result = flagSubscriptionRefresh(orgId, &sub)
+	assert.Equal(t, 2, flagStore.ExecutionCount)
+	assert.True(t, result.Failure())
+	assert.Error(t, result.Error())
 }
