@@ -135,7 +135,7 @@ func StartProcessingEvents() {
 		panic(err.Error())
 	}
 
-	maxConns, err := utils.GetEnvAsInt("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNEXIONS", 200)
+	maxConns, err := utils.GetEnvAsInt("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS", 200)
 	if err != nil {
 		logger.Error("Error converting max connections into integer", slog.String("error", err.Error()))
 		utils.CaptureError(err)

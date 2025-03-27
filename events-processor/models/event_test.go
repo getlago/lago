@@ -56,13 +56,13 @@ func TestToEnrichedEvent(t *testing.T) {
 	})
 }
 
-func TestShouldCheckInAdvanceBilling(t *testing.T) {
+func TestNotAPIPostProcessed(t *testing.T) {
 	t.Run("When event source is not HTTP_RUBY", func(t *testing.T) {
 		event := Event{
 			Source: "REDPANDA_CONNECT",
 		}
 
-		assert.True(t, event.ShouldCheckInAdvanceBilling())
+		assert.True(t, event.NotAPIPostProcessed())
 	})
 
 	t.Run("When event source is HTTP_RUBY without source metadata", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestShouldCheckInAdvanceBilling(t *testing.T) {
 			Source: HTTP_RUBY,
 		}
 
-		assert.True(t, event.ShouldCheckInAdvanceBilling())
+		assert.True(t, event.NotAPIPostProcessed())
 	})
 
 	t.Run("When event source is HTTP_RUBY with source metadata", func(t *testing.T) {
@@ -80,9 +80,9 @@ func TestShouldCheckInAdvanceBilling(t *testing.T) {
 				ApiPostProcess: true,
 			},
 		}
-		assert.False(t, event.ShouldCheckInAdvanceBilling())
+		assert.False(t, event.NotAPIPostProcessed())
 
 		event.SourceMetadata.ApiPostProcess = false
-		assert.True(t, event.ShouldCheckInAdvanceBilling())
+		assert.True(t, event.NotAPIPostProcessed())
 	})
 }
