@@ -8,10 +8,14 @@ import (
 	"github.com/getlago/lago/events-processor/config/redis"
 )
 
-const ERROR_NOT_FOUND string = "record not found"
-
 type ApiStore struct {
 	db *database.DB
+}
+
+func NewApiStore(db *database.DB) *ApiStore {
+	return &ApiStore{
+		db: db,
+	}
 }
 
 type FlagStore struct {
@@ -24,12 +28,6 @@ type Flagger interface {
 	Flag(value string) error
 }
 
-func NewApiStore(db *database.DB) *ApiStore {
-	return &ApiStore{
-		db: db,
-	}
-}
-
 func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagStore {
 	return &FlagStore{
 		name:    name,
@@ -39,7 +37,7 @@ func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagS
 }
 
 func (store *FlagStore) Flag(value string) error {
-	result := store.db.Client.SAdd(store.context, store.name, fmt.Sprintf("%s:1", value))
+	result := store.db.Client.SAdd(store.context, store.name, fmt.Sprintf("%s", value))
 	if err := result.Err(); err != nil {
 		return err
 	}
