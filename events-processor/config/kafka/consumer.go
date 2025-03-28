@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -62,10 +63,16 @@ func (pc *PartitionConsumer) consume() {
 			defer span.End()
 
 			processedRecords := pc.processRecords(records)
+			commitableRecords := records
 
-			// Commit the last processed record, to update the commit offset
-			lastRecord := processedRecords[len(processedRecords)-1]
-			err := pc.client.CommitRecords(ctx, lastRecord)
+			if len(processedRecords) != len(records) {
+				// Ensure we are not committing records that were not processed and can be re-consumed
+				record := findMaxCommitableRecord(processedRecords, records)
+				commitableRecords = []*kgo.Record{record}
+				return
+			}
+
+			err := pc.client.CommitRecords(ctx, commitableRecords...)
 			if err != nil {
 				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
 			}
@@ -168,4 +175,36 @@ func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*Con
 
 func (cg *ConsumerGroup) Start() {
 	cg.poll()
+}
+
+func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) *kgo.Record {
+	// Keep track of processed records
+	processedMap := make(map[string]bool)
+	for _, record := range processedRecords {
+		key := fmt.Sprintf("%s-%d", string(record.Key), record.Offset)
+		processedMap[key] = true
+	}
+
+	// Find the minimum offset of the unprocessed records
+	minUnprocessedOffset := int64(math.MaxInt64)
+	foundUnprocessed := false
+	for _, record := range records {
+		key := fmt.Sprintf("%s-%d", string(record.Key), record.Offset)
+		if !processedMap[key] {
+			if !foundUnprocessed || record.Offset < minUnprocessedOffset {
+				minUnprocessedOffset = record.Offset
+				foundUnprocessed = true
+			}
+		}
+	}
+
+	// Find the record with the offset just before the minimum unprocessed offset
+	var maxRecord *kgo.Record
+	for _, record := range processedRecords {
+		if record.Offset < minUnprocessedOffset && (maxRecord == nil || record.Offset > maxRecord.Offset) {
+			maxRecord = record
+		}
+	}
+
+	return maxRecord
 }
