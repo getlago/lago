@@ -78,6 +78,8 @@ func TestFetchSubscription(t *testing.T) {
 		assert.NotNil(t, result.Error())
 		assert.Equal(t, gorm.ErrRecordNotFound, result.Error())
 		assert.Nil(t, result.Value())
+		assert.False(t, result.IsCapturable())
+		assert.False(t, result.IsRetryable())
 	})
 
 	t.Run("should handle database connection error", func(t *testing.T) {
@@ -103,5 +105,7 @@ func TestFetchSubscription(t *testing.T) {
 		assert.NotNil(t, result.Error())
 		assert.Equal(t, dbError, result.Error())
 		assert.Nil(t, result.Value())
+		assert.True(t, result.IsCapturable())
+		assert.True(t, result.IsRetryable())
 	})
 }

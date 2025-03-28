@@ -9,7 +9,9 @@ import (
 
 var successResult = Result[string]{value: "Success", err: nil}
 var failedResult = Result[string]{
-	err: fmt.Errorf("Failed result"),
+	err:       fmt.Errorf("Failed result"),
+	Capture:   true,
+	Retryable: true,
 	details: &ErrorDetails{
 		Code:    "failed_result",
 		Message: "More details",
@@ -117,4 +119,18 @@ func TestResults(t *testing.T) {
 		assert.Equal(t, test.arg.Value(), test.expectedValue)
 		assert.Equal(t, test.arg.ErrorMsg(), test.expectedErrorMsg)
 	}
+}
+
+func TestNonCapturable(t *testing.T) {
+	assert.True(t, failedResult.Capture)
+	assert.True(t, failedResult.IsCapturable())
+	assert.False(t, failedResult.NonCapturable().Capture)
+	assert.False(t, failedResult.NonCapturable().IsCapturable())
+}
+
+func TestNonRetryable(t *testing.T) {
+	assert.True(t, failedResult.Retryable)
+	assert.True(t, failedResult.IsRetryable())
+	assert.False(t, failedResult.NonRetryable().Retryable)
+	assert.False(t, failedResult.NonRetryable().IsRetryable())
 }

@@ -30,5 +30,11 @@ func (store *ApiStore) FetchBillableMetric(organizationID string, code string) u
 }
 
 func failedBillabmeMetricResult(err error) utils.Result[*BillableMetric] {
-	return utils.FailedResult[*BillableMetric](err)
+	result := utils.FailedResult[*BillableMetric](err)
+
+	if err.Error() == gorm.ErrRecordNotFound.Error() {
+		result = result.NonCapturable().NonRetryable()
+	}
+
+	return result
 }

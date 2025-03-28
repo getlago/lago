@@ -63,14 +63,14 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 
 	timestampResult := utils.ToFloat64Timestamp(ev.Timestamp)
 	if timestampResult.Failure() {
-		return utils.FailedResult[*EnrichedEvent](timestampResult.Error())
+		return utils.FailedResult[*EnrichedEvent](timestampResult.Error()).NonRetryable()
 	}
 	er.Timestamp = timestampResult.Value()
 	er.TimestampStr = fmt.Sprintf("%f", er.Timestamp)
 
 	timeResult := utils.ToTime(ev.Timestamp)
 	if timeResult.Failure() {
-		return utils.FailedResult[*EnrichedEvent](timeResult.Error())
+		return utils.FailedResult[*EnrichedEvent](timeResult.Error()).NonRetryable()
 	}
 	er.Time = timeResult.Value()
 

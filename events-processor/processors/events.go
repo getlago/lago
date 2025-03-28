@@ -50,11 +50,17 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					slog.String("error", result.ErrorMsg()),
 				)
 
-				if result.ErrorDetails().Capture {
+				if result.IsCapturable() {
 					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
-				go produceToDeadLetterQueue(event, result)
+				if !result.IsRetryable() {
+					// Non retryable errors should end in the dead letter queue
+					go produceToDeadLetterQueue(event, result)
+				} else {
+					// Others should not be commited for later retry
+					// TODO
+				}
 			}
 		}(record)
 	}
@@ -73,23 +79,13 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		return failedResultWithOptionalCapture(
-			bmResult,
-			"fetch_billable_metric",
-			"Error fetching billable metric",
-			bmResult.ErrorMsg() != models.ERROR_NOT_FOUND,
-		)
+		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 	bm := bmResult.Value()
 
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() {
-		return failedResultWithOptionalCapture(
-			subResult,
-			"fetch_subscription",
-			"Error fetching subscription",
-			subResult.ErrorMsg() != models.ERROR_NOT_FOUND,
-		)
+		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
 	}
 	sub := subResult.Value()
 
@@ -120,11 +116,10 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
-	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, true)
-}
-
-func failedResultWithOptionalCapture(r utils.AnyResult, code string, message string, capture bool) utils.Result[*models.EnrichedEvent] {
-	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, capture)
+	result := utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+	result.Retryable = r.IsRetryable()
+	result.Capture = r.IsCapturable()
+	return result
 }
 
 func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
@@ -134,7 +129,7 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
-		return utils.FailedBoolResult(err)
+		return utils.FailedBoolResult(err).NonRetryable()
 	}
 	eventJsonString := string(eventJson[:])
 
@@ -142,7 +137,9 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 	if result != nil {
 		ev.Properties[bm.FieldName] = *result
 	} else {
-		return utils.FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString))
+		return utils.
+			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
+			NonRetryable()
 	}
 
 	return utils.SuccessResult(true)
