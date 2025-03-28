@@ -28,6 +28,9 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	var mu sync.Mutex
+	processedRecords := make([]*kgo.Record, 0)
+
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
@@ -54,20 +57,27 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
-				if !result.IsRetryable() {
-					// Non retryable errors should end in the dead letter queue
-					go produceToDeadLetterQueue(event, result)
-				} else {
-					// Others should not be commited for later retry
-					// TODO
+				if result.IsRetryable() && time.Since(event.IngestedAt) < 12*time.Hour {
+					// For retryable errors, we should avoid commiting the record,
+					// It will be consumed again and reprocessed
+					// Events older than 12 hours should also be pushed dead letter queue
+					return
 				}
+
+				// Push failed records to the dead letter queue
+				go produceToDeadLetterQueue(event, result)
 			}
+
+			// Track processed records
+			mu.Lock()
+			processedRecords = append(processedRecords, record)
+			mu.Unlock()
 		}(record)
 	}
 
 	wg.Wait()
 
-	return records
+	return processedRecords
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {

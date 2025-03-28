@@ -19,6 +19,7 @@ type Event struct {
 	Source                  string          `json:"source,omotempty"`
 	Timestamp               any             `json:"timestamp"`
 	SourceMetadata          *SourceMetadata `json:"source_metadata"`
+	IngestedAt              time.Time       `json:"ingested_at"`
 }
 
 type SourceMetadata struct {
