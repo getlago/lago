@@ -191,6 +191,7 @@ services:
     depends_on:
       - db
       - redpanda
+      - redis
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development

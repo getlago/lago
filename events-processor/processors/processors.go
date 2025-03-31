@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
+	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -23,6 +23,7 @@ var (
 	eventsInAdvanceProducer kafka.MessageProducer
 	eventsDeadLetterQueue   kafka.MessageProducer
 	apiStore                *models.ApiStore
+	subscriptionFlagStore   models.Flagger
 	kafkaConfig             kafka.ServerConfig
 )
 
@@ -48,6 +49,26 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 	}
 
 	return utils.SuccessResult(producer)
+}
+
+func initFlagStore(name string) (*models.FlagStore, error) {
+	redisDb, err := utils.GetEnvAsInt("LAGO_REDIS_STORE_DB", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	redisConfig := redis.RedisConfig{
+		Address:  os.Getenv("LAGO_REDIS_STORE_URL"),
+		Password: os.Getenv("LLAGO_REDIS_STORE_PASSWORD"),
+		DB:       redisDb,
+	}
+
+	db, err := redis.NewRedisDB(ctx, redisConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return models.NewFlagStore(ctx, db, name), nil
 }
 
 func StartProcessingEvents() {
@@ -114,15 +135,11 @@ func StartProcessingEvents() {
 		panic(err.Error())
 	}
 
-	maxConns := 200
-	maxConnsStr := os.Getenv("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNEXIONS")
-	if maxConnsStr != "" {
-		value, err := strconv.Atoi(maxConnsStr)
-		if err != nil {
-			logger.Error("Error converting max connections into integer", slog.String("error", err.Error()))
-		}
-
-		maxConns = value
+	maxConns, err := utils.GetEnvAsInt("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNEXIONS", 200)
+	if err != nil {
+		logger.Error("Error converting max connections into integer", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+		panic(err.Error())
 	}
 
 	dbConfig := database.DBConfig{
@@ -138,6 +155,15 @@ func StartProcessingEvents() {
 	}
 	apiStore = models.NewApiStore(db)
 	defer db.Close()
+
+	flagger, err := initFlagStore("subscription_refreshed")
+	if err != nil {
+		logger.Error("Error connecting to the flag store", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+		panic(err.Error())
+	}
+	subscriptionFlagStore = flagger
+	defer flagger.Close()
 
 	cg.Start()
 }
