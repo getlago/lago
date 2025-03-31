@@ -57,7 +57,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
-				if result.IsRetryable() && time.Since(event.IngestedAt) < 12*time.Hour {
+				if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
 					// For retryable errors, we should avoid commiting the record,
 					// It will be consumed again and reprocessed
 					// Events older than 12 hours should also be pushed dead letter queue

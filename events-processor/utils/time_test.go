@@ -90,3 +90,28 @@ func TestToFloat64Timestamp(t *testing.T) {
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
 	})
 }
+
+func TestCustomTime(t *testing.T) {
+	t.Run("With expected time format", func(t *testing.T) {
+		ct := &CustomTime{}
+
+		time := "2025-03-03T13:03:29"
+		err := ct.UnmarshalJSON([]byte(time))
+		assert.NoError(t, err)
+		assert.Equal(t, time, ct.String())
+
+		json, err := ct.MarshalJSON()
+		assert.NoError(t, err)
+
+		data := make([]byte, 0, 21)
+		assert.Equal(t, json, fmt.Appendf(data, "\"%s\"", time))
+	})
+
+	t.Run("With invalid time format", func(t *testing.T) {
+		ct := &CustomTime{}
+
+		time := "2025-03-03T13:03:29Z"
+		err := ct.UnmarshalJSON([]byte(time))
+		assert.Error(t, err)
+	})
+}
