@@ -19,7 +19,6 @@ import (
 var (
 	ctx                     context.Context
 	logger                  *slog.Logger
-	err                     error
 	eventsEnrichedProducer  kafka.MessageProducer
 	eventsInAdvanceProducer kafka.MessageProducer
 	eventsDeadLetterQueue   kafka.MessageProducer

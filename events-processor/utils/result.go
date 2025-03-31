@@ -1,15 +1,16 @@
 package utils
 
 type Result[T any] struct {
-	value   T
-	err     error
-	details *ErrorDetails
+	value     T
+	err       error
+	details   *ErrorDetails
+	Retryable bool
+	Capture   bool
 }
 
 type ErrorDetails struct {
 	Code    string
 	Message string
-	Capture bool
 }
 
 type AnyResult interface {
@@ -19,6 +20,8 @@ type AnyResult interface {
 	ErrorMsg() string
 	ErrorCode() string
 	ErrorMessage() string
+	IsCapturable() bool
+	IsRetryable() bool
 }
 
 func (r Result[T]) Success() bool {
@@ -53,13 +56,30 @@ func (r Result[T]) ErrorMsg() string {
 	return r.err.Error()
 }
 
-func (r Result[T]) AddErrorDetails(code string, message string, capture bool) Result[T] {
+func (r Result[T]) AddErrorDetails(code string, message string) Result[T] {
 	r.details = &ErrorDetails{
 		Code:    code,
 		Message: message,
-		Capture: capture,
 	}
 	return r
+}
+
+func (r Result[T]) NonRetryable() Result[T] {
+	r.Retryable = false
+	return r
+}
+
+func (r Result[T]) IsRetryable() bool {
+	return r.Retryable
+}
+
+func (r Result[T]) NonCapturable() Result[T] {
+	r.Capture = false
+	return r
+}
+
+func (r Result[T]) IsCapturable() bool {
+	return r.Capture
 }
 
 func (r Result[T]) ErrorDetails() *ErrorDetails {
@@ -92,14 +112,18 @@ func SuccessResult[T any](value T) Result[T] {
 
 func FailedResult[T any](err error) Result[T] {
 	result := Result[T]{
-		err: err,
+		err:       err,
+		Capture:   true,
+		Retryable: true,
 	}
 	return result
 }
 
 func FailedBoolResult(err error) Result[bool] {
 	result := Result[bool]{
-		err: err,
+		err:       err,
+		Capture:   true,
+		Retryable: true,
 	}
 	return result
 }

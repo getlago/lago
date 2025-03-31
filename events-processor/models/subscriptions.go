@@ -48,5 +48,11 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 }
 
 func failedSubscriptionResult(err error) utils.Result[*Subscription] {
-	return utils.FailedResult[*Subscription](err)
+	result := utils.FailedResult[*Subscription](err)
+
+	if err.Error() == gorm.ErrRecordNotFound.Error() {
+		result = result.NonCapturable().NonRetryable()
+	}
+
+	return result
 }

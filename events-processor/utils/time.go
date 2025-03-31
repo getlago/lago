@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -61,4 +62,39 @@ func ToFloat64Timestamp(timeValue any) Result[float64] {
 	}
 
 	return SuccessResult(value)
+}
+
+type CustomTime time.Time
+
+func (ct *CustomTime) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), "\"")
+	if s == "null" || s == "" {
+		return nil
+	}
+
+	t, err := time.Parse("2006-01-02T15:04:05", s)
+	if err != nil {
+		return err
+	}
+
+	*ct = CustomTime(t)
+	return nil
+}
+
+func (ct CustomTime) MarshalJSON() ([]byte, error) {
+	t := time.Time(ct)
+	if t.IsZero() {
+		return []byte("null"), nil
+	}
+
+	data := make([]byte, 0, 21) // 19 characters for time format and 2 for quotes
+	return fmt.Appendf(data, "\"%s\"", t.Format("2006-01-02T15:04:05")), nil
+}
+
+func (ct CustomTime) Time() time.Time {
+	return time.Time(ct)
+}
+
+func (ct CustomTime) String() string {
+	return ct.Time().Format("2006-01-02T15:04:05")
 }

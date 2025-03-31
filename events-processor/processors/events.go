@@ -28,6 +28,9 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	var mu sync.Mutex
+	processedRecords := make([]*kgo.Record, 0)
+
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
@@ -50,18 +53,31 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 					slog.String("error", result.ErrorMsg()),
 				)
 
-				if result.ErrorDetails().Capture {
+				if result.IsCapturable() {
 					utils.CaptureErrorResultWithExtra(result, "event", event)
 				}
 
+				if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
+					// For retryable errors, we should avoid commiting the record,
+					// It will be consumed again and reprocessed
+					// Events older than 12 hours should also be pushed dead letter queue
+					return
+				}
+
+				// Push failed records to the dead letter queue
 				go produceToDeadLetterQueue(event, result)
 			}
+
+			// Track processed records
+			mu.Lock()
+			processedRecords = append(processedRecords, record)
+			mu.Unlock()
 		}(record)
 	}
 
 	wg.Wait()
 
-	return records
+	return processedRecords
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
@@ -73,23 +89,13 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		return failedResultWithOptionalCapture(
-			bmResult,
-			"fetch_billable_metric",
-			"Error fetching billable metric",
-			bmResult.ErrorMsg() != models.ERROR_NOT_FOUND,
-		)
+		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 	bm := bmResult.Value()
 
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() {
-		return failedResultWithOptionalCapture(
-			subResult,
-			"fetch_subscription",
-			"Error fetching subscription",
-			subResult.ErrorMsg() != models.ERROR_NOT_FOUND,
-		)
+		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
 	}
 	sub := subResult.Value()
 
@@ -120,11 +126,10 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
-	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, true)
-}
-
-func failedResultWithOptionalCapture(r utils.AnyResult, code string, message string, capture bool) utils.Result[*models.EnrichedEvent] {
-	return utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message, capture)
+	result := utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+	result.Retryable = r.IsRetryable()
+	result.Capture = r.IsCapturable()
+	return result
 }
 
 func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
@@ -134,7 +139,7 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
-		return utils.FailedBoolResult(err)
+		return utils.FailedBoolResult(err).NonRetryable()
 	}
 	eventJsonString := string(eventJson[:])
 
@@ -142,7 +147,9 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 	if result != nil {
 		ev.Properties[bm.FieldName] = *result
 	} else {
-		return utils.FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString))
+		return utils.
+			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
+			NonRetryable()
 	}
 
 	return utils.SuccessResult(true)
