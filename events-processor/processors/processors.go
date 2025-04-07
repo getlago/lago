@@ -59,8 +59,9 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 
 	redisConfig := redis.RedisConfig{
 		Address:  os.Getenv("LAGO_REDIS_STORE_URL"),
-		Password: os.Getenv("LLAGO_REDIS_STORE_PASSWORD"),
+		Password: os.Getenv("LAGO_REDIS_STORE_PASSWORD"),
 		DB:       redisDb,
+		UseTLS:   os.Getenv("ENV") == "production",
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)
