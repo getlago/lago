@@ -111,7 +111,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	go produceEnrichedEvent(enrichedEvent)
 
-	if event.ShouldCheckInAdvanceBilling() {
+	if event.NotAPIPostProcessed() {
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
 			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
@@ -119,6 +119,11 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 		if hasInAdvanceChargeResult.Value() {
 			go produceChargedInAdvanceEvent(enrichedEvent)
+		}
+
+		flagResult := flagSubscriptionRefresh(event.OrganizationID, sub)
+		if flagResult.Failure() {
+			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
 	}
 
@@ -213,4 +218,13 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
 		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
 	}
+}
+
+func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Result[bool] {
+	err := subscriptionFlagStore.Flag(fmt.Sprintf("%s:%s", orgID, sub.ID))
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	return utils.SuccessResult(true)
 }

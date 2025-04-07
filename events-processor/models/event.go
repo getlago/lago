@@ -78,7 +78,7 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	return utils.SuccessResult(er)
 }
 
-func (ev *Event) ShouldCheckInAdvanceBilling() bool {
+func (ev *Event) NotAPIPostProcessed() bool {
 	if ev.Source != HTTP_RUBY {
 		return true
 	}
