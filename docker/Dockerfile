@@ -8,8 +8,10 @@ WORKDIR /app
 
 COPY ./front/ .
 
-RUN apk add python3 build-base
-RUN yarn && yarn build && npm prune --omit=dev
+RUN apk add python3 build-base && \
+    corepack enable && corepack prepare pnpm@latest --activate && \
+    rm -rf /app/node_modules && \
+    pnpm install && pnpm build && pnpm prune --prod
 
 # API Build
 FROM ruby:$RUBY_VERSION-slim AS api_build
