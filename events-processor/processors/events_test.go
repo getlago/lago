@@ -179,8 +179,37 @@ func TestProcessEvent(t *testing.T) {
 		sqlmock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
 
 		result := processEvent(&event)
+		assert.True(t, result.Success())
+	})
+
+	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:             "bm123",
+			OrganizationID: event.OrganizationID,
+			Code:           event.Code,
+			FieldName:      "api_requests",
+			Expression:     "",
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sqlmock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
+
+		result := processEvent(&event)
 		assert.False(t, result.Success())
-		assert.Equal(t, "record not found", result.ErrorMsg())
+		assert.NotNil(t, result.ErrorMsg())
 		assert.Equal(t, "fetch_subscription", result.ErrorCode())
 		assert.Equal(t, "Error fetching subscription", result.ErrorMessage())
 	})
