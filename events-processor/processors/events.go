@@ -100,7 +100,8 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	bm := bmResult.Value()
 
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-	if subResult.Failure() {
+	if subResult.Failure() && subResult.IsCapturable() {
+		// We want to keep processing the event even if the subscription is not found
 		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
 	}
 	sub := subResult.Value()
@@ -117,7 +118,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	go produceEnrichedEvent(enrichedEvent)
 
-	if event.NotAPIPostProcessed() {
+	if sub != nil && event.NotAPIPostProcessed() {
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
 		if hasInAdvanceChargeResult.Failure() {
 			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
