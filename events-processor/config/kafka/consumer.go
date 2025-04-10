@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 type ConsumerGroupConfig struct {
@@ -75,6 +76,7 @@ func (pc *PartitionConsumer) consume() {
 			err := pc.client.CommitRecords(ctx, commitableRecords...)
 			if err != nil {
 				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
+				utils.CaptureError(err)
 			}
 		}
 	}

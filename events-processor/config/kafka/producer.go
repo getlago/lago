@@ -7,6 +7,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 type ProducerConfig struct {
@@ -61,6 +62,7 @@ func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
 	pr := p.client.ProduceSync(ctx, record)
 	if err := pr.FirstErr(); err != nil {
 		p.logger.Error("record had a produce error while synchronously producing", slog.String("error", err.Error()))
+		utils.CaptureError(err)
 		return false
 	}
 

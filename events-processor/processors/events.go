@@ -42,6 +42,12 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 			err := json.Unmarshal(record.Value, &event)
 			if err != nil {
 				logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
+				utils.CaptureError(err)
+
+				mu.Lock()
+				// If we fail to unmarshal the record, we should commit it as it will failed forever
+				processedRecords = append(processedRecords, record)
+				mu.Unlock()
 				return
 			}
 
@@ -182,6 +188,7 @@ func produceChargedInAdvanceEvent(ev *models.EnrichedEvent) {
 	eventJson, err := json.Marshal(ev)
 	if err != nil {
 		logger.Error("error while marshaling charged in advance events")
+		utils.CaptureError(err)
 	}
 
 	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
@@ -208,6 +215,7 @@ func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
 	eventJson, err := json.Marshal(failedEvent)
 	if err != nil {
 		logger.Error("error while marshaling failed event with error details")
+		utils.CaptureError(err)
 	}
 
 	pushed := eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
