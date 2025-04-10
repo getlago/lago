@@ -1,0 +1,523 @@
+name: lago-production
+
+volumes:
+  lago_rsa_data:
+  lago_postgres_data:
+  lago_redis_data:
+  lago_storage_data:
+  portainer_data:
+  minio_data:
+
+x-postgres-image: &postgres-image
+  image: postgres:14-alpine
+x-redis-image: &redis-image
+  image: redis:6-alpine
+x-backend-image: &backend-image
+  image: getlago/api:v1.23.0
+x-frontend-image: &frontend-image
+  image: getlago/front:v1.23.0
+
+x-lago-domain: &lago-domain
+  "LAGO_DOMAIN": ${LAGO_DOMAIN}
+
+x-backend-urls: &backend-urls
+  "LAGO_FRONT_URL": https://${LAGO_DOMAIN}
+  "LAGO_API_URL": https://${LAGO_DOMAIN}/api
+
+x-backend-environment: &backend-env
+  "DATABASE_URL": postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@${POSTGRES_HOST:-db}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-lago}?search_path=${POSTGRES_SCHEMA:-public}
+  "REDIS_URL": redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+  "REDIS_PASSWORD": ${REDIS_PASSWORD:-}
+  "SECRET_KEY_BASE": ${SECRET_KEY_BASE:-your-secret-key-base-hex-64}
+  "RAILS_ENV": production
+  "RAILS_LOG_TO_STDOUT": ${LAGO_RAILS_STDOUT:-true}
+  "LAGO_RSA_PRIVATE_KEY": ${LAGO_RSA_PRIVATE_KEY:-}
+  "LAGO_SIDEKIQ_WEB": ${LAGO_SIDEKIQ_WEB:-true}
+  "LAGO_ENCRYPTION_PRIMARY_KEY": ${LAGO_ENCRYPTION_PRIMARY_KEY:-your-encryption-primary-key}
+  "LAGO_ENCRYPTION_DETERMINISTIC_KEY": ${LAGO_ENCRYPTION_DETERMINISTIC_KEY:-your-encryption-deterministic-key}
+  "LAGO_ENCRYPTION_KEY_DERIVATION_SALT": ${LAGO_ENCRYPTION_KEY_DERIVATION_SALT:-your-encryption-derivation-salt}
+  "LAGO_USE_AWS_S3": ${LAGO_USE_AWS_S3:-false}
+  "LAGO_AWS_S3_ACCESS_KEY_ID": ${LAGO_AWS_S3_ACCESS_KEY_ID:-azerty123456}
+  "LAGO_AWS_S3_SECRET_ACCESS_KEY": ${LAGO_AWS_S3_SECRET_ACCESS_KEY:-azerty123456}
+  "LAGO_AWS_S3_REGION": ${LAGO_AWS_S3_REGION:-us-east-1}
+  "LAGO_AWS_S3_BUCKET": ${LAGO_AWS_S3_BUCKET:-bucket}
+  "LAGO_AWS_S3_ENDPOINT": ${LAGO_AWS_S3_ENDPOINT:-}
+  "LAGO_USE_GCS": ${LAGO_USE_GCS:-false}
+  "LAGO_GCS_PROJECT": ${LAGO_GCS_PROJECT:-}
+  "LAGO_GCS_BUCKET": ${LAGO_GCS_BUCKET:-}
+  "LAGO_FROM_EMAIL": ${LAGO_FROM_EMAIL:-}
+  "LAGO_SMTP_ADDRESS": ${LAGO_SMTP_ADDRESS:-}
+  "LAGO_SMTP_PORT": ${LAGO_SMTP_PORT:-587}
+  "LAGO_SMTP_USERNAME": ${LAGO_SMTP_USERNAME:-}
+  "LAGO_SMTP_PASSWORD": ${LAGO_SMTP_PASSWORD:-}
+  "LAGO_PDF_URL": http://pdf:3000
+  "LAGO_REDIS_CACHE_URL": redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
+  "LAGO_REDIS_CACHE_PASSWORD": ${LAGO_REDIS_CACHE_PASSWORD:-}
+  "LAGO_DISABLE_SEGMENT": ${LAGO_DISABLE_SEGMENT:-}
+  "LAGO_DISABLE_WALLET_REFRESH": ${LAGO_DISABLE_WALLET_REFRESH:-}
+  "LAGO_DISABLE_SIGNUP": ${LAGO_DISABLE_SIGNUP:-false}
+  "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
+  "LAGO_LICENSE": ${LAGO_LICENSE:-}
+  "LAGO_CREATE_ORG": ${LAGO_CREATE_ORG:-false}
+  "LAGO_ORG_USER_PASSWORD": ${LAGO_ORG_USER_PASSWORD:-}
+  "LAGO_ORG_USER_EMAIL": ${LAGO_ORG_USER_EMAIL:-}
+  "LAGO_ORG_NAME": ${LAGO_ORG_NAME:-}
+  "LAGO_ORG_API_KEY": ${LAGO_ORG_API_KEY:-}
+  "GOOGLE_AUTH_CLIENT_ID": ${GOOGLE_AUTH_CLIENT_ID:-}
+  "GOOGLE_AUTH_CLIENT_SECRET": ${GOOGLE_AUTH_CLIENT_SECRET:-}
+
+x-frontend-environment: &frontend-env
+  "API_URL": "https://${LAGO_DOMAIN}"
+  "APP_ENV": production
+  "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
+
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: lago-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LAGO_ACME_EMAIL:-your_email@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
+    ports:
+      - 8080:8080
+      - 443:443
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      
+  db:
+    <<: *postgres-image
+    container_name: lago-db
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-lago} -d ${POSTGRES_DB:-lago} -h localhost -p ${POSTGRES_PORT:-5432}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lago}
+      POSTGRES_USER: ${POSTGRES_USER:-lago}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      PGDATA: /data/postgres
+      PGPORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_SCHEMA: public
+    volumes:
+      - lago_postgres_data:/data/postgres
+    ports:
+      - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+    profiles:
+      - all
+      - all-no-redis
+      - all-no-keys
+
+  redis:
+    <<: *redis-image
+    container_name: lago-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --port ${REDIS_PORT:-6379}
+    volumes:
+      - lago_redis_data:/data
+    ports:
+      - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
+    profiles:
+      - all
+      - all-no-pg
+      - all-no-keys
+
+  rsa-keys:
+    <<: *backend-image
+    container_name: lago-rsa-keys
+    command: ["./scripts/generate.rsa.sh"]
+    volumes:
+      - lago_rsa_data:/app/config/keys
+    profiles:
+      - all
+      - all-no-pg
+      - all-no-redis
+      - all-no-db
+
+  migrate:
+    <<: *backend-image
+    container_name: lago-migrate
+    restart: no
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/migrate.sh"]
+    volumes:
+      - lago_rsa_data:/app/config/keys
+    environment:
+      <<: *backend-env
+
+  api:
+    <<: *backend-image
+    container_name: lago-api
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.api.sh"]
+    healthcheck:
+      test: curl -f http://localhost:3000/health || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
+    environment:
+      <<: [*backend-env, *backend-urls]
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+    labels:
+      - "traefik.enable=true"
+
+      # API Routes
+      - "traefik.http.routers.lago-api.priority=100"
+      - "traefik.http.routers.lago-api.entrypoints=websecure"
+      - "traefik.http.routers.lago-api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.lago-api.middlewares=lago-api-stripprefix"
+      - "traefik.http.middlewares.lago-api-stripprefix.stripprefix.prefixes=/api"
+      - "traefik.http.routers.lago-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-api.service=lago-api-service"
+      - "traefik.http.services.lago-api-service.loadbalancer.server.port=3000"
+
+      # API Versioned Routes
+      - "traefik.http.routers.lago-api-versioned.priority=110"
+      - "traefik.http.routers.lago-api-versioned.entrypoints=websecure"
+      - "traefik.http.routers.lago-api-versioned.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/api/v`)"
+      - "traefik.http.routers.lago-api-versioned.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-api-versioned.service=lago-api-service"
+
+      # API Rails Assets
+      - "traefik.http.routers.lago-api-rails.priority=100"
+      - "traefik.http.routers.lago-api-rails.entrypoints=websecure"
+      - "traefik.http.routers.lago-api-rails.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/rails`)"
+      - "traefik.http.routers.lago-api-rails.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-api-rails.service=lago-api-service"
+
+      # GraphQL Routes
+      - "traefik.http.routers.lago-graphql.priority=100"
+      - "traefik.http.routers.lago-graphql.entrypoints=websecure"
+      - "traefik.http.routers.lago-graphql.rule=Host(`${LAGO_DOMAIN}`) && Path(`/graphql`)"
+      - "traefik.http.routers.lago-graphql.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lago-graphql.service=lago-api-service"
+
+  front:
+    <<: *frontend-image
+    container_name: lago-front
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+        restart: true
+    environment:
+      <<: [*frontend-env]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lago-front.priority=50"
+      - "traefik.http.routers.lago-front.entrypoints=websecure"
+      - "traefik.http.routers.lago-front.rule=Host(`${LAGO_DOMAIN}`)"
+      - "traefik.http.routers.lago-front.tls.certresolver=letsencrypt"
+      - "traefik.http.services.lago-front.loadbalancer.server.port=80"
+      
+
+  worker:
+    <<: *backend-image
+    container_name: lago-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
+    environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 20
+      DATABASE_POOL: 20
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+
+  clock:
+    <<: *backend-image
+    container_name: lago-clock
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.clock.sh"]
+    volumes:
+      - lago_rsa_data:/app/config/keys
+    environment:
+      <<: [*backend-env, *backend-urls]
+  
+  billing-worker:
+    <<: *backend-image
+    container_name: lago-billing-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.billing.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
+    environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 5
+      DATABASE_POOL: 5
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+  
+  pdf-worker:
+    <<: *backend-image
+    container_name: lago-pdf-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.pdf.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
+    environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 5
+      DATABASE_POOL: 5
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+  
+  webhook-worker:
+    <<: *backend-image
+    container_name: lago-webhook-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.webhook.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 10
+      DATABASE_POOL: 10
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+  
+  clock-worker:
+    <<: *backend-image
+    container_name: lago-clock-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.clock.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+    environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 20
+      DATABASE_POOL: 20
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+  
+  events-worker:
+    <<: *backend-image
+    container_name: lago-events-worker
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+        restart: true
+        required: false
+      redis:
+        condition: service_healthy
+        restart: true
+        required: false
+    command: ["./scripts/start.events.worker.sh"]
+    healthcheck:
+      test: curl -f http://localhost:8080 || exit 1
+      interval: 10s
+      start_period: 30s
+      timeout: 60s
+      start_interval: 2s
+    environment:
+      <<: [*backend-env, *backend-urls]
+      SIDEKIQ_CONCURRENCY: 20
+      DATABASE_POOL: 20
+    volumes:
+      - lago_storage_data:/app/storage
+      - lago_rsa_data:/app/config/keys
+
+  pdf:
+    image: getlago/lago-gotenberg:8.15
+    command:
+      - gotenberg
+      - --libreoffice-disable-routes=true
+      - --chromium-ignore-certificate-errors=true
+      - --chromium-disable-javascript=true
+      - --api-timeout=300s
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: lago-portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    environment:
+      - ADMIN_USER=${PORTAINER_USER:-admin}
+      - ADMIN_PASSWORD=${PORTAINER_PASSWORD:-changeme}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/portainer`)"
+      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.portainer.service=portainer-service"
+      - "traefik.http.services.portainer-service.loadbalancer.server.port=9000"
+      - "traefik.http.routers.portainer.middlewares=portainer-stripprefix"
+      - "traefik.http.middlewares.portainer-stripprefix.stripprefix.prefixes=/portainer"
+
+  minio:
+    image: minio/minio:latest
+    container_name: lago-minio
+    restart: unless-stopped
+    volumes:
+      - minio_data:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_BROWSER=on
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.minio-api.entrypoints=websecure"
+      - "traefik.http.routers.minio-api.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/minio`)"
+      - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-api.service=minio-api-service"
+      - "traefik.http.services.minio-api-service.loadbalancer.server.port=9000"
+      - "traefik.http.routers.minio-api.middlewares=minio-api-stripprefix"
+      - "traefik.http.middlewares.minio-api-stripprefix.stripprefix.prefixes=/minio"
+
+      - "traefik.http.routers.minio-console.entrypoints=websecure"
+      - "traefik.http.routers.minio-console.rule=Host(`${LAGO_DOMAIN}`) && PathPrefix(`/minio-console`)"
+      - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-console.service=minio-console-service"
+      - "traefik.http.services.minio-console-service.loadbalancer.server.port=9001"
+      - "traefik.http.routers.minio-console.middlewares=minio-console-stripprefix"
+      - "traefik.http.middlewares.minio-console-stripprefix.stripprefix.prefixes=/minio-console"
+
+  minio-bucket:
+    image: minio/mc:latest
+    container_name: lago-minio-bucket
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      /usr/bin/mc mb --ignore-existing myminio/lago;
+      exit 0;
+      "
