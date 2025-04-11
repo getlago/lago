@@ -114,4 +114,20 @@ func TestCustomTime(t *testing.T) {
 		err := ct.UnmarshalJSON([]byte(time))
 		assert.Error(t, err)
 	})
+
+	t.Run("When timestamp is a unix timestamp sent as string", func(t *testing.T) {
+		ct := &CustomTime{}
+		time := "1744335427"
+		expectedTime := "2025-04-11T01:37:07"
+
+		err := ct.UnmarshalJSON([]byte(time))
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTime, ct.String())
+
+		json, err := ct.MarshalJSON()
+		assert.NoError(t, err)
+
+		data := make([]byte, 0, 21)
+		assert.Equal(t, json, fmt.Appendf(data, "\"%s\"", expectedTime))
+	})
 }
