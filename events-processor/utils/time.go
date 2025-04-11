@@ -74,7 +74,13 @@ func (ct *CustomTime) UnmarshalJSON(b []byte) error {
 
 	t, err := time.Parse("2006-01-02T15:04:05", s)
 	if err != nil {
-		return err
+		// value could be a Unix timestamp encoded as a string
+		timeResult := ToTime(s)
+		if timeResult.Failure() {
+			return err
+		}
+
+		t = timeResult.value
 	}
 
 	*ct = CustomTime(t)
