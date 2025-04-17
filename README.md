@@ -1,18 +1,14 @@
 <!-- PROJECT LOGO -->
 <p align="center">
+
+  <h1 align="center">Lago</h2>
+
   <a href="https://github.com/getlago/lago">
     <img src="https://uploads-ssl.webflow.com/635119506e36baf5c267fecd/635b6df0ee8effaa54c1fa42_banner-open-graph.jpg" alt="Lago">
   </a>
 
-  <h1 align="center">Lago</h2>
-
   <p align="center">
-    Open Source Metering & Usage-Based Billing
-    <br />
-    <br />
-    The best alternative to Chargebee, Recurly or Stripe Billing.
-    <br />
-    For usage-based, subscription-based, and all the nuances of pricing in between.
+    Lago is an open-source metering and usage-based billing API designed to help businesses manage consumption tracking, subscription management, pricing iterations, payment orchestration, and revenue analytics. It serves as a robust alternative to platforms like Chargebee, Recurly, or Stripe Billing, catering to various pricing models from usage-based to subscription-based structures.
     <br />
     <br />
     <a href="https://www.getlago.com/slack">Slack</a>
@@ -23,6 +19,7 @@
     ·
     <a href="https://getlago.canny.io/">Roadmap</a>
   </p>
+
 </p>
 <p align="center">
     <a href="https://www.producthunt.com/posts/lago?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-lago" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=386328&theme=light&period=monthly" alt="Lago - Open&#0045;source&#0032;alternative&#0032;to&#0032;Stripe&#0032;Billing&#0032;and&#0032;Chargebee | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
@@ -75,9 +72,6 @@ Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and a
 
 [Check out our public roadmap](https://getlago.canny.io/)
 
-## 🔖 License
-Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/blog/open-source-licensing-and-why-lago-chose-agplv3).
-
 ## Current Releases
 
 | Project            | Release Badge                                                                                       |
@@ -93,51 +87,77 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 | **Lago Ruby Client**     | [![Lago Ruby Client Release](https://img.shields.io/github/v/release/getlago/lago-ruby-client)](https://github.com/getlago/lago-ruby-client/releases) |
 
 
-## 💻 Deploy locally
+# Lago
+
+Lago is an open-source metering and usage-based billing API designed to help businesses manage consumption tracking, subscription management, pricing iterations, payment orchestration, and revenue analytics. It serves as a robust alternative to platforms like Chargebee, Recurly, or Stripe Billing, catering to various pricing models from usage-based to subscription-based structures.
+
+## 💻 Deploy Locally
 
 ### Requirements
-1. Install Docker on your machine;
-2. Make sure Docker Compose is installed and available (it should be the case if you have chosen to install Docker via Docker Desktop); and
-3. Make sure Git is installed on your machine.
+To deploy Lago locally, ensure that the following dependencies are installed on your machine:
 
-### Run the app
-To start using Lago, run the following commands in a shell:
+1. **Docker** - Install [Docker](https://docs.docker.com/get-docker/).
+2. **Docker Compose** - Docker Desktop includes Docker Compose by default, but verify its availability.
+3. **Git** - Install [Git](https://git-scm.com/downloads) if it is not already installed.
 
+### Run the App
+To start using Lago, execute the following commands in your terminal:
 
-#### On a fresh install
+#### 1️⃣ Clone the Repository
+
 ```bash
-# Get the code
 git clone --depth 1 https://github.com/getlago/lago.git
-
-# Go to Lago folder
 cd lago
+```
+This will download the Lago project and navigate into its directory.
 
-# Set up environment configuration
+#### 2️⃣ Configure Environment Variables
+
+```bash
 echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
 source .env
+```
+This generates a new RSA private key and stores it in the `.env` file. It then loads the environment variables into your shell session.
 
-# Start the api
+#### 3️⃣ Start the API Service
+
+```bash
 docker compose up -d api
+```
+This command runs the API service in detached mode (`-d`), meaning it will run in the background without blocking your terminal.
 
-# Create the database
+#### 4️⃣ Set Up the Database
+
+```bash
 docker compose exec api rails db:create
 docker compose exec api rails db:migrate
+```
+These commands create the database and apply all necessary migrations to structure it properly.
 
-# Start all other components
+#### 5️⃣ Start All Remaining Services
+
+```bash
 docker compose up
 ```
+This brings up the rest of the required services, such as the frontend and additional backend components.
 
-#### After an update
+### 🆕 After an Update
+
+To restart Lago after an update, simply run:
 
 ```bash
 docker compose up
 ```
 
-You can now open your browser and go to http://localhost to connect to the application. Lago's API is exposed at http://localhost:3000.
+### 🌐 Access the Application
 
-Note that if our docker server is not at http://localhost, the following env variables must be set: `LAGO_API_URL`. This may be on the command line or in your .env file. For example:
+- Open your browser and go to [http://localhost](http://localhost) to access the Lago interface.
+- The Lago API is available at [http://localhost:3000](http://localhost:3000).
 
-```
+### 🔧 Custom API URL Configuration
+If your Docker server is running on a different host instead of `http://localhost`, update the following environment variables either in your shell or `.env` file:
+
+```bash
 LAGO_API_URL="http://192.168.122.71:3000"
 LAGO_FRONT_URL="http://192.168.122.71"
 ```
@@ -170,12 +190,6 @@ Contact our team at hello@getlago.com to get started with Lago Cloud. More infor
 - Follow us on [Twitter](https://twitter.com/GetLago) for the latest news;
 - You can email us as well: hello@getlago.com.
 
-## 🧑‍💻 Contributions and development environment
-
-You can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) to set up a Lago development environment on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we recommend that you take a look at Lago's public documentation.
-
-You can contribute by following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
-
 ## 💡 Philosophy
 B2B SaaS has evolved, but billing has not yet.
 
@@ -198,3 +212,12 @@ Why did billing companies adopt the same pricing structure? We’re not able to 
 
 ### One last thing…
 Lago is agnostic and we aim at being as transparent as possible, so we won’t nudge or lock you into using a specific tool in exchange for using our billing API ([learn more](https://www.gmass.co/blog/negotiating-stripe-fees/)).
+
+## 🧑‍💻 Contributions and development environment
+
+You can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) to set up a Lago development environment on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we recommend that you take a look at Lago's public documentation.
+
+We welcome contributions! Please refer to our [contributing](./CONTRIBUTING.md) guide for more information.
+
+## 🔖 License
+This project is licensed under the AGPL-3.0 License. See the [license](./LICENSE) file for details.
