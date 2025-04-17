@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Services
+When creating a service class:
+- the class always extend BaseService using `<`
+- the class name should always end with `Service`
+- the class should always be placed in `api/app/services/**/*.rb`
+- Service class takes named arguments via the constructor and arguments are stored in instance variables.
+- Each instance variable should have a private attr_reader declared
+- Service class have one and only one public method named `call` and it never accepts arguments
+- Service `call` method should always return `result`
+- Service class must define a custom Result class following these rules:
+  - By default, `Result = BaseResult`
+  - If the service must return values, define them using `BaseResult[]`. Example of result returning a customer and a subcription: `Result = BaseResult[:customer, :subscription]`
+
+
+# Jobs
+To call the class service class asynchronously, create job:
+- jobs should have the exact same fully qualified class name except it ends with `Job` instead of `Service`.
+- the perform method of the job typically calls the matching service and forwards all it's arguements
+- the service is called using the class method `call!`
+- avoid using named parameters for jobs
+
+Example of job calling a service:
+
+```ruby
+# frozen_string_literal: true
+
+module SomeModuleName
+  class MyGeneratedJob < ApplicationJob
+    queue_as "default"
+
+    def perform(organization, subscription)
+      SomeModuleName::MyGeneratedService.call!(organization:, subscription:)
+    end
+  end
+end
+
+```
+
+# Models
+- New models must directly belong to an organization. Store the `organization_id` in the table, don't use `through:`
+
+
