@@ -116,14 +116,7 @@ cd lago
 echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
 source .env
 
-# Start the api
-docker compose up -d api
-
-# Create the database
-docker compose exec api rails db:create
-docker compose exec api rails db:migrate
-
-# Start all other components
+# Start all the components
 docker compose up
 ```
 
