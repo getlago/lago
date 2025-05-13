@@ -22,7 +22,7 @@ ENV PATH="$PATH:/root/.cargo/bin/"
 WORKDIR /app
 
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install nodejs curl build-essential git pkg-config libpq-dev libclang-dev curl -y && \
+    apt-get install nodejs curl build-essential git pkg-config libpq-dev libclang-dev libyaml-dev curl -y && \
     curl https://sh.rustup.rs -sSf | bash -s -- -y
 
 COPY ./api/Gemfile /app/Gemfile
