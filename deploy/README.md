@@ -52,6 +52,37 @@ docker compose up --profile all
 docker compose up -d --profile all
 ```
 
+## Docker Compose Production
+
+This configuration provide Traefik as a reverse proxy to ease your deployment.
+It supports SSL wth Let's Encrypt. :warning: You need a valid domain (with at least one A or AAA record)!
+It also adds multiple services that will help your to handle more load.
+Portainer is also packed to help you scale services and manage your Lago stack.
+
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.production.yml
+curl -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.production.example
+```
+
+2. Replace the .env values with yours
+
+```bash
+LAGO_DOMAIN=domain.tld
+LAGO_ACME_EMAIL=email@domain.tld
+PORTAINER_USER=lago
+PORTAINER_PASSWORD=changeme
+```
+
+3. Run the following command to start the project
+
+```bash
+docker compose up --profile all
+
+# If you want to run it in the background
+docker compose up -d --profile all
+```
+
+
 ## Configuration
 
 ### Profiles
