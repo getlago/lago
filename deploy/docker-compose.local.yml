@@ -7,13 +7,13 @@ volumes:
   lago_storage_data:
 
 x-postgres-image: &postgres-image
-  image: postgres:14-alpine
+  image: postgres:15-alpine
 x-redis-image: &redis-image
-  image: redis:6-alpine
+  image: redis:7-alpine
 x-backend-image: &backend-image
-  image: getlago/api:v1.23.0
+  image: getlago/api:v1.27.1
 x-frontend-image: &frontend-image
-  image: getlago/front:v1.23.0
+  image: getlago/front:v1.27.1
 
 x-lago-api-url: &lago-api-url
   "LAGO_API_URL": ${LAGO_API_URL:-http://localhost:3000}
