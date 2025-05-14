@@ -162,6 +162,46 @@ echo ""
 
 profile="all"
 
+# Download docker-compose file based on choice
+case "$selected_key" in
+    "Local")
+        echo "${CYAN}${BOLD}🚀 Downloading Local deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.local.yml
+        curl -s -o .env https://deploy.getlago.com/.env.local.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Local deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+    "Light")
+        echo "${CYAN}${BOLD}🚀 Downloading Light deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.light.yml
+        curl -s -o .env https://deploy.getlago.com/.env.light.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Light deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+    "Production")
+        echo "${CYAN}${BOLD}🚀 Downloading Production deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.production.yml
+        curl -s -o .env https://deploy.getlago.com/.env.production.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Production deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+esac
+
+echo ""
+
+
 # Check Env Vars depending on the deployment
 if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL" "PORTAINER_USER" "PORTAINER_PASSWORD")
