@@ -38,19 +38,15 @@ FROM ruby:$RUBY_VERSION-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get upgrade -y && \
+RUN apt-get update -y && \
     apt-get install curl ca-certificates gnupg software-properties-common -y && \
     curl -fsSL https://postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /usr/share/keyrings/postgresql-archive-keyring.gpg > /dev/null && \
     echo deb [arch=amd64,arm64,ppc64e1 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main | tee /etc/ap && \
-    curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg && \
-    chmod 644 /usr/share/keyrings/redis-archive-keyring.gpg &&\
-    echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/redis.list && \
     apt-get update && \
-    apt-get install nginx xz-utils git libpq-dev postgresql-15 redis -y && \
+    apt-get install nginx xz-utils git libpq-dev postgresql-15 redis-server -y && \
     apt-get remove software-properties-common apt-transport-https -y
 
 COPY ./docker/nginx.conf /etc/nginx/sites-enabled/default
-COPY ./docker/redis.conf /etc/redis/redis.conf
 
 COPY --from=front_build /app/dist /app/front
 COPY --from=api_build /usr/local/bundle/ /usr/local/bundle
