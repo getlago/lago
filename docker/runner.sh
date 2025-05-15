@@ -35,7 +35,7 @@ export PGDATA="${DATA_DIR}/postgresql"
 export PGPORT=5432
 
 # Start Redis, PG and Nginx
-service redis-server restart >> /dev/null
+service redis-server start >> /dev/null
 service postgresql restart >> /dev/null
 service nginx restart >> /dev/null
 
