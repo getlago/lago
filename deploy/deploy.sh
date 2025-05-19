@@ -101,7 +101,7 @@ check_and_stop_containers(){
         fi
     done
 
-    compose_projects=("lago-local" "lago-light")
+    compose_projects=("lago-local" "lago-light" "lago-production")
     for project in "${compose_projects[@]}"; do
         running_services=$(docker compose -p "$project" ps -q &>/dev/null || docker-compose -p "$project" ps -q &>/dev/null)
         if [ -n "$running_services" ]; then
@@ -132,7 +132,7 @@ templates=(
     "Quickstart|One-line Docker run command, ideal for testing"
     "Local|Local installation of Lago, without SSL support"
     "Light|Light Lago installation, ideal for small production usage"
-    "Production|Coming soon... Optimized Production Setup for scalability and performances"
+    "Production|Optimized Production Setup for scalability and performances"
 )
 
 # Display Templates
@@ -162,11 +162,59 @@ echo ""
 
 profile="all"
 
+# Download docker-compose file based on choice
+case "$selected_key" in
+    "Local")
+        echo "${CYAN}${BOLD}🚀 Downloading Local deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.local.yml
+        curl -s -o .env https://deploy.getlago.com/.env.local.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Local deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+    "Light")
+        echo "${CYAN}${BOLD}🚀 Downloading Light deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.light.yml
+        curl -s -o .env https://deploy.getlago.com/.env.light.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Light deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+    "Production")
+        echo "${CYAN}${BOLD}🚀 Downloading Production deployment files...${NORMAL}"
+        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.production.yml
+        curl -s -o .env https://deploy.getlago.com/.env.production.example
+        if [ $? -eq 0 ]; then
+            echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
+        else
+            echo "${RED}❌ Failed to download Production deployment files${NORMAL}"
+            exit 1
+        fi
+        ;;
+esac
+
+echo ""
+
+
 # Check Env Vars depending on the deployment
-if [[ "$selected_key" == "Light" ]]; then
-    mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL")
+if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
+    mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL" "PORTAINER_USER" "PORTAINER_PASSWORD")
     external_pg=false
     external_redis=false
+
+    if [[ -n "$LAGO_DOMAIN" ]]; then
+        check_domain_dns "$LAGO_DOMAIN"
+        if [[ $? -eq 1 ]] && ! ask_yes_no "No valid DNS record found. Continue anyway?"; then
+            echo "${YELLOW}⚠️ Deployment aborted.${NORMAL}"
+            exit 1
+        fi
+    fi
 
     if ask_yes_no "Do you want to use an external PostgreSQL instance?"; then
         mandatory_vars+=("POSTGRES_HOST" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_PORT" "POSTGRES_DB")
@@ -225,6 +273,37 @@ if [[ "$selected_key" == "Light" ]]; then
     echo ""
 fi
 
+# Check if domain has A record
+check_domain_dns() {
+    local domain="$1"
+    
+    # Remove protocol if present
+    domain=$(echo "$domain" | sed -E 's|^https?://||')
+    
+    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
+    
+    if command -v dig &> /dev/null; then
+        if dig +short A "$domain" | grep -q '^[0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    elif command -v nslookup &> /dev/null; then
+        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    else
+        echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
+        return 2
+    fi
+}
+
 # Execute selected deployment
 case "$selected_key" in
     Quickstart)
@@ -237,11 +316,15 @@ case "$selected_key" in
         ;;
     Light)
         echo "${CYAN}🚧 Running Light Docker Compose deployment...${NORMAL}"
+        
         docker compose -f docker-compose.light.yml --profile "$profile" up -d &>/dev/null || \
         docker-compose -f docker-compose.light.yml --profile "$profile" up -d &>/dev/null
         ;;
     Production)
-        echo "${RED}⚠️  Production deployment is not available yet."
+        echo "${CYAN}🚧 Running Production Docker Compose deployment...${NORMAL}"
+
+        docker compose -f docker-compose.production.yml --profile "$profile" up -d &>/dev/null || \
+        docker-compose -f docker-compose.production.yml --profile "$profile" up -d &>/dev/null
         ;;
 esac
 

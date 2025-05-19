@@ -1,0 +1,39 @@
+name: "Deploy Github Page"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'deploy/deploy.sh'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            deploy/
+      - name: Upload deploy script
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy/
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy page
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
