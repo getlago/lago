@@ -167,7 +167,6 @@ case "$selected_key" in
     "Local")
         echo "${CYAN}${BOLD}🚀 Downloading Local deployment files...${NORMAL}"
         curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.local.yml
-        curl -s -o .env https://deploy.getlago.com/.env.local.example
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
         else
@@ -200,7 +199,6 @@ case "$selected_key" in
 esac
 
 echo ""
-
 
 # Check Env Vars depending on the deployment
 if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
