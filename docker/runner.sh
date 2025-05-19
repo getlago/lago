@@ -1,9 +1,14 @@
 #!/bin/bash
 
+echo "Starting Lago..."
+
 declare -A ENV_VARS=(
+    [RAILS_ENV]="production"
+    [RAILS_LOG_TO_STDOUT]="true"
     [POSTGRES_PASSWORD]=$(openssl rand -hex 16)
     [SECRET_KEY_BASE]=$(openssl rand -base64 16)
     [LAGO_RSA_PRIVATE_KEY]=$(openssl genrsa 2048 | base64 | tr -d '\n')
+    [LAGO_DISABLE_SSL]="true"
     [LAGO_ENCRYPTION_PRIMARY_KEY]=$(openssl rand -hex 16)
     [LAGO_ENCRYPTION_DETERMINISTIC_KEY]=$(openssl rand -hex 16)
     [LAGO_ENCRYPTION_KEY_DERIVATION_SALT]=$(openssl rand -hex 16)
@@ -11,6 +16,7 @@ declare -A ENV_VARS=(
     [LAGO_FRONT_URL]="http://localhost"
     [LAGO_API_URL]="http://localhost:3000"
     [API_URL]="http://localhost:3000"
+    [LAGO_PDF_URL]="http://host.docker.internal:3001"
     [APP_ENV]="production"
 )
 
@@ -41,6 +47,17 @@ export PGPORT=5432
 service redis-server start >> /dev/null
 service postgresql restart >> /dev/null
 service nginx restart >> /dev/null
+
+# PDF Service
+if df -hT | grep -q docker.sock > /dev/null; then
+    if docker ps --filter "name=lago-pdf" | grep -q lago-pdf > /dev/null; then
+        docker stop lago-pdf > /dev/null
+        docker rm lago-pdf > /dev/null
+    fi
+    docker run -d --name lago-pdf -p 3001:3000 getlago/lago-gotenberg:8 > /dev/null
+else
+    echo "WARN: Docker socket is not mounted. Skipping PDF service."
+fi
 
 # Prepare Environment
 # Defaulting values

@@ -42,8 +42,11 @@ RUN apt-get update -y && \
   apt-get install curl ca-certificates gnupg software-properties-common -y && \
   curl -fsSL https://postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /usr/share/keyrings/postgresql-archive-keyring.gpg > /dev/null && \
   echo deb [arch=amd64,arm64,ppc64e1 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main | tee /etc/ap && \
+  curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
+  chmod a+r /etc/apt/keyrings/docker.asc && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   apt-get update && \
-  apt-get install nginx xz-utils git libpq-dev postgresql-15 redis-server -y && \
+  apt-get install nginx xz-utils git libpq-dev postgresql-15 redis-server docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y && \
   apt-get remove software-properties-common apt-transport-https -y
 
 COPY ./docker/nginx.conf /etc/nginx/sites-enabled/default
@@ -55,8 +58,6 @@ COPY ./front/.env.sh ./front/.env.sh
 COPY ./api ./api
 COPY ./docker/Procfile ./api/Procfile
 COPY ./docker/runner.sh ./runner.sh
-
-ENV SEGMENT_WRITE_KEY=$SEGMENT_WRITE_KEY
 
 EXPOSE 80
 EXPOSE 3000
