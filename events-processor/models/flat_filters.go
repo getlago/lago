@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/getlago/lago/events-processor/utils"
@@ -66,4 +67,40 @@ func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string
 	}
 
 	return utils.SuccessResult(filters)
+}
+
+func (ffv *FlatFilterValues) Keys() []string {
+	if ffv == nil || *ffv == nil {
+		return nil
+	}
+
+	keys := make([]string, len(*(ffv)))
+	i := 0
+	for key := range *(ffv) {
+		keys[i] = key
+		i++
+	}
+
+	return keys
+}
+
+func (ff *FlatFilter) IsMatchingEvent(event EnrichedEvent) utils.Result[bool] {
+	matching := true
+	if ff.Filters == nil || len(*ff.Filters) == 0 {
+		return utils.SuccessResult(matching)
+	}
+
+	for key, values := range *(ff.Filters) {
+		if event.Properties[key] == nil {
+			matching = false
+			break
+		}
+
+		if !slices.Contains(values, fmt.Sprintf("%v", event.Properties[key])) {
+			matching = false
+			break
+		}
+	}
+
+	return utils.SuccessResult(matching)
 }

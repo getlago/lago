@@ -79,3 +79,84 @@ func TestFetchFlatFilters(t *testing.T) {
 		assert.Len(t, result.Value(), 0)
 	})
 }
+
+func TestFilterKeys(t *testing.T) {
+	t.Run("should extract all keys from the Filters", func(t *testing.T) {
+		filters := FlatFilterValues{
+			"scheme":         {"visa", "mastercard"},
+			"payment_method": {"debit"},
+		}
+
+		keys := filters.Keys()
+		assert.ElementsMatch(t, []string{"scheme", "payment_method"}, keys)
+	})
+
+}
+
+func TestIsMatchingEvent(t *testing.T) {
+	t.Run("should match events properties with valid filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa", "payment_method": "debit"},
+		}
+
+		flatFilter := FlatFilter{
+			Filters: &FlatFilterValues{
+				"scheme":         {"visa", "mastercard"},
+				"payment_method": {"debit"},
+			},
+		}
+
+		result := flatFilter.IsMatchingEvent(event)
+
+		assert.True(t, result.Value())
+	})
+
+	t.Run("should not match events properties with invalid filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa", "payment_method": "debit"},
+		}
+
+		flatFilter := FlatFilter{
+			Filters: &FlatFilterValues{
+				"scheme":         {"visa", "mastercard"},
+				"payment_method": {"credit"},
+			},
+		}
+
+		result := flatFilter.IsMatchingEvent(event)
+
+		assert.False(t, result.Value())
+	})
+
+	t.Run("should not match events properties with missing filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa", "payment_method": "debit"},
+		}
+
+		flatFilter := FlatFilter{
+			Filters: &FlatFilterValues{
+				"scheme":         {"visa", "mastercard"},
+				"payment_method": {"debit"},
+				"country":        {"us"},
+			},
+		}
+
+		result := flatFilter.IsMatchingEvent(event)
+
+		assert.False(t, result.Value())
+	})
+
+	t.Run("should return true if filters are empty", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa", "payment_method": "debit"},
+		}
+
+		flatFilter := FlatFilter{
+			Filters: nil,
+		}
+
+		result := flatFilter.IsMatchingEvent(event)
+
+		assert.True(t, result.Value())
+	})
+}
