@@ -132,6 +132,8 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
+
+		expireCache(enrichedEvent, sub)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -236,4 +238,29 @@ func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Resul
 	}
 
 	return utils.SuccessResult(true)
+}
+
+func expireCache(event *models.EnrichedEvent, sub *models.Subscription) {
+	filtersResult := apiStore.FetchFlatFilters(sub.PlanID, event.Code)
+	if filtersResult.Failure() {
+		utils.CaptureError(filtersResult.Error())
+	}
+
+	// Index filters by charge ID
+	charges := make(map[string][]models.FlatFilter)
+	for _, filter := range filtersResult.Value() {
+		if charges[filter.ChargeID] == nil {
+			charges[filter.ChargeID] = []models.FlatFilter{}
+		}
+		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
+	}
+
+	// For each charges, find matching filters or default charge and expire cache
+	for _, filters := range charges {
+		filter := models.MatchingFilter(filters, event)
+		cacheResult := chargeCacheStore.Expire(filter, sub.ID)
+		if cacheResult.Failure() {
+			utils.CaptureError(cacheResult.Error())
+		}
+	}
 }

@@ -30,7 +30,7 @@ func TestExpireChargeCache(t *testing.T) {
 		var cache Cacher = cacheStore
 		chargeCache := NewChargeCache(&cache)
 
-		result := chargeCache.Expire(chargeFilter, subID)
+		result := chargeCache.Expire(&chargeFilter, subID)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, cacheStore.LastKey, "charge-usage/1/charge_id/sub_id/2025-03-03T13:03:29Z")
@@ -60,7 +60,7 @@ func TestExpireChargeCache(t *testing.T) {
 		var cache Cacher = cacheStore
 		chargeCache := NewChargeCache(&cache)
 
-		result := chargeCache.Expire(chargeFilter, subID)
+		result := chargeCache.Expire(&chargeFilter, subID)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, cacheStore.LastKey, "charge-usage/1/charge_id/sub_id/2025-03-03T13:03:29Z/filter_id/2025-03-03T13:03:29Z")

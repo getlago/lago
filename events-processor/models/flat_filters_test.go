@@ -93,6 +93,19 @@ func TestFilterKeys(t *testing.T) {
 
 }
 
+func TestHasFilters(t *testing.T) {
+	t.Run("should check the presence of filters", func(t *testing.T) {
+		flatFilter := FlatFilter{}
+		assert.False(t, flatFilter.HasFilters())
+
+		flatFilter.Filters = &FlatFilterValues{}
+		assert.False(t, flatFilter.HasFilters())
+
+		(*flatFilter.Filters)["scheme"] = []string{"visa", "mastercard"}
+		assert.True(t, flatFilter.HasFilters())
+	})
+}
+
 func TestIsMatchingEvent(t *testing.T) {
 	t.Run("should match events properties with valid filters", func(t *testing.T) {
 		event := EnrichedEvent{
@@ -106,7 +119,7 @@ func TestIsMatchingEvent(t *testing.T) {
 			},
 		}
 
-		result := flatFilter.IsMatchingEvent(event)
+		result := flatFilter.IsMatchingEvent(&event)
 
 		assert.True(t, result.Value())
 	})
@@ -123,7 +136,7 @@ func TestIsMatchingEvent(t *testing.T) {
 			},
 		}
 
-		result := flatFilter.IsMatchingEvent(event)
+		result := flatFilter.IsMatchingEvent(&event)
 
 		assert.False(t, result.Value())
 	})
@@ -141,7 +154,7 @@ func TestIsMatchingEvent(t *testing.T) {
 			},
 		}
 
-		result := flatFilter.IsMatchingEvent(event)
+		result := flatFilter.IsMatchingEvent(&event)
 
 		assert.False(t, result.Value())
 	})
@@ -155,8 +168,43 @@ func TestIsMatchingEvent(t *testing.T) {
 			Filters: nil,
 		}
 
-		result := flatFilter.IsMatchingEvent(event)
+		result := flatFilter.IsMatchingEvent(&event)
 
 		assert.True(t, result.Value())
 	})
+}
+
+func TestToDefaultFilter(t *testing.T) {
+	t.Run("should return only the charge default filter", func(t *testing.T) {
+		now := time.Now()
+		chargeFilterId := "charge_filter_id"
+
+		flatFilter := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId,
+			ChargeFilterUpdatedAt: &now,
+			Filters: &FlatFilterValues{
+				"scheme":         {"visa", "mastercard"},
+				"payment_method": {"debit"},
+			},
+		}
+
+		filter := flatFilter.ToDefaultFilter()
+		assert.Equal(t, filter.OrganizationID, flatFilter.OrganizationID)
+		assert.Equal(t, filter.BillableMetricCode, flatFilter.BillableMetricCode)
+		assert.Equal(t, filter.PlanID, flatFilter.PlanID)
+		assert.Equal(t, filter.ChargeID, flatFilter.ChargeID)
+		assert.Equal(t, filter.ChargeUpdatedAt, flatFilter.ChargeUpdatedAt)
+		assert.Nil(t, filter.ChargeFilterID)
+		assert.Nil(t, filter.ChargeFilterUpdatedAt)
+		assert.Nil(t, filter.Filters)
+	})
+}
+
+func TestMatchingFilter(t *testing.T) {
+	// TODO
 }

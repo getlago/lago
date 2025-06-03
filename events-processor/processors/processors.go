@@ -25,6 +25,7 @@ var (
 	apiStore                *models.ApiStore
 	subscriptionFlagStore   models.Flagger
 	kafkaConfig             kafka.ServerConfig
+	chargeCacheStore        *models.ChargeCache
 )
 
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
@@ -70,6 +71,31 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 	}
 
 	return models.NewFlagStore(ctx, db, name), nil
+}
+
+func initChargeCacheStore() (*models.ChargeCache, error) {
+	redisDb, err := utils.GetEnvAsInt("LAGO_REDIS_CACHE_DB", 0)
+	if err != nil {
+		return nil, err
+	}
+
+	redisConfig := redis.RedisConfig{
+		Address:  os.Getenv("LAGO_REDIS_CACHE_URL"),
+		Password: os.Getenv("LAGO_REDIS_CACHE_PASSWORD"),
+		DB:       redisDb,
+		UseTLS:   os.Getenv("ENV") == "production",
+	}
+
+	db, err := redis.NewRedisDB(ctx, redisConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheStore := models.NewCacheStore(ctx, db)
+	var store models.Cacher = cacheStore
+	chargeStore := models.NewChargeCache(&store)
+
+	return chargeStore, nil
 }
 
 func StartProcessingEvents() {
@@ -165,6 +191,15 @@ func StartProcessingEvents() {
 	}
 	subscriptionFlagStore = flagger
 	defer flagger.Close()
+
+	cacher, err := initChargeCacheStore()
+	if err != nil {
+		logger.Error("Error connecting to the charge cache store", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+		panic(err.Error())
+	}
+	chargeCacheStore = cacher
+	defer chargeCacheStore.CacheStore.Close()
 
 	cg.Start()
 }

@@ -84,9 +84,13 @@ func (ffv *FlatFilterValues) Keys() []string {
 	return keys
 }
 
-func (ff *FlatFilter) IsMatchingEvent(event EnrichedEvent) utils.Result[bool] {
+func (ff *FlatFilter) HasFilters() bool {
+	return ff.Filters != nil && len(*ff.Filters) > 0
+}
+
+func (ff *FlatFilter) IsMatchingEvent(event *EnrichedEvent) utils.Result[bool] {
 	matching := true
-	if ff.Filters == nil || len(*ff.Filters) == 0 {
+	if !ff.HasFilters() {
 		return utils.SuccessResult(matching)
 	}
 
@@ -103,4 +107,65 @@ func (ff *FlatFilter) IsMatchingEvent(event EnrichedEvent) utils.Result[bool] {
 	}
 
 	return utils.SuccessResult(matching)
+}
+
+func (ff *FlatFilter) ToDefaultFilter() *FlatFilter {
+	defaultFilter := &FlatFilter{
+		OrganizationID:     ff.OrganizationID,
+		BillableMetricCode: ff.BillableMetricCode,
+		PlanID:             ff.PlanID,
+		ChargeID:           ff.ChargeID,
+		ChargeUpdatedAt:    ff.ChargeUpdatedAt,
+	}
+
+	return defaultFilter
+}
+
+func MatchingFilter(filters []FlatFilter, event *EnrichedEvent) *FlatFilter {
+	// Multiple filters are present, identify the best match
+	if len(filters) > 1 {
+		// First select all matching filters
+		matchingFilters := make([]FlatFilter, 0)
+		for _, filter := range filters {
+			if filter.HasFilters() && filter.IsMatchingEvent(event).Value() {
+				matchingFilters = append(matchingFilters, filter)
+			}
+		}
+
+		// No filters matches the event
+		if len(matchingFilters) == 0 {
+			// Return the charge's default bucket
+			return filters[0].ToDefaultFilter()
+
+		} else {
+			// NOTE: Multiple filters match the event (parent/child filters),
+			//       We must take only the one matching the most properties
+			var bestFilter *FlatFilter
+			for _, filter := range matchingFilters {
+				if bestFilter == nil {
+					bestFilter = &filter
+					continue
+				}
+
+				if len(filter.Filters.Keys()) > len(bestFilter.Filters.Keys()) {
+					bestFilter = &filter
+				}
+			}
+
+			// Return the best match
+			return bestFilter
+		}
+
+	} else {
+		filter := filters[0]
+
+		// Check if the only filter is matching the event
+		if filter.HasFilters() && filter.IsMatchingEvent(event).Value() {
+			// Return the only matching filter
+			return &filter
+		} else {
+			// Otherwise, return the charge's default bucket
+			return filter.ToDefaultFilter()
+		}
+	}
 }

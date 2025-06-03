@@ -19,7 +19,7 @@ func NewChargeCache(cacheStore *Cacher) *ChargeCache {
 	}
 }
 
-func (cache *ChargeCache) Expire(ff FlatFilter, subID string) utils.Result[bool] {
+func (cache *ChargeCache) Expire(ff *FlatFilter, subID string) utils.Result[bool] {
 	// Build cache key components
 	keyParts := []string{
 		"charge-usage",
