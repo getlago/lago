@@ -133,6 +133,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
 
+		// Expire cache at charge and charge filter level
 		expireCache(enrichedEvent, sub)
 	}
 

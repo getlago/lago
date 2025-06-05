@@ -54,6 +54,17 @@ func mockChargeCount(sqlmock sqlmock.Sqlmock, chargeCount int) {
 	sqlmock.ExpectQuery(".* FROM \"charges\"").WillReturnRows(row)
 }
 
+func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter) {
+	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters"}
+
+	rows := sqlmock.NewRows(columns)
+
+	for _, filter := range filters {
+		rows.AddRow(filter.OrganizationID, filter.BillableMetricCode, filter.PlanID, filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt, filter.Filters)
+	}
+	sqlmock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+}
+
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
@@ -442,4 +453,54 @@ func TestFlagSubscriptionRefresh(t *testing.T) {
 	assert.Equal(t, 2, flagStore.ExecutionCount)
 	assert.True(t, result.Failure())
 	assert.Error(t, result.Error())
+}
+
+func TestExpireCache(t *testing.T) {
+	sqlmock, delete := setupTestEnv(t)
+	defer delete()
+
+	cacheStore := tests.MockCacheStore{}
+	var chargeCache models.Cacher = &cacheStore
+	chargeCacheStore = models.NewChargeCache(&chargeCache)
+
+	event := models.EnrichedEvent{
+		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		ExternalSubscriptionID: "sub_id",
+		Code:                   "api_calls",
+		Properties:             map[string]any{"scheme": "visa"},
+	}
+
+	sub := models.Subscription{ID: "sub123"}
+
+	now := time.Now()
+	chargeFilterId1 := "charge_filter_id1"
+	chargeFilterId2 := "charge_filter_id2"
+
+	flatFilter1 := &models.FlatFilter{
+		OrganizationID:        "org_id",
+		BillableMetricCode:    "api_calls",
+		PlanID:                "plan_id",
+		ChargeID:              "charge_id2",
+		ChargeUpdatedAt:       now,
+		ChargeFilterID:        &chargeFilterId1,
+		ChargeFilterUpdatedAt: &now,
+		Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+	}
+
+	flatFilter2 := &models.FlatFilter{
+		OrganizationID:        "org_id",
+		BillableMetricCode:    "api_calls",
+		PlanID:                "plan_id",
+		ChargeID:              "charge_id1",
+		ChargeUpdatedAt:       now,
+		ChargeFilterID:        &chargeFilterId2,
+		ChargeFilterUpdatedAt: &now,
+		Filters:               &models.FlatFilterValues{"scheme": []string{"mastercard"}},
+	}
+
+	mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+
+	expireCache(&event, &sub)
+
+	assert.Equal(t, 2, cacheStore.ExecutionCount)
 }

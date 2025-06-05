@@ -206,5 +206,201 @@ func TestToDefaultFilter(t *testing.T) {
 }
 
 func TestMatchingFilter(t *testing.T) {
-	// TODO
+	t.Run("it should return the default charge with a single filter", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{},
+		}
+
+		now := time.Now()
+
+		flatFilter := &FlatFilter{
+			OrganizationID:     "org_id",
+			BillableMetricCode: "api_call",
+			PlanID:             "plan_id",
+			ChargeID:           "charge_id",
+			ChargeUpdatedAt:    now,
+			Filters:            &FlatFilterValues{},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter}, &event)
+
+		assert.Equal(t, result.OrganizationID, flatFilter.OrganizationID)
+		assert.Equal(t, result.BillableMetricCode, flatFilter.BillableMetricCode)
+		assert.Equal(t, result.PlanID, flatFilter.PlanID)
+		assert.Equal(t, result.ChargeID, flatFilter.ChargeID)
+		assert.Equal(t, result.ChargeUpdatedAt, flatFilter.ChargeUpdatedAt)
+		assert.Nil(t, result.ChargeFilterID)
+		assert.Nil(t, result.ChargeFilterUpdatedAt)
+		assert.Nil(t, result.Filters)
+	})
+
+	t.Run("it should return the default charge with a single non matching filter", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "maestro"},
+		}
+
+		now := time.Now()
+		chargeFilterId := "charge_filter_id"
+
+		flatFilter := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard", "visa"}},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter}, &event)
+
+		assert.Equal(t, result.OrganizationID, flatFilter.OrganizationID)
+		assert.Equal(t, result.BillableMetricCode, flatFilter.BillableMetricCode)
+		assert.Equal(t, result.PlanID, flatFilter.PlanID)
+		assert.Equal(t, result.ChargeID, flatFilter.ChargeID)
+		assert.Equal(t, result.ChargeUpdatedAt, flatFilter.ChargeUpdatedAt)
+		assert.Nil(t, result.ChargeFilterID)
+		assert.Nil(t, result.ChargeFilterUpdatedAt)
+		assert.Nil(t, result.Filters)
+	})
+
+	t.Run("it should return the single matching filter when matching", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa"},
+		}
+
+		now := time.Now()
+		chargeFilterId := "charge_filter_id"
+
+		flatFilter := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard", "visa"}},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter}, &event)
+
+		assert.Equal(t, result, flatFilter)
+	})
+
+	t.Run("it should return the default charge when no matching filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "maestro"},
+		}
+
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id1"
+		chargeFilterId2 := "charge_filter_id2"
+
+		flatFilter1 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"visa"}},
+		}
+
+		flatFilter2 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId2,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard"}},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter1, *flatFilter2}, &event)
+
+		assert.Equal(t, result.OrganizationID, flatFilter1.OrganizationID)
+		assert.Equal(t, result.BillableMetricCode, flatFilter1.BillableMetricCode)
+		assert.Equal(t, result.PlanID, flatFilter1.PlanID)
+		assert.Equal(t, result.ChargeID, flatFilter1.ChargeID)
+		assert.Equal(t, result.ChargeUpdatedAt, flatFilter1.ChargeUpdatedAt)
+		assert.Nil(t, result.ChargeFilterID)
+		assert.Nil(t, result.ChargeFilterUpdatedAt)
+		assert.Nil(t, result.Filters)
+	})
+
+	t.Run("it should return the matching filter", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "mastercard"},
+		}
+
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id1"
+		chargeFilterId2 := "charge_filter_id2"
+
+		flatFilter1 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"visa"}},
+		}
+
+		flatFilter2 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId2,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard"}},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter1, *flatFilter2}, &event)
+
+		assert.Equal(t, result, flatFilter2)
+	})
+
+	t.Run("it should return the best matching filter when multiple matching filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "mastercard", "method": "debit"},
+		}
+
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id1"
+		chargeFilterId2 := "charge_filter_id2"
+
+		flatFilter1 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard"}},
+		}
+
+		flatFilter2 := &FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId2,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &FlatFilterValues{"scheme": []string{"mastercard"}, "method": []string{"debit", "credit"}},
+		}
+
+		result := MatchingFilter([]FlatFilter{*flatFilter1, *flatFilter2}, &event)
+
+		assert.Equal(t, result, flatFilter2)
+	})
 }
