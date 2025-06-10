@@ -83,7 +83,7 @@ func initChargeCacheStore() (*models.ChargeCache, error) {
 		Address:  os.Getenv("LAGO_REDIS_CACHE_URL"),
 		Password: os.Getenv("LAGO_REDIS_CACHE_PASSWORD"),
 		DB:       redisDb,
-		UseTLS:   os.Getenv("ENV") == "production",
+		UseTLS:   false,
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)
