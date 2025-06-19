@@ -159,10 +159,10 @@ services:
     container_name: lago_api_webhook_worker_dev
     command: bash -c "bundle install && ./scripts/start.webhook.worker.sh"
 
-  api-usages-backfill-worker:
+  api-analytics-worker:
     <<: *api_worker
-    container_name: lago_api_usages_backfill_worker_dev
-    command: bash -c "bundle install && ./scripts/start.usagesbackfill.worker.sh"
+    container_name: lago_api_analytics_worker_dev
+    command: bash -c "bundle install && ./scripts/start.analytics.worker.sh"
 
   api-clock:
     image: api_dev
