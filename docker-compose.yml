@@ -274,6 +274,18 @@ services:
   #  environment:
   #    <<: [*backend-env, *lago-api-url]
 
+  # You can uncomment this if you want to use a dedicated Sidekiq worker for the analytics-related jobs.
+  #api-analytics-worker:
+  #  <<: *backend-image
+  #  container_name: api-analytics-worker
+  #  restart: unless-stopped
+  #  depends_on:
+  #    api:
+  #      condition: service_healthy
+  #  command: ["./scripts/start.analytics.worker.sh"]
+  #  environment:
+  #    <<: [*backend-env, *lago-api-url]
+
   api-clock:
     <<: *backend-image
     container_name: lago-clock
