@@ -205,7 +205,7 @@ services:
       - $LAGO_PATH/events-processor:/app:delegated
 
   pdf:
-    image: getlago/lago-gotenberg:7
+    image: getlago/lago-gotenberg:7.8.2
     container_name: lago_pdf_dev
     restart: unless-stopped
     command:
