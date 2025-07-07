@@ -8,15 +8,53 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
+type AggregationType int
+
+const (
+	AggregationTypeCount = iota
+	AggregationTypeSum
+	AggregationTypeMax
+	AggregationTypeUniqueCount
+	_
+	AggregationTypeWeightedSum
+	AggregationTypeLatest
+	AggregationTypeCustom
+)
+
+func (t AggregationType) String() string {
+	aggType := ""
+
+	switch t {
+	case AggregationTypeCount:
+		aggType = "count"
+	case AggregationTypeSum:
+		aggType = "sum"
+	case AggregationTypeMax:
+		aggType = "max"
+	case AggregationTypeUniqueCount:
+		aggType = "unique_count"
+	case AggregationTypeWeightedSum:
+		aggType = "weighted_sum"
+	case AggregationTypeLatest:
+		aggType = "latest"
+	case AggregationTypeCustom:
+		aggType = "custom"
+	}
+
+	return aggType
+
+}
+
 type BillableMetric struct {
-	ID             string         `gorm:"primaryKey;->"`
-	OrganizationID string         `gorm:"->"`
-	Code           string         `gorm:"->"`
-	FieldName      string         `gorm:"->"`
-	Expression     string         `gorm:"->"`
-	CreatedAt      time.Time      `gorm:"->"`
-	UpdatedAt      time.Time      `gorm:"->"`
-	DeletedAt      gorm.DeletedAt `gorm:"index;->"`
+	ID              string          `gorm:"primaryKey;->"`
+	OrganizationID  string          `gorm:"->"`
+	Code            string          `gorm:"->"`
+	AggregationType AggregationType `gorm:"->"`
+	FieldName       string          `gorm:"->"`
+	Expression      string          `gorm:"->"`
+	CreatedAt       time.Time       `gorm:"->"`
+	UpdatedAt       time.Time       `gorm:"->"`
+	DeletedAt       gorm.DeletedAt  `gorm:"index;->"`
 }
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {

@@ -30,9 +30,9 @@ func TestFetchBillableMetric(t *testing.T) {
 		now := time.Now()
 
 		// Define expected rows and columns
-		columns := []string{"id", "organization_id", "code", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+		columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
 		rows := sqlmock.NewRows(columns).
-			AddRow("bm123", orgID, code, "api_requests", "count", now, now, nil)
+			AddRow("bm123", orgID, code, 0, "api_requests", "count", now, now, nil)
 
 		// Expect the query
 		mock.ExpectQuery(fetchBillableMetricQuery).
@@ -50,6 +50,7 @@ func TestFetchBillableMetric(t *testing.T) {
 		assert.Equal(t, "bm123", metric.ID)
 		assert.Equal(t, orgID, metric.OrganizationID)
 		assert.Equal(t, code, metric.Code)
+		assert.Equal(t, AggregationType(0), metric.AggregationType)
 		assert.Equal(t, "api_requests", metric.FieldName)
 		assert.Equal(t, "count", metric.Expression)
 	})
@@ -103,5 +104,32 @@ func TestFetchBillableMetric(t *testing.T) {
 		assert.Nil(t, result.Value())
 		assert.True(t, result.IsCapturable())
 		assert.True(t, result.IsRetryable())
+	})
+}
+
+func TestAggregationTypeString(t *testing.T) {
+	t.Run("should return the aggregation type", func(t *testing.T) {
+		tests := []struct {
+			aggregationType int
+			expected        string
+		}{
+			{0, "count"},
+			{1, "sum"},
+			{2, "max"},
+			{3, "unique_count"},
+			{5, "weighted_sum"},
+			{6, "latest"},
+			{7, "custom"},
+		}
+
+		for _, test := range tests {
+			var bm = BillableMetric{AggregationType: AggregationType(test.aggregationType)}
+			assert.Equal(t, test.expected, bm.AggregationType.String())
+		}
+	})
+
+	t.Run("should return an empty string for invalid aggregation type", func(t *testing.T) {
+		var bm = BillableMetric{AggregationType: 99}
+		assert.Equal(t, "", bm.AggregationType.String())
 	})
 }
