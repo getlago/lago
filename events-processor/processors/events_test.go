@@ -118,7 +118,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockBmLookup(sqlmock, &bm)
 
-		sub := models.Subscription{ID: "sub123"}
+		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
 		mockSubscriptionLookup(sqlmock, &sub)
 
 		enrichedProducer := tests.MockMessageProducer{}
@@ -129,6 +129,8 @@ func TestProcessEvent(t *testing.T) {
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
 		assert.Equal(t, "sum", result.Value().AggregationType)
+		assert.Equal(t, "sub123", result.Value().SubscriptionID)
+		assert.Equal(t, "plan123", result.Value().PlanID)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
