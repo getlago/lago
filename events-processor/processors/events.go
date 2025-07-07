@@ -110,6 +110,11 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	sub := subResult.Value()
 
+	if sub != nil {
+		enrichedEvent.SubscriptionID = sub.ID
+		enrichedEvent.PlanID = sub.PlanID
+	}
+
 	if event.Source != models.HTTP_RUBY {
 		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {

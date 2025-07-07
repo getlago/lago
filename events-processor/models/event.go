@@ -31,6 +31,8 @@ type EnrichedEvent struct {
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
+	SubscriptionID          string         `json:"subscription_id"`
+	PlanID                  string         `json:"plan_id"`
 	TransactionID           string         `json:"transaction_id"`
 	Code                    string         `json:"code"`
 	AggregationType         string         `json:"aggregation_type"`
