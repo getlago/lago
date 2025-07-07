@@ -8,15 +8,28 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
+type AggregationType int
+
+const (
+	AggregationTypeCount       AggregationType = 0
+	AggregationTypeSum         AggregationType = 1
+	AggregationTypeMax         AggregationType = 2
+	AggregationTypeUniqueCount AggregationType = 3
+	AggregationTypeWeightedSum AggregationType = 5
+	AggregationTypeLatest      AggregationType = 6
+	AggregationTypeCustom      AggregationType = 7
+)
+
 type BillableMetric struct {
-	ID             string         `gorm:"primaryKey;->"`
-	OrganizationID string         `gorm:"->"`
-	Code           string         `gorm:"->"`
-	FieldName      string         `gorm:"->"`
-	Expression     string         `gorm:"->"`
-	CreatedAt      time.Time      `gorm:"->"`
-	UpdatedAt      time.Time      `gorm:"->"`
-	DeletedAt      gorm.DeletedAt `gorm:"index;->"`
+	ID              string         `gorm:"primaryKey;->"`
+	OrganizationID  string         `gorm:"->"`
+	Code            string         `gorm:"->"`
+	AggregationType int            `gorm:"->"`
+	FieldName       string         `gorm:"->"`
+	Expression      string         `gorm:"->"`
+	CreatedAt       time.Time      `gorm:"->"`
+	UpdatedAt       time.Time      `gorm:"->"`
+	DeletedAt       gorm.DeletedAt `gorm:"index;->"`
 }
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
@@ -37,4 +50,27 @@ func failedBillabmeMetricResult(err error) utils.Result[*BillableMetric] {
 	}
 
 	return result
+}
+
+func (bm BillableMetric) AggregationTypeName() string {
+	var aggType = ""
+
+	switch bm.AggregationType {
+	case int(AggregationTypeCount):
+		aggType = "count"
+	case int(AggregationTypeSum):
+		aggType = "sum"
+	case int(AggregationTypeMax):
+		aggType = "max"
+	case int(AggregationTypeUniqueCount):
+		aggType = "unique_count"
+	case int(AggregationTypeWeightedSum):
+		aggType = "weighted_sum"
+	case int(AggregationTypeLatest):
+		aggType = "latest"
+	case int(AggregationTypeCustom):
+		aggType = "custom"
+	}
+
+	return aggType
 }
