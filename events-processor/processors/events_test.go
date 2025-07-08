@@ -92,6 +92,7 @@ func TestProcessEvent(t *testing.T) {
 
 		properties := map[string]any{
 			"api_requests": "12.0",
+			"scheme":       "visa",
 		}
 
 		event := models.Event{
@@ -121,16 +122,36 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
 		mockSubscriptionLookup(sqlmock, &sub)
 
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id"
+		flatFilter := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    event.Code,
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter})
+
 		enrichedProducer := tests.MockMessageProducer{}
 		eventsEnrichedProducer = &enrichedProducer
 
 		result := processEvent(&event)
 
 		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+
+		eventsEnriched := result.Value()[0]
+		assert.Equal(t, "12.0", *eventsEnriched.Value)
+		assert.Equal(t, "sum", eventsEnriched.AggregationType)
+		assert.Equal(t, "sub123", eventsEnriched.SubscriptionID)
+		assert.Equal(t, "plan123", eventsEnriched.PlanID)
+		assert.Equal(t, "charge_id", *eventsEnriched.ChargeID)
+		assert.Equal(t, now.Format(time.RFC3339), (*eventsEnriched.ChargeUpdatedAt).Format(time.RFC3339))
+		assert.Equal(t, chargeFilterId1, *eventsEnriched.ChargeFilterID)
+		assert.Equal(t, now.Format(time.RFC3339), (*eventsEnriched.ChargeFilterUpdatedAt).Format(time.RFC3339))
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -303,6 +324,19 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123"}
 		mockSubscriptionLookup(sqlmock, &sub)
 
+		flatFilter := &models.FlatFilter{
+			OrganizationID:     "org_id",
+			BillableMetricCode: event.Code,
+			PlanID:             "plan_id",
+			ChargeID:           "charge_id",
+			ChargeUpdatedAt:    time.Now(),
+		}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter})
+
+		cacheStore := tests.MockCacheStore{}
+		var chargeCache models.Cacher = &cacheStore
+		chargeCacheStore = models.NewChargeCache(&chargeCache)
+
 		mockChargeCount(sqlmock, 3)
 
 		inAdvanceProducer := tests.MockMessageProducer{}
@@ -315,7 +349,7 @@ func TestProcessEvent(t *testing.T) {
 
 		result := processEvent(&event)
 		assert.True(t, result.Success())
-		assert.Equal(t, "12", *result.Value().Value)
+		assert.Equal(t, "12", *result.Value()[0].Value)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -464,52 +498,95 @@ func TestFlagSubscriptionRefresh(t *testing.T) {
 	assert.Error(t, result.Error())
 }
 
-func TestExpireCache(t *testing.T) {
-	sqlmock, delete := setupTestEnv(t)
-	defer delete()
+func TestEnrichEventWithChargeInfo(t *testing.T) {
+	t.Run("Creates multiple enriched events for multiple charges", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
 
-	cacheStore := tests.MockCacheStore{}
-	var chargeCache models.Cacher = &cacheStore
-	chargeCacheStore = models.NewChargeCache(&chargeCache)
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Properties:             map[string]any{"scheme": "visa"},
+		}
 
-	event := models.EnrichedEvent{
-		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-		ExternalSubscriptionID: "sub_id",
-		Code:                   "api_calls",
-		Properties:             map[string]any{"scheme": "visa"},
-	}
+		sub := models.Subscription{ID: "sub123"}
 
-	sub := models.Subscription{ID: "sub123"}
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id1"
+		chargeFilterId2 := "charge_filter_id2"
 
-	now := time.Now()
-	chargeFilterId1 := "charge_filter_id1"
-	chargeFilterId2 := "charge_filter_id2"
+		flatFilter1 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id1",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
 
-	flatFilter1 := &models.FlatFilter{
-		OrganizationID:        "org_id",
-		BillableMetricCode:    "api_calls",
-		PlanID:                "plan_id",
-		ChargeID:              "charge_id2",
-		ChargeUpdatedAt:       now,
-		ChargeFilterID:        &chargeFilterId1,
-		ChargeFilterUpdatedAt: &now,
-		Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
-	}
+		flatFilter2 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id2",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId2,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"mastercard"}},
+		}
 
-	flatFilter2 := &models.FlatFilter{
-		OrganizationID:        "org_id",
-		BillableMetricCode:    "api_calls",
-		PlanID:                "plan_id",
-		ChargeID:              "charge_id1",
-		ChargeUpdatedAt:       now,
-		ChargeFilterID:        &chargeFilterId2,
-		ChargeFilterUpdatedAt: &now,
-		Filters:               &models.FlatFilterValues{"scheme": []string{"mastercard"}},
-	}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
 
-	mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+		result := enrichEventWithChargeInfo(&event, &sub)
 
-	expireCache(&event, &sub)
+		assert.True(t, result.Success())
+		enrichedEvents := result.Value()
 
-	assert.Equal(t, 2, cacheStore.ExecutionCount)
+		// Should create one enriched event per charge
+		assert.Equal(t, 2, len(enrichedEvents))
+
+		// Verify first enriched event (charge_id1)
+		event1 := enrichedEvents[0]
+		assert.NotNil(t, event1.ChargeID)
+		assert.Equal(t, "charge_id1", *event1.ChargeID)
+		assert.NotNil(t, event1.ChargeUpdatedAt)
+		assert.Equal(t, now, *event1.ChargeUpdatedAt)
+		assert.NotNil(t, event1.ChargeFilterID)
+		assert.Equal(t, chargeFilterId1, *event1.ChargeFilterID)
+
+		// Verify second enriched event (charge_id2)
+		event2 := enrichedEvents[1]
+		assert.NotNil(t, event2.ChargeID)
+		assert.Equal(t, "charge_id2", *event2.ChargeID)
+		assert.NotNil(t, event2.ChargeUpdatedAt)
+		assert.Equal(t, now, *event2.ChargeUpdatedAt)
+		assert.Nil(t, event2.ChargeFilterID)
+	})
+
+	t.Run("Return the enriched event when no filter matches", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Properties:             map[string]any{"scheme": "visa"},
+		}
+
+		sub := models.Subscription{ID: "sub123"}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+
+		result := enrichEventWithChargeInfo(&event, &sub)
+
+		assert.True(t, result.Success())
+		enrichedEvents := result.Value()
+
+		// Should create one enriched event per charge
+		assert.Equal(t, 1, len(enrichedEvents))
+		assert.Equal(t, event, *enrichedEvents[0])
+	})
 }

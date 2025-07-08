@@ -86,7 +86,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	return processedRecords
 }
 
-func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
+func processEvent(event *models.Event) utils.Result[[]*models.EnrichedEvent] {
 	enrichedEventResult := event.ToEnrichedEvent()
 	if enrichedEventResult.Failure() {
 		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
@@ -125,32 +125,55 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
 	enrichedEvent.Value = &value
 
-	go produceEnrichedEvent(enrichedEvent)
-
-	if sub != nil && event.NotAPIPostProcessed() {
-		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
-		if hasInAdvanceChargeResult.Failure() {
-			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
+	// Always enrich events with charge information and produce one event per matching filter
+	if sub != nil {
+		enrichedEventsResult := enrichEventWithChargeInfo(enrichedEvent, sub)
+		if enrichedEventsResult.Failure() {
+			return failedResult(enrichedEventsResult, "add_charge_info", "Error enriching event with charge information")
 		}
 
-		if hasInAdvanceChargeResult.Value() {
-			go produceChargedInAdvanceEvent(enrichedEvent)
+		enrichedEvents := enrichedEventsResult.Value()
+
+		// Produce enriched events (one per matching filter)
+		for _, ev := range enrichedEvents {
+			go produceEnrichedEvent(ev)
 		}
 
-		flagResult := flagSubscriptionRefresh(event.OrganizationID, sub)
-		if flagResult.Failure() {
-			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
+		// The events is not post-processed in the API, so we need to handle:
+		// - In-advance charges
+		// - Subscription refresh (wallet, lifetime usageq)
+		// - Usage cache expiration
+		if event.NotAPIPostProcessed() {
+			hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
+			if hasInAdvanceChargeResult.Failure() {
+				return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
+			}
+
+			if hasInAdvanceChargeResult.Value() {
+				for _, ev := range enrichedEvents {
+					go produceChargedInAdvanceEvent(ev)
+				}
+			}
+
+			flagResult := flagSubscriptionRefresh(event.OrganizationID, sub)
+			if flagResult.Failure() {
+				return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
+			}
+
+			// Expire cache for all matching filters
+			expireCacheForAllFilters(enrichedEvents, sub)
 		}
 
-		// Expire cache at charge and charge filter level
-		expireCache(enrichedEvent, sub)
+		return utils.SuccessResult(enrichedEvents)
+	} else {
+		// No subscription found, produce the original enriched event
+		go produceEnrichedEvent(enrichedEvent)
 	}
-
-	return utils.SuccessResult(enrichedEvent)
+	return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 }
 
-func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
-	result := utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+func failedResult(r utils.AnyResult, code string, message string) utils.Result[[]*models.EnrichedEvent] {
+	result := utils.FailedResult[[]*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
@@ -250,27 +273,62 @@ func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Resul
 	return utils.SuccessResult(true)
 }
 
-func expireCache(event *models.EnrichedEvent, sub *models.Subscription) {
+func enrichEventWithChargeInfo(event *models.EnrichedEvent, sub *models.Subscription) utils.Result[[]*models.EnrichedEvent] {
 	filtersResult := apiStore.FetchFlatFilters(sub.PlanID, event.Code)
 	if filtersResult.Failure() {
-		utils.CaptureError(filtersResult.Error())
+		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
+	}
+
+	filters := filtersResult.Value()
+	if len(filters) == 0 {
+		// No filters found, return the original event without charge information
+		return utils.SuccessResult([]*models.EnrichedEvent{event})
 	}
 
 	// Index filters by charge ID
 	charges := make(map[string][]models.FlatFilter)
-	for _, filter := range filtersResult.Value() {
+	for _, filter := range filters {
 		if charges[filter.ChargeID] == nil {
 			charges[filter.ChargeID] = []models.FlatFilter{}
 		}
 		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
 	}
 
-	// For each charges, find matching filters or default charge and expire cache
-	for _, filters := range charges {
-		filter := models.MatchingFilter(filters, event)
-		cacheResult := chargeCacheStore.Expire(filter, sub.ID)
-		if cacheResult.Failure() {
-			utils.CaptureError(cacheResult.Error())
+	var enrichedEvents []*models.EnrichedEvent
+
+	// For each charge, find matching filter and create enriched event
+	for _, chargeFilters := range charges {
+		matchingFilter := models.MatchingFilter(chargeFilters, event)
+
+		// Create a copy of the enriched event for this filter
+		enrichedEventCopy := *event
+
+		// Populate charge information
+		enrichedEventCopy.ChargeID = &matchingFilter.ChargeID
+		enrichedEventCopy.ChargeUpdatedAt = &matchingFilter.ChargeUpdatedAt
+		enrichedEventCopy.ChargeFilterID = matchingFilter.ChargeFilterID
+		enrichedEventCopy.ChargeFilterUpdatedAt = matchingFilter.ChargeFilterUpdatedAt
+		enrichedEvents = append(enrichedEvents, &enrichedEventCopy)
+	}
+
+	return utils.SuccessResult(enrichedEvents)
+}
+
+func expireCacheForAllFilters(enrichedEvents []*models.EnrichedEvent, sub *models.Subscription) {
+	for _, event := range enrichedEvents {
+		if event.ChargeID != nil {
+			// Create a filter object for cache expiration
+			filter := &models.FlatFilter{
+				ChargeID:              *event.ChargeID,
+				ChargeUpdatedAt:       *event.ChargeUpdatedAt,
+				ChargeFilterID:        event.ChargeFilterID,
+				ChargeFilterUpdatedAt: event.ChargeFilterUpdatedAt,
+			}
+
+			cacheResult := chargeCacheStore.Expire(filter, sub.ID)
+			if cacheResult.Failure() {
+				utils.CaptureError(cacheResult.Error())
+			}
 		}
 	}
 }
