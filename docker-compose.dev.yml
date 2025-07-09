@@ -315,8 +315,6 @@ services:
     image: ghcr.io/tarampampam/webhook-tester:2
     container_name: lago_webhook_dev
     restart: unless-stopped
-    depends_on:
-      - api
     environment:
       - HTTP_PORT=80
       - AUTO_CREATE_SESSIONS=true
