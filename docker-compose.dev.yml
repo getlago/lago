@@ -311,3 +311,16 @@ services:
       - $LAGO_PATH/api:/app:delegated
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+  webhook:
+    image: ghcr.io/tarampampam/webhook-tester:2
+    container_name: lago_webhook_dev
+    restart: unless-stopped
+    environment:
+      - HTTP_PORT=80
+      - AUTO_CREATE_SESSIONS=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webhook.rule=Host(`webhook.lago.dev`)"
+      - "traefik.http.routers.webhook.entrypoints=web,ws,websecure"
+      - "traefik.http.routers.webhook.tls=true"
+      - "traefik.http.services.webhook.loadbalancer.server.port=80"
