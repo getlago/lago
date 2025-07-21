@@ -99,6 +99,10 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 	bm := bmResult.Value()
 
+	if bm != nil {
+		enrichedEvent.AggregationType = bm.AggregationType.String()
+	}
+
 	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() && subResult.IsCapturable() {
 		// We want to keep processing the event even if the subscription is not found

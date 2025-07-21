@@ -33,6 +33,7 @@ type EnrichedEvent struct {
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
 	TransactionID           string         `json:"transaction_id"`
 	Code                    string         `json:"code"`
+	AggregationType         string         `json:"aggregation_type"`
 	Properties              map[string]any `json:"properties"`
 	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
 	Source                  string         `json:"source,omitempty"`

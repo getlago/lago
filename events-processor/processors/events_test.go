@@ -32,10 +32,10 @@ func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, func()) {
 }
 
 func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
-	columns := []string{"id", "organization_id", "code", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+	columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
 
 	rows := sqlmock.NewRows(columns).
-		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
+		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
 
 	sqlmock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
 }
@@ -107,13 +107,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
@@ -127,6 +128,7 @@ func TestProcessEvent(t *testing.T) {
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
+		assert.Equal(t, "sum", result.Value().AggregationType)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -147,13 +149,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
@@ -177,13 +180,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
@@ -206,13 +210,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
@@ -243,13 +248,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "round(event.properties.value)",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
@@ -281,13 +287,14 @@ func TestProcessEvent(t *testing.T) {
 		}
 
 		bm := models.BillableMetric{
-			ID:             "bm123",
-			OrganizationID: event.OrganizationID,
-			Code:           event.Code,
-			FieldName:      "api_requests",
-			Expression:     "round(event.properties.value)",
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
 		}
 		mockBmLookup(sqlmock, &bm)
 
