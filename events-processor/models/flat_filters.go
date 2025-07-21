@@ -56,6 +56,8 @@ type FlatFilter struct {
 	ChargeFilterID        *string           `gorm:"->"`
 	ChargeFilterUpdatedAt *time.Time        `gorm:"->"`
 	Filters               *FlatFilterValues `gorm:"type:jsonb"`
+	Properties            map[string]any    `gorm:"type:jsonb"`
+	PricingGroupKeys      []string          `gorm:"type:jsonb"`
 }
 
 func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string) utils.Result[[]FlatFilter] {

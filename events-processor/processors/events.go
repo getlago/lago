@@ -267,5 +267,16 @@ func expireCache(event *models.EnrichedEvent, sub *models.Subscription) {
 		if cacheResult.Failure() {
 			utils.CaptureError(cacheResult.Error())
 		}
+
+		// NOTE: for now this the grouped_by value is not consumed in Clickhouse
+		// 			 In a later stage, one event per matching filter will be produced
+		// 			 (99.99%) of the time only 1 filter (or the default one) is matching
+		enrichWithPricingGroupKeys(event, filter)
+	}
+}
+
+func enrichWithPricingGroupKeys(event *models.EnrichedEvent, filter *models.FlatFilter) {
+	for _, key := range filter.PricingGroupKeys {
+		event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
 	}
 }
