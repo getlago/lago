@@ -145,8 +145,22 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		enrichedEventCopy.ChargeUpdatedAt = &matchingFilter.ChargeUpdatedAt
 		enrichedEventCopy.ChargeFilterID = matchingFilter.ChargeFilterID
 		enrichedEventCopy.ChargeFilterUpdatedAt = matchingFilter.ChargeFilterUpdatedAt
+
+		enrichWithPricingGroupKeys(&enrichedEventCopy)
+
 		enrichedEvents = append(enrichedEvents, &enrichedEventCopy)
 	}
 
 	return utils.SuccessResult(enrichedEvents)
+}
+
+func enrichWithPricingGroupKeys(event *models.EnrichedEvent) {
+	if event.FlatFilter == nil || event.FlatFilter.PricingGroupKeys == nil {
+		return
+	}
+
+	event.GroupedBy = make(map[string]string)
+	for _, key := range event.FlatFilter.PricingGroupKeys {
+		event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
+	}
 }
