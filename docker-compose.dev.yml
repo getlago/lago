@@ -10,7 +10,7 @@ volumes:
 
 services:
   traefik:
-    image: "traefik:v2.5.4"
+    image: "traefik:v3"
     container_name: lago_traefik_dev
     restart: unless-stopped
     ports:
@@ -42,15 +42,25 @@ services:
       - postgres_data_dev:/data/postgres
     ports:
       - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lago}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
-    image: redis:6.2-alpine
+    image: redis:7-alpine
     container_name: lago_redis_dev
     restart: unless-stopped
     volumes:
       - redis_data_dev:/data
     ports:
       - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   front:
     image: front_dev
@@ -81,16 +91,47 @@ services:
       - "traefik.http.routers.app.tls=true"
       - "traefik.http.services.app.loadbalancer.server.port=8080"
 
+  webhook:
+    image: ghcr.io/tarampampam/webhook-tester:2
+    container_name: lago_webhook_dev
+    restart: unless-stopped
+    environment:
+      - HTTP_PORT=80
+      - AUTO_CREATE_SESSIONS=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webhook.rule=Host(`webhook.lago.dev`)"
+      - "traefik.http.routers.webhook.entrypoints=web,ws,websecure"
+      - "traefik.http.routers.webhook.tls=true"
+      - "traefik.http.services.webhook.loadbalancer.server.port=80"
+
+  migrate:
+    container_name: lago-migrate_dev
+    image: api_dev
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["./scripts/migrate.dev.sh"]
+    build:
+      context: ./api
+      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+    volumes:
+      - $LAGO_PATH/api:/app:delegated
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+
   api:
     image: api_dev
     container_name: lago_api_dev
     restart: unless-stopped
     command: ["./scripts/start.dev.sh"]
     depends_on:
-      - db
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
@@ -121,10 +162,8 @@ services:
     restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.worker.sh"
     depends_on:
-      - api
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+      api:
+        condition: service_started
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
@@ -170,10 +209,8 @@ services:
     restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.clock.sh"
     depends_on:
-      - api
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
+      api:
+        condition: service_started
     volumes:
       - $LAGO_PATH/api:/app:delegated
     env_file:
@@ -205,7 +242,7 @@ services:
       - $LAGO_PATH/events-processor:/app:delegated
 
   pdf:
-    image: getlago/lago-gotenberg:7.8.2
+    image: getlago/lago-gotenberg:8
     container_name: lago_pdf_dev
     restart: unless-stopped
     command:
@@ -281,7 +318,7 @@ services:
       - "traefik.http.services.console.loadbalancer.server.port=8080"
 
   clickhouse:
-    image: clickhouse/clickhouse-server
+    image: clickhouse/clickhouse-server:25.4-alpine
     container_name: lago_clickhouse_dev
     restart: unless-stopped
     hostname: clickhouse
@@ -297,30 +334,3 @@ services:
     ports:
       - 9000:9000
       - 8123:8123
-
-  migrate:
-    container_name: lago-migrate_dev
-    image: api_dev
-    depends_on:
-      - db
-    command: ["./scripts/migrate.dev.sh"]
-    build:
-      context: ./api
-      dockerfile: $LAGO_PATH/api/Dockerfile.dev
-    volumes:
-      - $LAGO_PATH/api:/app:delegated
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
-  webhook:
-    image: ghcr.io/tarampampam/webhook-tester:2
-    container_name: lago_webhook_dev
-    restart: unless-stopped
-    environment:
-      - HTTP_PORT=80
-      - AUTO_CREATE_SESSIONS=true
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.webhook.rule=Host(`webhook.lago.dev`)"
-      - "traefik.http.routers.webhook.entrypoints=web,ws,websecure"
-      - "traefik.http.routers.webhook.tls=true"
-      - "traefik.http.services.webhook.loadbalancer.server.port=80"
