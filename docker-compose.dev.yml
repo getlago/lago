@@ -151,7 +151,7 @@ services:
       - "traefik.http.routers.api_http.service=api_http"
       - "traefik.http.services.api_http.loadbalancer.server.port=3000"
       - "traefik.http.routers.api.rule=Host(`api.lago.dev`)"
-      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.entrypoints=ws,websecure"
       - "traefik.http.routers.api.service=api"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
