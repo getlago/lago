@@ -27,7 +27,9 @@ type SourceMetadata struct {
 }
 
 type EnrichedEvent struct {
-	IntialEvent *Event `json:"-"`
+	IntialEvent    *Event          `json:"-"`
+	BillableMetric *BillableMetric `json:"-"`
+	Subscription   *Subscription   `json:"-"`
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`

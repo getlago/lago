@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/getlago/lago-expression/expression-go"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
+	events "github.com/getlago/lago/events-processor/processors/event_processors"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
@@ -87,48 +87,17 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
-	enrichedEventResult := event.ToEnrichedEvent()
+	eventEnrichedProducer := events.NewEventEnrichmentService(apiStore)
+	enrichedEventResult := eventEnrichedProducer.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
-		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+		return enrichedEventResult
 	}
 	enrichedEvent := enrichedEventResult.Value()
 
-	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
-	if bmResult.Failure() {
-		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
-	}
-	bm := bmResult.Value()
-
-	if bm != nil {
-		enrichedEvent.AggregationType = bm.AggregationType.String()
-	}
-
-	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-	if subResult.Failure() && subResult.IsCapturable() {
-		// We want to keep processing the event even if the subscription is not found
-		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
-	}
-	sub := subResult.Value()
-
-	if sub != nil {
-		enrichedEvent.SubscriptionID = sub.ID
-		enrichedEvent.PlanID = sub.PlanID
-	}
-
-	if event.Source != models.HTTP_RUBY {
-		expressionResult := evaluateExpression(enrichedEvent, bm)
-		if expressionResult.Failure() {
-			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
-		}
-	}
-
-	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
-	enrichedEvent.Value = &value
-
 	go produceEnrichedEvent(enrichedEvent)
 
-	if sub != nil && event.NotAPIPostProcessed() {
-		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
+	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
+		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(enrichedEvent.PlanID, enrichedEvent.BillableMetric.ID)
 		if hasInAdvanceChargeResult.Failure() {
 			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
 		}
@@ -137,13 +106,13 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 			go produceChargedInAdvanceEvent(enrichedEvent)
 		}
 
-		flagResult := flagSubscriptionRefresh(event.OrganizationID, sub)
+		flagResult := flagSubscriptionRefresh(event.OrganizationID, enrichedEvent.Subscription)
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
 
 		// Expire cache at charge and charge filter level
-		expireCache(enrichedEvent, sub)
+		expireCache(enrichedEvent, enrichedEvent.Subscription)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -154,29 +123,6 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
-}
-
-func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
-	if bm.Expression == "" {
-		return utils.SuccessResult(false)
-	}
-
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		return utils.FailedBoolResult(err).NonRetryable()
-	}
-	eventJsonString := string(eventJson[:])
-
-	result := expression.Evaluate(bm.Expression, eventJsonString)
-	if result != nil {
-		ev.Properties[bm.FieldName] = *result
-	} else {
-		return utils.
-			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
-			NonRetryable()
-	}
-
-	return utils.SuccessResult(true)
 }
 
 func produceEnrichedEvent(ev *models.EnrichedEvent) {
