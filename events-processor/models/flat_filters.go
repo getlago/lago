@@ -11,6 +11,7 @@ import (
 )
 
 type FlatFilterValues map[string][]string
+type PricingGroupKeys []string
 
 // Implements the sql.Scanner interface to convert JSONB into FlatFilterValues
 func (fm *FlatFilterValues) Scan(value any) error {
@@ -47,6 +48,41 @@ func (fm FlatFilterValues) Value() (driver.Value, error) {
 	return json.Marshal(map[string][]string(fm))
 }
 
+// Implements the sql.Scanner interface to convert JSONB into FlatFilterValues
+func (fm *PricingGroupKeys) Scan(value any) error {
+	if value == nil {
+		*fm = nil
+		return nil
+	}
+
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("cannot scan %T into FlatFilterValues", value)
+	}
+
+	var result []string
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return err
+	}
+
+	*fm = PricingGroupKeys(result)
+	return nil
+}
+
+// Implements the driver.Valuer interface converting FlatFilterValues to a JSONB value
+func (fm PricingGroupKeys) Value() (driver.Value, error) {
+	if fm == nil {
+		return nil, nil
+	}
+
+	return json.Marshal([]string(fm))
+}
+
 type FlatFilter struct {
 	OrganizationID        string            `gorm:"->"`
 	BillableMetricCode    string            `gorm:"->"`
@@ -56,6 +92,8 @@ type FlatFilter struct {
 	ChargeFilterID        *string           `gorm:"->"`
 	ChargeFilterUpdatedAt *time.Time        `gorm:"->"`
 	Filters               *FlatFilterValues `gorm:"type:jsonb"`
+	Properties            map[string]any    `gorm:"type:jsonb"`
+	PricingGroupKeys      PricingGroupKeys  `gorm:"type:jsonb"`
 }
 
 func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string) utils.Result[[]FlatFilter] {
