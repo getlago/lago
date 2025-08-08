@@ -30,6 +30,7 @@ type EnrichedEvent struct {
 	IntialEvent    *Event          `json:"-"`
 	BillableMetric *BillableMetric `json:"-"`
 	Subscription   *Subscription   `json:"-"`
+	FlatFilter     *FlatFilter     `json:"-"`
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalSubscriptionID  string         `json:"external_subscription_id"`
@@ -45,6 +46,10 @@ type EnrichedEvent struct {
 	Timestamp               float64        `json:"timestamp"`
 	TimestampStr            string         `json:"-"`
 	Time                    time.Time      `json:"-"`
+	ChargeID                *string        `json:"charge_id"`
+	ChargeUpdatedAt         *time.Time     `json:"charge_updated_at"`
+	ChargeFilterID          *string        `json:"charge_filter_id"`
+	ChargeFilterUpdatedAt   *time.Time     `json:"charge_filter_updated_at"`
 }
 
 type FailedEvent struct {
