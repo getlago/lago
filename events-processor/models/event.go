@@ -27,7 +27,7 @@ type SourceMetadata struct {
 }
 
 type EnrichedEvent struct {
-	IntialEvent    *Event          `json:"-"`
+	InitialEvent   *Event          `json:"-"`
 	BillableMetric *BillableMetric `json:"-"`
 	Subscription   *Subscription   `json:"-"`
 	FlatFilter     *FlatFilter     `json:"-"`
@@ -63,7 +63,7 @@ type FailedEvent struct {
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er := &EnrichedEvent{
-		IntialEvent:             ev,
+		InitialEvent:            ev,
 		OrganizationID:          ev.OrganizationID,
 		ExternalSubscriptionID:  ev.ExternalSubscriptionID,
 		TransactionID:           ev.TransactionID,
