@@ -5,6 +5,20 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
+type EventProcessor struct {
+	EnrichmentService *EventEnrichmentService
+	ProducerService   *EventProducerService
+	CacheService      *CacheService
+}
+
+func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, cacheService *CacheService) *EventProcessor {
+	return &EventProcessor{
+		EnrichmentService: enrichmentService,
+		ProducerService:   producerService,
+		CacheService:      cacheService,
+	}
+}
+
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
 	result := utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
 	result.Retryable = r.IsRetryable()

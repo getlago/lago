@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	tracer "github.com/getlago/lago/events-processor/config"
-	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
-	events "github.com/getlago/lago/events-processor/processors/event_processors"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
@@ -71,7 +69,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				}
 
 				// Push failed records to the dead letter queue
-				go produceToDeadLetterQueue(event, result)
+				go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
 			}
 
 			// Track processed records
@@ -87,8 +85,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
-	eventEnrichmentService := events.NewEventEnrichmentService(apiStore)
-	enrichedEventResult := eventEnrichmentService.EnrichEvent(event)
+	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
 	}
@@ -96,7 +93,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	enrichedEvents := enrichedEventResult.Value()
 	enrichedEvent := enrichedEvents[0] // TODO:Add full support for multiple enriched events
 
-	go produceEnrichedEvent(enrichedEvent)
+	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(enrichedEvent.PlanID, enrichedEvent.BillableMetric.ID)
@@ -105,7 +102,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 		}
 
 		if hasInAdvanceChargeResult.Value() {
-			go produceChargedInAdvanceEvent(enrichedEvent)
+			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 		}
 
 		flagResult := flagSubscriptionRefresh(event.OrganizationID, enrichedEvent.Subscription)
@@ -114,8 +111,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 		}
 
 		// Expire cache at charge and charge filter level
-		cacheService := events.NewCacheService(chargeCacheStore)
-		cacheService.ExpireCache(enrichedEvents)
+		processor.CacheService.ExpireCache(enrichedEvents)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -126,68 +122,6 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
-}
-
-func produceEnrichedEvent(ev *models.EnrichedEvent) {
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		logger.Error("error while marshaling enriched events")
-	}
-
-	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
-
-	pushed := eventsEnrichedProducer.Produce(ctx, &kafka.ProducerMessage{
-		Key:   []byte(msgKey),
-		Value: eventJson,
-	})
-
-	if !pushed {
-		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsEnrichedProducer.GetTopic())))
-	}
-}
-
-func produceChargedInAdvanceEvent(ev *models.EnrichedEvent) {
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		logger.Error("error while marshaling charged in advance events")
-		utils.CaptureError(err)
-	}
-
-	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
-
-	pushed := eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
-		Key:   []byte(msgKey),
-		Value: eventJson,
-	})
-
-	if !pushed {
-		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
-	}
-}
-
-func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
-	failedEvent := models.FailedEvent{
-		Event:               event,
-		InitialErrorMessage: errorResult.ErrorMsg(),
-		ErrorCode:           errorResult.ErrorCode(),
-		ErrorMessage:        errorResult.ErrorMessage(),
-		FailedAt:            time.Now(),
-	}
-
-	eventJson, err := json.Marshal(failedEvent)
-	if err != nil {
-		logger.Error("error while marshaling failed event with error details")
-		utils.CaptureError(err)
-	}
-
-	pushed := eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
-		Value: eventJson,
-	})
-
-	if !pushed {
-		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
-		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
-	}
 }
 
 func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Result[bool] {

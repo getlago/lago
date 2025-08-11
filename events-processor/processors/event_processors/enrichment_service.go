@@ -107,7 +107,7 @@ func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.En
 
 func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.EnrichedEvent) utils.Result[[]*models.EnrichedEvent] {
 	// TODO(pre-aggregation): Remove the NotAPIPostProcessed condition to enable pre-aggregation
-	if !enrichedEvent.IntialEvent.NotAPIPostProcessed() || enrichedEvent.Subscription == nil {
+	if !enrichedEvent.InitialEvent.NotAPIPostProcessed() || enrichedEvent.Subscription == nil {
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
 
