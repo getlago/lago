@@ -87,12 +87,14 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
-	eventEnrichedProducer := events.NewEventEnrichmentService(apiStore)
-	enrichedEventResult := eventEnrichedProducer.EnrichEvent(event)
+	eventEnrichmentService := events.NewEventEnrichmentService(apiStore)
+	enrichedEventResult := eventEnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
-		return enrichedEventResult
+		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
 	}
-	enrichedEvent := enrichedEventResult.Value()
+
+	enrichedEvents := enrichedEventResult.Value()
+	enrichedEvent := enrichedEvents[0] // TODO:Add full support for multiple enriched events
 
 	go produceEnrichedEvent(enrichedEvent)
 
@@ -112,7 +114,8 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 		}
 
 		// Expire cache at charge and charge filter level
-		expireCache(enrichedEvent, enrichedEvent.Subscription)
+		cacheService := events.NewCacheService(chargeCacheStore)
+		cacheService.ExpireCache(enrichedEvents)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -194,29 +197,4 @@ func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Resul
 	}
 
 	return utils.SuccessResult(true)
-}
-
-func expireCache(event *models.EnrichedEvent, sub *models.Subscription) {
-	filtersResult := apiStore.FetchFlatFilters(sub.PlanID, event.Code)
-	if filtersResult.Failure() {
-		utils.CaptureError(filtersResult.Error())
-	}
-
-	// Index filters by charge ID
-	charges := make(map[string][]models.FlatFilter)
-	for _, filter := range filtersResult.Value() {
-		if charges[filter.ChargeID] == nil {
-			charges[filter.ChargeID] = []models.FlatFilter{}
-		}
-		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
-	}
-
-	// For each charges, find matching filters or default charge and expire cache
-	for _, filters := range charges {
-		filter := models.MatchingFilter(filters, event)
-		cacheResult := chargeCacheStore.Expire(filter, sub.ID)
-		if cacheResult.Failure() {
-			utils.CaptureError(cacheResult.Error())
-		}
-	}
 }

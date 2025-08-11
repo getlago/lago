@@ -43,6 +43,17 @@ func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
 	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
 }
 
+func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter) {
+	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters"}
+
+	rows := sqlmock.NewRows(columns)
+
+	for _, filter := range filters {
+		rows.AddRow(filter.OrganizationID, filter.BillableMetricCode, filter.PlanID, filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt, filter.Filters)
+	}
+	sqlmock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+}
+
 func TestEnrichEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
 		sqlmock, delete := setupTestEnv(t)
@@ -102,10 +113,13 @@ func TestEnrichEvent(t *testing.T) {
 		result := processor.EnrichEvent(&event)
 
 		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+		assert.Equal(t, 1, len(result.Value()))
+
+		eventResult := result.Value()[0]
+		assert.Equal(t, "12.0", *eventResult.Value)
+		assert.Equal(t, "sum", eventResult.AggregationType)
+		assert.Equal(t, "sub123", eventResult.SubscriptionID)
+		assert.Equal(t, "plan123", eventResult.PlanID)
 	})
 
 	t.Run("When timestamp is invalid", func(t *testing.T) {
@@ -168,6 +182,120 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Contains(t, result.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", result.ErrorCode())
 		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
+	})
+
+	t.Run("When event source is not post process on API", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"value": "12.12",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009.0,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+
+		result := processor.EnrichEvent(&event)
+		assert.True(t, result.Success())
+		assert.Equal(t, len(result.Value()), 1)
+
+		eventResult := result.Value()[0]
+		assert.Equal(t, "12", *eventResult.Value)
+	})
+
+	t.Run("When event source is not post process on API with multiple flat filters", func(t *testing.T) {
+		sqlmock, delete := setupTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"value":  "12.12",
+			"scheme": "visa",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009.0,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
+		now := time.Now()
+		chargeFilterId1 := "charge_filter_id1"
+		chargeFilterId2 := "charge_filter_id2"
+
+		flatFilter1 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id1",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId1,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
+
+		flatFilter2 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id2",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        &chargeFilterId2,
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+
+		result := processor.EnrichEvent(&event)
+		assert.True(t, result.Success())
+		assert.Equal(t, 2, len(result.Value()))
+
+		eventResult1 := result.Value()[0]
+		assert.Equal(t, "12", *eventResult1.Value)
+		assert.Equal(t, "charge_id1", *eventResult1.ChargeID)
+
+		eventResult2 := result.Value()[1]
+		assert.Equal(t, "12", *eventResult2.Value)
+		assert.Equal(t, "charge_id2", *eventResult2.ChargeID)
 	})
 }
 

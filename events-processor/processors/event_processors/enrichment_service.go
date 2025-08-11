@@ -19,41 +19,42 @@ func NewEventEnrichmentService(apiStore *models.ApiStore) *EventEnrichmentServic
 	}
 }
 
-func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
+func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[]*models.EnrichedEvent] {
 	enrichedEventResult := event.ToEnrichedEvent()
 	if enrichedEventResult.Failure() {
-		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+		return failedMultiEventsResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
 	}
 	enrichedEvent := enrichedEventResult.Value()
 
 	bmResult := s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
-		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
+		return failedMultiEventsResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 
 	bm := bmResult.Value()
 	if bm != nil {
 		enrichBmResult := s.enrichWithBillableMetric(enrichedEvent, bm)
 		if enrichBmResult.Failure() {
-			return enrichBmResult
+			return toMultiEventsResult(enrichBmResult)
 		}
 	}
 
 	subResult := s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	if subResult.Failure() && subResult.IsCapturable() {
 		// We want to keep processing the event even if the subscription is not found
-		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
+		return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
 	}
 
 	sub := subResult.Value()
 	if sub != nil {
 		enrichSubResult := s.enrichWithSubscription(enrichedEvent, sub)
 		if enrichSubResult.Failure() {
-			return enrichSubResult
+			return toMultiEventsResult(enrichSubResult)
 		}
 	}
 
-	return utils.SuccessResult(enrichedEvent)
+	enrichedEvents := s.enrichWithChargeInfo(enrichedEvent)
+	return enrichedEvents
 }
 
 func (s *EventEnrichmentService) enrichWithBillableMetric(enrichedEvent *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[*models.EnrichedEvent] {
@@ -102,4 +103,50 @@ func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.En
 	enrichedEvent.PlanID = sub.PlanID
 
 	return utils.SuccessResult(enrichedEvent)
+}
+
+func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.EnrichedEvent) utils.Result[[]*models.EnrichedEvent] {
+	// TODO(pre-aggregation): Remove the NotAPIPostProcessed condition to enable pre-aggregation
+	if !enrichedEvent.IntialEvent.NotAPIPostProcessed() || enrichedEvent.Subscription == nil {
+		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
+	}
+
+	filtersResult := s.apiStore.FetchFlatFilters(enrichedEvent.PlanID, enrichedEvent.Code)
+	if filtersResult.Failure() {
+		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
+	}
+
+	filters := filtersResult.Value()
+	if len(filters) == 0 {
+		// No filters found, return the original event without charge information
+		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
+	}
+
+	// Index filters by charge ID (an event can match multiple charges and filters)
+	charges := make(map[string][]models.FlatFilter)
+	for _, filter := range filters {
+		if charges[filter.ChargeID] == nil {
+			charges[filter.ChargeID] = []models.FlatFilter{}
+		}
+		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
+	}
+
+	var enrichedEvents []*models.EnrichedEvent
+	// For each charge, find matching filter and create an enriched event
+	for _, chargeFilters := range charges {
+		matchingFilter := models.MatchingFilter(chargeFilters, enrichedEvent)
+
+		// Create a copy of the enriched event for this filter
+		enrichedEventCopy := *enrichedEvent
+
+		// Populate charge information
+		enrichedEventCopy.FlatFilter = matchingFilter
+		enrichedEventCopy.ChargeID = &matchingFilter.ChargeID
+		enrichedEventCopy.ChargeUpdatedAt = &matchingFilter.ChargeUpdatedAt
+		enrichedEventCopy.ChargeFilterID = matchingFilter.ChargeFilterID
+		enrichedEventCopy.ChargeFilterUpdatedAt = matchingFilter.ChargeFilterUpdatedAt
+		enrichedEvents = append(enrichedEvents, &enrichedEventCopy)
+	}
+
+	return utils.SuccessResult(enrichedEvents)
 }
