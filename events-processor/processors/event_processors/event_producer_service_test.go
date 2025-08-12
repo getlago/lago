@@ -16,22 +16,30 @@ import (
 )
 
 var (
-	producerService    *EventProducerService
-	enrichedProducer   *tests.MockMessageProducer
-	inAdvanceProducer  *tests.MockMessageProducer
-	deadLetterProducer *tests.MockMessageProducer
-	logger             *slog.Logger
+	producerService          *EventProducerService
+	enrichedProducer         *tests.MockMessageProducer
+	enrichedExpandedProducer *tests.MockMessageProducer
+	inAdvanceProducer        *tests.MockMessageProducer
+	deadLetterProducer       *tests.MockMessageProducer
+	logger                   *slog.Logger
 )
 
 func setupProducerServiceEnv() {
 	enrichedProducer = &tests.MockMessageProducer{}
+	enrichedExpandedProducer = &tests.MockMessageProducer{}
 	inAdvanceProducer = &tests.MockMessageProducer{}
 	deadLetterProducer = &tests.MockMessageProducer{}
 
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	producerService = NewEventProducerService(enrichedProducer, inAdvanceProducer, deadLetterProducer, logger)
+	producerService = NewEventProducerService(
+		enrichedProducer,
+		enrichedExpandedProducer,
+		inAdvanceProducer,
+		deadLetterProducer,
+		logger,
+	)
 }
 
 func TestProduceEnrichedEvent(t *testing.T) {
@@ -54,6 +62,122 @@ func TestProduceEnrichedEvent(t *testing.T) {
 
 	eventJson, _ := json.Marshal(event)
 	assert.Equal(t, eventJson, enrichedProducer.Value)
+}
+
+func TestProduceEnrichedExtendedEvent(t *testing.T) {
+	t.Run("Without charge details", func(t *testing.T) {
+		setupProducerServiceEnv()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+		}
+
+		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+
+		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(
+			t,
+			[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls---"),
+			enrichedExpandedProducer.Key,
+		)
+
+		eventJson, _ := json.Marshal(event)
+		assert.Equal(t, eventJson, enrichedExpandedProducer.Value)
+	})
+
+	t.Run("With a charge id", func(t *testing.T) {
+		setupProducerServiceEnv()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			ChargeID:               utils.StringPtr("charge_id"),
+		}
+
+		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+
+		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(
+			t,
+			[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls-charge_id--"),
+			enrichedExpandedProducer.Key,
+		)
+
+		eventJson, _ := json.Marshal(event)
+		assert.Equal(t, eventJson, enrichedExpandedProducer.Value)
+	})
+
+	t.Run("With a charge filter id", func(t *testing.T) {
+		setupProducerServiceEnv()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			ChargeFilterID:         utils.StringPtr("charge_filter_id"),
+		}
+
+		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+
+		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(
+			t,
+			[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls--charge_filter_id-"),
+			enrichedExpandedProducer.Key,
+		)
+
+		eventJson, _ := json.Marshal(event)
+		assert.Equal(t, eventJson, enrichedExpandedProducer.Value)
+	})
+
+	t.Run("With groups", func(t *testing.T) {
+		setupProducerServiceEnv()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			GroupedBy:              map[string]string{"country": "US", "type": "debit"},
+		}
+
+		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+
+		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(
+			t,
+			[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls---country/US|type/debit"),
+			enrichedExpandedProducer.Key,
+		)
+
+		eventJson, _ := json.Marshal(event)
+		assert.Equal(t, eventJson, enrichedExpandedProducer.Value)
+	})
+
+	t.Run("With groups unsorted", func(t *testing.T) {
+		setupProducerServiceEnv()
+
+		event := models.EnrichedEvent{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			GroupedBy:              map[string]string{"type": "debit", "country": "US"},
+		}
+
+		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+
+		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(
+			t,
+			[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-sub_id-api_calls---country/US|type/debit"),
+			enrichedExpandedProducer.Key,
+		)
+
+		eventJson, _ := json.Marshal(event)
+		assert.Equal(t, eventJson, enrichedExpandedProducer.Value)
+	})
 }
 
 func TestProduceChargedInAdvanceEvent(t *testing.T) {
