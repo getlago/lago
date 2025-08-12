@@ -128,6 +128,13 @@ func StartProcessingEvents() {
 		panic(eventsEnrichedProducerResult.ErrorMessage())
 	}
 
+	eventsEnrichedExpandedProducerResult := initProducer(ctx, "LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC")
+	if eventsEnrichedExpandedProducerResult.Failure() {
+		logger.Error(eventsEnrichedExpandedProducerResult.ErrorMsg())
+		utils.CaptureErrorResult(eventsEnrichedExpandedProducerResult)
+		panic(eventsEnrichedExpandedProducerResult.ErrorMessage())
+	}
+
 	eventsInAdvanceProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC")
 	if eventsInAdvanceProducerResult.Failure() {
 		logger.Error(eventsInAdvanceProducerResult.ErrorMsg())
@@ -184,6 +191,7 @@ func StartProcessingEvents() {
 		event_processors.NewEventEnrichmentService(apiStore),
 		event_processors.NewEventProducerService(
 			eventsEnrichedProducerResult.Value(),
+			eventsEnrichedExpandedProducerResult.Value(),
 			eventsInAdvanceProducerResult.Value(),
 			eventsDeadLetterQueueResult.Value(),
 			logger,
