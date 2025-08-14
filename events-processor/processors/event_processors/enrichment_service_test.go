@@ -268,29 +268,27 @@ func TestEnrichEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123"}
 		mockSubscriptionLookup(sqlmock, &sub)
 
-		now := time.Now()
-		chargeFilterId1 := "charge_filter_id1"
-		chargeFilterId2 := "charge_filter_id2"
-
+		now1 := time.Now()
 		flatFilter1 := &models.FlatFilter{
 			OrganizationID:        "org_id",
 			BillableMetricCode:    "api_calls",
 			PlanID:                "plan_id",
 			ChargeID:              "charge_id1",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        &chargeFilterId1,
-			ChargeFilterUpdatedAt: &now,
+			ChargeUpdatedAt:       now1,
+			ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
+			ChargeFilterUpdatedAt: &now1,
 			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
 		}
 
+		now2 := now1.Add(time.Hour)
 		flatFilter2 := &models.FlatFilter{
 			OrganizationID:        "org_id",
 			BillableMetricCode:    "api_calls",
 			PlanID:                "plan_id",
 			ChargeID:              "charge_id2",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        &chargeFilterId2,
-			ChargeFilterUpdatedAt: &now,
+			ChargeUpdatedAt:       now2,
+			ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
+			ChargeFilterUpdatedAt: &now2,
 			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
 		}
 		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
