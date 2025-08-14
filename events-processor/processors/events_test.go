@@ -2,7 +2,6 @@ package processors
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"testing"
@@ -48,7 +47,7 @@ func setupProducers() *testProducerService {
 	}
 }
 
-func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, func()) {
+func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, *tests.MockFlagStore, func()) {
 	ctx = context.Background()
 
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -63,13 +62,17 @@ func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, func()) 
 	var chargeCache models.Cacher = &cacheStore
 	chargeCacheStore := models.NewChargeCache(&chargeCache)
 
+	flagStore := tests.MockFlagStore{}
+	flagger := event_processors.NewSubscriptionRefreshService(&flagStore)
+
 	processor = event_processors.NewEventProcessor(
 		event_processors.NewEventEnrichmentService(apiStore),
 		testProducers.producers,
+		flagger,
 		event_processors.NewCacheService(chargeCacheStore),
 	)
 
-	return mock, testProducers, delete
+	return mock, testProducers, &flagStore, delete
 }
 
 func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
@@ -103,7 +106,7 @@ func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter
 
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		sqlmock, _, delete := setupTestEnv(t)
+		sqlmock, _, _, delete := setupTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -123,7 +126,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
-		sqlmock, testProducers, delete := setupTestEnv(t)
+		sqlmock, testProducers, _, delete := setupTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -172,7 +175,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		sqlmock, _, delete := setupTestEnv(t)
+		sqlmock, _, _, delete := setupTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -203,7 +206,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		sqlmock, _, delete := setupTestEnv(t)
+		sqlmock, _, _, delete := setupTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -233,7 +236,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
-		sqlmock, _, delete := setupTestEnv(t)
+		sqlmock, _, _, delete := setupTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -266,7 +269,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		sqlmock, _, delete := setupTestEnv(t)
+		sqlmock, _, _, delete := setupTestEnv(t)
 		defer delete()
 
 		// properties := map[string]any{
@@ -305,7 +308,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		sqlmock, testProducers, delete := setupTestEnv(t)
+		sqlmock, testProducers, flagger, delete := setupTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -349,9 +352,6 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
-		flagStore := tests.MockFlagStore{}
-		subscriptionFlagStore = &flagStore
-
 		result := processEvent(&event)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
@@ -362,25 +362,6 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, 1, testProducers.inAdvanceProducer.ExecutionCount)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
 
-		assert.Equal(t, 1, flagStore.ExecutionCount)
+		assert.Equal(t, 1, flagger.ExecutionCount)
 	})
-}
-
-func TestFlagSubscriptionRefresh(t *testing.T) {
-	flagStore := tests.MockFlagStore{}
-	subscriptionFlagStore = &flagStore
-
-	orgId := "1a901a90-1a90-1a90-1a90-1a901a901a90"
-	sub := models.Subscription{ID: "sub_id"}
-
-	result := flagSubscriptionRefresh(orgId, &sub)
-	assert.Equal(t, 1, flagStore.ExecutionCount)
-	assert.True(t, result.Success())
-	assert.True(t, result.Value())
-
-	flagStore.ReturnedError = fmt.Errorf("Failed to flag subscription")
-	result = flagSubscriptionRefresh(orgId, &sub)
-	assert.Equal(t, 2, flagStore.ExecutionCount)
-	assert.True(t, result.Failure())
-	assert.Error(t, result.Error())
 }

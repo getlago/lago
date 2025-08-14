@@ -8,13 +8,15 @@ import (
 type EventProcessor struct {
 	EnrichmentService *EventEnrichmentService
 	ProducerService   *EventProducerService
+	RefreshService    *SubscriptionRefreshService
 	CacheService      *CacheService
 }
 
-func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, cacheService *CacheService) *EventProcessor {
+func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
 	return &EventProcessor{
 		EnrichmentService: enrichmentService,
 		ProducerService:   producerService,
+		RefreshService:    refreshService,
 		CacheService:      cacheService,
 	}
 }

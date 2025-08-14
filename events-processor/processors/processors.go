@@ -18,13 +18,12 @@ import (
 )
 
 var (
-	ctx                   context.Context
-	logger                *slog.Logger
-	processor             *event_processors.EventProcessor
-	apiStore              *models.ApiStore
-	subscriptionFlagStore models.Flagger
-	kafkaConfig           kafka.ServerConfig
-	chargeCacheStore      *models.ChargeCache
+	ctx              context.Context
+	logger           *slog.Logger
+	processor        *event_processors.EventProcessor
+	apiStore         *models.ApiStore
+	kafkaConfig      kafka.ServerConfig
+	chargeCacheStore *models.ChargeCache
 )
 
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
@@ -170,7 +169,6 @@ func StartProcessingEvents() {
 		utils.CaptureError(err)
 		panic(err.Error())
 	}
-	subscriptionFlagStore = flagger
 	defer flagger.Close()
 
 	cacher, err := initChargeCacheStore()
@@ -190,6 +188,7 @@ func StartProcessingEvents() {
 			eventsDeadLetterQueueResult.Value(),
 			logger,
 		),
+		event_processors.NewSubscriptionRefreshService(flagger),
 		event_processors.NewCacheService(chargeCacheStore),
 	)
 
