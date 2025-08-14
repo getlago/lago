@@ -3,7 +3,6 @@ package processors
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -108,7 +107,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 		}
 
-		flagResult := flagSubscriptionRefresh(event.OrganizationID, enrichedEvent.Subscription)
+		flagResult := processor.RefreshService.FlagSubscriptionRefresh(enrichedEvent)
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
@@ -125,13 +124,4 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
-}
-
-func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Result[bool] {
-	err := subscriptionFlagStore.Flag(fmt.Sprintf("%s:%s", orgID, sub.ID))
-	if err != nil {
-		return utils.FailedBoolResult(err)
-	}
-
-	return utils.SuccessResult(true)
 }
