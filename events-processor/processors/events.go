@@ -96,12 +96,15 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
-		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(enrichedEvent.PlanID, enrichedEvent.BillableMetric.ID)
-		if hasInAdvanceChargeResult.Failure() {
-			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
+		payInAdvance := false
+		for _, ev := range enrichedEvents {
+			if ev.FlatFilter.PayInAdvance {
+				payInAdvance = true
+				break
+			}
 		}
 
-		if hasInAdvanceChargeResult.Value() {
+		if payInAdvance {
 			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 		}
 

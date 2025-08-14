@@ -59,6 +59,10 @@ func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, func()) 
 
 	testProducers := setupProducers()
 
+	cacheStore := tests.MockCacheStore{}
+	var chargeCache models.Cacher = &cacheStore
+	chargeCacheStore := models.NewChargeCache(&chargeCache)
+
 	processor = event_processors.NewEventProcessor(
 		event_processors.NewEventEnrichmentService(apiStore),
 		testProducers.producers,
@@ -86,18 +90,13 @@ func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
 	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
 }
 
-func mockChargeCount(sqlmock sqlmock.Sqlmock, chargeCount int) {
-	row := sqlmock.NewRows([]string{"count"}).AddRow(chargeCount)
-	sqlmock.ExpectQuery(".* FROM \"charges\"").WillReturnRows(row)
-}
-
 func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter) {
-	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters"}
+	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters", "pay_in_advance"}
 
 	rows := sqlmock.NewRows(columns)
 
 	for _, filter := range filters {
-		rows.AddRow(filter.OrganizationID, filter.BillableMetricCode, filter.PlanID, filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt, filter.Filters)
+		rows.AddRow(filter.OrganizationID, filter.BillableMetricCode, filter.PlanID, filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt, filter.Filters, filter.PayInAdvance)
 	}
 	sqlmock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
 }
@@ -337,9 +336,18 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123"}
 		mockSubscriptionLookup(sqlmock, &sub)
 
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+		now := time.Now()
 
-		mockChargeCount(sqlmock, 3)
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{
+			{
+				OrganizationID:     "org_id",
+				BillableMetricCode: "api_call",
+				PlanID:             "plan_id",
+				ChargeID:           "charge_idxx",
+				ChargeUpdatedAt:    now,
+				PayInAdvance:       true,
+			},
+		})
 
 		flagStore := tests.MockFlagStore{}
 		subscriptionFlagStore = &flagStore
