@@ -27,20 +27,30 @@ type SourceMetadata struct {
 }
 
 type EnrichedEvent struct {
-	IntialEvent *Event `json:"-"`
+	InitialEvent   *Event          `json:"-"`
+	BillableMetric *BillableMetric `json:"-"`
+	Subscription   *Subscription   `json:"-"`
+	FlatFilter     *FlatFilter     `json:"-"`
 
-	OrganizationID          string         `json:"organization_id"`
-	ExternalSubscriptionID  string         `json:"external_subscription_id"`
-	TransactionID           string         `json:"transaction_id"`
-	Code                    string         `json:"code"`
-	AggregationType         string         `json:"aggregation_type"`
-	Properties              map[string]any `json:"properties"`
-	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
-	Source                  string         `json:"source,omitempty"`
-	Value                   *string        `json:"value"`
-	Timestamp               float64        `json:"timestamp"`
-	TimestampStr            string         `json:"-"`
-	Time                    time.Time      `json:"-"`
+	OrganizationID          string            `json:"organization_id"`
+	ExternalSubscriptionID  string            `json:"external_subscription_id"`
+	SubscriptionID          string            `json:"subscription_id"`
+	PlanID                  string            `json:"plan_id"`
+	TransactionID           string            `json:"transaction_id"`
+	Code                    string            `json:"code"`
+	AggregationType         string            `json:"aggregation_type"`
+	Properties              map[string]any    `json:"properties"`
+	PreciseTotalAmountCents string            `json:"precise_total_amount_cents"`
+	Source                  string            `json:"source,omitempty"`
+	Value                   *string           `json:"value"`
+	Timestamp               float64           `json:"timestamp"`
+	TimestampStr            string            `json:"-"`
+	Time                    time.Time         `json:"-"`
+	ChargeID                *string           `json:"charge_id"`
+	ChargeUpdatedAt         *time.Time        `json:"charge_updated_at"`
+	ChargeFilterID          *string           `json:"charge_filter_id"`
+	ChargeFilterUpdatedAt   *time.Time        `json:"charge_filter_updated_at"`
+	GroupedBy               map[string]string `json:"grouped_by"`
 }
 
 type FailedEvent struct {
@@ -53,7 +63,7 @@ type FailedEvent struct {
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er := &EnrichedEvent{
-		IntialEvent:             ev,
+		InitialEvent:            ev,
 		OrganizationID:          ev.OrganizationID,
 		ExternalSubscriptionID:  ev.ExternalSubscriptionID,
 		TransactionID:           ev.TransactionID,

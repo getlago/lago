@@ -3,17 +3,14 @@ package processors
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/getlago/lago-expression/expression-go"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
 
 	tracer "github.com/getlago/lago/events-processor/config"
-	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -71,7 +68,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				}
 
 				// Push failed records to the dead letter queue
-				go produceToDeadLetterQueue(event, result)
+				go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
 			}
 
 			// Track processed records
@@ -87,58 +84,36 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 }
 
 func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
-	enrichedEventResult := event.ToEnrichedEvent()
+	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
-		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
-	}
-	enrichedEvent := enrichedEventResult.Value()
-
-	bmResult := apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
-	if bmResult.Failure() {
-		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
-	}
-	bm := bmResult.Value()
-
-	if bm != nil {
-		enrichedEvent.AggregationType = bm.AggregationType.String()
+		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
 	}
 
-	subResult := apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-	if subResult.Failure() && subResult.IsCapturable() {
-		// We want to keep processing the event even if the subscription is not found
-		return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
-	}
-	sub := subResult.Value()
+	enrichedEvents := enrichedEventResult.Value()
+	enrichedEvent := enrichedEvents[0] // TODO:Add full support for multiple enriched events
 
-	if event.Source != models.HTTP_RUBY {
-		expressionResult := evaluateExpression(enrichedEvent, bm)
-		if expressionResult.Failure() {
-			return failedResult(expressionResult, "evaluate_expression", "Error evaluating custom expression")
-		}
-	}
+	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 
-	var value = fmt.Sprintf("%v", event.Properties[bm.FieldName])
-	enrichedEvent.Value = &value
-
-	go produceEnrichedEvent(enrichedEvent)
-
-	if sub != nil && event.NotAPIPostProcessed() {
-		hasInAdvanceChargeResult := apiStore.AnyInAdvanceCharge(sub.PlanID, bm.ID)
-		if hasInAdvanceChargeResult.Failure() {
-			return failedResult(hasInAdvanceChargeResult, "fetch_in_advance_charges", "Error fetching in advance charges")
+	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
+		payInAdvance := false
+		for _, ev := range enrichedEvents {
+			if ev.FlatFilter.PayInAdvance {
+				payInAdvance = true
+				break
+			}
 		}
 
-		if hasInAdvanceChargeResult.Value() {
-			go produceChargedInAdvanceEvent(enrichedEvent)
+		if payInAdvance {
+			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 		}
 
-		flagResult := flagSubscriptionRefresh(event.OrganizationID, sub)
+		flagResult := processor.RefreshService.FlagSubscriptionRefresh(enrichedEvent)
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
 
 		// Expire cache at charge and charge filter level
-		expireCache(enrichedEvent, sub)
+		processor.CacheService.ExpireCache(enrichedEvents)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -149,123 +124,4 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
-}
-
-func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
-	if bm.Expression == "" {
-		return utils.SuccessResult(false)
-	}
-
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		return utils.FailedBoolResult(err).NonRetryable()
-	}
-	eventJsonString := string(eventJson[:])
-
-	result := expression.Evaluate(bm.Expression, eventJsonString)
-	if result != nil {
-		ev.Properties[bm.FieldName] = *result
-	} else {
-		return utils.
-			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
-			NonRetryable()
-	}
-
-	return utils.SuccessResult(true)
-}
-
-func produceEnrichedEvent(ev *models.EnrichedEvent) {
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		logger.Error("error while marshaling enriched events")
-	}
-
-	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
-
-	pushed := eventsEnrichedProducer.Produce(ctx, &kafka.ProducerMessage{
-		Key:   []byte(msgKey),
-		Value: eventJson,
-	})
-
-	if !pushed {
-		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsEnrichedProducer.GetTopic())))
-	}
-}
-
-func produceChargedInAdvanceEvent(ev *models.EnrichedEvent) {
-	eventJson, err := json.Marshal(ev)
-	if err != nil {
-		logger.Error("error while marshaling charged in advance events")
-		utils.CaptureError(err)
-	}
-
-	msgKey := fmt.Sprintf("%s-%s-%s", ev.OrganizationID, ev.ExternalSubscriptionID, ev.Code)
-
-	pushed := eventsInAdvanceProducer.Produce(ctx, &kafka.ProducerMessage{
-		Key:   []byte(msgKey),
-		Value: eventJson,
-	})
-
-	if !pushed {
-		produceToDeadLetterQueue(*ev.IntialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", eventsInAdvanceProducer.GetTopic())))
-	}
-}
-
-func produceToDeadLetterQueue(event models.Event, errorResult utils.AnyResult) {
-	failedEvent := models.FailedEvent{
-		Event:               event,
-		InitialErrorMessage: errorResult.ErrorMsg(),
-		ErrorCode:           errorResult.ErrorCode(),
-		ErrorMessage:        errorResult.ErrorMessage(),
-		FailedAt:            time.Now(),
-	}
-
-	eventJson, err := json.Marshal(failedEvent)
-	if err != nil {
-		logger.Error("error while marshaling failed event with error details")
-		utils.CaptureError(err)
-	}
-
-	pushed := eventsDeadLetterQueue.Produce(ctx, &kafka.ProducerMessage{
-		Value: eventJson,
-	})
-
-	if !pushed {
-		logger.Error("error while pushing to dead letter topic", slog.String("topic", eventsDeadLetterQueue.GetTopic()))
-		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
-	}
-}
-
-func flagSubscriptionRefresh(orgID string, sub *models.Subscription) utils.Result[bool] {
-	err := subscriptionFlagStore.Flag(fmt.Sprintf("%s:%s", orgID, sub.ID))
-	if err != nil {
-		return utils.FailedBoolResult(err)
-	}
-
-	return utils.SuccessResult(true)
-}
-
-func expireCache(event *models.EnrichedEvent, sub *models.Subscription) {
-	filtersResult := apiStore.FetchFlatFilters(sub.PlanID, event.Code)
-	if filtersResult.Failure() {
-		utils.CaptureError(filtersResult.Error())
-	}
-
-	// Index filters by charge ID
-	charges := make(map[string][]models.FlatFilter)
-	for _, filter := range filtersResult.Value() {
-		if charges[filter.ChargeID] == nil {
-			charges[filter.ChargeID] = []models.FlatFilter{}
-		}
-		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
-	}
-
-	// For each charges, find matching filters or default charge and expire cache
-	for _, filters := range charges {
-		filter := models.MatchingFilter(filters, event)
-		cacheResult := chargeCacheStore.Expire(filter, sub.ID)
-		if cacheResult.Failure() {
-			utils.CaptureError(cacheResult.Error())
-		}
-	}
 }

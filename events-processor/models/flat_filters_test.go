@@ -31,10 +31,13 @@ func TestFetchFlatFilters(t *testing.T) {
 		// Convert filters to JSON for JSONB column
 		filtersJSON, _ := json.Marshal(filters)
 
+		pricingGroupKeys := []string{"country", "region"}
+		pricingGroupKeysJSON, _ := json.Marshal(pricingGroupKeys)
+
 		// Define expected rows and columns
-		columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters"}
+		columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters", "pricing_group_keys"}
 		rows := sqlmock.NewRows(columns).
-			AddRow("1a901a90-1a90-1a90-1a90-1a901a901a90", code, planID, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, filtersJSON)
+			AddRow("1a901a90-1a90-1a90-1a90-1a901a901a90", code, planID, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, filtersJSON, pricingGroupKeysJSON)
 
 		// Expect the query
 		mock.ExpectQuery(fetchFiltersQuery).
@@ -53,6 +56,8 @@ func TestFetchFlatFilters(t *testing.T) {
 		// Convert FilterMap back to regular map for comparison
 		actualFilters := map[string][]string(*flatFilter.Filters)
 		assert.Equal(t, filters, actualFilters)
+
+		assert.Equal(t, pricingGroupKeys, []string(flatFilter.PricingGroupKeys))
 	})
 
 	t.Run("should return an empty result when not found", func(t *testing.T) {

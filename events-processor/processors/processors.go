@@ -13,19 +13,17 @@ import (
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/processors/event_processors"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
 var (
-	ctx                     context.Context
-	logger                  *slog.Logger
-	eventsEnrichedProducer  kafka.MessageProducer
-	eventsInAdvanceProducer kafka.MessageProducer
-	eventsDeadLetterQueue   kafka.MessageProducer
-	apiStore                *models.ApiStore
-	subscriptionFlagStore   models.Flagger
-	kafkaConfig             kafka.ServerConfig
-	chargeCacheStore        *models.ChargeCache
+	ctx              context.Context
+	logger           *slog.Logger
+	processor        *event_processors.EventProcessor
+	apiStore         *models.ApiStore
+	kafkaConfig      kafka.ServerConfig
+	chargeCacheStore *models.ChargeCache
 )
 
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
@@ -129,7 +127,6 @@ func StartProcessingEvents() {
 		utils.CaptureErrorResult(eventsEnrichedProducerResult)
 		panic(eventsEnrichedProducerResult.ErrorMessage())
 	}
-	eventsEnrichedProducer = eventsEnrichedProducerResult.Value()
 
 	eventsInAdvanceProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC")
 	if eventsInAdvanceProducerResult.Failure() {
@@ -137,29 +134,12 @@ func StartProcessingEvents() {
 		utils.CaptureErrorResult(eventsInAdvanceProducerResult)
 		panic(eventsInAdvanceProducerResult.ErrorMessage())
 	}
-	eventsInAdvanceProducer = eventsInAdvanceProducerResult.Value()
 
 	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC")
 	if eventsDeadLetterQueueResult.Failure() {
 		logger.Error(eventsDeadLetterQueueResult.ErrorMsg())
 		utils.CaptureErrorResult(eventsDeadLetterQueueResult)
 		panic(eventsDeadLetterQueueResult.ErrorMessage())
-	}
-	eventsDeadLetterQueue = eventsDeadLetterQueueResult.Value()
-
-	cg, err := kafka.NewConsumerGroup(
-		kafkaConfig,
-		&kafka.ConsumerGroupConfig{
-			Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
-			ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
-			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
-				return processEvents(records)
-			},
-		})
-	if err != nil {
-		logger.Error("Error starting the event consumer", slog.String("error", err.Error()))
-		utils.CaptureError(err)
-		panic(err.Error())
 	}
 
 	maxConns, err := utils.GetEnvAsInt("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS", 200)
@@ -189,7 +169,6 @@ func StartProcessingEvents() {
 		utils.CaptureError(err)
 		panic(err.Error())
 	}
-	subscriptionFlagStore = flagger
 	defer flagger.Close()
 
 	cacher, err := initChargeCacheStore()
@@ -200,6 +179,33 @@ func StartProcessingEvents() {
 	}
 	chargeCacheStore = cacher
 	defer chargeCacheStore.CacheStore.Close()
+
+	processor = event_processors.NewEventProcessor(
+		event_processors.NewEventEnrichmentService(apiStore),
+		event_processors.NewEventProducerService(
+			eventsEnrichedProducerResult.Value(),
+			eventsInAdvanceProducerResult.Value(),
+			eventsDeadLetterQueueResult.Value(),
+			logger,
+		),
+		event_processors.NewSubscriptionRefreshService(flagger),
+		event_processors.NewCacheService(chargeCacheStore),
+	)
+
+	cg, err := kafka.NewConsumerGroup(
+		kafkaConfig,
+		&kafka.ConsumerGroupConfig{
+			Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
+			ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
+			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
+				return processEvents(records)
+			},
+		})
+	if err != nil {
+		logger.Error("Error starting the event consumer", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+		panic(err.Error())
+	}
 
 	cg.Start()
 }

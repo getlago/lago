@@ -16,6 +16,7 @@ func (mp *MockMessageProducer) Produce(ctx context.Context, msg *kafka.ProducerM
 	mp.Key = msg.Key
 	mp.Value = msg.Value
 	mp.ExecutionCount++
+
 	return true
 }
 
