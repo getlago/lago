@@ -443,4 +443,52 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
 		// TODO(pre-aggregation): assert.Equal(t, 2, testProducers.enrichedExpandedProducer.ExecutionCount)
 	})
+
+	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
+		sqlmock, testProducers, _, delete := setupTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"api_requests": "12.0",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+
+		result := processEvent(&event)
+
+		assert.True(t, result.Success())
+		assert.Equal(t, "12.0", *result.Value().Value)
+		assert.Equal(t, "sum", result.Value().AggregationType)
+		assert.Equal(t, "sub123", result.Value().SubscriptionID)
+		assert.Equal(t, "plan123", result.Value().PlanID)
+
+		// Give some time to the go routine to complete
+		// TODO: Improve this by using channels in the producers methods
+		time.Sleep(50 * time.Millisecond)
+		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 0, testProducers.enrichedExpandedProducer.ExecutionCount)
+	})
 }
