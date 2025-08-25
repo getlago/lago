@@ -102,7 +102,7 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvance := false
 		for _, ev := range enrichedEvents {
-			if ev.FlatFilter.PayInAdvance {
+			if ev.FlatFilter != nil && ev.FlatFilter.PayInAdvance {
 				payInAdvance = true
 				break
 			}
