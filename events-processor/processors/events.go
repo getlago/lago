@@ -90,9 +90,14 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	}
 
 	enrichedEvents := enrichedEventResult.Value()
-	enrichedEvent := enrichedEvents[0] // TODO:Add full support for multiple enriched events
+	enrichedEvent := enrichedEvents[0]
 
 	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+
+	// TODO(pre-aggregation): Uncomment to enable the feature
+	// for _, ev := range enrichedEvents {
+	// 	go processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
+	// }
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvance := false

@@ -92,7 +92,6 @@ type FlatFilter struct {
 	ChargeFilterID        *string           `gorm:"->"`
 	ChargeFilterUpdatedAt *time.Time        `gorm:"->"`
 	Filters               *FlatFilterValues `gorm:"type:jsonb"`
-	Properties            map[string]any    `gorm:"type:jsonb"`
 	PricingGroupKeys      PricingGroupKeys  `gorm:"type:jsonb"`
 	PayInAdvance          bool              `gorm:"type:boolean"`
 }

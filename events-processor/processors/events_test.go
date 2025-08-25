@@ -13,19 +13,22 @@ import (
 
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/processors/event_processors"
+	"github.com/getlago/lago/events-processor/utils"
 
 	"github.com/getlago/lago/events-processor/tests"
 )
 
 type testProducerService struct {
-	enrichedProducer   *tests.MockMessageProducer
-	inAdvanceProducer  *tests.MockMessageProducer
-	deadLetterProducer *tests.MockMessageProducer
-	producers          *event_processors.EventProducerService
+	enrichedProducer         *tests.MockMessageProducer
+	enrichedExpandedProducer *tests.MockMessageProducer
+	inAdvanceProducer        *tests.MockMessageProducer
+	deadLetterProducer       *tests.MockMessageProducer
+	producers                *event_processors.EventProducerService
 }
 
 func setupProducers() *testProducerService {
 	enrichedProducer := tests.MockMessageProducer{}
+	enrichedExpandedProducer := tests.MockMessageProducer{}
 	inAdvanceProducer := tests.MockMessageProducer{}
 	deadLetterProducer := tests.MockMessageProducer{}
 
@@ -34,16 +37,18 @@ func setupProducers() *testProducerService {
 
 	producers := event_processors.NewEventProducerService(
 		&enrichedProducer,
+		&enrichedExpandedProducer,
 		&inAdvanceProducer,
 		&deadLetterProducer,
 		logger,
 	)
 
 	return &testProducerService{
-		enrichedProducer:   &enrichedProducer,
-		inAdvanceProducer:  &inAdvanceProducer,
-		deadLetterProducer: &deadLetterProducer,
-		producers:          producers,
+		enrichedProducer:         &enrichedProducer,
+		enrichedExpandedProducer: &enrichedExpandedProducer,
+		inAdvanceProducer:        &inAdvanceProducer,
+		deadLetterProducer:       &deadLetterProducer,
+		producers:                producers,
 	}
 }
 
@@ -172,6 +177,7 @@ func TestProcessEvent(t *testing.T) {
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
+		// TODO(pre-aggregation): assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
@@ -361,7 +367,80 @@ func TestProcessEvent(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.inAdvanceProducer.ExecutionCount)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
+		// TODO(pre-aggregation): assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
 
 		assert.Equal(t, 1, flagger.ExecutionCount)
+	})
+
+	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
+		sqlmock, testProducers, _, delete := setupTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"api_requests": "12.0",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(sqlmock, &bm)
+
+		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
+		mockSubscriptionLookup(sqlmock, &sub)
+
+		now := time.Now()
+
+		flatFilter1 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id1",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
+
+		flatFilter2 := &models.FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_calls",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id2",
+			ChargeUpdatedAt:       now,
+			ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
+			ChargeFilterUpdatedAt: &now,
+			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		}
+		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+
+		result := processEvent(&event)
+
+		assert.True(t, result.Success())
+		assert.Equal(t, "12.0", *result.Value().Value)
+		assert.Equal(t, "sum", result.Value().AggregationType)
+		assert.Equal(t, "sub123", result.Value().SubscriptionID)
+		assert.Equal(t, "plan123", result.Value().PlanID)
+
+		// Give some time to the go routine to complete
+		// TODO: Improve this by using channels in the producers methods
+		time.Sleep(50 * time.Millisecond)
+		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
+		// TODO(pre-aggregation): assert.Equal(t, 2, testProducers.enrichedExpandedProducer.ExecutionCount)
 	})
 }

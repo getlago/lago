@@ -68,8 +68,12 @@ func (s *EventEnrichmentService) enrichWithBillableMetric(enrichedEvent *models.
 		}
 	}
 
-	var value = fmt.Sprintf("%v", enrichedEvent.Properties[bm.FieldName])
-	enrichedEvent.Value = &value
+	if bm.AggregationType == models.AggregationTypeCount {
+		enrichedEvent.Value = utils.StringPtr("1")
+	} else {
+		var value = fmt.Sprintf("%v", enrichedEvent.Properties[bm.FieldName])
+		enrichedEvent.Value = &value
+	}
 
 	return utils.SuccessResult(enrichedEvent)
 }
