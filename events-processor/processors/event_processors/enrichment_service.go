@@ -142,6 +142,7 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 
 		// Create a copy of the enriched event for this filter
 		enrichedEventCopy := *enrichedEvent
+		enrichedEventCopy.GroupedBy = make(map[string]string)
 
 		// Populate charge information
 		enrichedEventCopy.FlatFilter = matchingFilter
@@ -163,7 +164,6 @@ func enrichWithPricingGroupKeys(event *models.EnrichedEvent) {
 		return
 	}
 
-	event.GroupedBy = make(map[string]string)
 	for _, key := range event.FlatFilter.PricingGroupKeys {
 		event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
 	}

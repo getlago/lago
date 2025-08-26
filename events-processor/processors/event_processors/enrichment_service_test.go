@@ -300,10 +300,12 @@ func TestEnrichEvent(t *testing.T) {
 		eventResult1 := result.Value()[0]
 		assert.Equal(t, "12", *eventResult1.Value)
 		assert.Equal(t, "charge_id1", *eventResult1.ChargeID)
+		assert.Equal(t, map[string]string{}, eventResult1.GroupedBy)
 
 		eventResult2 := result.Value()[1]
 		assert.Equal(t, "12", *eventResult2.Value)
 		assert.Equal(t, "charge_id2", *eventResult2.ChargeID)
+		assert.Equal(t, map[string]string{}, eventResult2.GroupedBy)
 	})
 
 	t.Run("When event source is not post process on API with a flat filter with pricing group keys", func(t *testing.T) {

@@ -71,6 +71,7 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 		Properties:              ev.Properties,
 		PreciseTotalAmountCents: ev.PreciseTotalAmountCents,
 		Source:                  ev.Source,
+		GroupedBy:               make(map[string]string),
 	}
 
 	timestampResult := utils.ToFloat64Timestamp(ev.Timestamp)

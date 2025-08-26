@@ -37,6 +37,7 @@ func TestToEnrichedEvent(t *testing.T) {
 		assert.Equal(t, event.Source, ere.Source)
 		assert.Equal(t, 1741007009.0, ere.Timestamp)
 		assert.Equal(t, expectedTime, ere.Time)
+		assert.Equal(t, map[string]string{}, ere.GroupedBy)
 	})
 
 	t.Run("With unsupported time format", func(t *testing.T) {
