@@ -111,12 +111,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     command: ["./scripts/migrate.dev.sh"]
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
       - $LAGO_PATH/api:/app:delegated
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
 
@@ -131,6 +139,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
     volumes:
       - $LAGO_PATH/api:/app:delegated
@@ -283,11 +293,18 @@ services:
     ports:
       - 9092:9092
       - 19092:19092
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:9644/v1/status/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   redpandacreatetopics:
     image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
     depends_on:
-      - redpanda
+      redpanda:
+        condition: service_healthy
     entrypoint: >
       rpk topic create events-raw events_enriched events_charged_in_advance events_dead_letter activity_logs api_logs --brokers redpanda:9092
 
@@ -324,9 +341,12 @@ services:
     hostname: clickhouse
     user: "101:101"
     depends_on:
-      - db
-      - redpanda
-      - redpandacreatetopics
+      db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redpandacreatetopics:
+        condition: service_completed_successfully
     volumes:
       - clickhouse_data_dev:/var/lib/clickhouse
       - ./extra/clickhouse/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
@@ -334,3 +354,9 @@ services:
     ports:
       - 9000:9000
       - 8123:8123
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--password", "default", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
