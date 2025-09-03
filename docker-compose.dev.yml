@@ -111,12 +111,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     command: ["./scripts/migrate.dev.sh"]
     build:
       context: ./api
       dockerfile: $LAGO_PATH/api/Dockerfile.dev
     volumes:
       - $LAGO_PATH/api:/app:delegated
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
 
