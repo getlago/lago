@@ -305,8 +305,19 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
-    entrypoint: >
-      rpk topic create events-raw events_enriched events_charged_in_advance events_dead_letter activity_logs api_logs --brokers redpanda:9092
+    # https://github.com/redpanda-data/redpanda/issues/6651
+    entrypoint: create-topics
+    command:
+      - events-raw
+      - events_enriched
+      - events_charged_in_advance
+      - events_dead_letter
+      - activity_logs
+      - api_logs
+    volumes:
+      - ./scripts/create-topics.sh:/usr/local/bin/create-topics
+    environment:
+      - RPK_BROKERS=redpanda:9092
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.3.1
