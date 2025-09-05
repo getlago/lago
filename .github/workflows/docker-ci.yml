@@ -21,7 +21,7 @@ jobs:
           LAGO_ORG_USER_PASSWORD: "foobar"
           LAGO_ORG_API_KEY: "test"
         run: |
-          export LAGO_RSA_PRIVATE_KEY="`openssl genrsa 2048 | base64 | tr -d '\n'`"
+          export LAGO_RSA_PRIVATE_KEY="`openssl genrsa 2048 | openssl base64 -A`"
           docker compose up -d --wait
       - name: cURL API
         run: curl -f http://localhost:3000/health

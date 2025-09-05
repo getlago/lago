@@ -157,7 +157,7 @@ Those docker compose file generates an RSA Keys pair for the JWT tokens generati
 You can find the keys in the `lago_rsa_data` volume or in the `/app/config/keys` directory in the backends containers.
 If you do not want to use those keys:
 - Remove the `lago_rsa_data` volume
-- Generate your own key using `openssl genrsa 2048 | base64 | tr -d '\n'`
+- Generate your own key using `openssl genrsa 2048 | openssl base64 -A`
 - Export this generated key to the `LAGO_RSA_PRIVATE_KEY` env var.
 - Run the following command to start the project without the RSA keys generation:
 
