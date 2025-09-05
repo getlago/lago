@@ -165,7 +165,7 @@ Contact our team at hello@getlago.com to get started with Lago Cloud. More infor
 
 ## 🧑‍💻 Contributions and development environment
 
-You can follow this [guide](https://github.com/getlago/lago/wiki/Development-Environment) to set up a Lago development environment on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we recommend that you take a look at Lago's public documentation.
+You can follow this [guide](./docs/dev_environment.md) to set up a Lago development environment on your machine. This guide is intended for people willing to contribute to Lago. If you want to try Lago on your local system, we recommend that you take a look at Lago's public documentation.
 
 You can contribute by following our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md).
 
