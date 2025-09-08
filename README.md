@@ -113,7 +113,7 @@ git clone --depth 1 https://github.com/getlago/lago.git
 cd lago
 
 # Set up environment configuration
-echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
+echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | openssl base64 -A`\"" >> .env
 source .env
 
 # Start all the components
