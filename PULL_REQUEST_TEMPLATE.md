@@ -23,6 +23,6 @@ Please, go through these steps before you submit a PR.
 
    d. Add the corresponding labels to your pull request (ex: feature, improvement, bug...)
 
-IMPORTANT: Please review the [CONTRIBUTING.md](../CONTRIBUTING.md) file for detailed contributing guidelines.
+IMPORTANT: Please review the [CONTRIBUTING.md](CONTRIBUTING.md) file for detailed contributing guidelines.
 
 **PLEASE REMOVE THIS TEMPLATE BEFORE SUBMITTING**
