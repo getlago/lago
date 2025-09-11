@@ -132,6 +132,7 @@ Note that if our docker server is not at http://localhost, the following env var
 
 ```
 LAGO_API_URL="http://192.168.122.71:3000"
+LAGO_API_WS_URL="wss://192.168.122.71:3000/cable"
 LAGO_FRONT_URL="http://192.168.122.71"
 ```
 
