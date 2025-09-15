@@ -104,7 +104,7 @@ func StartProcessingEvents() {
 	slog.SetDefault(logger)
 
 	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if os.Getenv("ENV") == "production" && otelEndpoint != "" {
+	if otelEndpoint != "" {
 		telemetryCfg := tracer.TracerConfig{
 			ServiceName: os.Getenv("OTEL_SERVICE_NAME"),
 			EndpointURL: otelEndpoint,
