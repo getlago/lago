@@ -103,10 +103,11 @@ func StartProcessingEvents() {
 		With("service", "post_process")
 	slog.SetDefault(logger)
 
-	if os.Getenv("ENV") == "production" {
+	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if otelEndpoint != "" {
 		telemetryCfg := tracer.TracerConfig{
 			ServiceName: os.Getenv("OTEL_SERVICE_NAME"),
-			EndpointURL: os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+			EndpointURL: otelEndpoint,
 			Insecure:    os.Getenv("OTEL_INSECURE"),
 		}
 		tracer.InitOTLPTracer(telemetryCfg)
