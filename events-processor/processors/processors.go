@@ -26,6 +26,31 @@ var (
 	chargeCacheStore *models.ChargeCache
 )
 
+const (
+	envEnv                                       = "ENV"
+	envLagoEventsProcessorDatabaseMaxConnections = "LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS"
+	envLagoKafkaBootstrapServers                 = "LAGO_KAFKA_BOOTSTRAP_SERVERS"
+	envLagoKafkaConsumerGroup                    = "LAGO_KAFKA_CONSUMER_GROUP"
+	envLagoKafkaEnrichedEventsExpandedTopic      = "LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC"
+	envLagoKafkaEnrichedEventsTopic              = "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC"
+	envLagoKafkaEventsChargedInAdvanceTopic      = "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"
+	envLagoKafkaEventsDeadLetterTopic            = "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC"
+	envLagoKafkaPassword                         = "LAGO_KAFKA_PASSWORD"
+	envLagoKafkaRawEventsTopic                   = "LAGO_KAFKA_RAW_EVENTS_TOPIC"
+	envLagoKafkaScramAlgorithm                   = "LAGO_KAFKA_SCRAM_ALGORITHM"
+	envLagoKafkaTLS                              = "LAGO_KAFKA_TLS"
+	envLagoKafkaUsername                         = "LAGO_KAFKA_USERNAME"
+	envLagoRedisCacheDB                          = "LAGO_REDIS_CACHE_DB"
+	envLagoRedisCachePassword                    = "LAGO_REDIS_CACHE_PASSWORD"
+	envLagoRedisCacheURL                         = "LAGO_REDIS_CACHE_URL"
+	envLagoRedisStoreDB                          = "LAGO_REDIS_STORE_DB"
+	envLagoRedisStorePassword                    = "LAGO_REDIS_STORE_PASSWORD"
+	envLagoRedisStoreURL                         = "LAGO_REDIS_STORE_URL"
+	envOtelExporterOtlpEndpoint                  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+	envOtelInsecure                              = "OTEL_INSECURE"
+	envOtelServiceName                           = "OTEL_SERVICE_NAME"
+)
+
 func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
 	if os.Getenv(topicEnv) == "" {
 		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topicEnv))
@@ -51,16 +76,16 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 }
 
 func initFlagStore(name string) (*models.FlagStore, error) {
-	redisDb, err := utils.GetEnvAsInt("LAGO_REDIS_STORE_DB", 0)
+	redisDb, err := utils.GetEnvAsInt(envLagoRedisStoreDB, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	redisConfig := redis.RedisConfig{
-		Address:  os.Getenv("LAGO_REDIS_STORE_URL"),
-		Password: os.Getenv("LAGO_REDIS_STORE_PASSWORD"),
+		Address:  os.Getenv(envLagoRedisStoreURL),
+		Password: os.Getenv(envLagoRedisStorePassword),
 		DB:       redisDb,
-		UseTLS:   os.Getenv("ENV") == "production",
+		UseTLS:   os.Getenv(envEnv) == "production",
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)
@@ -72,14 +97,14 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 }
 
 func initChargeCacheStore() (*models.ChargeCache, error) {
-	redisDb, err := utils.GetEnvAsInt("LAGO_REDIS_CACHE_DB", 0)
+	redisDb, err := utils.GetEnvAsInt(envLagoRedisCacheDB, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	redisConfig := redis.RedisConfig{
-		Address:  os.Getenv("LAGO_REDIS_CACHE_URL"),
-		Password: os.Getenv("LAGO_REDIS_CACHE_PASSWORD"),
+		Address:  os.Getenv(envLagoRedisCacheURL),
+		Password: os.Getenv(envLagoRedisCachePassword),
 		DB:       redisDb,
 		UseTLS:   false,
 	}
@@ -103,54 +128,54 @@ func StartProcessingEvents() {
 		With("service", "post_process")
 	slog.SetDefault(logger)
 
-	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	otelEndpoint := os.Getenv(envOtelExporterOtlpEndpoint)
 	if otelEndpoint != "" {
 		telemetryCfg := tracer.TracerConfig{
-			ServiceName: os.Getenv("OTEL_SERVICE_NAME"),
+			ServiceName: os.Getenv(envOtelServiceName),
 			EndpointURL: otelEndpoint,
-			Insecure:    os.Getenv("OTEL_INSECURE"),
+			Insecure:    os.Getenv(envOtelInsecure),
 		}
 		tracer.InitOTLPTracer(telemetryCfg)
 	}
 
 	kafkaConfig = kafka.ServerConfig{
-		ScramAlgorithm: os.Getenv("LAGO_KAFKA_SCRAM_ALGORITHM"),
-		TLS:            os.Getenv("LAGO_KAFKA_TLS") == "true",
-		Server:         os.Getenv("LAGO_KAFKA_BOOTSTRAP_SERVERS"),
-		UseTelemetry:   os.Getenv("ENV") == "production",
-		UserName:       os.Getenv("LAGO_KAFKA_USERNAME"),
-		Password:       os.Getenv("LAGO_KAFKA_PASSWORD"),
+		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
+		TLS:            os.Getenv(envLagoKafkaTLS) == "true",
+		Server:         os.Getenv(envLagoKafkaBootstrapServers),
+		UseTelemetry:   otelEndpoint != "",
+		UserName:       os.Getenv(envLagoKafkaUsername),
+		Password:       os.Getenv(envLagoKafkaPassword),
 	}
 
-	eventsEnrichedProducerResult := initProducer(ctx, "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC")
+	eventsEnrichedProducerResult := initProducer(ctx, envLagoKafkaEnrichedEventsTopic)
 	if eventsEnrichedProducerResult.Failure() {
 		logger.Error(eventsEnrichedProducerResult.ErrorMsg())
 		utils.CaptureErrorResult(eventsEnrichedProducerResult)
 		panic(eventsEnrichedProducerResult.ErrorMessage())
 	}
 
-	eventsEnrichedExpandedProducerResult := initProducer(ctx, "LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC")
+	eventsEnrichedExpandedProducerResult := initProducer(ctx, envLagoKafkaEnrichedEventsExpandedTopic)
 	if eventsEnrichedExpandedProducerResult.Failure() {
 		logger.Error(eventsEnrichedExpandedProducerResult.ErrorMsg())
 		utils.CaptureErrorResult(eventsEnrichedExpandedProducerResult)
 		panic(eventsEnrichedExpandedProducerResult.ErrorMessage())
 	}
 
-	eventsInAdvanceProducerResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC")
+	eventsInAdvanceProducerResult := initProducer(ctx, envLagoKafkaEventsChargedInAdvanceTopic)
 	if eventsInAdvanceProducerResult.Failure() {
 		logger.Error(eventsInAdvanceProducerResult.ErrorMsg())
 		utils.CaptureErrorResult(eventsInAdvanceProducerResult)
 		panic(eventsInAdvanceProducerResult.ErrorMessage())
 	}
 
-	eventsDeadLetterQueueResult := initProducer(ctx, "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC")
+	eventsDeadLetterQueueResult := initProducer(ctx, envLagoKafkaEventsDeadLetterTopic)
 	if eventsDeadLetterQueueResult.Failure() {
 		logger.Error(eventsDeadLetterQueueResult.ErrorMsg())
 		utils.CaptureErrorResult(eventsDeadLetterQueueResult)
 		panic(eventsDeadLetterQueueResult.ErrorMessage())
 	}
 
-	maxConns, err := utils.GetEnvAsInt("LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS", 200)
+	maxConns, err := utils.GetEnvAsInt(envLagoEventsProcessorDatabaseMaxConnections, 200)
 	if err != nil {
 		logger.Error("Error converting max connections into integer", slog.String("error", err.Error()))
 		utils.CaptureError(err)
@@ -204,8 +229,8 @@ func StartProcessingEvents() {
 	cg, err := kafka.NewConsumerGroup(
 		kafkaConfig,
 		&kafka.ConsumerGroupConfig{
-			Topic:         os.Getenv("LAGO_KAFKA_RAW_EVENTS_TOPIC"),
-			ConsumerGroup: os.Getenv("LAGO_KAFKA_CONSUMER_GROUP"),
+			Topic:         os.Getenv(envLagoKafkaRawEventsTopic),
+			ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
 			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
 				return processEvents(records)
 			},
