@@ -24,7 +24,9 @@ var (
 	apiStore         *models.ApiStore
 	kafkaConfig      kafka.ServerConfig
 	chargeCacheStore *models.ChargeCache
+)
 
+const (
 	envEnv                                       = "ENV"
 	envLagoEventsProcessorDatabaseMaxConnections = "LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS"
 	envLagoKafkaBootstrapServers                 = "LAGO_KAFKA_BOOTSTRAP_SERVERS"
