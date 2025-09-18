@@ -1,0 +1,118 @@
+input:
+  label: sqs_lago_ingestor
+  aws_sqs:
+    url: "${SQS_ENDPOINT}"
+    max_number_of_messages: 10
+    region: "${SQS_REGION}"
+    credentials:
+      id: "${SQS_KEY_ID}"
+      secret: "${SQS_KEY_SECRET}"
+
+pipeline:
+  processors:
+    - resource: lago_event_mapping
+
+output:
+  switch:
+    cases:
+      - check: errored() && env("SQS_DLQ_ENDPOINT").type() == "string"
+        output:
+          resource: lago_sqs_ingestor_dlq
+      - output:
+          resource: lago_redpanda_events_raw
+
+processor_resources:
+  - label: lago_event_mapping
+    mapping: |
+      root.organization_id = "${ORGANIZATION_ID}"
+      root.external_subscription_id = this.event.external_subscription_id
+      root.transaction_id = this.event.transaction_id
+      root.code = this.event.code
+      root.timestamp = this.event.timestamp
+      root.properties = this.event.properties
+      root.ingested_at = timestamp_unix()
+      root.precise_total_amount_cents = if this.event.precise_total_amount_cents.type() == "number" {
+        this.event.precise_total_amount_cents
+      } else {
+        "0"
+      }
+
+output_resources:
+  - label: lago_redpanda_events_raw
+    kafka_franz:
+      seed_brokers: ["${KAFKA_BROKERS}"]
+      topic: "${KAFKA_TOPIC}"
+      key: '${ORGANIZATION_ID}-${! json("external_subscription_id") }'
+      tls:
+        enabled: true
+      sasl:
+        - mechanism: SCRAM-SHA-512
+          username: "${KAFKA_USER}"
+          password: "${KAFKA_PASSWORD}"
+  - label: lago_sqs_ingestor_dlq
+    aws_sqs:
+      url: "${SQS_DLQ_ENDPOINT}"
+      region: "${SQS_REGION}"
+      credentials:
+        id: "${SQS_KEY_ID}"
+        secret: "${SQS_KEY_SECRET}"
+
+logger:
+  level: env("LOG_LEVEL").or("info")
+  format: json
+
+metrics:
+  prometheus: {}
+
+tests:
+  - name: "Mapping Test with all fields"
+    target_processors: "/pipeline/processors"
+    environment:
+      ORGANIZATION_ID: "123"
+    input_batch:
+      - json_content:
+          event:
+            external_subscription_id: "123"
+            transaction_id: "456"
+            code: "789"
+            timestamp: 1609459200
+            properties:
+              key1: "value1"
+              key2: "value2"
+            precise_total_amount_cents: 100
+    output_batches:
+      - - json_contains:
+            organization_id: "123"
+            external_subscription_id: "123"
+            transaction_id: "456"
+            code: "789"
+            timestamp: 1609459200
+            properties:
+              key1: "value1"
+              key2: "value2"
+            precise_total_amount_cents: 100
+  - name: "Mapping test without precise_total_amount_cents"
+    target_processors: "/pipeline/processors"
+    environment:
+      ORGANIZATION_ID: "123"
+    input_batch:
+      - json_content:
+          event:
+            external_subscription_id: "123"
+            transaction_id: "456"
+            code: "789"
+            timestamp: 1609459200
+            properties:
+              key1: "value1"
+              key2: "value2"
+    output_batches:
+      - - json_contains:
+            organization_id: "123"
+            external_subscription_id: "123"
+            transaction_id: "456"
+            code: "789"
+            timestamp: 1609459200
+            properties:
+              key1: "value1"
+              key2: "value2"
+            precise_total_amount_cents: "0"
