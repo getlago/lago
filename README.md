@@ -157,7 +157,7 @@ Contact our team at hello@getlago.com to get started with Lago Cloud. More infor
 
 ## 🚀 Getting the most out of Lago
 - See the [documentation](https://doc.getlago.com) to learn more about all the features;
-- Use our [templates](https://www.getlago.com/resources/templates/all) to get inspiration and learn how to reproduce Algolia’s, Segment’s and Klaviyo’s pricing models;
+- Use our [templates](https://getlago.com/docs/templates/introduction) to get inspiration and learn how to reproduce Algolia’s, Segment’s and Klaviyo’s pricing models;
 - Join our [Slack community](https://www.getlago.com/slack) if you need help, or want to chat, we’re here to help;
 - Contribute on GitHub: read our [guidelines](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md);
 - Follow us on [Twitter](https://twitter.com/GetLago) for the latest news;
