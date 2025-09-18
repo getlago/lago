@@ -1,0 +1,60 @@
+input:
+  label: http_lago_ingestor
+  http_server:
+    address: "0.0.0.0:3000"
+    path: /events
+    allowed_verbs:
+      - POST
+
+pipeline:
+  processors:
+    - resource: lago_event_mapping
+
+output:
+  broker:
+    pattern: fan_out_sequential # Process sequentially to ensure Kafka write happens first
+    outputs:
+      - resource: lago_kafka_events_raw
+      - processors:
+          - mapping: 'root = ""' # Return empty string
+        sync_response: {} # Immediately respond to HTTP request
+
+processor_resources:
+  - label: lago_event_mapping
+    mapping: |
+      root.organization_id = this.event.organization_id
+      root.external_subscription_id = this.event.external_subscription_id
+      root.transaction_id = this.event.transaction_id
+      root.code = this.event.code
+      root.timestamp = this.event.timestamp
+      root.properties = this.event.properties
+      root.ingested_at = timestamp_unix()
+      root.precise_total_amount_cents = if this.event.precise_total_amount_cents.type() == "number" {
+        this.event.precise_total_amount_cents
+      } else {
+        "0"
+      }
+
+output_resources:
+  - label: lago_kafka_events_raw
+    kafka_franz:
+      seed_brokers: ["${KAFKA_BROKERS}"]
+      topic: "${KAFKA_TOPIC}"
+      key: '${! json("organization_id") }-${! json("external_subscription_id") }'
+      tls:
+        enabled: '${! env("KAFKA_TLS").or(false) }'
+      sasl:
+        - mechanism: SCRAM-SHA-512
+          username: "${KAFKA_USER}"
+          password: "${KAFKA_PASSWORD}"
+      batching:
+        count: '${! env("KAFKA_BATCH_COUNT").or(100) }'
+        byte_size: '${! env("KAFKA_BATCH_BYTE_SIZE").or(1000000) }' # 1MB default
+        period: '${! env("KAFKA_BATCH_PERIOD").or("1s") }
+
+logger:
+  level: '${! env("LOG_LEVEL").or("info") }'
+  format: json
+
+metrics:
+  prometheus: {}
