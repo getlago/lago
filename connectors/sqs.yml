@@ -51,7 +51,7 @@ output_resources:
           password: "${KAFKA_PASSWORD}"
   - label: lago_sqs_ingestor_dlq
     aws_sqs:
-      url: "${SQS_DLQ_ENDPOINT:}"
+      url: "${SQS_DLQ_ENDPOINT}"
       region: "${SQS_REGION}"
       credentials:
         id: "${SQS_KEY_ID}"
