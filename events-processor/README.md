@@ -26,20 +26,33 @@ lago up -d events-processor
 
 This app requires some env vars
 
-|Variable|Description|
-|---|---|
-|ENV|Set as `production` to not load `.env` file|
-| DATABASE_URL | PostgreSQL server URL (eg: `postgresql://lago_user:lago_password@lago_server:5432/lago_db`) |
-| LAGO_KAFKA_BOOTSTRAP_SERVERS | Kafka Broker URL with port (eg: `redpanda:9092`) |
-| LAGO_KAFKA_USERNAME | If your broker needs auth, your Kafka Username |
-| LAGO_KAFKA_PASSWORD | If your broker needs auth, your Kafka password |
-| LAGO_KAFKA_SCRAM_ALGORITHM | Your Broker SCRAM algo, supported values are `SCRAM-SHA-256` and `SCRAM-SHA-512`. If your provide a SCRAM Algo, `KAFKA_USERNAME` and `KAFKA_PASSWORD` are required |
-| LAGO_KAFKA_TLS | Set to `true` if your broker use a TLS termination |
-| LAGO_KAFKA_RAW_EVENTS_TOPIC | Events Kafka Topic (eg: `events_raw`) |
-| LAGO_KAFKA_ENRICHED_EVENTS_TOPIC | Events Enriched Kafka Topic (eg: `events_enriched`) |
-| LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC | Events Charge In Advance Kafka Topic (eg: `events_charge_in_advance`) |
-| LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC | Events Dead Letter Queue  (eg: `events_dead_letter`) |
-| LAGO_KAFKA_CONSUMER_GROUP | Kafka Consumer Group Name for Post Processing |
-| OTEL_SERVICE_NAME | OpenTelemetry service name (eg: `events-processor`) |
-| OTEL_EXPORTER_OTLP_ENDPOINT | OpenTelemetry server URL |
-| OTEL_INSECURE | Set to `true` to use the insecure mode of OpenTelemetry |
+| Variable                                    | Description                                                                                   |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------|
+| ENV                                         | Set as `production` to not load `.env` file                                                   |
+| DATABASE_URL                                | PostgreSQL server URL (eg: `postgresql://lago_user:lago_password@lago_server:5432/lago_db`)   |
+| LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Broker URL with port (eg: `redpanda:9092`)                                              |
+| LAGO_KAFKA_RAW_EVENTS_TOPIC                 | Events Kafka Topic (eg: `events_raw`)                                                         |
+| LAGO_KAFKA_ENRICHED_EVENTS_TOPIC            | Events Enriched Kafka Topic (eg: `events_enriched`)                                           |
+| LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC   | Events Enriched Expanded Kafka Topic (eg: `events_enriched_expanded`)                         |
+| LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC  | Events Charge In Advance Kafka Topic (eg: `events_charge_in_advance`)                         |
+| LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC         | Events Dead Letter Queue (eg: `events_dead_letter`)                                           |
+| LAGO_KAFKA_CONSUMER_GROUP                   | Kafka Consumer Group Name for Post Processing                                                 |
+| LAGO_REDIS_STORE_URL                        | Redis URL to store subscription refresh IDs                                                   |
+| LAGO_REDIS_CACHE_URL                        | Redis URL to store charge usage cache entries                                                 |
+
+
+Additionally there's a few optional environment variables
+
+| Variable                      | Description                                                                                                                        |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| LAGO_REDIS_STORE_DB           | Redis database number to use for the store (default: 0)                                                                            |
+| LAGO_REDIS_STORE_PASSWORD     | Password for the Redis store (if required)                                                                                         |
+| LAGO_REDIS_CACHE_DB           | Redis database number to use for the cache (default: 0)                                                                            |
+| LAGO_REDIS_CACHE_PASSWORD     | Password for the Redis cache (if required)                                                                                         |
+| LAGO_KAFKA_TLS                | Set to `true` if your broker uses TLS termination                                                                                  |
+| LAGO_KAFKA_SCRAM_ALGORITHM    | Your Broker SCRAM algo, supported values are `SCRAM-SHA-256` and `SCRAM-SHA-512`. <br> If you provide a SCRAM Algo, `LAGO_KAFKA_USERNAME` and `LAGO_KAFKA_PASSWORD` are required |
+| LAGO_KAFKA_USERNAME           | If your broker needs auth, your Kafka Username                                                                                     |
+| LAGO_KAFKA_PASSWORD           | If your broker needs auth, your Kafka password                                                                                     |
+| OTEL_SERVICE_NAME             | OpenTelemetry service name (eg: `events-processor`)                                                                                |
+| OTEL_EXPORTER_OTLP_ENDPOINT   | OpenTelemetry server URL. Setting this environment variable will enable tracing                                                    |
+| OTEL_INSECURE                 | Set to `true` to use the insecure mode of OpenTelemetry                                                                            |
