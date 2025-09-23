@@ -68,7 +68,11 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 - **[Coupons](https://www.getlago.com/products/coupons)**: Create engaging marketing campaigns and increase conversion with coupons that customers can redeem to get a discount.
 - **[Add-ons](https://www.getlago.com/products/add-on)**: Why wait until the end of the billing cycle to get paid? Lago allows you to create one-time charges that are invoiced on the fly.
 - **[Invoicing](https://www.getlago.com/products/invoicing)**: Depending on the configuration of your plans, Lago automatically calculates what each customer owes you and generates invoices.
-- **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago’s prepaid credit features.
+- **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago's prepaid credit features.
+
+## 📚 Documentation
+- **[Development Environment](./docs/development.md)**: Learn how to set up and run Lago locally for development
+- **[Architecture](./docs/architecture.md)**: Understand Lago's technical architecture and flows
 
 ## 🔔 Stay up to date
 Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates.
