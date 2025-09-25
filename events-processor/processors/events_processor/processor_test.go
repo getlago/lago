@@ -186,6 +186,17 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
 		mockSubscriptionLookup(mockedStore, &sub)
 
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
+			{
+				OrganizationID:     event.OrganizationID,
+				BillableMetricCode: event.Code,
+				PlanID:             "plan_id",
+				ChargeID:           "charge_idxx",
+				ChargeUpdatedAt:    time.Now(),
+				PayInAdvance:       true,
+			},
+		})
+
 		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
@@ -198,7 +209,7 @@ func TestProcessEvent(t *testing.T) {
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		// TODO(pre-aggregation): assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
@@ -388,7 +399,7 @@ func TestProcessEvent(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.inAdvanceProducer.ExecutionCount)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		// TODO(pre-aggregation): assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
 
 		assert.Equal(t, 1, flagger.ExecutionCount)
 	})
@@ -462,7 +473,7 @@ func TestProcessEvent(t *testing.T) {
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		// TODO(pre-aggregation): assert.Equal(t, 2, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 2, testProducers.enrichedExpandedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {

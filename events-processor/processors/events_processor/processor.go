@@ -120,13 +120,14 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		return nil
 	})
 
-	// TODO(pre-aggregation): Uncomment to enable the feature
-	// for _, ev := range enrichedEvents {
-	// 	errgroup.Go(func() error {
-	//		processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
-	//		return nil
-	//	})
-	// }
+	for _, ev := range enrichedEvents {
+		if ev.ChargeID != nil {
+			errgroup.Go(func() error {
+				processor.ProducerService.ProduceEnrichedExpandedEvent(ctx, ev)
+				return nil
+			})
+		}
+	}
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvance := false
