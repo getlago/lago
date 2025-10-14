@@ -227,7 +227,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 			Topic:         os.Getenv(envLagoKafkaRawEventsTopic),
 			ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
 			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
-				return processor.ProcessEvents(records)
+				return processor.ProcessEvents(ctx, records)
 			},
 		})
 	if err != nil {

@@ -34,14 +34,23 @@ func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentSe
 	}
 }
 
-func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Record {
-	ctx := context.Background()
+func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
+	// Handle graceful shutdown
+	select {
+	case <-ctx.Done():
+		processor.logger.Info("Ongoing shutdown. Stop processing new events")
+		return nil
+	default:
+	}
+
 	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
 	recordsAttr := attribute.Int("records.length", len(records))
 	span.SetAttributes(recordsAttr)
 	defer span.End()
 
 	g := errgroup.Group{}
+
+	producersWg := sync.WaitGroup{}
 
 	var mu sync.Mutex
 	processedRecords := make([]*kgo.Record, 0)
@@ -100,6 +109,21 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 
 	g.Wait()
 
+	done := make(chan struct{})
+	go func() {
+		producersWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		processor.logger.Debug("All producer goroutines completed successfully")
+	case <-time.After(30 * time.Second): // Configurable timeout
+		processor.logger.Warn("Timeout waiting for producer goroutines to complete")
+	case <-ctx.Done():
+		processor.logger.Info("Shutdown signal received while waiting for producer goroutines")
+	}
+
 	return processedRecords
 }
 
@@ -155,6 +179,21 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	}
 
 	return utils.SuccessResult(enrichedEvent)
+}
+
+func (processor *EventProcessor) trackProducer(ctx context.Context, producerWg *sync.WaitGroup, routine func()) {
+	producerWg.Add(1)
+	go func() {
+		defer producerWg.Done()
+
+		select {
+		case <-ctx.Done():
+			processor.logger.Debug("Shutdown signal received, skipping producer")
+			return
+		default:
+			routine()
+		}
+	}()
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
