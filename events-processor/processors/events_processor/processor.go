@@ -143,13 +143,15 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	)
 
 	for _, ev := range enrichedEvents {
-		processor.trackProducer(
-			ctx,
-			producersWg,
-			func() {
-				processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
-			},
-		)
+		if ev.ChargeID != nil {
+			processor.trackProducer(
+				ctx,
+				producersWg,
+				func() {
+					processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
+				},
+			)
+		}
 	}
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {

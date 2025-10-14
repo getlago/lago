@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	ctx              context.Context
 	logger           *slog.Logger
 	processor        *events_processor.EventProcessor
 	apiStore         *models.ApiStore
@@ -53,7 +52,7 @@ const (
 	envOtelServiceName                           = "OTEL_SERVICE_NAME"
 )
 
-func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
+func initProducer(ctx context.Context, topicEnv string) utils.Result[*kafka.Producer] {
 	if os.Getenv(topicEnv) == "" {
 		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topicEnv))
 	}
@@ -69,7 +68,7 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 		return utils.FailedResult[*kafka.Producer](err)
 	}
 
-	err = producer.Ping(context)
+	err = producer.Ping(ctx)
 	if err != nil {
 		return utils.FailedResult[*kafka.Producer](err)
 	}
@@ -77,7 +76,7 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 	return utils.SuccessResult(producer)
 }
 
-func initFlagStore(name string) (*models.FlagStore, error) {
+func initFlagStore(ctx context.Context, name string) (*models.FlagStore, error) {
 	redisDb, err := utils.GetEnvAsInt(envLagoRedisStoreDB, 0)
 	if err != nil {
 		return nil, err
@@ -98,7 +97,7 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 	return models.NewFlagStore(ctx, db, name), nil
 }
 
-func initChargeCacheStore() (*models.ChargeCache, error) {
+func initChargeCacheStore(ctx context.Context) (*models.ChargeCache, error) {
 	redisDb, err := utils.GetEnvAsInt(envLagoRedisCacheDB, 0)
 	if err != nil {
 		return nil, err
@@ -201,7 +200,7 @@ func StartProcessingEvents() {
 	apiStore = models.NewApiStore(db)
 	defer db.Close()
 
-	flagger, err := initFlagStore("subscription_refreshed")
+	flagger, err := initFlagStore(ctx, "subscription_refreshed")
 	if err != nil {
 		logger.Error("Error connecting to the flag store", slog.String("error", err.Error()))
 		utils.CaptureError(err)
@@ -209,7 +208,7 @@ func StartProcessingEvents() {
 	}
 	defer flagger.Close()
 
-	cacher, err := initChargeCacheStore()
+	cacher, err := initChargeCacheStore(ctx)
 	if err != nil {
 		logger.Error("Error connecting to the charge cache store", slog.String("error", err.Error()))
 		utils.CaptureError(err)
