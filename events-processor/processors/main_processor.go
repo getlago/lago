@@ -13,14 +13,14 @@ import (
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/models"
-	"github.com/getlago/lago/events-processor/processors/event_processors"
+	"github.com/getlago/lago/events-processor/processors/events_processor"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
 var (
 	ctx              context.Context
 	logger           *slog.Logger
-	processor        *event_processors.EventProcessor
+	processor        *events_processor.EventProcessor
 	apiStore         *models.ApiStore
 	kafkaConfig      kafka.ServerConfig
 	chargeCacheStore *models.ChargeCache
@@ -213,17 +213,18 @@ func StartProcessingEvents() {
 	chargeCacheStore = cacher
 	defer chargeCacheStore.CacheStore.Close()
 
-	processor = event_processors.NewEventProcessor(
-		event_processors.NewEventEnrichmentService(apiStore),
-		event_processors.NewEventProducerService(
+	processor = events_processor.NewEventProcessor(
+		logger,
+		events_processor.NewEventEnrichmentService(apiStore),
+		events_processor.NewEventProducerService(
 			eventsEnrichedProducerResult.Value(),
 			eventsEnrichedExpandedProducerResult.Value(),
 			eventsInAdvanceProducerResult.Value(),
 			eventsDeadLetterQueueResult.Value(),
 			logger,
 		),
-		event_processors.NewSubscriptionRefreshService(flagger),
-		event_processors.NewCacheService(chargeCacheStore),
+		events_processor.NewSubscriptionRefreshService(flagger),
+		events_processor.NewCacheService(chargeCacheStore),
 	)
 
 	cg, err := kafka.NewConsumerGroup(
@@ -232,7 +233,7 @@ func StartProcessingEvents() {
 			Topic:         os.Getenv(envLagoKafkaRawEventsTopic),
 			ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
 			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
-				return processEvents(records)
+				return processor.ProcessEvents(records)
 			},
 		})
 	if err != nil {
