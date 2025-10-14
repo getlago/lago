@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -22,11 +24,14 @@ const (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).
 		With("service", "post_process")
 	slog.SetDefault(logger)
+
+	setupGracefulShutdown(cancel, logger)
 
 	otelEndpoint := os.Getenv(envOtelExporterOtlpEndpoint)
 	if otelEndpoint != "" {
@@ -53,4 +58,15 @@ func main() {
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{Logger: logger, UseTelemetry: otelEndpoint != ""})
+}
+
+func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
+	signChan := make(chan os.Signal, 1)
+	signal.Notify(signChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signChan
+		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+		cancel()
+	}()
 }

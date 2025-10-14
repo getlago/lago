@@ -226,7 +226,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		&kafka.ConsumerGroupConfig{
 			Topic:         os.Getenv(envLagoKafkaRawEventsTopic),
 			ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
-			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
+			ProcessRecords: func(ctx context.Context, records []*kgo.Record) []*kgo.Record {
 				return processor.ProcessEvents(ctx, records)
 			},
 		})
@@ -236,5 +236,11 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		panic(err.Error())
 	}
 
-	cg.Start()
+	config.Logger.Info("Starting event consumer")
+	if err := cg.Start(ctx); err != nil && err != context.Canceled {
+		config.Logger.Error("Consumer stopped with error", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+	}
+
+	config.Logger.Info("Event processor stopped")
 }

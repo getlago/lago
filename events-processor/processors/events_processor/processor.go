@@ -109,20 +109,8 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 
 	g.Wait()
 
-	done := make(chan struct{})
-	go func() {
-		producersWg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		processor.logger.Debug("All producer goroutines completed successfully")
-	case <-time.After(30 * time.Second): // Configurable timeout
-		processor.logger.Warn("Timeout waiting for producer goroutines to complete")
-	case <-ctx.Done():
-		processor.logger.Info("Shutdown signal received while waiting for producer goroutines")
-	}
+	// Wait for all producers routines to complete.
+	processor.waitForProducers(ctx, &producersWg)
 
 	return processedRecords
 }
@@ -194,6 +182,23 @@ func (processor *EventProcessor) trackProducer(ctx context.Context, producerWg *
 			routine()
 		}
 	}()
+}
+
+func (processor *EventProcessor) waitForProducers(ctx context.Context, producersWg *sync.WaitGroup) {
+	done := make(chan struct{})
+	go func() {
+		producersWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		processor.logger.Debug("All producer goroutines completed successfully")
+	case <-time.After(30 * time.Second): // Configurable timeout
+		processor.logger.Warn("Timeout waiting for producer goroutines to complete")
+	case <-ctx.Done():
+		processor.logger.Info("Shutdown signal received while waiting for producer goroutines")
+	}
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
