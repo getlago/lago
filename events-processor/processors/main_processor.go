@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -122,7 +124,10 @@ func initChargeCacheStore() (*models.ChargeCache, error) {
 }
 
 func StartProcessingEvents() {
-	ctx = context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	setupGracefulShutdown(cancel)
 
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
 		With("service", "post_process")
@@ -232,7 +237,7 @@ func StartProcessingEvents() {
 		&kafka.ConsumerGroupConfig{
 			Topic:         os.Getenv(envLagoKafkaRawEventsTopic),
 			ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
-			ProcessRecords: func(records []*kgo.Record) []*kgo.Record {
+			ProcessRecords: func(ctx context.Context, records []*kgo.Record) []*kgo.Record {
 				return processor.ProcessEvents(ctx, records)
 			},
 		})
@@ -242,5 +247,22 @@ func StartProcessingEvents() {
 		panic(err.Error())
 	}
 
-	cg.Start()
+	logger.Info("Starting event consumer")
+	if err := cg.Start(ctx); err != nil && err != context.Canceled {
+		logger.Error("Consumer stopped with error", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+	}
+
+	logger.Info("Event processor stopped")
+}
+
+func setupGracefulShutdown(cancel context.CancelFunc) {
+	signChan := make(chan os.Signal, 1)
+	signal.Notify(signChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signChan
+		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+		cancel()
+	}()
 }
