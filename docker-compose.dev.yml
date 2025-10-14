@@ -154,6 +154,8 @@ services:
       - DATABASE_TEST_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/lago_test
       - GOOGLE_AUTH_CLIENT_ID=${GOOGLE_AUTH_CLIENT_ID:-}
       - GOOGLE_AUTH_CLIENT_SECRET=${GOOGLE_AUTH_CLIENT_SECRET:-}
+      - BUNDLE_WITH=${BUNDLE_WITH:-}
+      - BUNDLE_GEMS__CONTRIBSYS__COM=${BUNDLE_GEMS__CONTRIBSYS__COM:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api_http.rule=Host(`api.lago.dev`)"
@@ -176,6 +178,9 @@ services:
         condition: service_started
     volumes:
       - ./api:/app:delegated
+    environment:
+      - BUNDLE_WITH=${BUNDLE_WITH:-}
+      - BUNDLE_GEMS__CONTRIBSYS__COM=${BUNDLE_GEMS__CONTRIBSYS__COM:-}
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -218,6 +223,9 @@ services:
     container_name: lago_api_clock_dev
     restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.clock.sh"
+    environment:
+      - BUNDLE_WITH=${BUNDLE_WITH:-}
+      - BUNDLE_GEMS__CONTRIBSYS__COM=${BUNDLE_GEMS__CONTRIBSYS__COM:-}
     depends_on:
       api:
         condition: service_started
