@@ -52,7 +52,7 @@ type Config struct {
 	UseTelemetry bool
 }
 
-func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.Producer] {
+func initProducer(ctx context.Context, topicEnv string) utils.Result[*kafka.Producer] {
 	if os.Getenv(topicEnv) == "" {
 		return utils.FailedResult[*kafka.Producer](fmt.Errorf("%s variable is required", topicEnv))
 	}
@@ -68,7 +68,7 @@ func initProducer(context context.Context, topicEnv string) utils.Result[*kafka.
 		return utils.FailedResult[*kafka.Producer](err)
 	}
 
-	err = producer.Ping(context)
+	err = producer.Ping(ctx)
 	if err != nil {
 		return utils.FailedResult[*kafka.Producer](err)
 	}
