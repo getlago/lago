@@ -33,8 +33,15 @@ func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentSe
 	}
 }
 
-func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Record {
-	ctx := context.Background()
+func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
+	// Handle graceful shutdown
+	select {
+	case <-ctx.Done():
+		processor.logger.Info("Ongoing shutdown. Stop processing new events")
+		return nil
+	default:
+	}
+
 	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
 	recordsAttr := attribute.Int("records.length", len(records))
 	span.SetAttributes(recordsAttr)
@@ -43,12 +50,21 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 	wg := sync.WaitGroup{}
 	wg.Add(len(records))
 
+	producersWg := sync.WaitGroup{}
+
 	var mu sync.Mutex
 	processedRecords := make([]*kgo.Record, 0)
 
 	for _, record := range records {
 		go func(record *kgo.Record) {
 			defer wg.Done()
+
+			select {
+			case <-ctx.Done():
+				processor.logger.Info("Ongoing shutdown. Stop processing event")
+				return
+			default:
+			}
 
 			sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
 			defer sp.End()
@@ -66,7 +82,7 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 				return
 			}
 
-			result := processor.processEvent(ctx, &event)
+			result := processor.processEvent(ctx, &event, &producersWg)
 			if result.Failure() {
 				processor.logger.Error(
 					result.ErrorMessage(),
@@ -86,7 +102,11 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 				}
 
 				// Push failed records to the dead letter queue
-				go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
+				producersWg.Add(1)
+				go func() {
+					defer producersWg.Done()
+					processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
+				}()
 			}
 
 			// Track processed records
@@ -98,10 +118,25 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 
 	wg.Wait()
 
+	done := make(chan struct{})
+	go func() {
+		producersWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		processor.logger.Debug("All producer goroutines completed successfully")
+	case <-time.After(30 * time.Second): // Configurable timeout
+		processor.logger.Warn("Timeout waiting for producer goroutines to complete")
+	case <-ctx.Done():
+		processor.logger.Info("Shutdown signal received while waiting for producer goroutines")
+	}
+
 	return processedRecords
 }
 
-func (processor *EventProcessor) processEvent(ctx context.Context, event *models.Event) utils.Result[*models.EnrichedEvent] {
+func (processor *EventProcessor) processEvent(ctx context.Context, event *models.Event, producersWg *sync.WaitGroup) utils.Result[*models.EnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
@@ -110,12 +145,22 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	enrichedEvents := enrichedEventResult.Value()
 	enrichedEvent := enrichedEvents[0]
 
-	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+	processor.trackProducer(
+		ctx,
+		producersWg,
+		func() {
+			processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+		},
+	)
 
 	for _, ev := range enrichedEvents {
-		if ev.ChargeID != nil {
-			go processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
-		}
+		processor.trackProducer(
+			ctx,
+			producersWg,
+			func() {
+				processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
+			},
+		)
 	}
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
@@ -128,7 +173,13 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		}
 
 		if payInAdvance {
-			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
+			processor.trackProducer(
+				ctx,
+				producersWg,
+				func() {
+					processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
+				},
+			)
 		}
 
 		flagResult := processor.RefreshService.FlagSubscriptionRefresh(enrichedEvent)
@@ -141,6 +192,21 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	}
 
 	return utils.SuccessResult(enrichedEvent)
+}
+
+func (processor *EventProcessor) trackProducer(ctx context.Context, producerWg *sync.WaitGroup, routine func()) {
+	producerWg.Add(1)
+	go func() {
+		defer producerWg.Done()
+
+		select {
+		case <-ctx.Done():
+			processor.logger.Debug("Shutdown signal received, skipping producer")
+			return
+		default:
+			routine()
+		}
+	}()
 }
 
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
