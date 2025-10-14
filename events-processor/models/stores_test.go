@@ -9,11 +9,11 @@ import (
 )
 
 func setupApiStore(t *testing.T) (*ApiStore, sqlmock.Sqlmock, func()) {
-	db, mock, delete := tests.SetupMockStore(t)
+	mock, delete := tests.SetupMockStore(t)
 
 	store := &ApiStore{
-		db: db,
+		db: mock.DB,
 	}
 
-	return store, mock, delete
+	return store, mock.SQLMock, delete
 }

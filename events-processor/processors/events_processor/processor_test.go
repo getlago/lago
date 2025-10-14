@@ -1,4 +1,4 @@
-package processors
+package events_processor
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/models"
-	"github.com/getlago/lago/events-processor/processors/event_processors"
 	"github.com/getlago/lago/events-processor/utils"
 
 	"github.com/getlago/lago/events-processor/tests"
@@ -23,7 +22,7 @@ type testProducerService struct {
 	enrichedExpandedProducer *tests.MockMessageProducer
 	inAdvanceProducer        *tests.MockMessageProducer
 	deadLetterProducer       *tests.MockMessageProducer
-	producers                *event_processors.EventProducerService
+	producers                *EventProducerService
 }
 
 func setupProducers() *testProducerService {
@@ -35,7 +34,7 @@ func setupProducers() *testProducerService {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	producers := event_processors.NewEventProducerService(
+	producers := NewEventProducerService(
 		&enrichedProducer,
 		&enrichedExpandedProducer,
 		&inAdvanceProducer,
@@ -52,14 +51,12 @@ func setupProducers() *testProducerService {
 	}
 }
 
-func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, *tests.MockFlagStore, func()) {
-	ctx = context.Background()
-
+func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *testProducerService, *tests.MockFlagStore, func()) {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	db, mock, delete := tests.SetupMockStore(t)
-	apiStore = models.NewApiStore(db)
+	mockedStore, delete := tests.SetupMockStore(t)
+	apiStore := models.NewApiStore(mockedStore.DB)
 
 	testProducers := setupProducers()
 
@@ -68,50 +65,74 @@ func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, *tests.M
 	chargeCacheStore := models.NewChargeCache(&chargeCache)
 
 	flagStore := tests.MockFlagStore{}
-	flagger := event_processors.NewSubscriptionRefreshService(&flagStore)
+	flagger := NewSubscriptionRefreshService(&flagStore)
 
-	processor = event_processors.NewEventProcessor(
-		event_processors.NewEventEnrichmentService(apiStore),
+	processor := NewEventProcessor(
+		logger,
+		NewEventEnrichmentService(apiStore),
 		testProducers.producers,
 		flagger,
-		event_processors.NewCacheService(chargeCacheStore),
+		NewCacheService(chargeCacheStore),
 	)
 
-	return mock, testProducers, &flagStore, delete
+	return processor, mockedStore, testProducers, &flagStore, delete
 }
 
-func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
+func mockBmLookup(mock *tests.MockedStore, bm *models.BillableMetric) {
 	columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
 
 	rows := sqlmock.NewRows(columns).
 		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
 
-	sqlmock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
+	mock.SQLMock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
 }
 
-func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
+func mockSubscriptionLookup(mock *tests.MockedStore, sub *models.Subscription) {
 	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
 
 	rows := sqlmock.NewRows(columns).
 		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
 
-	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
+	mock.SQLMock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
 }
 
-func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter) {
-	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters", "pay_in_advance"}
+func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter) {
+	columns := []string{
+		"organization_id",
+		"billable_metric_code",
+		"pay_in_advance",
+		"plan_id",
+		"charge_id",
+		"charge_updated_at",
+		"charge_filter_id",
+		"charge_filter_updated_at",
+		"filters",
+		"pricing_group_keys",
+	}
 
 	rows := sqlmock.NewRows(columns)
 
 	for _, filter := range filters {
-		rows.AddRow(filter.OrganizationID, filter.BillableMetricCode, filter.PlanID, filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt, filter.Filters, filter.PayInAdvance)
+		rows.AddRow(
+			filter.OrganizationID,
+			filter.BillableMetricCode,
+			filter.PayInAdvance,
+			filter.PlanID,
+			filter.ChargeID,
+			filter.ChargeUpdatedAt,
+			filter.ChargeFilterID,
+			filter.ChargeFilterUpdatedAt,
+			filter.Filters,
+			filter.PricingGroupKeys,
+		)
 	}
-	sqlmock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+
+	mock.SQLMock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
 }
 
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		sqlmock, _, _, delete := setupTestEnv(t)
+		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -121,9 +142,9 @@ func TestProcessEvent(t *testing.T) {
 			Timestamp:              1741007009,
 		}
 
-		sqlmock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
+		mockedStore.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "record not found", result.ErrorMsg())
 		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
@@ -131,7 +152,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
-		sqlmock, testProducers, _, delete := setupTestEnv(t)
+		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -160,12 +181,12 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
@@ -181,7 +202,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		sqlmock, _, _, delete := setupTestEnv(t)
+		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -202,9 +223,9 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
 		assert.Equal(t, "build_enriched_event", result.ErrorCode())
@@ -212,7 +233,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		sqlmock, _, _, delete := setupTestEnv(t)
+		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -233,16 +254,16 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
-		sqlmock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
+		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 	})
 
 	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
-		sqlmock, _, _, delete := setupTestEnv(t)
+		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -263,11 +284,11 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
-		sqlmock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
+		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.NotNil(t, result.ErrorMsg())
 		assert.Equal(t, "fetch_subscription", result.ErrorCode())
@@ -275,7 +296,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		sqlmock, _, _, delete := setupTestEnv(t)
+		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		// properties := map[string]any{
@@ -301,12 +322,12 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Contains(t, result.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", result.ErrorCode())
@@ -314,7 +335,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		sqlmock, testProducers, flagger, delete := setupTestEnv(t)
+		processor, mockedStore, testProducers, flagger, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -340,14 +361,14 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
 		now := time.Now()
 
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
 			{
 				OrganizationID:     "org_id",
 				BillableMetricCode: "api_call",
@@ -358,7 +379,7 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
 
@@ -373,7 +394,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		sqlmock, testProducers, _, delete := setupTestEnv(t)
+		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -399,10 +420,10 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
 		now := time.Now()
 
@@ -427,9 +448,9 @@ func TestProcessEvent(t *testing.T) {
 			ChargeFilterUpdatedAt: &now,
 			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
 		}
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
@@ -445,7 +466,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		sqlmock, testProducers, _, delete := setupTestEnv(t)
+		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -471,13 +492,13 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(sqlmock, &sub)
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+		mockSubscriptionLookup(mockedStore, &sub)
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{})
 
-		result := processEvent(&event)
+		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
