@@ -1,6 +1,7 @@
 package event_processors
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -297,12 +298,17 @@ func TestEnrichEvent(t *testing.T) {
 		assert.True(t, result.Success())
 		assert.Equal(t, 2, len(result.Value()))
 
-		eventResult1 := result.Value()[0]
+		events := result.Value()
+		sort.Slice(events, func(i, j int) bool {
+			return *events[i].ChargeID < *events[j].ChargeID
+		})
+
+		eventResult1 := events[0]
 		assert.Equal(t, "12", *eventResult1.Value)
 		assert.Equal(t, "charge_id1", *eventResult1.ChargeID)
 		assert.Equal(t, map[string]string{}, eventResult1.GroupedBy)
 
-		eventResult2 := result.Value()[1]
+		eventResult2 := events[1]
 		assert.Equal(t, "12", *eventResult2.Value)
 		assert.Equal(t, "charge_id2", *eventResult2.ChargeID)
 		assert.Equal(t, map[string]string{}, eventResult2.GroupedBy)
