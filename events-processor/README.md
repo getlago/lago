@@ -5,7 +5,6 @@ This service is in charge of providing a post-process for events in high volume 
 
 This service need to be configured with Clickhouse and Redpanda. Please contact us for further informations.
 
-
 ## How to run it
 
 With the docker compose environment:
@@ -16,10 +15,18 @@ go build -o event_processors .
 ./event_processors
 ```
 
-## In development
+## Development
 
-```
+### Running
+
+```shell
 lago up -d events-processor
+```
+
+### Testing
+
+```shell
+lago exec events-processor go test ./...
 ```
 
 ## Configuration
