@@ -133,6 +133,12 @@ services:
     container_name: lago_api_dev
     restart: unless-stopped
     command: ["./scripts/start.dev.sh"]
+    healthcheck:
+      test: curl -f http://localhost:3000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       migrate:
         condition: service_completed_successfully
