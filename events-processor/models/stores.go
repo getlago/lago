@@ -3,11 +3,14 @@ package models
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/utils"
 )
+
+const EXPIRATION_TIME = 5 * time.Second
 
 type ApiStore struct {
 	db *database.DB
@@ -52,7 +55,7 @@ func (store *FlagStore) Close() error {
 
 type Cacher interface {
 	Close() error
-	DeleteKey(key string) utils.Result[bool]
+	ExpireKey(key string) utils.Result[bool]
 }
 
 type CacheStore struct {
@@ -71,8 +74,9 @@ func (store *CacheStore) Close() error {
 	return store.db.Client.Close()
 }
 
-func (store *CacheStore) DeleteKey(key string) utils.Result[bool] {
-	res := store.db.Client.Del(store.context, key)
+func (store *CacheStore) ExpireKey(key string) utils.Result[bool] {
+	// Uses Expire command rather than Del to take clickhouse propagation time into account
+	res := store.db.Client.Expire(store.context, key, EXPIRATION_TIME)
 	if err := res.Err(); err != nil {
 		return utils.FailedBoolResult(err)
 	}

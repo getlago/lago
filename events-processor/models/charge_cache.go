@@ -40,5 +40,5 @@ func (cache *ChargeCache) Expire(ff *FlatFilter, subID string) utils.Result[bool
 	cacheKey := strings.Join(keyParts, "/")
 
 	// Remove the cache entry
-	return cache.CacheStore.DeleteKey(cacheKey)
+	return cache.CacheStore.ExpireKey(cacheKey)
 }

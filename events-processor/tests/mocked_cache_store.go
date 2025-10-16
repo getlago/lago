@@ -12,7 +12,7 @@ func (mcs *MockCacheStore) Close() error {
 	return nil
 }
 
-func (mcs *MockCacheStore) DeleteKey(key string) utils.Result[bool] {
+func (mcs *MockCacheStore) ExpireKey(key string) utils.Result[bool] {
 	mcs.LastKey = key
 	mcs.ExecutionCount++
 
