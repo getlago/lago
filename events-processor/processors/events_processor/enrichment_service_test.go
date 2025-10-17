@@ -1,11 +1,10 @@
-package event_processors
+package events_processor
 
 import (
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/tests"
 	"github.com/getlago/lago/events-processor/utils"
@@ -13,61 +12,20 @@ import (
 	"gorm.io/gorm"
 )
 
-var processor *EventEnrichmentService
+func setupEnrichmentTestEnv(t *testing.T) (*EventEnrichmentService, *tests.MockedStore, func()) {
+	mockedStore, delete := tests.SetupMockStore(t)
+	apiStore := models.NewApiStore(mockedStore.DB)
 
-func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, func()) {
-	db, mock, delete := tests.SetupMockStore(t)
-	apiStore := models.NewApiStore(db)
-
-	processor = &EventEnrichmentService{
+	processor := &EventEnrichmentService{
 		apiStore: apiStore,
 	}
 
-	return mock, delete
-}
-
-func mockBmLookup(sqlmock sqlmock.Sqlmock, bm *models.BillableMetric) {
-	columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
-
-	rows := sqlmock.NewRows(columns).
-		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
-
-	sqlmock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
-}
-
-func mockSubscriptionLookup(sqlmock sqlmock.Sqlmock, sub *models.Subscription) {
-	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
-
-	rows := sqlmock.NewRows(columns).
-		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
-
-	sqlmock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
-}
-
-func mockFlatFiltersLookup(sqlmock sqlmock.Sqlmock, filters []*models.FlatFilter) {
-	columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters", "pricing_group_keys"}
-
-	rows := sqlmock.NewRows(columns)
-
-	for _, filter := range filters {
-		rows.AddRow(
-			filter.OrganizationID,
-			filter.BillableMetricCode,
-			filter.PlanID,
-			filter.ChargeID,
-			filter.ChargeUpdatedAt,
-			filter.ChargeFilterID,
-			filter.ChargeFilterUpdatedAt,
-			filter.Filters,
-			filter.PricingGroupKeys,
-		)
-	}
-	sqlmock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+	return processor, mockedStore, delete
 }
 
 func TestEnrichEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -77,7 +35,7 @@ func TestEnrichEvent(t *testing.T) {
 			Timestamp:              1741007009,
 		}
 
-		sqlmock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
+		mockedStore.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
 
 		result := processor.EnrichEvent(&event)
 		assert.False(t, result.Success())
@@ -87,7 +45,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API and the result is successful", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -116,10 +74,10 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
 		result := processor.EnrichEvent(&event)
 
@@ -134,7 +92,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When timestamp is invalid", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -155,7 +113,7 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		result := processor.EnrichEvent(&event)
 		assert.False(t, result.Success())
@@ -165,7 +123,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When expression failed to evaluate", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -186,7 +144,7 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		result := processor.EnrichEvent(&event)
 		assert.False(t, result.Success())
@@ -196,7 +154,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -222,11 +180,11 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(sqlmock, &sub)
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{})
+		mockSubscriptionLookup(mockedStore, &sub)
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{})
 
 		result := processor.EnrichEvent(&event)
 		assert.True(t, result.Success())
@@ -237,7 +195,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API with multiple flat filters", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -264,10 +222,10 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
 		now1 := time.Now()
 		flatFilter1 := &models.FlatFilter{
@@ -292,7 +250,7 @@ func TestEnrichEvent(t *testing.T) {
 			ChargeFilterUpdatedAt: &now2,
 			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
 		}
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter1, flatFilter2})
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
 
 		result := processor.EnrichEvent(&event)
 		assert.True(t, result.Success())
@@ -315,7 +273,7 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API with a flat filter with pricing group keys", func(t *testing.T) {
-		sqlmock, delete := setupTestEnv(t)
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -344,10 +302,10 @@ func TestEnrichEvent(t *testing.T) {
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
-		mockBmLookup(sqlmock, &bm)
+		mockBmLookup(mockedStore, &bm)
 
 		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(sqlmock, &sub)
+		mockSubscriptionLookup(mockedStore, &sub)
 
 		now := time.Now()
 		chargeFilterId := "charge_filter_id"
@@ -363,7 +321,7 @@ func TestEnrichEvent(t *testing.T) {
 			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
 			PricingGroupKeys:      []string{"country", "type"},
 		}
-		mockFlatFiltersLookup(sqlmock, []*models.FlatFilter{flatFilter})
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter})
 
 		result := processor.EnrichEvent(&event)
 		assert.True(t, result.Success())
@@ -377,7 +335,7 @@ func TestEnrichEvent(t *testing.T) {
 }
 
 func TestEvaluateExpression(t *testing.T) {
-	_, delete := setupTestEnv(t)
+	processor, _, delete := setupEnrichmentTestEnv(t)
 	defer delete()
 
 	bm := models.BillableMetric{}

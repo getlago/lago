@@ -1,4 +1,4 @@
-package event_processors
+package events_processor
 
 import (
 	"github.com/getlago/lago/events-processor/models"

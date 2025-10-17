@@ -1,4 +1,4 @@
-package processors
+package events_processor
 
 import (
 	"context"
@@ -15,7 +15,25 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
-func processEvents(records []*kgo.Record) []*kgo.Record {
+type EventProcessor struct {
+	logger            *slog.Logger
+	EnrichmentService *EventEnrichmentService
+	ProducerService   *EventProducerService
+	RefreshService    *SubscriptionRefreshService
+	CacheService      *CacheService
+}
+
+func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
+	return &EventProcessor{
+		logger:            logger,
+		EnrichmentService: enrichmentService,
+		ProducerService:   producerService,
+		RefreshService:    refreshService,
+		CacheService:      cacheService,
+	}
+}
+
+func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Record {
 	ctx := context.Background()
 	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
 	recordsAttr := attribute.Int("records.length", len(records))
@@ -38,7 +56,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 			event := models.Event{}
 			err := json.Unmarshal(record.Value, &event)
 			if err != nil {
-				logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
+				processor.logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
 				utils.CaptureError(err)
 
 				mu.Lock()
@@ -48,9 +66,9 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 				return
 			}
 
-			result := processEvent(&event)
+			result := processor.processEvent(ctx, &event)
 			if result.Failure() {
-				logger.Error(
+				processor.logger.Error(
 					result.ErrorMessage(),
 					slog.String("error_code", result.ErrorCode()),
 					slog.String("error", result.ErrorMsg()),
@@ -83,7 +101,7 @@ func processEvents(records []*kgo.Record) []*kgo.Record {
 	return processedRecords
 }
 
-func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
+func (processor *EventProcessor) processEvent(ctx context.Context, event *models.Event) utils.Result[*models.EnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
@@ -129,4 +147,15 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
+}
+
+func failedMultiEventsResult(r utils.AnyResult, code string, message string) utils.Result[[]*models.EnrichedEvent] {
+	result := utils.FailedResult[[]*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+	result.Retryable = r.IsRetryable()
+	result.Capture = r.IsCapturable()
+	return result
+}
+
+func toMultiEventsResult(r utils.Result[*models.EnrichedEvent]) utils.Result[[]*models.EnrichedEvent] {
+	return failedMultiEventsResult(r, r.ErrorCode(), r.ErrorMessage())
 }
