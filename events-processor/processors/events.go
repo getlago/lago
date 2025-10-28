@@ -94,10 +94,11 @@ func processEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 
 	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 
-	// TODO(pre-aggregation): Uncomment to enable the feature
-	// for _, ev := range enrichedEvents {
-	// 	go processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
-	// }
+	for _, ev := range enrichedEvents {
+		if ev.ChargeID != nil {
+			go processor.ProducerService.ProduceEnrichedExpandedEvent(ctx, ev)
+		}
+	}
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvance := false

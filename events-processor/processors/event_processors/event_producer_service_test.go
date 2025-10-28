@@ -74,7 +74,7 @@ func TestProduceEnrichedExtendedEvent(t *testing.T) {
 			Code:                   "api_calls",
 		}
 
-		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+		producerService.ProduceEnrichedExpandedEvent(context.Background(), &event)
 
 		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
 		assert.Equal(
@@ -97,7 +97,7 @@ func TestProduceEnrichedExtendedEvent(t *testing.T) {
 			ChargeID:               utils.StringPtr("charge_id"),
 		}
 
-		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+		producerService.ProduceEnrichedExpandedEvent(context.Background(), &event)
 
 		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
 		assert.Equal(
@@ -120,7 +120,7 @@ func TestProduceEnrichedExtendedEvent(t *testing.T) {
 			ChargeFilterID:         utils.StringPtr("charge_filter_id"),
 		}
 
-		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+		producerService.ProduceEnrichedExpandedEvent(context.Background(), &event)
 
 		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
 		assert.Equal(
@@ -143,7 +143,7 @@ func TestProduceEnrichedExtendedEvent(t *testing.T) {
 			GroupedBy:              map[string]string{"country": "US", "type": "debit"},
 		}
 
-		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+		producerService.ProduceEnrichedExpandedEvent(context.Background(), &event)
 
 		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
 		assert.Equal(
@@ -166,7 +166,7 @@ func TestProduceEnrichedExtendedEvent(t *testing.T) {
 			GroupedBy:              map[string]string{"type": "debit", "country": "US"},
 		}
 
-		producerService.ProduceEnrichedExpendedEvent(context.Background(), &event)
+		producerService.ProduceEnrichedExpandedEvent(context.Background(), &event)
 
 		assert.Equal(t, 1, enrichedExpandedProducer.ExecutionCount)
 		assert.Equal(
