@@ -11,7 +11,12 @@ import (
 	"github.com/getlago/lago/events-processor/config/database"
 )
 
-func SetupMockStore(t *testing.T) (*database.DB, sqlmock.Sqlmock, func()) {
+type MockedStore struct {
+	DB      *database.DB
+	SQLMock sqlmock.Sqlmock
+}
+
+func SetupMockStore(t *testing.T) (*MockedStore, func()) {
 	mockDB, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Failed to create mock database: %v", err)
@@ -29,7 +34,12 @@ func SetupMockStore(t *testing.T) (*database.DB, sqlmock.Sqlmock, func()) {
 		t.Fatalf("Failed to open gorm connection: %v", err)
 	}
 
-	return db, mock, func() {
+	mockedStore := &MockedStore{
+		DB:      db,
+		SQLMock: mock,
+	}
+
+	return mockedStore, func() {
 		mockDB.Close()
 	}
 }
