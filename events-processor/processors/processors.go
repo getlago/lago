@@ -147,7 +147,7 @@ func StartProcessingEvents() {
 	kafkaConfig = kafka.ServerConfig{
 		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
 		TLS:            os.Getenv(envLagoKafkaTLS) == "true",
-		Server:         serverBrokers,
+		Servers:        serverBrokers,
 		UseTelemetry:   otelEndpoint != "",
 		UserName:       os.Getenv(envLagoKafkaUsername),
 		Password:       os.Getenv(envLagoKafkaPassword),

@@ -24,7 +24,7 @@ const (
 type ServerConfig struct {
 	ScramAlgorithm string
 	TLS            bool
-	Server         []string
+	Servers        []string
 	UseTelemetry   bool
 	UserName       string
 	Password       string
@@ -35,7 +35,7 @@ func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, e
 	logger = logger.With("component", "kafka")
 
 	opts := []kgo.Opt{
-		kgo.SeedBrokers(serverConfig.Server...),
+		kgo.SeedBrokers(serverConfig.Servers...),
 		kgo.WithLogger(kslog.New(logger)),
 	}
 
