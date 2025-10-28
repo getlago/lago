@@ -31,3 +31,13 @@ func ParseBrokersEnv(brokersStr string) []string {
 
 	return brokers
 }
+
+func GetEnvAsBool(key string, defaultValue bool) bool {
+	value := os.Getenv(key)
+	boolValue, err := strconv.ParseBool(value)
+	if err != nil {
+		return defaultValue
+	}
+
+	return boolValue
+}

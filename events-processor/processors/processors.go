@@ -43,9 +43,11 @@ const (
 	envLagoRedisCacheDB                          = "LAGO_REDIS_CACHE_DB"
 	envLagoRedisCachePassword                    = "LAGO_REDIS_CACHE_PASSWORD"
 	envLagoRedisCacheURL                         = "LAGO_REDIS_CACHE_URL"
+	envLagoRedisCacheTLS                         = "LAGO_REDIS_CACHE_TLS"
 	envLagoRedisStoreDB                          = "LAGO_REDIS_STORE_DB"
 	envLagoRedisStorePassword                    = "LAGO_REDIS_STORE_PASSWORD"
 	envLagoRedisStoreURL                         = "LAGO_REDIS_STORE_URL"
+	envLagoRedisStoreTLS                         = "LAGO_REDIS_STORE_TLS"
 	envOtelExporterOtlpEndpoint                  = "OTEL_EXPORTER_OTLP_ENDPOINT"
 	envOtelInsecure                              = "OTEL_INSECURE"
 	envOtelServiceName                           = "OTEL_SERVICE_NAME"
@@ -85,7 +87,7 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 		Address:  os.Getenv(envLagoRedisStoreURL),
 		Password: os.Getenv(envLagoRedisStorePassword),
 		DB:       redisDb,
-		UseTLS:   os.Getenv(envEnv) == "production",
+		UseTLS:   utils.GetEnvAsBool(envLagoRedisStoreTLS, false),
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)
@@ -106,7 +108,7 @@ func initChargeCacheStore() (*models.ChargeCache, error) {
 		Address:  os.Getenv(envLagoRedisCacheURL),
 		Password: os.Getenv(envLagoRedisCachePassword),
 		DB:       redisDb,
-		UseTLS:   false,
+		UseTLS:   utils.GetEnvAsBool(envLagoRedisCacheTLS, false),
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)

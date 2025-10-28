@@ -47,3 +47,28 @@ func TestParseBrokersEnv(t *testing.T) {
 		assert.Equal(t, []string{}, result)
 	})
 }
+
+func TestGetEnvAsBool(t *testing.T) {
+	t.Run("should return true when environment variable is set to 'true'", func(t *testing.T) {
+		t.Setenv("TEST_BOOL_ENV", "true")
+		value := GetEnvAsBool("TEST_BOOL_ENV", false)
+		assert.True(t, value)
+	})
+
+	t.Run("should return false when environment variable is set to 'false'", func(t *testing.T) {
+		t.Setenv("TEST_BOOL_ENV", "false")
+		value := GetEnvAsBool("TEST_BOOL_ENV", true)
+		assert.False(t, value)
+	})
+
+	t.Run("should return default value when environment variable is not set", func(t *testing.T) {
+		value := GetEnvAsBool("NON_EXISTENT_BOOL_ENV", true)
+		assert.True(t, value)
+	})
+
+	t.Run("should return default value when environment variable is invalid", func(t *testing.T) {
+		t.Setenv("INVALID_BOOL_ENV", "not_a_bool")
+		value := GetEnvAsBool("INVALID_BOOL_ENV", false)
+		assert.False(t, value)
+	})
+}
