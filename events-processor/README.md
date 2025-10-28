@@ -37,7 +37,7 @@ This app requires some env vars
 |---------------------------------------------|-----------------------------------------------------------------------------------------------|
 | ENV                                         | Set as `production` to not load `.env` file                                                   |
 | DATABASE_URL                                | PostgreSQL server URL (eg: `postgresql://lago_user:lago_password@lago_server:5432/lago_db`)   |
-| LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Broker URL with port (eg: `redpanda:9092`)                                              |
+| LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Brokers list URL with port (eg: `"redpanda:9092,kafka:9092"`)                                              |
 | LAGO_KAFKA_RAW_EVENTS_TOPIC                 | Events Kafka Topic (eg: `events_raw`)                                                         |
 | LAGO_KAFKA_ENRICHED_EVENTS_TOPIC            | Events Enriched Kafka Topic (eg: `events_enriched`)                                           |
 | LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC   | Events Enriched Expanded Kafka Topic (eg: `events_enriched_expanded`)                         |

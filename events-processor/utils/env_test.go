@@ -27,3 +27,23 @@ func TestGetEnvAsInt(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestParseBrokersEnv(t *testing.T) {
+	t.Run("should parse comma-separated brokers", func(t *testing.T) {
+		brokersStr := "broker1:9092, broker2:9092, broker3:9092"
+		result := ParseBrokersEnv(brokersStr)
+		assert.Equal(t, []string{"broker1:9092", "broker2:9092", "broker3:9092"}, result)
+	})
+
+	t.Run("should parse single broker", func(t *testing.T) {
+		brokersStr := "localhost:9092"
+		result := ParseBrokersEnv(brokersStr)
+		assert.Equal(t, []string{"localhost:9092"}, result)
+	})
+
+	t.Run("should return empty slice for empty string", func(t *testing.T) {
+		brokersStr := ""
+		result := ParseBrokersEnv(brokersStr)
+		assert.Equal(t, []string{}, result)
+	})
+}
