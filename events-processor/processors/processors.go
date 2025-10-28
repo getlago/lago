@@ -138,10 +138,16 @@ func StartProcessingEvents() {
 		tracer.InitOTLPTracer(telemetryCfg)
 	}
 
+	serverBrokers := utils.ParseBrokersEnv(os.Getenv(envLagoKafkaBootstrapServers))
+	if len(serverBrokers) == 0 {
+		logger.Error("brokers not found")
+		panic("brokers not found")
+	}
+
 	kafkaConfig = kafka.ServerConfig{
 		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
 		TLS:            os.Getenv(envLagoKafkaTLS) == "true",
-		Server:         os.Getenv(envLagoKafkaBootstrapServers),
+		Server:         serverBrokers,
 		UseTelemetry:   otelEndpoint != "",
 		UserName:       os.Getenv(envLagoKafkaUsername),
 		Password:       os.Getenv(envLagoKafkaPassword),
