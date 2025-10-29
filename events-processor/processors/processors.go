@@ -83,11 +83,14 @@ func initFlagStore(name string) (*models.FlagStore, error) {
 		return nil, err
 	}
 
+	// Deprecated: Use env LAGO_REDIS_STORE_TLS instead
+	legacyTLS := os.Getenv(envEnv) == "production"
+
 	redisConfig := redis.RedisConfig{
 		Address:  os.Getenv(envLagoRedisStoreURL),
 		Password: os.Getenv(envLagoRedisStorePassword),
 		DB:       redisDb,
-		UseTLS:   utils.GetEnvAsBool(envLagoRedisStoreTLS, false),
+		UseTLS:   utils.GetEnvAsBool(envLagoRedisStoreTLS, legacyTLS),
 	}
 
 	db, err := redis.NewRedisDB(ctx, redisConfig)
