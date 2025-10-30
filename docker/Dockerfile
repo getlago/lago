@@ -10,8 +10,7 @@ COPY ./front/ .
 
 RUN apk add python3 build-base && \
   corepack enable && corepack prepare pnpm@latest --activate && \
-  rm -rf /app/node_modules && \
-  pnpm install && pnpm build && pnpm prune --prod
+  pnpm install && pnpm build
 
 # API Build
 FROM ruby:$RUBY_VERSION-slim AS api_build

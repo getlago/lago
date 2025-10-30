@@ -1,0 +1,5 @@
+# Front
+front/node_modules
+
+# API
+api/.env
