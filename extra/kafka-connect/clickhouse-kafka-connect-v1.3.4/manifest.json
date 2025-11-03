@@ -1,0 +1,48 @@
+{
+    "name" : "clickhouse-kafka-connect",
+    "version" : "v1.3.4",
+    "title" : "ClickHouse Connector for Apache Kafka",
+    "description" : "the official Kafka Connect Sink connector for ClickHouse.",
+    "documentation_url": "https://clickhouse.com/docs/en/integrations/kafka/clickhouse-kafka-connect-sink",
+    
+    "owner" : {
+      "username" : "clickhouse",
+      "name" : "ClickHouse Inc.",
+      "url" : "https://clickhouse.com/",
+      "logo" : "assets/logo.svg"
+    },
+
+    "support" : {
+      "logo" : "assets/logo.svg",
+      "summary" : "Officially supported by ClickHouse Inc.",
+      "url" : "https://github.com/ClickHouse/clickhouse-kafka-connect/issues",
+      "provider_name" : "ClickHouse Inc."
+    },
+
+    "tags" : [
+        "clickhouse",
+        "olap",
+        "analytics",
+        "sql",
+        "json"
+    ],
+
+    "features" : {
+      "supported_encodings" : [ "any" ],
+      "confluent_control_center_integration" : true,
+      "delivery_guarantee": ["exactly_once"],
+      "single_message_transforms" : true,
+      "kafka_connect_api" : true
+    },
+
+    "logo" : "assets/logo.svg",
+    "source_url" : "https://github.com/ClickHouse/clickhouse-kafka-connect",
+    "docker_image" : { },
+    "component_types" : ["sink"],
+    "requirements": ["ClickHouse v22.5 or later."],
+    "release_date": "2025-10-09",
+    "license": [{
+        "name": "Apache License, Version 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }]
+  }
