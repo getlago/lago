@@ -4,12 +4,12 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -136,7 +136,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -147,7 +147,7 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.False(t, result.Success())
 		assert.Equal(t, "record not found", result.ErrorMsg())
 		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
@@ -158,7 +158,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -221,7 +221,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -243,7 +243,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockBmLookup(mockedStore, &bm)
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.False(t, result.Success())
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
 		assert.Equal(t, "build_enriched_event", result.ErrorCode())
@@ -254,7 +254,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -278,7 +278,7 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.True(t, result.Success())
 	})
 
@@ -286,7 +286,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -310,7 +310,7 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.False(t, result.Success())
 		assert.NotNil(t, result.ErrorMsg())
 		assert.Equal(t, "fetch_subscription", result.ErrorCode())
@@ -321,7 +321,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		// properties := map[string]any{
 		// 	"value": "12.12",
@@ -351,7 +351,7 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123"}
 		mockSubscriptionLookup(mockedStore, &sub)
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.False(t, result.Success())
 		assert.Contains(t, result.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", result.ErrorCode())
@@ -362,7 +362,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, testProducers, flagger, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -405,7 +405,7 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
 
@@ -423,7 +423,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -478,7 +478,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
@@ -497,7 +497,7 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		wg := &sync.WaitGroup{}
+		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -528,7 +528,7 @@ func TestProcessEvent(t *testing.T) {
 		mockSubscriptionLookup(mockedStore, &sub)
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{})
 
-		result := processor.processEvent(context.Background(), &event, wg)
+		result := processor.processEvent(context.Background(), &event, g)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
