@@ -50,7 +50,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 
 	g := errgroup.Group{}
 
-	producersWg := sync.WaitGroup{}
+	producerGroup := errgroup.Group{}
 
 	var mu sync.Mutex
 	processedRecords := make([]*kgo.Record, 0)
@@ -110,7 +110,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 	g.Wait()
 
 	// Wait for all producers routines to complete.
-	processor.waitForProducers(ctx, &producersWg)
+	processor.waitForProducers(ctx, &producerGroup)
 
 	return processedRecords
 }
@@ -169,32 +169,17 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	return utils.SuccessResult(enrichedEvent)
 }
 
-func (processor *EventProcessor) trackProducer(ctx context.Context, producerWg *sync.WaitGroup, routine func()) {
-	producerWg.Add(1)
-	go func() {
-		defer producerWg.Done()
-
-		select {
-		case <-ctx.Done():
-			processor.logger.Debug("Shutdown signal received, skipping producer")
-			return
-		default:
-			routine()
-		}
-	}()
-}
-
-func (processor *EventProcessor) waitForProducers(ctx context.Context, producersWg *sync.WaitGroup) {
+func (processor *EventProcessor) waitForProducers(ctx context.Context, producerGroup *errgroup.Group) {
 	done := make(chan struct{})
 	go func() {
-		producersWg.Wait()
+		producerGroup.Wait()
 		close(done)
 	}()
 
 	select {
 	case <-done:
 		processor.logger.Debug("All producer goroutines completed successfully")
-	case <-time.After(30 * time.Second): // Configurable timeout
+	case <-time.After(30 * time.Second):
 		processor.logger.Warn("Timeout waiting for producer goroutines to complete")
 	case <-ctx.Done():
 		processor.logger.Info("Shutdown signal received while waiting for producer goroutines")
