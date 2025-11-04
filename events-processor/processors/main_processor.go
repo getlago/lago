@@ -237,10 +237,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	}
 
 	config.Logger.Info("Starting event consumer")
-	if err := cg.Start(ctx); err != nil && err != context.Canceled {
-		config.Logger.Error("Consumer stopped with error", slog.String("error", err.Error()))
-		utils.CaptureError(err)
-	}
-
+	cg.Start(ctx)
 	config.Logger.Info("Event processor stopped")
 }
