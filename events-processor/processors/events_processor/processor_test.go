@@ -186,7 +186,6 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
 		mockSubscriptionLookup(mockedStore, &sub)
 
-<<<<<<< HEAD
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
 			{
 				OrganizationID:     event.OrganizationID,
@@ -198,8 +197,6 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
-=======
->>>>>>> cf2a092 (Simplify code)
 		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())

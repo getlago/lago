@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,6 +37,9 @@ type PartitionConsumer struct {
 	done           chan struct{}
 	records        chan []*kgo.Record
 	processRecords func(context.Context, []*kgo.Record) []*kgo.Record
+
+	// Ensure quit channel is only closed once
+	atomicQuitClosing sync.Once
 }
 
 type ConsumerGroup struct {
@@ -67,6 +71,13 @@ func (pc *PartitionConsumer) consume(ctx context.Context) {
 			pc.processRecordsAndCommit(records)
 		}
 	}
+}
+
+// safely closes the quit channel only once
+func (pc *PartitionConsumer) closeQuitChannel() {
+	pc.atomicQuitClosing.Do(func() {
+		close(pc.quit)
+	})
 }
 
 func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
@@ -101,10 +112,11 @@ func (cg *ConsumerGroup) assigned(ctx context.Context, cl *kgo.Client, assigned 
 				partition: partition,
 				logger:    cg.logger,
 
-				quit:           make(chan struct{}),
-				done:           make(chan struct{}),
-				records:        make(chan []*kgo.Record),
-				processRecords: cg.processRecords,
+				quit:              make(chan struct{}),
+				done:              make(chan struct{}),
+				records:           make(chan []*kgo.Record),
+				processRecords:    cg.processRecords,
+				atomicQuitClosing: sync.Once{},
 			}
 			cg.consumers[TopicPartition{topic: topic, partition: partition}] = pc
 			go pc.consume(ctx)
@@ -121,7 +133,7 @@ func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string]
 			tp := TopicPartition{topic: topic, partition: partition}
 			pc := cg.consumers[tp]
 			delete(cg.consumers, tp)
-			close(pc.quit)
+			pc.closeQuitChannel()
 
 			pc.logger.Info(fmt.Sprintf("waiting for work to finish topic %s partition %d\n", topic, partition))
 			errgroup.Go(func() error {
@@ -197,7 +209,7 @@ func (cg *ConsumerGroup) gracefulShutdown() {
 				slog.Int("partition", int(topicPartition.partition)),
 			)
 
-			close(partitionConsumer.quit)
+			partitionConsumer.closeQuitChannel()
 			<-partitionConsumer.done
 			return nil
 		})
