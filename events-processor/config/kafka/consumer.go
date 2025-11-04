@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/utils"
@@ -53,10 +53,12 @@ func (pc *PartitionConsumer) consume(ctx context.Context) {
 
 	for {
 		select {
+		// Graceful shutdown
 		case <-pc.quit:
 			pc.logger.Info("partition consumer quit")
 			return
 
+		// Context canceled
 		case <-ctx.Done():
 			pc.logger.Info("partition consumer context canceled")
 			return
@@ -74,14 +76,13 @@ func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
 	span.SetAttributes(recordsAttr)
 	defer span.End()
 
-	processedRecords := pc.processRecords(records)
+	processedRecords := pc.processRecords(ctx, records)
 	commitableRecords := records
 
 	if len(processedRecords) != len(records) {
 		// Ensure we are not committing records that were not processed and can be re-consumed
 		record := findMaxCommitableRecord(processedRecords, records)
 		commitableRecords = []*kgo.Record{record}
-		return
 	}
 
 	err := pc.client.CommitRecords(ctx, commitableRecords...)
@@ -112,8 +113,8 @@ func (cg *ConsumerGroup) assigned(ctx context.Context, cl *kgo.Client, assigned 
 }
 
 func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string][]int32) {
-	var wg sync.WaitGroup
-	defer wg.Wait()
+	errgroup := errgroup.Group{}
+	defer errgroup.Wait()
 
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
@@ -123,8 +124,10 @@ func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string]
 			close(pc.quit)
 
 			pc.logger.Info(fmt.Sprintf("waiting for work to finish topic %s partition %d\n", topic, partition))
-			wg.Add(1)
-			go func() { <-pc.done; wg.Done() }()
+			errgroup.Go(func() error {
+				<-pc.done
+				return nil
+			})
 		}
 	}
 }
@@ -192,25 +195,22 @@ func (cg *ConsumerGroup) pollRecords(ctx context.Context) bool {
 }
 
 func (cg *ConsumerGroup) gracefulShutdown() {
-	var wg sync.WaitGroup
+	errgroup := errgroup.Group{}
 
-	for tp, pc := range cg.consumers {
-		wg.Add(1)
-
-		go func(tp TopicPartition, pc *PartitionConsumer) {
-			defer wg.Done()
-
+	for topicPartition, partitionConsumer := range cg.consumers {
+		errgroup.Go(func() error {
 			cg.logger.Info("Shuting down partion consumer",
-				slog.String("topic", tp.topic),
-				slog.Int("partition", int(tp.partition)),
+				slog.String("topic", topicPartition.topic),
+				slog.Int("partition", int(topicPartition.partition)),
 			)
 
-			close(pc.quit)
-			<-pc.done
-		}(tp, pc)
+			close(partitionConsumer.quit)
+			<-partitionConsumer.done
+			return nil
+		})
 	}
 
-	wg.Wait()
+	_ = errgroup.Wait()
 	cg.client.Close()
 }
 
@@ -249,31 +249,26 @@ func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*Con
 }
 
 func (cg *ConsumerGroup) Start(ctx context.Context) error {
-	pollCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	pollingTerminated := make(chan error, 1)
 
-	done := make(chan error, 1)
 	go func() {
-		defer close(done)
-		cg.poll(pollCtx, done)
+		defer close(pollingTerminated)
+		cg.poll(ctx, pollingTerminated)
 	}()
 
-	select {
-	case <-ctx.Done():
-		cg.logger.Info("Gracefully shutting down consumer group")
-		cancel()
+	<-ctx.Done()
+	cg.logger.Info("Gracefully shutting down consumer group")
 
-		cg.gracefulShutdown()
+	cg.gracefulShutdown()
 
+	err := <-pollingTerminated
+	if err != nil {
+		cg.logger.Error("Consumer group stopped with error", slog.String("error", err.Error()))
+	} else {
 		cg.logger.Info("Consumer group shutdown is complete")
-		return ctx.Err()
-
-	case err := <-done:
-		if err != nil {
-			cg.logger.Error("Consumer group stopped with error", slog.String("error", err.Error()))
-		}
-		return err
 	}
+	return err
+
 }
 
 func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) *kgo.Record {
