@@ -9,7 +9,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -136,8 +135,6 @@ func TestProcessEvent(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
-		g := &errgroup.Group{}
-
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 			ExternalSubscriptionID: "sub_id",
@@ -147,7 +144,7 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "record not found", result.ErrorMsg())
 		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
@@ -157,8 +154,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is post processed on API", func(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -191,6 +186,7 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
 		mockSubscriptionLookup(mockedStore, &sub)
 
+<<<<<<< HEAD
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
 			{
 				OrganizationID:     event.OrganizationID,
@@ -202,6 +198,8 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
+=======
+>>>>>>> cf2a092 (Simplify code)
 		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
@@ -220,8 +218,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -243,7 +239,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockBmLookup(mockedStore, &bm)
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
 		assert.Equal(t, "build_enriched_event", result.ErrorCode())
@@ -253,8 +249,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -278,15 +272,13 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 	})
 
 	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -310,7 +302,7 @@ func TestProcessEvent(t *testing.T) {
 
 		mockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.NotNil(t, result.ErrorMsg())
 		assert.Equal(t, "fetch_subscription", result.ErrorCode())
@@ -320,8 +312,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
 		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		// properties := map[string]any{
 		// 	"value": "12.12",
@@ -351,7 +341,7 @@ func TestProcessEvent(t *testing.T) {
 		sub := models.Subscription{ID: "sub123"}
 		mockSubscriptionLookup(mockedStore, &sub)
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Contains(t, result.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", result.ErrorCode())
@@ -361,8 +351,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
 		processor, mockedStore, testProducers, flagger, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -405,7 +393,7 @@ func TestProcessEvent(t *testing.T) {
 			},
 		})
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
 
@@ -422,8 +410,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -478,7 +464,7 @@ func TestProcessEvent(t *testing.T) {
 		}
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
@@ -496,8 +482,6 @@ func TestProcessEvent(t *testing.T) {
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
 		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
 		defer delete()
-
-		g := &errgroup.Group{}
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -528,7 +512,7 @@ func TestProcessEvent(t *testing.T) {
 		mockSubscriptionLookup(mockedStore, &sub)
 		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{})
 
-		result := processor.processEvent(context.Background(), &event, g)
+		result := processor.processEvent(context.Background(), &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
