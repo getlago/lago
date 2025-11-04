@@ -32,12 +32,14 @@ services:
     image: postgres:14.0-alpine
     container_name: lago_db_dev
     restart: unless-stopped
+    command: -c config_file=/etc/postgresql.conf
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lago}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       PGDATA: /data/postgres
       POSTGRES_MULTIPLE_DATABASES: lago,lago_test
     volumes:
+      - ./scripts/postgresql.conf:/etc/postgresql.conf
       - ./pg-init-scripts:/docker-entrypoint-initdb.d
       - postgres_data_dev:/data/postgres
     ports:
@@ -377,3 +379,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  pghero:
+    image: ankane/pghero:latest
+    container_name: lago_pghero_dev
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lago}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-lago}
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: wget -O /dev/null http://0.0.0.0:8080/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pghero.rule=Host(`pghero.lago.dev`)"
+      - "traefik.http.routers.pghero.entrypoints=web,websecure"
+      - "traefik.http.routers.pghero.tls=true"
+      - "traefik.http.services.pghero.loadbalancer.server.port=8080"
