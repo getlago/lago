@@ -1,1 +1,9 @@
 
+[build]
+
+send_interrupt = true
+kill_delay = "10s"
+
+[log]
+
+time = true
