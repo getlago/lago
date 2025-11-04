@@ -40,7 +40,7 @@ services:
       POSTGRES_MULTIPLE_DATABASES: lago,lago_test
     volumes:
       - ./scripts/postgresql.conf:/etc/postgresql.conf
-      - ./pg-init-scripts:/docker-entrypoint-initdb.d
+      - ./scripts/pg-init-scripts:/docker-entrypoint-initdb.d
       - postgres_data_dev:/data/postgres
     ports:
       - 5432:5432
