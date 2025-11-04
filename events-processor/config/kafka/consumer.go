@@ -132,14 +132,7 @@ func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string]
 	}
 }
 
-func (cg *ConsumerGroup) poll(ctx context.Context, done chan<- error) {
-	defer func() {
-		if r := recover(); r != nil {
-			cg.logger.Error("Consumer group poll panic", slog.Any("panic", r))
-			done <- fmt.Errorf("consumer group poll panic: %v", r)
-		}
-	}()
-
+func (cg *ConsumerGroup) poll(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -248,12 +241,9 @@ func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*Con
 	return cg, nil
 }
 
-func (cg *ConsumerGroup) Start(ctx context.Context) error {
-	pollingTerminated := make(chan error, 1)
-
+func (cg *ConsumerGroup) Start(ctx context.Context) {
 	go func() {
-		defer close(pollingTerminated)
-		cg.poll(ctx, pollingTerminated)
+		cg.poll(ctx)
 	}()
 
 	<-ctx.Done()
@@ -261,14 +251,7 @@ func (cg *ConsumerGroup) Start(ctx context.Context) error {
 
 	cg.gracefulShutdown()
 
-	err := <-pollingTerminated
-	if err != nil {
-		cg.logger.Error("Consumer group stopped with error", slog.String("error", err.Error()))
-	} else {
-		cg.logger.Info("Consumer group shutdown is complete")
-	}
-	return err
-
+	cg.logger.Info("Consumer group shutdown is complete")
 }
 
 func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) *kgo.Record {
