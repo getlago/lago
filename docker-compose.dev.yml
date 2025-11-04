@@ -249,9 +249,12 @@ services:
       context: ./events-processor
       dockerfile: Dockerfile.dev
     depends_on:
-      - db
-      - redpanda
-      - redis
+      db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
