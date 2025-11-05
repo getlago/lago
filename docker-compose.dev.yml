@@ -194,32 +194,68 @@ services:
   api-events-worker:
     <<: *api_worker
     container_name: lago_api_events_worker_dev
-    command: bash -c "bundle install && ./scripts/start.events.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_EVENTS_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_EVENTS_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.events.worker.sh
+      '
 
   api-pdfs-worker:
     <<: *api_worker
     container_name: lago_api_pdfs_worker_dev
-    command: bash -c "bundle install && ./scripts/start.pdfs.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_PDFS_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_PDFS_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.pdfs.worker.sh
+      '
 
   api-billing-worker:
     <<: *api_worker
     container_name: lago_api_billing_worker_dev
-    command: bash -c "bundle install && ./scripts/start.billing.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_BILLING_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_BILLING_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.billing.worker.sh
+      '
 
   api-clock-worker:
     <<: *api_worker
     container_name: lago_api_clock_worker_dev
-    command: bash -c "bundle install && ./scripts/start.clock.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_CLOCK_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CLOCK_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.clock.worker.sh
+      '
 
   api-webhook-worker:
     <<: *api_worker
     container_name: lago_api_webhook_worker_dev
-    command: bash -c "bundle install && ./scripts/start.webhook.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_WEBHOOK_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_WEBHOOK_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.webhook.worker.sh
+      '
 
   api-analytics-worker:
     <<: *api_worker
     container_name: lago_api_analytics_worker_dev
-    command: bash -c "bundle install && ./scripts/start.analytics.worker.sh"
+    command: |
+      bash -c '
+        if [[ -n "$$SIDEKIQ_ANALYTICS_CONCURRENCY" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_ANALYTICS_CONCURRENCY}
+        fi
+        bundle install && ./scripts/start.analytics.worker.sh
+      '
 
   api-clock:
     image: api_dev
