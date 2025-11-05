@@ -32,6 +32,28 @@ services:
     image: postgres:15.0-alpine
     container_name: lago_db_dev
     restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "wal_level=logical"
+      - "-c"
+      - "max_replication_slots=4"
+      - "-c"
+      - "max_wal_senders=4"
+      - "-c"
+      - "synchronous_commit=off"
+      - "-c"
+      - "log_min_duration_statement=1000"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lago}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
@@ -73,9 +95,9 @@ services:
       context: ./front
       dockerfile: Dockerfile.dev
     volumes:
-      - ./front:/app:delegated
-      - front_node_modules_dev:/app/node_modules:delegated
-      - front_dist_dev:/app/dist:delegated
+      - ./front:/app:cached
+      - front_node_modules_dev:/app/node_modules
+      - front_dist_dev:/app/dist
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
@@ -149,7 +171,7 @@ services:
       clickhouse:
         condition: service_healthy
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -181,7 +203,7 @@ services:
       api:
         condition: service_started
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -228,7 +250,7 @@ services:
       api:
         condition: service_started
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -255,7 +277,7 @@ services:
       - path: ./.env.development
         required: false
     volumes:
-      - ./events-processor:/app:delegated
+      - ./events-processor:/app:cached
 
   pdf:
     image: getlago/lago-gotenberg:8
