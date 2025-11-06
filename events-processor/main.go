@@ -9,10 +9,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-
+	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
+	"github.com/getlago/lago/events-processor/utils"
+	"github.com/getsentry/sentry-go"
+)
+
+var (
+	ctx      context.Context
+	logger   *slog.Logger
+	memCache *cache.Cache
 )
 
 const (
@@ -47,6 +54,19 @@ func main() {
 	}
 
 	defer sentry.Flush(2 * time.Second)
+
+	// Build In Memory Cache
+	memCache, err := cache.NewCache(cache.CacheConfig{
+		Context: ctx,
+		Logger:  logger,
+	})
+	if err != nil {
+		logger.Error("Error creating the cache", slog.String("error", err.Error()))
+		utils.CaptureError(err)
+		panic(err.Error())
+	}
+
+	memCache.LoadInitialSnapshot()
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{

@@ -11,6 +11,7 @@ import (
 
 type Subscription struct {
 	ID           string       `gorm:"primaryKey;->"`
+	OrganizationID *string `gorm:"->"`
 	ExternalID   string       `gorm:"->"`
 	PlanID       string       `gorm:"->"`
 	CreatedAt    time.Time    `gorm:"->"`
@@ -44,6 +45,16 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	}
 
 	return utils.SuccessResult(&sub)
+}
+
+func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
+	var subscriptions []Subscription
+	result := db.Find(&subscriptions, "terminated_at IS NOT NULL")
+	if result.Error != nil {
+		return utils.FailedResult[[]Subscription](result.Error)
+	}
+
+	return utils.SuccessResult(subscriptions)
 }
 
 func failedSubscriptionResult(err error) utils.Result[*Subscription] {

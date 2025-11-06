@@ -61,13 +61,23 @@ func (store *ApiStore) FetchBillableMetric(organizationID string, code string) u
 	var bm BillableMetric
 	result := store.db.Connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
 	if result.Error != nil {
-		return failedBillabmeMetricResult(result.Error)
+		return failedBillableMetricResult(result.Error)
 	}
 
 	return utils.SuccessResult(&bm)
 }
 
-func failedBillabmeMetricResult(err error) utils.Result[*BillableMetric] {
+func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
+	var billableMetrics []BillableMetric
+	result := db.Find(&billableMetrics, "deleted_at IS NULL")
+	if result.Error != nil {
+		return utils.FailedResult[[]BillableMetric](result.Error)
+	}
+
+	return utils.SuccessResult(billableMetrics)
+}
+
+func failedBillableMetricResult(err error) utils.Result[*BillableMetric] {
 	result := utils.FailedResult[*BillableMetric](err)
 
 	if err.Error() == gorm.ErrRecordNotFound.Error() {
