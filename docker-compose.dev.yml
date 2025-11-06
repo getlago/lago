@@ -196,8 +196,8 @@ services:
     container_name: lago_api_events_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_EVENTS_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_EVENTS_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_EVENTS}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_EVENTS}
         fi
         bundle install && ./scripts/start.events.worker.sh
       '
@@ -207,8 +207,8 @@ services:
     container_name: lago_api_pdfs_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_PDFS_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_PDFS_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_PDFS}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_PDFS}
         fi
         bundle install && ./scripts/start.pdfs.worker.sh
       '
@@ -218,8 +218,8 @@ services:
     container_name: lago_api_billing_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_BILLING_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_BILLING_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_BILLING}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_BILLING}
         fi
         bundle install && ./scripts/start.billing.worker.sh
       '
@@ -229,8 +229,8 @@ services:
     container_name: lago_api_clock_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_CLOCK_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CLOCK_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_CLOCK}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_CLOCK}
         fi
         bundle install && ./scripts/start.clock.worker.sh
       '
@@ -240,8 +240,8 @@ services:
     container_name: lago_api_webhook_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_WEBHOOK_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_WEBHOOK_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_WEBHOOK}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_WEBHOOK}
         fi
         bundle install && ./scripts/start.webhook.worker.sh
       '
@@ -251,8 +251,8 @@ services:
     container_name: lago_api_analytics_worker_dev
     command: |
       bash -c '
-        if [[ -n "$$SIDEKIQ_ANALYTICS_CONCURRENCY" ]]; then
-          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_ANALYTICS_CONCURRENCY}
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_ANALYTICS}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_ANALYTICS}
         fi
         bundle install && ./scripts/start.analytics.worker.sh
       '
