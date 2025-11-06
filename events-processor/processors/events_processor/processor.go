@@ -9,6 +9,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/models"
@@ -40,68 +41,72 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 	span.SetAttributes(recordsAttr)
 	defer span.End()
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(records))
+	g := errgroup.Group{}
 
 	var mu sync.Mutex
 	processedRecords := make([]*kgo.Record, 0)
 
 	for _, record := range records {
-		go func(record *kgo.Record) {
-			defer wg.Done()
+		g.Go(func() error {
+			func(record *kgo.Record) {
+				sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
+				defer sp.End()
 
-			sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
-			defer sp.End()
+				event := models.Event{}
+				err := json.Unmarshal(record.Value, &event)
+				if err != nil {
+					processor.logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
+					utils.CaptureError(err)
 
-			event := models.Event{}
-			err := json.Unmarshal(record.Value, &event)
-			if err != nil {
-				processor.logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
-				utils.CaptureError(err)
-
-				mu.Lock()
-				// If we fail to unmarshal the record, we should commit it as it will failed forever
-				processedRecords = append(processedRecords, record)
-				mu.Unlock()
-				return
-			}
-
-			result := processor.processEvent(ctx, &event)
-			if result.Failure() {
-				processor.logger.Error(
-					result.ErrorMessage(),
-					slog.String("error_code", result.ErrorCode()),
-					slog.String("error", result.ErrorMsg()),
-				)
-
-				if result.IsCapturable() {
-					utils.CaptureErrorResultWithExtra(result, "event", event)
-				}
-
-				if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
-					// For retryable errors, we should avoid commiting the record,
-					// It will be consumed again and reprocessed
-					// Events older than 12 hours should also be pushed dead letter queue
+					mu.Lock()
+					// If we fail to unmarshal the record, we should commit it as it will failed forever
+					processedRecords = append(processedRecords, record)
+					mu.Unlock()
 					return
 				}
 
-				// Push failed records to the dead letter queue
-				go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
-			}
+				result := processor.processEvent(ctx, &event)
+				if result.Failure() {
+					processor.logger.Error(
+						result.ErrorMessage(),
+						slog.String("error_code", result.ErrorCode()),
+						slog.String("error", result.ErrorMsg()),
+					)
 
-			// Track processed records
-			mu.Lock()
-			processedRecords = append(processedRecords, record)
-			mu.Unlock()
-		}(record)
+					if result.IsCapturable() {
+						utils.CaptureErrorResultWithExtra(result, "event", event)
+					}
+
+					if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
+						// For retryable errors, we should avoid commiting the record,
+						// It will be consumed again and reprocessed
+						// Events older than 12 hours should also be pushed dead letter queue
+						return
+					}
+
+					// Push failed records to the dead letter queue
+					go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
+				}
+
+				// Track processed records
+				mu.Lock()
+				processedRecords = append(processedRecords, record)
+				mu.Unlock()
+			}(record)
+
+			return nil
+		})
 	}
 
-	wg.Wait()
+	g.Wait()
 
 	return processedRecords
 }
 
 func (processor *EventProcessor) processEvent(ctx context.Context, event *models.Event) utils.Result[*models.EnrichedEvent] {
+	errgroup := errgroup.Group{}
+	defer errgroup.Wait()
+
 	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
@@ -110,11 +115,17 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	enrichedEvents := enrichedEventResult.Value()
 	enrichedEvent := enrichedEvents[0]
 
-	go processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+	errgroup.Go(func() error {
+		processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+		return nil
+	})
 
 	// TODO(pre-aggregation): Uncomment to enable the feature
 	// for _, ev := range enrichedEvents {
-	// 	go processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
+	// 	errgroup.Go(func() error {
+	//		processor.ProducerService.ProduceEnrichedExpendedEvent(ctx, ev)
+	//		return nil
+	//	})
 	// }
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
@@ -127,7 +138,10 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		}
 
 		if payInAdvance {
-			go processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
+			errgroup.Go(func() error {
+				processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
+				return nil
+			})
 		}
 
 		flagResult := processor.RefreshService.FlagSubscriptionRefresh(enrichedEvent)
