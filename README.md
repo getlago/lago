@@ -71,7 +71,7 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 - **[Prepaid credits](https://www.getlago.com/products/prepaid-credits)**: Unlock recurring revenue opportunities for pay-as-you-go pricing models with Lago's prepaid credit features.
 
 ## 📚 Documentation
-- **[Development Environment](./docs/development.md)**: Learn how to set up and run Lago locally for development
+- **[Development Environment](./docs/dev_environment.md)**: Learn how to set up and run Lago locally for development
 - **[Architecture](./docs/architecture.md)**: Understand Lago's technical architecture and flows
 
 ## 🔔 Stay up to date
