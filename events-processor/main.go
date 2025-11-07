@@ -67,6 +67,7 @@ func main() {
 	}
 
 	memCache.LoadInitialSnapshot()
+	memCache.ConsumeChanges()
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{

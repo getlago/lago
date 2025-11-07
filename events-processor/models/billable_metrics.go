@@ -46,15 +46,15 @@ func (t AggregationType) String() string {
 }
 
 type BillableMetric struct {
-	ID              string          `gorm:"primaryKey;->"`
-	OrganizationID  string          `gorm:"->"`
-	Code            string          `gorm:"->"`
-	AggregationType AggregationType `gorm:"->"`
-	FieldName       string          `gorm:"->"`
-	Expression      string          `gorm:"->"`
-	CreatedAt       time.Time       `gorm:"->"`
-	UpdatedAt       time.Time       `gorm:"->"`
-	DeletedAt       gorm.DeletedAt  `gorm:"index;->"`
+	ID              string          `gorm:"primaryKey;->" json:"id"`
+	OrganizationID  string          `gorm:"->" json:"organization_id"`
+	Code            string          `gorm:"->" json:"code"`
+	AggregationType AggregationType `gorm:"->" json:"aggregation_type"`
+	FieldName       string          `gorm:"->" json:"field_name"`
+	Expression      string          `gorm:"->" json:"expression"`
+	CreatedAt       time.Time       `gorm:"->" json:"created_at"`
+	UpdatedAt       time.Time       `gorm:"->" json:"updated_at"`
+	DeletedAt       gorm.DeletedAt  `gorm:"index;->" json:"deleted_at"`
 }
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {

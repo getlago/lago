@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,14 +9,14 @@ import (
 )
 
 type Subscription struct {
-	ID           string       `gorm:"primaryKey;->"`
-	OrganizationID *string `gorm:"->"`
-	ExternalID   string       `gorm:"->"`
-	PlanID       string       `gorm:"->"`
-	CreatedAt    time.Time    `gorm:"->"`
-	UpdatedAt    time.Time    `gorm:"->"`
-	StartedAt    sql.NullTime `gorm:"->"`
-	TerminatedAt sql.NullTime `gorm:"->"`
+	ID           string       `gorm:"primaryKey;->" json:"id"`
+	OrganizationID *string `gorm:"->" json:"organization_id"`
+	ExternalID   string       `gorm:"->" json:"external_id"`
+	PlanID       string       `gorm:"->" json:"plan_id"`
+	CreatedAt    time.Time    `gorm:"->" json:"created_at"`
+	UpdatedAt    time.Time    `gorm:"->" json:"updated_at"`
+	StartedAt    utils.NullTime `gorm:"->" json:"started_at"`
+	TerminatedAt utils.NullTime `gorm:"->" json:"terminated_at"`
 }
 
 func (store *ApiStore) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
@@ -49,7 +48,7 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 
 func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
 	var subscriptions []Subscription
-	result := db.Find(&subscriptions, "terminated_at IS NOT NULL")
+	result := db.Find(&subscriptions, "terminated_at IS NULL")
 	if result.Error != nil {
 		return utils.FailedResult[[]Subscription](result.Error)
 	}
