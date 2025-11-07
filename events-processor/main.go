@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	ctx context.Context
 	logger *slog.Logger
 	memCache *cache.Cache
 )
@@ -37,7 +36,7 @@ func main() {
 		memCache.Close()
 	}()
 
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})).
 		With("service", "lago-events-processor")
 	slog.SetDefault(logger)
 
@@ -66,6 +65,7 @@ func main() {
 	}
 
 	memCache.LoadInitialSnapshot()
+	memCache.ConsumeChanges()
 
 	// start processing events & loop forever
 	//processors.StartProcessingEvents()

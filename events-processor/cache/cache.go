@@ -2,9 +2,12 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/getlago/lago/events-processor/config/database"
@@ -12,9 +15,10 @@ import (
 )
 
 type Cache struct {
-	ctx *context.Context
+	ctx context.Context
 	db *badger.DB
 	logger *slog.Logger
+	wg sync.WaitGroup
 }
 
 type CacheConfig struct {
@@ -36,11 +40,16 @@ func NewCache(config CacheConfig) (*Cache, error) {
 	return &Cache {
 		db: db,
 		logger: logger,
+		ctx: config.Context,
 	}, nil
 }
 
 func (c *Cache) Close() error {
 	return c.db.Close()
+}
+
+func (c *Cache) Wait() {
+	c.wg.Wait()
 }
 
 func (c *Cache) LoadInitialSnapshot() {
@@ -58,5 +67,97 @@ func (c *Cache) LoadInitialSnapshot() {
 
 	c.LoadBillableMetricsSnapshot(db.Connection)
 	c.LoadSubscriptionsSnapshot(db.Connection)
+}
+
+func (c *Cache) ConsumeChanges() {
+	if err := c.StartBillableMetricsConsumer(c.ctx); err != nil {
+		c.logger.Error("failed to start billable metrics consumer", slog.String("error", err.Error()))
+	}
+
+	if err := c.StartSubscriptionsConsumer(c.ctx); err != nil {
+		c.logger.Error("failed to start subscriptions consumer", slog.String("error", err.Error()))
+	}
+
+	c.wg.Wait()
+}
+
+func setJSON[T any](cache *Cache, key string, value *T) utils.Result[bool] {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	err = cache.db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte(key), data)
+	})
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	return utils.SuccessResult(true)
+}
+
+func getJSON[T any](cache *Cache, key string) utils.Result[*T] {
+	var out T
+	err := cache.db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(key))
+		if err != nil {
+			return err
+		}
+		return item.Value(func(val []byte) error {
+			return json.Unmarshal(val, &out)
+		})
+	})
+
+	if err == badger.ErrKeyNotFound {
+		return utils.FailedResult[*T](err).NonCapturable().NonRetryable()
+	}
+	if err != nil {
+		return utils.FailedResult[*T](err)
+	}
+
+	return utils.SuccessResult(&out)
+}
+
+func LoadSnapshot[T any](
+	cache *Cache,
+	name string,
+	fetchFn func() ([]T, error),
+	keyFn func(*T) string,
+) utils.Result[int] {
+	cache.logger.Info("Starting snapshot load", slog.String("model", name))
+	start := time.Now()
+
+	list, err := fetchFn()
+	if err != nil {
+		return utils.FailedResult[int](err)
+	}
+
+	count := 0
+	for i := range list {
+		item := &list[i]
+		key := keyFn(item)
+		if res := setJSON(cache, key, item); res.Failure() {
+			cache.logger.Error(
+				"Failed to cache item",
+				slog.String("model", name),
+				slog.String("key", key),
+				slog.String("error", res.ErrorMsg()),
+			)
+			utils.CaptureErrorResult(res)
+			continue
+		}
+		count++
+	}
+
+	duration := time.Since(start)
+	cache.logger.Info(
+		"Completed snapshot load",
+		slog.String("model", name),
+		slog.Int("count", count),
+		slog.Int64("duration_ms", duration.Milliseconds()),
+	)
+
+	return utils.SuccessResult(count)
 }
 
