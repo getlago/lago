@@ -15,15 +15,15 @@ import (
 )
 
 type Cache struct {
-	ctx context.Context
-	db *badger.DB
+	ctx    context.Context
+	db     *badger.DB
 	logger *slog.Logger
-	wg sync.WaitGroup
+	wg     sync.WaitGroup
 }
 
 type CacheConfig struct {
 	Context context.Context
-	Logger *slog.Logger
+	Logger  *slog.Logger
 }
 
 func NewCache(config CacheConfig) (*Cache, error) {
@@ -37,10 +37,10 @@ func NewCache(config CacheConfig) (*Cache, error) {
 		return nil, fmt.Errorf("failed to open badger db: %w", err)
 	}
 
-	return &Cache {
-		db: db,
+	return &Cache{
+		db:     db,
 		logger: logger,
-		ctx: config.Context,
+		ctx:    config.Context,
 	}, nil
 }
 
@@ -67,6 +67,7 @@ func (c *Cache) LoadInitialSnapshot() {
 
 	c.LoadBillableMetricsSnapshot(db.Connection)
 	c.LoadSubscriptionsSnapshot(db.Connection)
+	c.LoadChargesSnapshot(db.Connection)
 }
 
 func (c *Cache) ConsumeChanges() {
@@ -76,6 +77,10 @@ func (c *Cache) ConsumeChanges() {
 
 	if err := c.StartSubscriptionsConsumer(c.ctx); err != nil {
 		c.logger.Error("failed to start subscriptions consumer", slog.String("error", err.Error()))
+	}
+
+	if err := c.StartChargesConsumer(c.ctx); err != nil {
+		c.logger.Error("failed to start charges consumer", slog.String("error", err.Error()))
 	}
 
 	c.wg.Wait()
@@ -160,4 +165,3 @@ func LoadSnapshot[T any](
 
 	return utils.SuccessResult(count)
 }
-

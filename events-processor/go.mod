@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.8.0
 	github.com/getlago/lago-expression/expression-go v0.1.4
 	github.com/getsentry/sentry-go v0.40.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.17.1
@@ -63,7 +64,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
