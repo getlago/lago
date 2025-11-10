@@ -13,14 +13,14 @@ import (
 )
 
 type ConsumerConfig[T any] struct {
-	Topic string
-	ModelName string
-	IsDeleted func(*T) bool
-	GetKey func(*T) string
-	GetID func(*T) string
+	Topic        string
+	ModelName    string
+	IsDeleted    func(*T) bool
+	GetKey       func(*T) string
+	GetID        func(*T) string
 	GetUpdatedAt func(*T) int64
-	GetCached func(*T) utils.Result[*T]
-	SetCache func(*T) utils.Result[bool]
+	GetCached    func(*T) utils.Result[*T]
+	SetCache     func(*T) utils.Result[bool]
 }
 
 func startGenericConsumer[T any](ctx context.Context, cache *Cache, config ConsumerConfig[T]) error {
@@ -143,6 +143,7 @@ func processRecord[T any](cache *Cache, record *kgo.Record, config ConsumerConfi
 	existingRes := config.GetCached(&model)
 	if existingRes.Success() {
 		existing := existingRes.Value()
+		fmt.Printf("existing: %v\n", existing)
 		if config.GetUpdatedAt(existing) >= config.GetUpdatedAt(&model) {
 			cache.logger.Debug(
 				"Skipping update - cached version newer or equal",

@@ -9,14 +9,14 @@ import (
 )
 
 type Subscription struct {
-	ID           string       `gorm:"primaryKey;->" json:"id"`
-	OrganizationID *string `gorm:"->" json:"organization_id"`
-	ExternalID   string       `gorm:"->" json:"external_id"`
-	PlanID       string       `gorm:"->" json:"plan_id"`
-	CreatedAt    time.Time    `gorm:"->" json:"created_at"`
-	UpdatedAt    time.Time    `gorm:"->" json:"updated_at"`
-	StartedAt    utils.NullTime `gorm:"->" json:"started_at"`
-	TerminatedAt utils.NullTime `gorm:"->" json:"terminated_at"`
+	ID             string         `gorm:"primaryKey;->" json:"id"`
+	OrganizationID *string        `gorm:"->" json:"organization_id"`
+	ExternalID     string         `gorm:"->" json:"external_id"`
+	PlanID         string         `gorm:"->" json:"plan_id"`
+	CreatedAt      utils.NullTime `gorm:"->" json:"created_at"`
+	UpdatedAt      utils.NullTime `gorm:"->" json:"updated_at"`
+	StartedAt      utils.NullTime `gorm:"->" json:"started_at"`
+	TerminatedAt   utils.NullTime `gorm:"->" json:"terminated_at"`
 }
 
 func (store *ApiStore) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
