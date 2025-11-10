@@ -127,15 +127,17 @@ func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string]
 func (cg *ConsumerGroup) poll() {
 	for {
 		// NOTE: Gracefull shutdown handling will be plugged in here
-		cg.pollRecords()
+		if ok := cg.pollRecords(); !ok {
+			return
+		}
 	}
 }
 
-func (cg *ConsumerGroup) pollRecords() {
+func (cg *ConsumerGroup) pollRecords() bool {
 	fetches := cg.client.PollRecords(context.Background(), 10000)
 	if fetches.IsClientClosed() {
 		cg.logger.Info("client closed")
-		return
+		return false
 	}
 
 	fetches.EachError(func(_ string, _ int32, err error) {
@@ -148,6 +150,7 @@ func (cg *ConsumerGroup) pollRecords() {
 	})
 
 	cg.client.AllowRebalance()
+	return true
 }
 
 func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
