@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/utils"
@@ -52,9 +50,9 @@ type BillableMetric struct {
 	AggregationType AggregationType `gorm:"->" json:"aggregation_type"`
 	FieldName       string          `gorm:"->" json:"field_name"`
 	Expression      string          `gorm:"->" json:"expression"`
-	CreatedAt       time.Time       `gorm:"->" json:"created_at"`
-	UpdatedAt       time.Time       `gorm:"->" json:"updated_at"`
-	DeletedAt       gorm.DeletedAt  `gorm:"index;->" json:"deleted_at"`
+	CreatedAt       utils.NullTime  `gorm:"->" json:"created_at"`
+	UpdatedAt       utils.NullTime  `gorm:"->" json:"updated_at"`
+	DeletedAt       utils.NullTime  `gorm:"index;->" json:"deleted_at"`
 }
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
