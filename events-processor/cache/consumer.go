@@ -143,7 +143,6 @@ func processRecord[T any](cache *Cache, record *kgo.Record, config ConsumerConfi
 	existingRes := config.GetCached(&model)
 	if existingRes.Success() {
 		existing := existingRes.Value()
-		fmt.Printf("existing: %v\n", existing)
 		if config.GetUpdatedAt(existing) >= config.GetUpdatedAt(&model) {
 			cache.logger.Debug(
 				"Skipping update - cached version newer or equal",
