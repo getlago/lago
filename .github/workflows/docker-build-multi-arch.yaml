@@ -81,6 +81,10 @@ on:
         description: 'The image digest'
         value: ${{ jobs.merge.outputs.digest }}
 
+      combined-tag:
+        description: 'Combined SHA and build args hash tag (if build args provided)'
+        value: ${{ jobs.build.outputs.combined-tag }}
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -128,6 +132,10 @@ jobs:
 
     runs-on: ${{ matrix.runner }}
 
+    outputs:
+      build-hash: ${{ steps.build-hash.outputs.hash }}
+      combined-tag: ${{ steps.build-hash.outputs.combined }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -174,6 +182,43 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
             ${{ inputs.tags }}
+
+      - name: Generate build args hash
+        id: build-hash
+        if: inputs.build-args != ''
+        run: |
+          # Create a deterministic hash from build args
+          BUILD_ARGS="${{ inputs.build-args }}"
+          # Sort and normalize the build args to ensure consistency
+          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          # Generate short hash (8 chars)
+          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Generated build hash: $HASH"
+          echo "From args: $SORTED_ARGS"
+
+          # Get short commit SHA (7 chars)
+          GIT_SHA="${{ github.sha }}"
+          SHORT_SHA="${GIT_SHA:0:7}"
+
+          # Determine tag based on event type
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR: pr-{number} (no build hash)
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            COMBINED_TAG="pr-${PR_NUMBER}"
+          elif [[ "${{ github.ref_name }}" == "${{ github.event.repository.default_branch }}" ]]; then
+            # Default branch: {sha}.b{hash}
+            COMBINED_TAG="${SHORT_SHA}.b${HASH}"
+          else
+            # Other branches: {branch} (no build hash)
+            BRANCH_NAME="${{ github.ref_name }}"
+            # Sanitize branch name for Docker tag (replace / with -)
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+            COMBINED_TAG="${SAFE_BRANCH}"
+          fi
+
+          echo "combined=$COMBINED_TAG" >> $GITHUB_OUTPUT
+          echo "Combined tag: $COMBINED_TAG"
 
       - name: Build and push by digest
         id: build
@@ -261,14 +306,36 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
             ${{ inputs.tags }}
+
+      - name: Generate build args hash
+        id: build-hash
+        if: inputs.build-args != ''
+        run: |
+          # Create a deterministic hash from build args
+          BUILD_ARGS="${{ inputs.build-args }}"
+          # Sort and normalize the build args to ensure consistency
+          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          # Generate short hash (8 chars)
+          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Generated build hash: $HASH"
+          echo "From args: $SORTED_ARGS"
 
       - name: Create manifest list and push
         if: inputs.push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          # Build tag list from metadata
+          TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+
+          # Add combined SHA + build hash tag if build args were provided
+          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
+            TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+            echo "Adding combined tag: ${{ needs.build.outputs.combined-tag }}"
+          fi
+
+          docker buildx imagetools create $TAG_ARGS \
             $(printf '${{ inputs.image-name }}@sha256:%s ' *)
 
       - name: Inspect image
