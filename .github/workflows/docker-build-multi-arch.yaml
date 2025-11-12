@@ -103,7 +103,7 @@ jobs:
                 runner="ubuntu-latest"
                 ;;
               arm64)
-                runner="ubuntu-24.04-arm"
+                runner="linux-arm64"
                 ;;
               *)
                 echo "Unsupported platform: $platform"
