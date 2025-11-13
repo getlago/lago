@@ -1,0 +1,347 @@
+# .github/workflows/docker-build-multiarch.yml
+name: Reusable Multi-Arch Docker Build
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: 'Docker image name (e.g., username/image or ghcr.io/org/image)'
+        required: true
+        type: string
+
+      context:
+        description: 'Build context path'
+        required: false
+        type: string
+        default: '.'
+
+      dockerfile:
+        description: 'Path to Dockerfile'
+        required: false
+        type: string
+        default: './Dockerfile'
+
+      platforms:
+        description: 'Comma-separated list of platforms (amd64,arm64)'
+        required: false
+        type: string
+        default: 'amd64,arm64'
+
+      registry:
+        description: 'Container registry (dockerhub, ghcr, or ecr)'
+        required: false
+        type: string
+        default: 'dockerhub'
+
+      push:
+        description: 'Push images to registry'
+        required: false
+        type: boolean
+        default: true
+
+      build-args:
+        description: 'Build arguments (multiline string)'
+        required: false
+        type: string
+        default: ''
+
+      tags:
+        description: 'Additional custom tags (newline separated)'
+        required: false
+        type: string
+        default: ''
+
+      cache-type:
+        description: 'Cache type (gha or registry)'
+        required: false
+        type: string
+        default: 'registry'
+
+      aws-region:
+        description: 'AWS region for ECR (required if registry is ecr)'
+        required: false
+        type: string
+        default: 'us-east-1'
+
+    secrets:
+      registry-user:
+        description: 'Registry username or AWS Access Key ID'
+        required: false
+
+      registry-token:
+        description: 'Registry password/token or AWS Secret Access Key'
+        required: false
+
+    outputs:
+      image-tag:
+        description: 'The primary image tag that was built'
+        value: ${{ jobs.merge.outputs.image-tag }}
+
+      digest:
+        description: 'The image digest'
+        value: ${{ jobs.merge.outputs.digest }}
+
+      combined-tag:
+        description: 'Combined SHA and build args hash tag (if build args provided)'
+        value: ${{ jobs.build.outputs.combined-tag }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+      - name: Create build matrix
+        id: set-matrix
+        run: |
+          platforms="${{ inputs.platforms }}"
+          IFS=',' read -ra PLATFORMS <<< "$platforms"
+
+          matrix_json="["
+          for platform in "${PLATFORMS[@]}"; do
+            platform=$(echo "$platform" | xargs)  # trim whitespace
+
+            case "$platform" in
+              amd64)
+                runner="ubuntu-latest"
+                ;;
+              arm64)
+                runner="linux-arm64"
+                ;;
+              *)
+                echo "Unsupported platform: $platform"
+                exit 1
+                ;;
+            esac
+
+            matrix_json+="{\"arch\":\"$platform\",\"runner\":\"$runner\"},"
+          done
+
+          # Remove trailing comma and close array
+          matrix_json="${matrix_json%,}]"
+
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix_json"
+
+  build:
+    needs: prepare
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    runs-on: ${{ matrix.runner }}
+
+    outputs:
+      build-hash: ${{ steps.build-hash.outputs.hash }}
+      combined-tag: ${{ steps.build-hash.outputs.combined }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.registry-user }}
+          aws-secret-access-key: ${{ secrets.registry-token }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Login to Amazon ECR
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to Docker Hub
+        if: inputs.registry == 'dockerhub' && inputs.push
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.registry-user }}
+          password: ${{ secrets.registry-token }}
+
+      - name: Login to GitHub Container Registry
+        if: inputs.registry == 'ghcr' && inputs.push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.registry-user || github.actor }}
+          password: ${{ secrets.registry-token || secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.image-name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            ${{ inputs.tags }}
+
+      - name: Generate build args hash
+        id: build-hash
+        if: inputs.build-args != ''
+        run: |
+          # Create a deterministic hash from build args
+          BUILD_ARGS="${{ inputs.build-args }}"
+          # Sort and normalize the build args to ensure consistency
+          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          # Generate short hash (8 chars)
+          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Generated build hash: $HASH"
+          echo "From args: $SORTED_ARGS"
+
+          # Get short commit SHA (7 chars)
+          GIT_SHA="${{ github.sha }}"
+          SHORT_SHA="${GIT_SHA:0:7}"
+
+          # Determine tag based on event type
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR: pr-{number} (no build hash)
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            COMBINED_TAG="pr-${PR_NUMBER}"
+          elif [[ "${{ github.ref_name }}" == "${{ github.event.repository.default_branch }}" ]]; then
+            # Default branch: {sha}.b-{hash}
+            COMBINED_TAG="${SHORT_SHA}.b-${HASH}"
+          else
+            # Other branches: {branch} (no build hash)
+            BRANCH_NAME="${{ github.ref_name }}"
+            # Sanitize branch name for Docker tag (replace / with -)
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+            COMBINED_TAG="${SAFE_BRANCH}"
+          fi
+
+          echo "combined=$COMBINED_TAG" >> $GITHUB_OUTPUT
+          echo "Combined tag: $COMBINED_TAG"
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
+          build-args: ${{ inputs.build-args }}
+          outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=${{ inputs.push }}
+          # Registry cache - persistent and shared across runners
+          cache-from: |
+            type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}-${{ github.ref_name }}
+            type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}-${{ github.ref_name }},mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: [build]
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      digest: ${{ steps.inspect.outputs.digest }}
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.registry-user }}
+          aws-secret-access-key: ${{ secrets.registry-token }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Login to Amazon ECR
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to Docker Hub
+        if: inputs.registry == 'dockerhub' && inputs.push
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.registry-user }}
+          password: ${{ secrets.registry-token }}
+
+      - name: Login to GitHub Container Registry
+        if: inputs.registry == 'ghcr' && inputs.push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.registry-user || github.actor }}
+          password: ${{ secrets.registry-token || secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.image-name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            ${{ inputs.tags }}
+
+      - name: Generate build args hash
+        id: build-hash
+        if: inputs.build-args != ''
+        run: |
+          # Create a deterministic hash from build args
+          BUILD_ARGS="${{ inputs.build-args }}"
+          # Sort and normalize the build args to ensure consistency
+          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          # Generate short hash (8 chars)
+          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          echo "Generated build hash: $HASH"
+          echo "From args: $SORTED_ARGS"
+
+      - name: Create manifest list and push
+        if: inputs.push
+        working-directory: /tmp/digests
+        run: |
+          # Build tag list from metadata
+          TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+
+          # Add combined SHA + build hash tag if build args were provided
+          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
+            TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+            echo "Adding combined tag: ${{ needs.build.outputs.combined-tag }}"
+          fi
+
+          docker buildx imagetools create $TAG_ARGS \
+            $(printf '${{ inputs.image-name }}@sha256:%s ' *)
+
+      - name: Inspect image
+        if: inputs.push
+        id: inspect
+        run: |
+          digest=$(docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }} --format '{{json .Manifest.Digest}}' | tr -d '"')
+          echo "digest=$digest" >> $GITHUB_OUTPUT
+          docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }}
