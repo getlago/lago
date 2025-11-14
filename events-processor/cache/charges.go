@@ -12,18 +12,23 @@ const (
 	chargePrefix = "ch"
 )
 
-func (c *Cache) buildChargeKey(organizationID, planID, billableMetricID string) string {
-	return fmt.Sprintf("%s:%s:%s:%s", chargePrefix, organizationID, planID, billableMetricID)
+func (c *Cache) buildChargeKey(organizationID, planID, billableMetricID, id string) string {
+	return fmt.Sprintf("%s:%s:%s:%s:%s", chargePrefix, organizationID, planID, billableMetricID, id)
 }
 
 func (c *Cache) SetCharge(ch *models.Charge) utils.Result[bool] {
-	key := c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID)
+	key := c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
 	return setJSON(c, key, ch)
 }
 
-func (c *Cache) GetCharge(organizationID, planID, billableMetricID string) utils.Result[*models.Charge] {
-	key := c.buildChargeKey(organizationID, planID, billableMetricID)
+func (c *Cache) GetCharge(organizationID, planID, billableMetricID, id string) utils.Result[*models.Charge] {
+	key := c.buildChargeKey(organizationID, planID, billableMetricID, id)
 	return getJSON[models.Charge](c, key)
+}
+
+func (c *Cache) DeleteCharge(ch *models.Charge) utils.Result[bool] {
+	key := c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
+	return delete(c, key)
 }
 
 func (c *Cache) LoadChargesSnapshot(db *gorm.DB) utils.Result[int] {
@@ -38,7 +43,7 @@ func (c *Cache) LoadChargesSnapshot(db *gorm.DB) utils.Result[int] {
 			return res.Value(), nil
 		},
 		func(ch *models.Charge) string {
-			return c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID)
+			return c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
 		},
 	)
 }

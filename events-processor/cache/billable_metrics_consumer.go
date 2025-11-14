@@ -29,5 +29,8 @@ func (c *Cache) StartBillableMetricsConsumer(ctx context.Context) error {
 		SetCache: func(bm *models.BillableMetric) utils.Result[bool] {
 			return c.SetBillableMetric(bm)
 		},
+		Delete: func(bm *models.BillableMetric) utils.Result[bool] {
+			return c.DeleteBillableMetric(bm)
+		},
 	})
 }

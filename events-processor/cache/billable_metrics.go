@@ -26,6 +26,11 @@ func (c *Cache) GetBillableMetric(organizationID, code string) utils.Result[*mod
 	return getJSON[models.BillableMetric](c, key)
 }
 
+func (c *Cache) DeleteBillableMetric(bm *models.BillableMetric) utils.Result[bool] {
+	key := c.buildBillableMetricKey(bm.OrganizationID, bm.Code)
+	return delete(c, key)
+}
+
 func (c *Cache) LoadBillableMetricsSnapshot(db *gorm.DB) utils.Result[int] {
 	return LoadSnapshot(
 		c,

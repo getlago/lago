@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/getlago/lago/events-processor/utils"
 	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -21,6 +20,7 @@ type ConsumerConfig[T any] struct {
 	GetUpdatedAt func(*T) int64
 	GetCached    func(*T) utils.Result[*T]
 	SetCache     func(*T) utils.Result[bool]
+	Delete       func(*T) utils.Result[bool]
 }
 
 func startGenericConsumer[T any](ctx context.Context, cache *Cache, config ConsumerConfig[T]) error {
@@ -119,22 +119,21 @@ func processRecord[T any](cache *Cache, record *kgo.Record, config ConsumerConfi
 			return
 		}
 
-		if err := cache.db.Update(func(txn *badger.Txn) error {
-			return txn.Delete([]byte(key))
-		}); err != nil {
-			cache.logger.Error(
-				"Failed to delete from cache",
-				slog.String("model", config.ModelName),
-				slog.String("key", key),
-				slog.String("error", err.Error()),
-			)
-			utils.CaptureError(err)
-		} else {
+		deleteRes := config.Delete(&model)
+		if deleteRes.Success() {
 			cache.logger.Debug(
 				"Cache entry deleted",
 				slog.String("model", config.ModelName),
 				slog.String("key", key),
 			)
+		} else {
+			cache.logger.Error(
+				"Failed to delete from cache",
+				slog.String("model", config.ModelName),
+				slog.String("key", key),
+				slog.String("error", deleteRes.ErrorMsg()),
+			)
+			utils.CaptureErrorResult(deleteRes)
 		}
 
 		return

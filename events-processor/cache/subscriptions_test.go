@@ -15,13 +15,15 @@ func TestBuildSubscriptionKey(t *testing.T) {
 	testModel := struct {
 		externalID     string
 		organizationID string
+		id             string
 	}{
+		id:             "123",
 		externalID:     "sub1",
 		organizationID: "org-123",
 	}
 
 	expectedKey := "sub:org-123:sub1"
-	key := cache.buildSubscriptionKey(testModel.externalID, testModel.organizationID)
+	key := cache.buildSubscriptionKey(testModel.organizationID, testModel.externalID, testModel.id)
 	assert.Equal(t, expectedKey, key)
 }
 
@@ -57,7 +59,7 @@ func TestGetSubscription_Success(t *testing.T) {
 
 	cache.SetSubscription(sub)
 
-	result := cache.GetSubscription("sub1", "org-123")
+	result := cache.GetSubscription("org-123", "sub1", "123")
 
 	require.True(t, result.Success())
 	retrieved := result.Value()
@@ -69,7 +71,7 @@ func TestGetSubscription_Success(t *testing.T) {
 func TestGetSubscription_NotFound(t *testing.T) {
 	cache := setupTestCache(t)
 
-	result := cache.GetSubscription("sub1", "notorg")
+	result := cache.GetSubscription("notorg", "sub1", "123")
 
 	assert.True(t, result.Failure())
 }
