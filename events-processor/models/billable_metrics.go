@@ -67,7 +67,16 @@ func (store *ApiStore) FetchBillableMetric(organizationID string, code string) u
 
 func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
 	var billableMetrics []BillableMetric
-	result := db.Find(&billableMetrics, "deleted_at IS NULL")
+	result := db.Select(
+		"id",
+		"organization_id",
+		"code",
+		"aggregation_type",
+		"field_name",
+		"expression",
+		"created_at",
+		"updated_at",
+	).Find(&billableMetrics, "deleted_at IS NULL")
 	if result.Error != nil {
 		return utils.FailedResult[[]BillableMetric](result.Error)
 	}

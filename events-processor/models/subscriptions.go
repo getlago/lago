@@ -46,9 +46,21 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	return utils.SuccessResult(&sub)
 }
 
+// We want to get terminated subscriptions to permit grace period events backfill
+// So we select all non terminated subscriptions and subs terminated less that one month ago
 func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
 	var subscriptions []Subscription
-	result := db.Find(&subscriptions, "terminated_at IS NULL")
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+	result := db.Select(
+		"id",
+		"organization_id",
+		"external_id",
+		"plan_id",
+		"created_at",
+		"updated_at",
+		"started_at",
+		"terminated_at",
+	).Find(&subscriptions, "terminated_at IS NULL OR terminated_at > ?", oneMonthAgo)
 	if result.Error != nil {
 		return utils.FailedResult[[]Subscription](result.Error)
 	}

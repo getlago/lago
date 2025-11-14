@@ -102,6 +102,34 @@ func setJSON[T any](cache *Cache, key string, value *T) utils.Result[bool] {
 	return utils.SuccessResult(true)
 }
 
+func delete(cache *Cache, key string) utils.Result[bool] {
+	err := cache.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete([]byte(key))
+	})
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	return utils.SuccessResult(true)
+}
+
+func deleteWithTTL[T any](cache *Cache, key string, value *T, ttl time.Duration) utils.Result[bool] {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	err = cache.db.Update(func(txn *badger.Txn) error {
+		entry := badger.NewEntry([]byte(key), data).WithTTL(ttl)
+		return txn.SetEntry(entry)
+	})
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
+
+	return utils.SuccessResult(true)
+}
+
 func getJSON[T any](cache *Cache, key string) utils.Result[*T] {
 	var out T
 	err := cache.db.View(func(txn *badger.Txn) error {

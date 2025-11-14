@@ -15,7 +15,7 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 			return sub.TerminatedAt.Valid
 		},
 		GetKey: func(sub *models.Subscription) string {
-			return c.buildSubscriptionKey(sub.ExternalID, *sub.OrganizationID)
+			return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
 		},
 		GetID: func(sub *models.Subscription) string {
 			return sub.ID
@@ -24,7 +24,7 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 			return sub.UpdatedAt.Time.UnixMilli()
 		},
 		GetCached: func(sub *models.Subscription) utils.Result[*models.Subscription] {
-			return c.GetSubscription(sub.ExternalID, *sub.OrganizationID)
+			return c.GetSubscription(*sub.OrganizationID, sub.ExternalID, sub.ID)
 		},
 		SetCache: func(sub *models.Subscription) utils.Result[bool] {
 			return c.SetSubscription(sub)

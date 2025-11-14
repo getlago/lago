@@ -18,7 +18,16 @@ type Charge struct {
 
 func GetAllCharges(db *gorm.DB) utils.Result[[]Charge] {
 	var charges []Charge
-	result := db.Find(&charges, "deleted_at IS NULL")
+	result := db.Select(
+		"id",
+		"organization_id",
+		"plan_id",
+		"billable_metric_id",
+		"pay_in_advance",
+		"created_at",
+		"updated_at",
+		"deleted_at",
+	).Find(&charges, "deleted_at IS NULL")
 	if result.Error != nil {
 		return utils.FailedResult[[]Charge](result.Error)
 	}
