@@ -29,5 +29,8 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 		SetCache: func(sub *models.Subscription) utils.Result[bool] {
 			return c.SetSubscription(sub)
 		},
+		Delete: func(sub *models.Subscription) utils.Result[bool] {
+			return c.DeleteSubscription(sub)
+		},
 	})
 }
