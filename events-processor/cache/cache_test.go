@@ -307,3 +307,78 @@ func TestCache_ConcurrentAccess(t *testing.T) {
 		<-done
 	}
 }
+
+func TestDelete_Success(t *testing.T) {
+	cache := setupTestCache(t)
+
+	type testData struct {
+		Name string
+	}
+
+	data := &testData{Name: "test"}
+	setJSON(cache, "test:key", data)
+
+	getResult := getJSON[testData](cache, "test:key")
+	require.True(t, getResult.Success())
+
+	deleteResult := delete(cache, "test:key")
+	assert.True(t, deleteResult.Success())
+	assert.True(t, deleteResult.Value())
+
+	getAfterDelete := getJSON[testData](cache, "test:key")
+	assert.True(t, getAfterDelete.Failure())
+	assert.ErrorIs(t, getAfterDelete.Error(), badger.ErrKeyNotFound)
+}
+
+func TestDelete_KeyNotFound(t *testing.T) {
+	cache := setupTestCache(t)
+
+	result := delete(cache, "nonexistent:key")
+
+	assert.True(t, result.Success())
+	assert.True(t, result.Value())
+}
+
+func TestDeleteWithTTL_Success(t *testing.T) {
+	cache := setupTestCache(t)
+
+	type testData struct {
+		Name string
+	}
+
+	data := &testData{Name: "test"}
+	setJSON(cache, "test:key", data)
+
+	getResult := getJSON[testData](cache, "test:key")
+	require.True(t, getResult.Success())
+
+	ttl := time.Second
+	deleteResult := deleteWithTTL(cache, "test:key", data, ttl)
+	assert.True(t, deleteResult.Success())
+	assert.True(t, deleteResult.Value())
+
+	getImmediately := getJSON[testData](cache, "test:key")
+	assert.True(t, getImmediately.Success())
+	assert.Equal(t, "test", getImmediately.Value().Name)
+
+	time.Sleep(1500 * time.Millisecond)
+
+	getAfterTTL := getJSON[testData](cache, "test:key")
+	assert.True(t, getAfterTTL.Failure())
+	assert.ErrorIs(t, getAfterTTL.Error(), badger.ErrKeyNotFound)
+}
+
+func TestDeleteWithTTL_KeyNotFound(t *testing.T) {
+	cache := setupTestCache(t)
+
+	type testData struct {
+		Name string
+	}
+	data := &testData{Name: "test"}
+
+	ttl := time.Second
+	result := deleteWithTTL(cache, "nonexistent:key", data, ttl)
+
+	assert.True(t, result.Success())
+	assert.True(t, result.Value())
+}

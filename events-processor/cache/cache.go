@@ -14,6 +14,8 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
+// Cache wraps BadgerDB to provide an in§memory key§value store with JSON serialization
+// It manages the lifecycle of cached data and coordinates snapshot loading and CDC consumption.
 type Cache struct {
 	ctx    context.Context
 	db     *badger.DB
@@ -21,11 +23,14 @@ type Cache struct {
 	wg     sync.WaitGroup
 }
 
+// CacheConfig holds the configuration needed to initialize a new Cache instance.
 type CacheConfig struct {
 	Context context.Context
 	Logger  *slog.Logger
 }
 
+// NewCache creates and initializes a new in-memory cache instance.
+// It configures the database with default options
 func NewCache(config CacheConfig) (*Cache, error) {
 	opts := badger.DefaultOptions("").WithInMemory(true)
 	opts.Logger = nil
@@ -113,6 +118,8 @@ func delete(cache *Cache, key string) utils.Result[bool] {
 	return utils.SuccessResult(true)
 }
 
+// deleteWithTTL schedules a delayed deletion by setting the key with a TTL
+// The key will remain accessible with its current value until the TTL expires.
 func deleteWithTTL[T any](cache *Cache, key string, value *T, ttl time.Duration) utils.Result[bool] {
 	data, err := json.Marshal(value)
 	if err != nil {
