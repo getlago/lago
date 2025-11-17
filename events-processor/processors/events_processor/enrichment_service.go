@@ -94,7 +94,7 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 		ev.Properties[bm.FieldName] = *result
 	} else {
 		return utils.
-			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
+			FailedBoolResult(fmt.Errorf("failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
 			NonRetryable()
 	}
 
