@@ -9,7 +9,7 @@ import (
 
 func (c *Cache) StartChargesConsumer(ctx context.Context) error {
 	return startGenericConsumer(ctx, c, ConsumerConfig[models.Charge]{
-		Topic:     "lago_prodc_cdc.public.charges",
+		Topic:     "lago_proc_cdc.public.charges",
 		ModelName: "charge",
 		IsDeleted: func(ch *models.Charge) bool {
 			return ch.DeletedAt.Valid

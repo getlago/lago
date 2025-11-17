@@ -5,34 +5,32 @@ import (
 	"gorm.io/gorm"
 )
 
-type Charge struct {
+type BillableMetricFilter struct {
 	ID               string            `gorm:"primaryKey;->" json:"id"`
 	OrganizationID   string            `gorm:"->" json:"organization_id"`
-	PlanID           string            `gorm:"->" json:"plan_id"`
 	BillableMetricID string            `gorm:"->" json:"billable_metric_id"`
-	PayInAdvance     bool              `gorm:"->" json:"pay_in_advance"`
-	PricingGroupKeys utils.StringArray `gorm:"->" json:"properties.pricing_group_keys"`
+	Key              string            `gorm:"->" json:"key"`
+	Values           utils.StringArray `gorm:"type:jsonb;->" json:"values"`
 	CreatedAt        utils.NullTime    `gorm:"->" json:"created_at"`
 	UpdatedAt        utils.NullTime    `gorm:"->" json:"updated_at"`
 	DeletedAt        utils.NullTime    `gorm:"->" json:"deleted_at"`
 }
 
-func GetAllCharges(db *gorm.DB) utils.Result[[]Charge] {
-	var charges []Charge
+func GetAllBillableMetricFilters(db *gorm.DB) utils.Result[[]BillableMetricFilter] {
+	var billableMetricFilters []BillableMetricFilter
 	result := db.Select(
 		"id",
 		"organization_id",
-		"plan_id",
 		"billable_metric_id",
-		"pay_in_advance",
-		"properties->>'pricing_group_keys' as pricing_group_keys",
+		"key",
+		"values",
 		"created_at",
 		"updated_at",
 		"deleted_at",
-	).Find(&charges, "deleted_at IS NULL")
+	).Find(&billableMetricFilters, "deleted_at IS NULL")
 	if result.Error != nil {
-		return utils.FailedResult[[]Charge](result.Error)
+		return utils.FailedResult[[]BillableMetricFilter](result.Error)
 	}
 
-	return utils.SuccessResult(charges)
+	return utils.SuccessResult(billableMetricFilters)
 }
