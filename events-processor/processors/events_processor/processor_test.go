@@ -178,8 +178,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -231,8 +231,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeWeightedSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -262,8 +262,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeWeightedSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -292,8 +292,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeWeightedSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -330,8 +330,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeWeightedSum,
 			FieldName:       "api_requests",
 			Expression:      "round(event.properties.value)",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -369,8 +369,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeWeightedSum,
 			FieldName:       "api_requests",
 			Expression:      "round(event.properties.value)",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -428,8 +428,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
@@ -500,8 +500,8 @@ func TestProcessEvent(t *testing.T) {
 			AggregationType: models.AggregationTypeSum,
 			FieldName:       "api_requests",
 			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
 		}
 		mockBmLookup(mockedStore, &bm)
 
