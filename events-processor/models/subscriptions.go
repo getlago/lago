@@ -60,7 +60,7 @@ func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
 		"updated_at",
 		"started_at",
 		"terminated_at",
-	).Find(&subscriptions, "terminated_at IS NULL OR terminated_at > ?", oneMonthAgo)
+	).Find(&subscriptions, "terminated_at IS NULL OR terminated_at >= ?", oneMonthAgo)
 	if result.Error != nil {
 		return utils.FailedResult[[]Subscription](result.Error)
 	}

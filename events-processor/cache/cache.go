@@ -73,6 +73,7 @@ func (c *Cache) LoadInitialSnapshot() {
 	c.LoadBillableMetricsSnapshot(db.Connection)
 	c.LoadSubscriptionsSnapshot(db.Connection)
 	c.LoadChargesSnapshot(db.Connection)
+	c.LoadBillableMetricFiltersSnapshot(db.Connection)
 }
 
 func (c *Cache) ConsumeChanges() {
@@ -86,6 +87,10 @@ func (c *Cache) ConsumeChanges() {
 
 	if err := c.StartChargesConsumer(c.ctx); err != nil {
 		c.logger.Error("failed to start charges consumer", slog.String("error", err.Error()))
+	}
+
+	if err := c.StartBillableMetricFiltersConsumer(c.ctx); err != nil {
+		c.logger.Error("failed to start billable metric filters consumer", slog.String("error", err.Error()))
 	}
 
 	c.wg.Wait()
