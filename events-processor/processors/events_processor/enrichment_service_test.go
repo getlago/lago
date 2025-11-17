@@ -44,53 +44,6 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
 	})
 
-	t.Run("When event source is post processed on API and the result is successful", func(t *testing.T) {
-		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
-		defer delete()
-
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 models.HTTP_RUBY,
-			Properties:             properties,
-			SourceMetadata: &models.SourceMetadata{
-				ApiPostProcess: true,
-			},
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
-		}
-		mockBmLookup(mockedStore, &bm)
-
-		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(mockedStore, &sub)
-
-		result := processor.EnrichEvent(&event)
-
-		assert.True(t, result.Success())
-		assert.Equal(t, 1, len(result.Value()))
-
-		eventResult := result.Value()[0]
-		assert.Equal(t, "12.0", *eventResult.Value)
-		assert.Equal(t, "sum", eventResult.AggregationType)
-		assert.Equal(t, "sub123", eventResult.SubscriptionID)
-		assert.Equal(t, "plan123", eventResult.PlanID)
-	})
-
 	t.Run("When timestamp is invalid", func(t *testing.T) {
 		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
@@ -153,7 +106,7 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
 	})
 
-	t.Run("When event source is not post process on API", func(t *testing.T) {
+	t.Run("With a flat filter", func(t *testing.T) {
 		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
@@ -194,7 +147,7 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Equal(t, "12", *eventResult.Value)
 	})
 
-	t.Run("When event source is not post process on API with multiple flat filters", func(t *testing.T) {
+	t.Run("With multiple flat filters", func(t *testing.T) {
 		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
@@ -272,7 +225,7 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Equal(t, map[string]string{}, eventResult2.GroupedBy)
 	})
 
-	t.Run("When event source is not post process on API with a flat filter with pricing group keys", func(t *testing.T) {
+	t.Run("With a flat filter with pricing group keys", func(t *testing.T) {
 		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
 
