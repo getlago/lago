@@ -23,7 +23,7 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	var sub Subscription
 
 	var conditions = `
-		customers.organization_id = ?
+		subscriptions.organization_id = ?
 		AND subscriptions.external_id = ?
 		AND date_trunc('millisecond', subscriptions.started_at::timestamp) <= ?::timestamp
 		AND (subscriptions.terminated_at IS NULL OR date_trunc('millisecond', subscriptions.terminated_at::timestamp) >= ?)
@@ -31,7 +31,6 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	result := store.db.Connection.
 		Table("subscriptions").
 		Unscoped().
-		Joins("INNER JOIN customers ON customers.id = subscriptions.customer_id").
 		Where(conditions, organizationID, externalID, timestamp, timestamp).
 		Order("terminated_at DESC NULLS FIRST, started_at DESC").
 		Limit(1).
