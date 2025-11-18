@@ -12,11 +12,9 @@ import (
 )
 
 var fetchSubscriptionQuery = regexp.QuoteMeta(`
-	SELECT
-	"subscriptions"."id","subscriptions"."external_id","subscriptions"."plan_id","subscriptions"."created_at","subscriptions"."updated_at","subscriptions"."started_at","subscriptions"."terminated_at"
+	SELECT *
 	FROM "subscriptions"
-		INNER JOIN customers ON customers.id = subscriptions.customer_id
-	WHERE customers.organization_id = $1
+	WHERE subscriptions.organization_id = $1
 		AND subscriptions.external_id = $2
 		AND date_trunc('millisecond', subscriptions.started_at::timestamp) <= $3::timestamp
 		AND (subscriptions.terminated_at IS NULL OR date_trunc('millisecond', subscriptions.terminated_at::timestamp) >= $4)
