@@ -10,20 +10,25 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
-	tracerConfig "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 const (
-	envEnv                      = "ENV"
-	envSentryDsn                = "SENTRY_DSN"
+	envEnv       = "ENV"
+	envSentryDsn = "SENTRY_DSN"
+
+	envTracingProvider = "TRACING_PROVIDER"
+
+	// OpenTelemetry environment variables
 	envOtelExporterOtlpEndpoint = "OTEL_EXPORTER_OTLP_ENDPOINT"
 	envOtelInsecure             = "OTEL_INSECURE"
 	envOtelServiceName          = "OTEL_SERVICE_NAME"
 
-	// Datadog environment variable
+	// Datadog environment variables
+	envDatadogEnabled   = "DD_TRACE_ENABLED"
 	envDatadogAgentHost = "DD_AGENT_HOST"
 	envDatadogAgentPort = "DD_TRACE_AGENT_PORT"
 	envDatadogService   = "DD_SERVICE_NAME"
@@ -39,20 +44,17 @@ func main() {
 
 	setupGracefulShutdown(cancel, logger)
 
-	if os.Getenv(envDatadogAgentHost) != "" {
-		initDatadog(logger)
-		defer tracer.Stop()
-	}
+	tracingProvider := findTracingProvider()
+	tracerProviderOpts := initTracerProviderOpts(tracingProvider)
 
-	otelEndpoint := os.Getenv(envOtelExporterOtlpEndpoint)
-	if otelEndpoint != "" {
-		telemetryCfg := tracerConfig.TracerConfig{
-			ServiceName: os.Getenv(envOtelServiceName),
-			EndpointURL: otelEndpoint,
-			Insecure:    os.Getenv(envOtelInsecure),
-		}
-		tracerConfig.InitOTLPTracer(telemetryCfg)
-	}
+	tracerProvider := tracing.InitTracerProvider(
+		tracingProvider,
+		logger,
+		tracerProviderOpts,
+	)
+	defer tracerProvider.Stop()
+
+	tracing.InitTracer(tracingProvider, tracerProviderOpts.ServiceName)
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv(envSentryDsn),
@@ -68,7 +70,10 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	// start processing events & loop forever
-	processors.StartProcessingEvents(ctx, &processors.Config{Logger: logger, UseTelemetry: otelEndpoint != ""})
+	processors.StartProcessingEvents(ctx, &processors.Config{
+		Logger:       logger,
+		UseTelemetry: tracingProvider == tracing.OTelProvider, // TODO: Check for datadog
+	})
 }
 
 func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
@@ -82,32 +87,58 @@ func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
 	}()
 }
 
-func initDatadog(logger *slog.Logger) {
-	serviceName := os.Getenv(envDatadogService)
-	if serviceName == "" {
-		serviceName = "lago-events-processor"
-	}
+func findTracingProvider() tracing.TracingProvider {
+	provider := os.Getenv(envTracingProvider)
 
+	switch provider {
+	case "datadog":
+		return tracing.DatadogProvider
+	case "opentelemetry":
+		return tracing.OTelProvider
+	default:
+		if utils.GetEnvAsBool(envDatadogEnabled, false) {
+			return tracing.DatadogProvider
+		}
+		if os.Getenv(envOtelExporterOtlpEndpoint) != "" {
+			return tracing.OTelProvider
+		}
+		return tracing.EmptyProvider
+	}
+}
+
+func initTracerProviderOpts(tracingProvider tracing.TracingProvider) tracing.TracerProviderOptions {
 	env := os.Getenv(envEnv)
 	if env == "" {
 		env = "development"
 	}
 
-	options := []tracer.StartOption{
-		tracer.WithServiceName(serviceName),
-		tracer.WithEnv(env),
+	opts := tracing.TracerProviderOptions{
+		Env:         env,
+		ServiceName: "lago-events-processor",
 	}
-	// TODO Fetch version
+	// TODO: fetch version
 
-	agentHost := os.Getenv(envDatadogAgentHost)
-	agentPort := os.Getenv(envDatadogAgentPort)
-	if agentPort == "" {
-		agentPort = "8126"
+	switch tracingProvider {
+	case tracing.OTelProvider:
+		serviceName := os.Getenv(envOtelServiceName)
+		if serviceName != "" {
+			opts.ServiceName = serviceName
+		}
+		opts.EndPoint = os.Getenv(envOtelExporterOtlpEndpoint)
+
+		insecure := utils.GetEnvAsBool(envOtelInsecure, false)
+		opts.SecureMode = !insecure
+
+	case tracing.DatadogProvider:
+		serviceName := os.Getenv(envDatadogService)
+		if serviceName != "" {
+			opts.ServiceName = serviceName
+		}
+
+		host := os.Getenv(envDatadogAgentHost)
+		port := utils.GetEnvOrDefault(envDatadogAgentPort, "8126")
+		opts.EndPoint = fmt.Sprintf("%s:%s", host, port)
 	}
-	options = append(options, tracer.WithAgentAddr(fmt.Sprintf("%s:%s", agentHost, agentPort)))
 
-	tracer.Start(options...)
-	logger.Info("Datadog tracer started",
-		slog.String("service", serviceName),
-	)
+	return opts
 }
