@@ -66,22 +66,24 @@ func (store *ApiStore) FetchBillableMetric(organizationID string, code string) u
 }
 
 func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
-	var billableMetrics []BillableMetric
-	result := db.Select(
-		"id",
-		"organization_id",
-		"code",
-		"aggregation_type",
-		"field_name",
-		"expression",
-		"created_at",
-		"updated_at",
-	).Find(&billableMetrics, "deleted_at IS NULL")
-	if result.Error != nil {
-		return utils.FailedResult[[]BillableMetric](result.Error)
+	config := StreamQueryConfig{
+		TableName: "billable_metrics",
+		SelectFields: []string{
+			"id",
+			"organization_id",
+			"code",
+			"aggregation_type",
+			"field_name",
+			"expression",
+			"created_at",
+			"updated_at",
+		},
+		WhereCondition: "deleted_at IS NULL",
+		WhereArgs:      []interface{}{},
+		LogInterval:    50000,
 	}
 
-	return utils.SuccessResult(billableMetrics)
+	return GetAllWithStreaming[BillableMetric](db, config)
 }
 
 func failedBillableMetricResult(err error) utils.Result[*BillableMetric] {

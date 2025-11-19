@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	logger *slog.Logger
+	logger   *slog.Logger
 	memCache *cache.Cache
 )
 
@@ -56,7 +56,7 @@ func main() {
 	// Build In Memory Cache
 	memCache, err := cache.NewCache(cache.CacheConfig{
 		Context: ctx,
-		Logger: logger,
+		Logger:  logger,
 	})
 	if err != nil {
 		logger.Error("Error creating the cache", slog.String("error", err.Error()))
@@ -65,7 +65,7 @@ func main() {
 	}
 
 	memCache.LoadInitialSnapshot()
-	memCache.ConsumeChanges()
+	//memCache.ConsumeChanges()
 
 	// start processing events & loop forever
 	//processors.StartProcessingEvents()
