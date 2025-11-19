@@ -63,6 +63,12 @@ on:
         type: string
         default: 'us-east-1'
 
+      ref:
+        description: 'Git ref to checkout (branch, tag, or SHA). Defaults to the ref that triggered the workflow'
+        required: false
+        type: string
+        default: ''
+
     secrets:
       registry-user:
         description: 'Registry username or AWS Access Key ID'
@@ -139,6 +145,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
