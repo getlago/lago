@@ -18,21 +18,23 @@ type Charge struct {
 }
 
 func GetAllCharges(db *gorm.DB) utils.Result[[]Charge] {
-	var charges []Charge
-	result := db.Select(
-		"id",
-		"organization_id",
-		"plan_id",
-		"billable_metric_id",
-		"pay_in_advance",
-		"properties->>'pricing_group_keys' as pricing_group_keys",
-		"created_at",
-		"updated_at",
-		"deleted_at",
-	).Find(&charges, "deleted_at IS NULL")
-	if result.Error != nil {
-		return utils.FailedResult[[]Charge](result.Error)
+	config := StreamQueryConfig{
+		TableName: "charges",
+		SelectFields: []string{
+			"id",
+			"organization_id",
+			"plan_id",
+			"billable_metric_id",
+			"pay_in_advance",
+			"properties->>'pricing_group_keys' as pricing_group_keys",
+			"created_at",
+			"updated_at",
+			"deleted_at",
+		},
+		WhereCondition: "deleted_at IS NULL",
+		WhereArgs:      []interface{}{},
+		LogInterval:    50000,
 	}
 
-	return utils.SuccessResult(charges)
+	return GetAllWithStreaming[Charge](db, config)
 }
