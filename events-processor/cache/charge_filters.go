@@ -12,22 +12,22 @@ const (
 	chargeFilterPrefix = "cf"
 )
 
-func (c *Cache) buildChargeFilterKey(organizationID, chargeID, billableMetricFilterID, id string) string {
-	return fmt.Sprintf("%s:%s:%s:%s:%s", chargeFilterPrefix, organizationID, chargeID, billableMetricFilterID, id)
+func (c *Cache) buildChargeFilterKey(organizationID, chargeID, id string) string {
+	return fmt.Sprintf("%s:%s:%s:%s", chargeFilterPrefix, organizationID, chargeID, id)
 }
 
 func (c *Cache) SetChargeFilter(cf *models.ChargeFilter) utils.Result[bool] {
-	key := c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.BillableMetricFilterID, cf.ID)
+	key := c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
 	return setJSON(c, key, cf)
 }
 
-func (c *Cache) GetChargeFilter(organizationID, chargeID, billableMetricFilterID, id string) utils.Result[*models.ChargeFilter] {
-	key := c.buildChargeFilterKey(organizationID, chargeID, billableMetricFilterID, id)
+func (c *Cache) GetChargeFilter(organizationID, chargeID, id string) utils.Result[*models.ChargeFilter] {
+	key := c.buildChargeFilterKey(organizationID, chargeID, id)
 	return getJSON[models.ChargeFilter](c, key)
 }
 
 func (c *Cache) DeleteChargeFilter(cf *models.ChargeFilter) utils.Result[bool] {
-	key := c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.BillableMetricFilterID, cf.ID)
+	key := c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
 	return delete(c, key)
 }
 
@@ -43,7 +43,7 @@ func (c *Cache) LoadChargeFiltersSnapshot(db *gorm.DB) utils.Result[int] {
 			return res.Value(), nil
 		},
 		func(cf *models.ChargeFilter) string {
-			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.BillableMetricFilterID, cf.ID)
+			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
 		},
 	)
 }

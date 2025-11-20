@@ -79,7 +79,7 @@ func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
 			"updated_at",
 		},
 		WhereCondition: "deleted_at IS NULL",
-		WhereArgs:      []interface{}{},
+		WhereArgs:      []any{},
 		LogInterval:    50000,
 	}
 

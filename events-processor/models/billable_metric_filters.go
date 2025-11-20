@@ -17,20 +17,22 @@ type BillableMetricFilter struct {
 }
 
 func GetAllBillableMetricFilters(db *gorm.DB) utils.Result[[]BillableMetricFilter] {
-	var billableMetricFilters []BillableMetricFilter
-	result := db.Select(
-		"id",
-		"organization_id",
-		"billable_metric_id",
-		"key",
-		"values",
-		"created_at",
-		"updated_at",
-		"deleted_at",
-	).Find(&billableMetricFilters, "deleted_at IS NULL")
-	if result.Error != nil {
-		return utils.FailedResult[[]BillableMetricFilter](result.Error)
+	config := StreamQueryConfig{
+		TableName: "billable_metric_filters",
+		SelectFields: []string{
+			"id",
+			"organization_id",
+			"billable_metric_id",
+			"key",
+			"values",
+			"created_at",
+			"updated_at",
+			"deleted_at",
+		},
+		WhereCondition: "deleted_at IS NULL",
+		WhereArgs:      []any{},
+		LogInterval:    10000,
 	}
 
-	return utils.SuccessResult(billableMetricFilters)
+	return GetAllWithStreaming[BillableMetricFilter](db, config)
 }

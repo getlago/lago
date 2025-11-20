@@ -70,11 +70,35 @@ func (c *Cache) LoadInitialSnapshot() {
 		panic(err.Error())
 	}
 
-	c.LoadBillableMetricsSnapshot(db.Connection)
-	c.LoadSubscriptionsSnapshot(db.Connection)
-	c.LoadChargesSnapshot(db.Connection)
-	c.LoadBillableMetricFiltersSnapshot(db.Connection)
-	c.LoadChargeFiltersSnapshot(db.Connection)
+	var wg sync.WaitGroup
+	wg.Add(5)
+
+	go func() {
+		defer wg.Done()
+		c.LoadBillableMetricsSnapshot(db.Connection)
+	}()
+
+	go func() {
+		defer wg.Done()
+		c.LoadSubscriptionsSnapshot(db.Connection)
+	}()
+
+	go func() {
+		defer wg.Done()
+		c.LoadChargesSnapshot(db.Connection)
+	}()
+
+	go func() {
+		defer wg.Done()
+		c.LoadBillableMetricFiltersSnapshot(db.Connection)
+	}()
+
+	go func() {
+		defer wg.Done()
+		c.LoadChargeFiltersSnapshot(db.Connection)
+	}()
+
+	wg.Wait()
 }
 
 func (c *Cache) ConsumeChanges() {
