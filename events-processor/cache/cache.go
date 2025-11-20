@@ -98,6 +98,11 @@ func (c *Cache) LoadInitialSnapshot() {
 		c.LoadChargeFiltersSnapshot(db.Connection)
 	}()
 
+	go func() {
+		defer wg.Done()
+		c.LoadChargeFilterValuesSnapshot(db.Connection)
+	}()
+
 	wg.Wait()
 }
 
@@ -120,6 +125,10 @@ func (c *Cache) ConsumeChanges() {
 
 	if err := c.StartChargeFiltersConsumer(c.ctx); err != nil {
 		c.logger.Error("failed to start charge filters consumer", slog.String("error", err.Error()))
+	}
+
+	if err := c.StartChargeFilterValuesConsumer(c.ctx); err != nil {
+		c.logger.Error("failed to start charge filter values consumer", slog.String("error", err.Error()))
 	}
 
 	c.wg.Wait()
