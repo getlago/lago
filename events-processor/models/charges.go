@@ -32,7 +32,7 @@ func GetAllCharges(db *gorm.DB) utils.Result[[]Charge] {
 			"deleted_at",
 		},
 		WhereCondition: "deleted_at IS NULL",
-		WhereArgs:      []interface{}{},
+		WhereArgs:      []any{},
 		LogInterval:    50000,
 	}
 

@@ -15,7 +15,7 @@ func (c *Cache) StartChargeFiltersConsumer(ctx context.Context) error {
 			return cf.DeletedAt.Valid
 		},
 		GetKey: func(cf *models.ChargeFilter) string {
-			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.BillableMetricFilterID, cf.ID)
+			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
 		},
 		GetID: func(cf *models.ChargeFilter) string {
 			return cf.ID
@@ -24,7 +24,7 @@ func (c *Cache) StartChargeFiltersConsumer(ctx context.Context) error {
 			return cf.UpdatedAt.Time.UnixMilli()
 		},
 		GetCached: func(cf *models.ChargeFilter) utils.Result[*models.ChargeFilter] {
-			return c.GetChargeFilter(cf.OrganizationID, cf.ChargeID, cf.BillableMetricFilterID, cf.ID)
+			return c.GetChargeFilter(cf.OrganizationID, cf.ChargeID, cf.ID)
 		},
 		SetCache: func(cf *models.ChargeFilter) utils.Result[bool] {
 			return c.SetChargeFilter(cf)

@@ -65,7 +65,7 @@ func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
 			"terminated_at",
 		},
 		WhereCondition: "terminated_at IS NULL OR terminated_at >= ?",
-		WhereArgs:      []interface{}{oneMonthAgo},
+		WhereArgs:      []any{oneMonthAgo},
 		LogInterval:    50000,
 	}
 
