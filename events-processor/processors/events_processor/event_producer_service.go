@@ -1,4 +1,4 @@
-package event_processors
+package events_processor
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 	}
 }
 
-func (eps *EventProducerService) ProduceEnrichedExpendedEvent(context context.Context, event *models.EnrichedEvent) {
+func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Context, event *models.EnrichedEvent) {
 	chargeID := ""
 	if event.ChargeID != nil {
 		chargeID = *event.ChargeID

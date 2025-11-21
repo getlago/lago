@@ -37,7 +37,7 @@ This app requires some env vars
 |---------------------------------------------|-----------------------------------------------------------------------------------------------|
 | ENV                                         | Set as `production` to not load `.env` file                                                   |
 | DATABASE_URL                                | PostgreSQL server URL (eg: `postgresql://lago_user:lago_password@lago_server:5432/lago_db`)   |
-| LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Broker URL with port (eg: `redpanda:9092`)                                              |
+| LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Brokers list URL with port (eg: `"redpanda:9092,kafka:9092"`)                                              |
 | LAGO_KAFKA_RAW_EVENTS_TOPIC                 | Events Kafka Topic (eg: `events_raw`)                                                         |
 | LAGO_KAFKA_ENRICHED_EVENTS_TOPIC            | Events Enriched Kafka Topic (eg: `events_enriched`)                                           |
 | LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC   | Events Enriched Expanded Kafka Topic (eg: `events_enriched_expanded`)                         |
@@ -54,8 +54,10 @@ Additionally there's a few optional environment variables
 |-------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | LAGO_REDIS_STORE_DB           | Redis database number to use for the store (default: 0)                                                                            |
 | LAGO_REDIS_STORE_PASSWORD     | Password for the Redis store (if required)                                                                                         |
+| LAGO_REDIS_STORE_TLS          | Redis TLS configuration for the Redis store (default: false)                                                                       |
 | LAGO_REDIS_CACHE_DB           | Redis database number to use for the cache (default: 0)                                                                            |
 | LAGO_REDIS_CACHE_PASSWORD     | Password for the Redis cache (if required)                                                                                         |
+| LAGO_REDIS_CACHE_TLS          | Redis TLS configuration for charge usage cache entries (default: false)                                                            |
 | LAGO_KAFKA_TLS                | Set to `true` if your broker uses TLS termination                                                                                  |
 | LAGO_KAFKA_SCRAM_ALGORITHM    | Your Broker SCRAM algo, supported values are `SCRAM-SHA-256` and `SCRAM-SHA-512`. <br> If you provide a SCRAM Algo, `LAGO_KAFKA_USERNAME` and `LAGO_KAFKA_PASSWORD` are required |
 | LAGO_KAFKA_USERNAME           | If your broker needs auth, your Kafka Username                                                                                     |

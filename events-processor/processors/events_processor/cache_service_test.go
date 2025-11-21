@@ -1,4 +1,4 @@
-package event_processors
+package events_processor
 
 import (
 	"testing"

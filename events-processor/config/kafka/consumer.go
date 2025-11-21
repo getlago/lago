@@ -57,28 +57,32 @@ func (pc *PartitionConsumer) consume() {
 			return
 
 		case records := <-pc.records:
-			ctx := context.Background()
-			span := tracer.GetTracerSpan(ctx, "post_process", "Consumer.Consume")
-			recordsAttr := attribute.Int("records.length", len(records))
-			span.SetAttributes(recordsAttr)
-			defer span.End()
-
-			processedRecords := pc.processRecords(records)
-			commitableRecords := records
-
-			if len(processedRecords) != len(records) {
-				// Ensure we are not committing records that were not processed and can be re-consumed
-				record := findMaxCommitableRecord(processedRecords, records)
-				commitableRecords = []*kgo.Record{record}
-				return
-			}
-
-			err := pc.client.CommitRecords(ctx, commitableRecords...)
-			if err != nil {
-				pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
-				utils.CaptureError(err)
-			}
+			pc.processRecordsAndCommit(records)
 		}
+	}
+}
+
+func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
+	ctx := context.Background()
+	span := tracer.GetTracerSpan(ctx, "post_process", "Consumer.Consume")
+	recordsAttr := attribute.Int("records.length", len(records))
+	span.SetAttributes(recordsAttr)
+	defer span.End()
+
+	processedRecords := pc.processRecords(records)
+	commitableRecords := records
+
+	if len(processedRecords) != len(records) {
+		// Ensure we are not committing records that were not processed and can be re-consumed
+		record := findMaxCommitableRecord(processedRecords, records)
+		commitableRecords = []*kgo.Record{record}
+		return
+	}
+
+	err := pc.client.CommitRecords(ctx, commitableRecords...)
+	if err != nil {
+		pc.logger.Error(fmt.Sprintf("Error when committing offets to kafka. Error: %v topic: %s partition: %d offset: %d\n", err, pc.topic, pc.partition, records[len(records)-1].Offset+1))
+		utils.CaptureError(err)
 	}
 }
 
@@ -122,23 +126,31 @@ func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string]
 
 func (cg *ConsumerGroup) poll() {
 	for {
-		fetches := cg.client.PollRecords(context.Background(), 10000)
-		if fetches.IsClientClosed() {
-			cg.logger.Info("client closed")
+		// NOTE: Gracefull shutdown handling will be plugged in here
+		if ok := cg.pollRecords(); !ok {
 			return
 		}
-
-		fetches.EachError(func(_ string, _ int32, err error) {
-			panic(err)
-		})
-
-		fetches.EachPartition(func(p kgo.FetchTopicPartition) {
-			tp := TopicPartition{p.Topic, p.Partition}
-			cg.consumers[tp].records <- p.Records
-		})
-
-		cg.client.AllowRebalance()
 	}
+}
+
+func (cg *ConsumerGroup) pollRecords() bool {
+	fetches := cg.client.PollRecords(context.Background(), 10000)
+	if fetches.IsClientClosed() {
+		cg.logger.Info("client closed")
+		return false
+	}
+
+	fetches.EachError(func(_ string, _ int32, err error) {
+		panic(err)
+	})
+
+	fetches.EachPartition(func(p kgo.FetchTopicPartition) {
+		tp := TopicPartition{p.Topic, p.Partition}
+		cg.consumers[tp].records <- p.Records
+	})
+
+	cg.client.AllowRebalance()
+	return true
 }
 
 func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
