@@ -202,6 +202,38 @@ func getJSON[T any](cache *Cache, key string) utils.Result[*T] {
 	return utils.SuccessResult(&out)
 }
 
+func searchJSON[T any](cache *Cache, prefix string) utils.Result[[]*T] {
+	var results []*T
+
+	err := cache.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+
+		prefixBytes := []byte(prefix)
+		for it.Seek(prefixBytes); it.ValidForPrefix(prefixBytes); it.Next() {
+			item := it.Item()
+			err := item.Value(func(val []byte) error {
+				var out T
+				if err := json.Unmarshal(val, &out); err != nil {
+					return err
+				}
+				results = append(results, &out)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return utils.FailedResult[[]*T](err)
+	}
+
+	return utils.SuccessResult(results)
+}
+
 func LoadSnapshot[T any](
 	cache *Cache,
 	name string,

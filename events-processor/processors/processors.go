@@ -8,6 +8,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
+	"github.com/getlago/lago/events-processor/cache"
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
@@ -121,12 +122,8 @@ func initChargeCacheStore() (*models.ChargeCache, error) {
 	return chargeStore, nil
 }
 
-func StartProcessingEvents() {
-	ctx = context.Background()
-
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil)).
-		With("service", "post_process")
-	slog.SetDefault(logger)
+func StartProcessingEvents(ctx context.Context, memCache *cache.Cache) {
+	logger := slog.Default()
 
 	otelEndpoint := os.Getenv(envOtelExporterOtlpEndpoint)
 	if otelEndpoint != "" {
@@ -214,7 +211,7 @@ func StartProcessingEvents() {
 	defer chargeCacheStore.CacheStore.Close()
 
 	processor = event_processors.NewEventProcessor(
-		event_processors.NewEventEnrichmentService(apiStore),
+		event_processors.NewEventEnrichmentService(apiStore, memCache),
 		event_processors.NewEventProducerService(
 			eventsEnrichedProducerResult.Value(),
 			eventsEnrichedExpandedProducerResult.Value(),

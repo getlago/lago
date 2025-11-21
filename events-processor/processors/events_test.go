@@ -71,7 +71,8 @@ func setupTestEnv(t *testing.T) (sqlmock.Sqlmock, *testProducerService, *tests.M
 	flagger := event_processors.NewSubscriptionRefreshService(&flagStore)
 
 	processor = event_processors.NewEventProcessor(
-		event_processors.NewEventEnrichmentService(apiStore),
+		// TODO: Add a memCache for test
+		event_processors.NewEventEnrichmentService(apiStore, nil),
 		testProducers.producers,
 		flagger,
 		event_processors.NewCacheService(chargeCacheStore),
