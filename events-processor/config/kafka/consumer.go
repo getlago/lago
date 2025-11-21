@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 
 	tracer "github.com/getlago/lago/events-processor/config"
 	"github.com/getlago/lago/events-processor/utils"
@@ -17,7 +19,7 @@ import (
 type ConsumerGroupConfig struct {
 	Topic          string
 	ConsumerGroup  string
-	ProcessRecords func([]*kgo.Record) []*kgo.Record
+	ProcessRecords func(context.Context, []*kgo.Record) []*kgo.Record
 }
 
 type TopicPartition struct {
@@ -34,17 +36,20 @@ type PartitionConsumer struct {
 	quit           chan struct{}
 	done           chan struct{}
 	records        chan []*kgo.Record
-	processRecords func([]*kgo.Record) []*kgo.Record
+	processRecords func(context.Context, []*kgo.Record) []*kgo.Record
+
+	// Ensure quit channel is only closed once
+	atomicQuitClosing sync.Once
 }
 
 type ConsumerGroup struct {
 	consumers      map[TopicPartition]*PartitionConsumer
 	client         *kgo.Client
-	processRecords func([]*kgo.Record) []*kgo.Record
+	processRecords func(context.Context, []*kgo.Record) []*kgo.Record
 	logger         *slog.Logger
 }
 
-func (pc *PartitionConsumer) consume() {
+func (pc *PartitionConsumer) consume(ctx context.Context) {
 	defer close(pc.done)
 
 	pc.logger.Info(fmt.Sprintf("Starting consume for topic %s partition %d\n", pc.topic, pc.partition))
@@ -52,14 +57,27 @@ func (pc *PartitionConsumer) consume() {
 
 	for {
 		select {
+		// Graceful shutdown
 		case <-pc.quit:
 			pc.logger.Info("partition consumer quit")
+			return
+
+		// Context canceled
+		case <-ctx.Done():
+			pc.logger.Info("partition consumer context canceled")
 			return
 
 		case records := <-pc.records:
 			pc.processRecordsAndCommit(records)
 		}
 	}
+}
+
+// safely closes the quit channel only once
+func (pc *PartitionConsumer) closeQuitChannel() {
+	pc.atomicQuitClosing.Do(func() {
+		close(pc.quit)
+	})
 }
 
 func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
@@ -69,14 +87,13 @@ func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
 	span.SetAttributes(recordsAttr)
 	defer span.End()
 
-	processedRecords := pc.processRecords(records)
+	processedRecords := pc.processRecords(ctx, records)
 	commitableRecords := records
 
 	if len(processedRecords) != len(records) {
 		// Ensure we are not committing records that were not processed and can be re-consumed
 		record := findMaxCommitableRecord(processedRecords, records)
 		commitableRecords = []*kgo.Record{record}
-		return
 	}
 
 	err := pc.client.CommitRecords(ctx, commitableRecords...)
@@ -86,7 +103,7 @@ func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
 	}
 }
 
-func (cg *ConsumerGroup) assigned(_ context.Context, cl *kgo.Client, assigned map[string][]int32) {
+func (cg *ConsumerGroup) assigned(ctx context.Context, cl *kgo.Client, assigned map[string][]int32) {
 	for topic, partitions := range assigned {
 		for _, partition := range partitions {
 			pc := &PartitionConsumer{
@@ -95,62 +112,111 @@ func (cg *ConsumerGroup) assigned(_ context.Context, cl *kgo.Client, assigned ma
 				partition: partition,
 				logger:    cg.logger,
 
-				quit:           make(chan struct{}),
-				done:           make(chan struct{}),
-				records:        make(chan []*kgo.Record),
-				processRecords: cg.processRecords,
+				quit:              make(chan struct{}),
+				done:              make(chan struct{}),
+				records:           make(chan []*kgo.Record),
+				processRecords:    cg.processRecords,
+				atomicQuitClosing: sync.Once{},
 			}
 			cg.consumers[TopicPartition{topic: topic, partition: partition}] = pc
-			go pc.consume()
+			go pc.consume(ctx)
 		}
 	}
 }
 
 func (cg *ConsumerGroup) lost(_ context.Context, _ *kgo.Client, lost map[string][]int32) {
-	var wg sync.WaitGroup
-	defer wg.Wait()
+	errgroup := errgroup.Group{}
+	defer errgroup.Wait()
 
 	for topic, partitions := range lost {
 		for _, partition := range partitions {
 			tp := TopicPartition{topic: topic, partition: partition}
 			pc := cg.consumers[tp]
 			delete(cg.consumers, tp)
-			close(pc.quit)
+			pc.closeQuitChannel()
 
 			pc.logger.Info(fmt.Sprintf("waiting for work to finish topic %s partition %d\n", topic, partition))
-			wg.Add(1)
-			go func() { <-pc.done; wg.Done() }()
+			errgroup.Go(func() error {
+				<-pc.done
+				return nil
+			})
 		}
 	}
 }
 
-func (cg *ConsumerGroup) poll() {
+func (cg *ConsumerGroup) poll(ctx context.Context) {
 	for {
-		// NOTE: Gracefull shutdown handling will be plugged in here
-		if ok := cg.pollRecords(); !ok {
+		select {
+		case <-ctx.Done():
+			cg.logger.Info("Consumer group stopped")
 			return
+
+		default:
+			if ok := cg.pollRecords(ctx); !ok {
+				return
+			}
 		}
 	}
 }
 
-func (cg *ConsumerGroup) pollRecords() bool {
-	fetches := cg.client.PollRecords(context.Background(), 10000)
+func (cg *ConsumerGroup) pollRecords(ctx context.Context) bool {
+	fetches := cg.client.PollRecords(ctx, 10000)
 	if fetches.IsClientClosed() {
 		cg.logger.Info("client closed")
 		return false
 	}
 
+	hasContextError := false
 	fetches.EachError(func(_ string, _ int32, err error) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			hasContextError = true
+			return
+		}
+
+		cg.logger.Error("Fetch error", slog.String("error", err.Error()))
 		panic(err)
 	})
 
+	if hasContextError || ctx.Err() != nil {
+		// Context was canceled before fetching records of while checking for errors
+		return false
+	}
+
 	fetches.EachPartition(func(p kgo.FetchTopicPartition) {
 		tp := TopicPartition{p.Topic, p.Partition}
-		cg.consumers[tp].records <- p.Records
+		if consumer, exists := cg.consumers[tp]; exists {
+			// Only send records if the consumer channel is still open
+			select {
+			case consumer.records <- p.Records:
+			case <-ctx.Done():
+				cg.logger.Info("Context canceled while sending records to partition consumer")
+				return
+			}
+		}
 	})
 
 	cg.client.AllowRebalance()
 	return true
+}
+
+func (cg *ConsumerGroup) gracefulShutdown() {
+	errgroup := errgroup.Group{}
+
+	for topicPartition, partitionConsumer := range cg.consumers {
+		errgroup.Go(func() error {
+			cg.logger.Info("Shuting down partion consumer",
+				slog.String("topic", topicPartition.topic),
+				slog.Int("partition", int(topicPartition.partition)),
+			)
+
+			partitionConsumer.closeQuitChannel()
+			<-partitionConsumer.done
+			return nil
+		})
+	}
+
+	_ = errgroup.Wait()
+	cg.client.Close()
 }
 
 func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
@@ -187,8 +253,17 @@ func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*Con
 	return cg, nil
 }
 
-func (cg *ConsumerGroup) Start() {
-	cg.poll()
+func (cg *ConsumerGroup) Start(ctx context.Context) {
+	go func() {
+		cg.poll(ctx)
+	}()
+
+	<-ctx.Done()
+	cg.logger.Info("Gracefully shutting down consumer group")
+
+	cg.gracefulShutdown()
+
+	cg.logger.Info("Consumer group shutdown is complete")
 }
 
 func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) *kgo.Record {
