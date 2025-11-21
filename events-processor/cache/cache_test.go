@@ -382,3 +382,168 @@ func TestDeleteWithTTL_KeyNotFound(t *testing.T) {
 	assert.True(t, result.Success())
 	assert.True(t, result.Value())
 }
+
+type TestModel struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+func TestSearchJSON_EmptyCache(t *testing.T) {
+	cache := setupTestCache(t)
+
+	result := searchJSON[TestModel](cache, "prefix:")
+	require.True(t, result.Success())
+	assert.Empty(t, result.Value())
+}
+
+func TestSearchJSON_SingleMatch(t *testing.T) {
+	cache := setupTestCache(t)
+
+	testModel := &TestModel{
+		ID:   "1",
+		Name: "Test Item",
+		Type: "A",
+	}
+	setResult := setJSON(cache, "prefix:1", testModel)
+	require.True(t, setResult.Success())
+
+	result := searchJSON[TestModel](cache, "prefix:")
+	require.True(t, result.Success())
+	require.Len(t, result.Value(), 1)
+
+	resultItem := result.Value()[0]
+	assert.Equal(t, "1", resultItem.ID)
+	assert.Equal(t, "Test Item", resultItem.Name)
+	assert.Equal(t, "A", resultItem.Type)
+}
+
+func TestSearchJSON_MultipleMatches(t *testing.T) {
+	cache := setupTestCache(t)
+
+	items := []*TestModel{
+		{ID: "1", Name: "Item 1", Type: "A"},
+		{ID: "2", Name: "Item 2", Type: "B"},
+		{ID: "3", Name: "Item 3", Type: "C"},
+	}
+
+	for _, item := range items {
+		setResult := setJSON(cache, "prefix:"+item.ID, item)
+		require.True(t, setResult.Success())
+	}
+
+	result := searchJSON[TestModel](cache, "prefix:")
+	require.True(t, result.Success())
+	require.Len(t, result.Value(), 3)
+
+	ids := make(map[string]bool)
+	for _, item := range result.Value() {
+		ids[item.ID] = true
+	}
+	assert.True(t, ids["1"])
+	assert.True(t, ids["2"])
+	assert.True(t, ids["3"])
+}
+
+func TestSearchJSON_PrefixFiltering(t *testing.T) {
+	cache := setupTestCache(t)
+
+	items := map[string]*TestModel{
+		"user:1":    {ID: "1", Name: "User 1", Type: "user"},
+		"user:2":    {ID: "2", Name: "User 2", Type: "user"},
+		"product:1": {ID: "1", Name: "Product 1", Type: "product"},
+		"product:2": {ID: "2", Name: "Product 2", Type: "product"},
+	}
+
+	for key, item := range items {
+		setResult := setJSON(cache, key, item)
+		require.True(t, setResult.Success())
+	}
+
+	userResult := searchJSON[TestModel](cache, "user:")
+	require.True(t, userResult.Success())
+	require.Len(t, userResult.Value(), 2)
+
+	for _, item := range userResult.Value() {
+		assert.Equal(t, "user", item.Type)
+	}
+
+	productResult := searchJSON[TestModel](cache, "product:")
+	require.True(t, productResult.Success())
+	require.Len(t, productResult.Value(), 2)
+
+	for _, item := range productResult.Value() {
+		assert.Equal(t, "product", item.Type)
+	}
+}
+
+func TestSearchJSON_NoMatches(t *testing.T) {
+	cache := setupTestCache(t)
+
+	testModel := &TestModel{
+		ID:   "1",
+		Name: "Test Item",
+		Type: "A",
+	}
+	setResult := setJSON(cache, "prefix:1", testModel)
+	require.True(t, setResult.Success())
+
+	result := searchJSON[TestModel](cache, "nonexistent:")
+	require.True(t, result.Success())
+	assert.Empty(t, result.Value())
+}
+
+func TestSearchJSON_InvalidJSON(t *testing.T) {
+	cache := setupTestCache(t)
+
+	err := cache.db.Update(func(txn *badger.Txn) error {
+		return txn.Set([]byte("prefix:invalid"), []byte("invalid json"))
+	})
+	require.NoError(t, err)
+
+	result := searchJSON[TestModel](cache, "prefix:")
+	require.True(t, result.Failure())
+}
+
+func TestSearchJSON_EmptyPrefix(t *testing.T) {
+	cache := setupTestCache(t)
+
+	items := []*TestModel{
+		{ID: "1", Name: "Item 1", Type: "A"},
+		{ID: "2", Name: "Item 2", Type: "B"},
+	}
+
+	for _, item := range items {
+		setResult := setJSON(cache, "key:"+item.ID, item)
+		require.True(t, setResult.Success())
+	}
+
+	result := searchJSON[TestModel](cache, "")
+	require.True(t, result.Success())
+	assert.GreaterOrEqual(t, len(result.Value()), 2)
+}
+
+func TestSearchJSON_NestedPrefixes(t *testing.T) {
+	cache := setupTestCache(t)
+
+	items := map[string]*TestModel{
+		"app:user:1":       {ID: "1", Name: "User 1", Type: "user"},
+		"app:user:2":       {ID: "2", Name: "User 2", Type: "user"},
+		"app:user:admin:1": {ID: "1", Name: "Admin 1", Type: "admin"},
+		"app:product:1":    {ID: "1", Name: "Product 1", Type: "product"},
+	}
+
+	for key, item := range items {
+		setResult := setJSON(cache, key, item)
+		require.True(t, setResult.Success())
+	}
+
+	userResult := searchJSON[TestModel](cache, "app:user:")
+	require.True(t, userResult.Success())
+	assert.Len(t, userResult.Value(), 3)
+
+	adminResult := searchJSON[TestModel](cache, "app:user:admin:")
+	require.True(t, adminResult.Success())
+	assert.Len(t, adminResult.Value(), 1)
+	assert.Equal(t, "admin", adminResult.Value()[0].Type)
+}

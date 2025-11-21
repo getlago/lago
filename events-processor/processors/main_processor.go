@@ -193,7 +193,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 
 	processor = events_processor.NewEventProcessor(
 		config.Logger,
-		events_processor.NewEventEnrichmentService(apiStore),
+		events_processor.NewEventEnrichmentService(apiStore, nil),
 		events_processor.NewEventProducerService(
 			eventsEnrichedProducer,
 			eventsEnrichedExpandedProducer,

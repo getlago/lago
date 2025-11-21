@@ -69,7 +69,7 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *
 
 	processor := NewEventProcessor(
 		logger,
-		NewEventEnrichmentService(apiStore),
+		NewEventEnrichmentService(apiStore, nil),
 		testProducers.producers,
 		flagger,
 		NewCacheService(chargeCacheStore),
