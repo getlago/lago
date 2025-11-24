@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/models"
@@ -51,12 +52,9 @@ func setupProducers() *testProducerService {
 	}
 }
 
-func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *testProducerService, *tests.MockFlagStore, *cache.Cache, func()) {
+func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService, *tests.MockFlagStore, *cache.Cache) {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
-
-	mockedStore, delete := tests.SetupMockStore(t)
-	apiStore := models.NewApiStore(mockedStore.DB)
 
 	testProducers := setupProducers()
 
@@ -75,53 +73,18 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *
 
 	processor := NewEventProcessor(
 		logger,
-		NewEventEnrichmentService(apiStore, memCache),
+		NewEventEnrichmentService(memCache),
 		testProducers.producers,
 		flagger,
 		NewCacheService(chargeCacheStore),
 	)
 
-	return processor, mockedStore, testProducers, &flagStore, memCache, delete
-}
-
-func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter) {
-	columns := []string{
-		"organization_id",
-		"billable_metric_code",
-		"pay_in_advance",
-		"plan_id",
-		"charge_id",
-		"charge_updated_at",
-		"charge_filter_id",
-		"charge_filter_updated_at",
-		"filters",
-		"pricing_group_keys",
-	}
-
-	rows := sqlmock.NewRows(columns)
-
-	for _, filter := range filters {
-		rows.AddRow(
-			filter.OrganizationID,
-			filter.BillableMetricCode,
-			filter.PayInAdvance,
-			filter.PlanID,
-			filter.ChargeID,
-			filter.ChargeUpdatedAt,
-			filter.ChargeFilterID,
-			filter.ChargeFilterUpdatedAt,
-			filter.Filters,
-			filter.PricingGroupKeys,
-		)
-	}
-
-	mock.SQLMock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+	return processor, testProducers, &flagStore, memCache
 }
 
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		processor, _, _, _, _, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, _, _, _ := setupProcessorTestEnv(t)
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -138,8 +101,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, memCache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -177,17 +139,6 @@ func TestProcessEvent(t *testing.T) {
 		}
 		memCache.SetSubscription(&sub)
 
-		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
-			{
-				OrganizationID:     event.OrganizationID,
-				BillableMetricCode: event.Code,
-				PlanID:             "plan_id",
-				ChargeID:           "charge_idxx",
-				ChargeUpdatedAt:    time.Now(),
-				PayInAdvance:       true,
-			},
-		})
-
 		ctx := context.Background()
 		result := processor.processEvent(ctx, &event)
 
@@ -205,8 +156,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		processor, _, _, _, cache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, _, _, cache := setupProcessorTestEnv(t)
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -237,8 +187,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		processor, _, _, _, cache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, _, _, cache := setupProcessorTestEnv(t)
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -265,20 +214,14 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		processor, _, _, _, memCache, delete := setupProcessorTestEnv(t)
-		defer delete()
-
-		// properties := map[string]any{
-		// 	"value": "12.12",
-		// }
+		processor, _, _, memCache := setupProcessorTestEnv(t)
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 			ExternalSubscriptionID: "sub_id",
 			Code:                   "api_calls",
 			Timestamp:              "1741007009.123",
-			//Properties:             properties,
-			Source: "SQS",
+			Source:                 "SQS",
 		}
 
 		bm := models.BillableMetric{
@@ -309,8 +252,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		processor, mockedStore, testProducers, flagger, memCache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, testProducers, flagger, memCache := setupProcessorTestEnv(t)
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -325,7 +267,7 @@ func TestProcessEvent(t *testing.T) {
 			Source:                 "SQS",
 		}
 
-		bm := models.BillableMetric{
+		bm := &models.BillableMetric{
 			ID:              "bm123",
 			OrganizationID:  event.OrganizationID,
 			Code:            event.Code,
@@ -335,28 +277,25 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(&bm)
+		memCache.SetBillableMetric(bm)
 
-		sub := models.Subscription{
+		sub := &models.Subscription{
 			ID:             "sub123",
 			OrganizationID: &event.OrganizationID,
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan_id",
 		}
-		memCache.SetSubscription(&sub)
+		memCache.SetSubscription(sub)
 
-		now := time.Now()
-
-		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
-			{
-				OrganizationID:     "org_id",
-				BillableMetricCode: "api_call",
-				PlanID:             "plan_id",
-				ChargeID:           "charge_idxx",
-				ChargeUpdatedAt:    now,
-				PayInAdvance:       true,
-			},
-		})
+		charge := &models.Charge{
+			ID:               "ch123",
+			OrganizationID:   event.OrganizationID,
+			PlanID:           "plan_id",
+			BillableMetricID: bm.ID,
+			UpdatedAt:        utils.NowNullTime(),
+			PayInAdvance:     true,
+		}
+		memCache.SetCharge(charge)
 
 		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
@@ -373,8 +312,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, memCache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -399,7 +337,18 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(&bm)
+		result := memCache.SetBillableMetric(&bm)
+		require.True(t, result.Success())
+
+		bmf1 := &models.BillableMetricFilter{
+			ID:               uuid.New().String(),
+			OrganizationID:   event.OrganizationID,
+			BillableMetricID: bm.ID,
+			Key:              "scheme",
+			Values:           []string{"visa"},
+		}
+		result = memCache.SetBillableMetricFilter(bmf1)
+		require.True(t, result.Success())
 
 		sub := models.Subscription{
 			ID:             "sub123",
@@ -407,40 +356,69 @@ func TestProcessEvent(t *testing.T) {
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan123",
 		}
-		memCache.SetSubscription(&sub)
+		result = memCache.SetSubscription(&sub)
+		require.True(t, result.Success())
 
-		now := time.Now()
-
-		flatFilter1 := &models.FlatFilter{
-			OrganizationID:        "org_id",
-			BillableMetricCode:    "api_calls",
-			PlanID:                "plan_id",
-			ChargeID:              "charge_id1",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
-			ChargeFilterUpdatedAt: &now,
-			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		charge1 := &models.Charge{
+			ID:               "charge_id1",
+			OrganizationID:   event.OrganizationID,
+			PlanID:           "plan_id",
+			BillableMetricID: bm.ID,
+			UpdatedAt:        utils.NowNullTime(),
 		}
+		result = memCache.SetCharge(charge1)
+		require.True(t, result.Success())
 
-		flatFilter2 := &models.FlatFilter{
-			OrganizationID:        "org_id",
-			BillableMetricCode:    "api_calls",
-			PlanID:                "plan_id",
-			ChargeID:              "charge_id2",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
-			ChargeFilterUpdatedAt: &now,
-			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+		chargeFilter1 := &models.ChargeFilter{
+			ID:             "charge_filter_id1",
+			OrganizationID: event.OrganizationID,
+			ChargeID:       charge1.ID,
 		}
-		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
+		result = memCache.SetChargeFilter(chargeFilter1)
+		require.True(t, result.Success())
 
-		result := processor.processEvent(context.Background(), &event)
+		chargeFilterValue1 := &models.ChargeFilterValue{
+			ID:                     uuid.New().String(),
+			OrganizationID:         event.OrganizationID,
+			ChargeFilterID:         chargeFilter1.ID,
+			BillableMetricFilterID: bmf1.ID,
+		}
+		result = memCache.SetChargeFilterValue(chargeFilterValue1)
+		require.True(t, result.Success())
 
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+		charge2 := &models.Charge{
+			ID:               "charge_id2",
+			OrganizationID:   event.OrganizationID,
+			PlanID:           "plan_id",
+			BillableMetricID: bm.ID,
+			UpdatedAt:        utils.NowNullTime(),
+		}
+		result = memCache.SetCharge(charge2)
+		require.True(t, result.Success())
+
+		chargeFilter2 := &models.ChargeFilter{
+			ID:             "charge_filter_id2",
+			OrganizationID: event.OrganizationID,
+			ChargeID:       charge2.ID,
+		}
+		result = memCache.SetChargeFilter(chargeFilter2)
+		require.True(t, result.Success())
+
+		chargeFilterValue2 := &models.ChargeFilterValue{
+			ID:                     uuid.New().String(),
+			OrganizationID:         event.OrganizationID,
+			ChargeFilterID:         chargeFilter2.ID,
+			BillableMetricFilterID: bmf1.ID,
+		}
+		result = memCache.SetChargeFilterValue(chargeFilterValue2)
+		require.True(t, result.Success())
+
+		evResult := processor.processEvent(context.Background(), &event)
+		assert.True(t, evResult.Success())
+		assert.Equal(t, "12.0", *evResult.Value().Value)
+		assert.Equal(t, "sum", evResult.Value().AggregationType)
+		assert.Equal(t, "sub123", evResult.Value().SubscriptionID)
+		assert.Equal(t, "plan123", evResult.Value().PlanID)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
@@ -450,8 +428,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, memCache, delete := setupProcessorTestEnv(t)
-		defer delete()
+		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -485,8 +462,6 @@ func TestProcessEvent(t *testing.T) {
 			PlanID:         "plan123",
 		}
 		memCache.SetSubscription(&sub)
-
-		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{})
 
 		result := processor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())

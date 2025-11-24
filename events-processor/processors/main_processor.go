@@ -9,7 +9,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/getlago/lago/events-processor/cache"
-	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/config/tracing"
@@ -163,23 +162,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(config.Logger, err, "failed to initialize events dead letter queue producer")
 	}
 
-	maxConns, err := utils.GetEnvAsInt(envLagoEventsProcessorDatabaseMaxConnections, 200)
-	if err != nil {
-		utils.LogAndPanic(config.Logger, err, "Error converting max connections into integer")
-	}
-
-	dbConfig := database.DBConfig{
-		Url:      os.Getenv("DATABASE_URL"),
-		MaxConns: int32(maxConns),
-	}
-
-	db, err := database.NewConnection(dbConfig)
-	if err != nil {
-		utils.LogAndPanic(config.Logger, err, "Error connecting to the database")
-	}
-	apiStore = models.NewApiStore(db)
-	defer db.Close()
-
 	flagger, err := initFlagStore(ctx, "subscription_refreshed")
 	if err != nil {
 		utils.LogAndPanic(config.Logger, err, "Error connecting to the flag store")
@@ -195,7 +177,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 
 	processor = events_processor.NewEventProcessor(
 		config.Logger,
-		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
+		events_processor.NewEventEnrichmentService(config.Cache),
 		events_processor.NewEventProducerService(
 			eventsEnrichedProducer,
 			eventsEnrichedExpandedProducer,

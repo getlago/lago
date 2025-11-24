@@ -26,6 +26,11 @@ func (c *Cache) GetCharge(organizationID, planID, billableMetricID, id string) u
 	return getJSON[models.Charge](c, key)
 }
 
+func (c *Cache) SearchCharge(organizationID, planID, billableMetricID string) utils.Result[[]*models.Charge] {
+	key := fmt.Sprintf("%s:%s:%s:%s:", chargePrefix, organizationID, planID, billableMetricID)
+	return searchJSON[models.Charge](c, key)
+}
+
 func (c *Cache) DeleteCharge(ch *models.Charge) utils.Result[bool] {
 	key := c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
 	return delete(c, key)

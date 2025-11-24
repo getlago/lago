@@ -26,6 +26,11 @@ func (c *Cache) GetChargeFilterValue(organizationID, chargeFilterID, billableMet
 	return getJSON[models.ChargeFilterValue](c, key)
 }
 
+func (c *Cache) SearchChargeFilterValue(organizationID, chargeFilterID string) utils.Result[[]*models.ChargeFilterValue] {
+	key := fmt.Sprintf("%s:%s:%s:", chargeFilterValuePrefix, organizationID, chargeFilterID)
+	return searchJSON[models.ChargeFilterValue](c, key)
+}
+
 func (c *Cache) DeleteChargeFilterValue(cfv *models.ChargeFilterValue) utils.Result[bool] {
 	key := c.buildChargeFilterValueKey(cfv.OrganizationID, cfv.ChargeFilterID, cfv.BillableMetricFilterID, cfv.ID)
 	return delete(c, key)

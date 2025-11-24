@@ -11,13 +11,11 @@ import (
 )
 
 type EventEnrichmentService struct {
-	apiStore *models.ApiStore
 	memCache *cache.Cache
 }
 
-func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache) *EventEnrichmentService {
+func NewEventEnrichmentService(memCache *cache.Cache) *EventEnrichmentService {
 	return &EventEnrichmentService{
-		apiStore: apiStore,
 		memCache: memCache,
 	}
 }
@@ -30,7 +28,6 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	enrichedEvent := enrichedEventResult.Value()
 
 	bmResult := s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
-	//bmResult := s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
 		return failedMultiEventsResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
@@ -44,7 +41,6 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	}
 
 	subResult := s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-	//subResult := s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	// TODO: Check if cache result IsCapturable when its needed
 	if subResult.Failure() && subResult.IsCapturable() {
 		// We want to keep processing the event even if the subscription is not found
@@ -120,7 +116,7 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
 
-	filtersResult := s.apiStore.FetchFlatFilters(enrichedEvent.PlanID, enrichedEvent.Code)
+	filtersResult := s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
 	if filtersResult.Failure() {
 		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
 	}
@@ -130,6 +126,9 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		// No filters found, return the original event without charge information
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
+	for _, filter := range filters {
+		fmt.Printf("FILTER: %v\n", filter)
+	}
 
 	// Index filters by charge ID (an event can match multiple charges and filters)
 	charges := make(map[string][]models.FlatFilter)
@@ -137,12 +136,13 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		if charges[filter.ChargeID] == nil {
 			charges[filter.ChargeID] = []models.FlatFilter{}
 		}
-		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
+		charges[filter.ChargeID] = append(charges[filter.ChargeID], *filter)
 	}
 
 	var enrichedEvents []*models.EnrichedEvent
 	// For each charge, find matching filter and create an enriched event
 	for _, chargeFilters := range charges {
+		fmt.Printf("CHARGE FILTER: %v\n", charges)
 		matchingFilter := models.MatchingFilter(chargeFilters, enrichedEvent)
 
 		// Create a copy of the enriched event for this filter

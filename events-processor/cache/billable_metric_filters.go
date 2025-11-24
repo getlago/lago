@@ -26,6 +26,12 @@ func (c *Cache) GetBillableMetricFilter(organizationID, billableMetricID, id str
 	return getJSON[models.BillableMetricFilter](c, key)
 }
 
+func (c *Cache) SearchBillableMetricFilters(organizationID, billableMetricID string) utils.Result[[]*models.BillableMetricFilter] {
+	prefix := fmt.Sprintf("%s:%s:%s:", billableMetricFilterPrefix, organizationID, billableMetricID)
+
+	return searchJSON[models.BillableMetricFilter](c, prefix)
+}
+
 func (c *Cache) DeleteBillableMetricFilter(bmf *models.BillableMetricFilter) utils.Result[bool] {
 	key := c.buildBillableMetricFilterKey(bmf.OrganizationID, bmf.BillableMetricID, bmf.ID)
 	return delete(c, key)
