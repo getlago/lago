@@ -8,6 +8,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
+	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/config/redis"
@@ -51,6 +52,7 @@ const (
 type Config struct {
 	Logger         *slog.Logger
 	TracerProvider tracing.TracerProvider
+	Cache          *cache.Cache
 }
 
 func initProducer(ctx context.Context, topicEnv string) (*kafka.Producer, error) {
@@ -193,7 +195,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 
 	processor = events_processor.NewEventProcessor(
 		config.Logger,
-		events_processor.NewEventEnrichmentService(apiStore, nil),
+		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
 		events_processor.NewEventProducerService(
 			eventsEnrichedProducer,
 			eventsEnrichedExpandedProducer,

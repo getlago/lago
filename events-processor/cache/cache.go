@@ -71,7 +71,7 @@ func (c *Cache) LoadInitialSnapshot() {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(5)
+	wg.Add(6)
 
 	go func() {
 		defer wg.Done()
@@ -130,8 +130,6 @@ func (c *Cache) ConsumeChanges() {
 	if err := c.StartChargeFilterValuesConsumer(c.ctx); err != nil {
 		c.logger.Error("failed to start charge filter values consumer", slog.String("error", err.Error()))
 	}
-
-	c.wg.Wait()
 }
 
 func setJSON[T any](cache *Cache, key string, value *T) utils.Result[bool] {

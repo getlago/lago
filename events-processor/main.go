@@ -55,7 +55,7 @@ func main() {
 
 	defer sentry.Flush(2 * time.Second)
 
-	memCache, err := cache.NewCache(cache.CacheConfig{
+	memCache, err = cache.NewCache(cache.CacheConfig{
 		Context: ctx,
 		Logger:  logger,
 	})
@@ -72,6 +72,7 @@ func main() {
 	processors.StartProcessingEvents(ctx, &processors.Config{
 		Logger:         logger,
 		TracerProvider: tracerProvider,
+		Cache:          memCache,
 	})
 }
 

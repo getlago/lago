@@ -29,7 +29,7 @@ func (c *Cache) GetSubscription(organizationID, externalID, ID string) utils.Res
 }
 
 func (c *Cache) SearchSubscriptions(organizationID string, externalID string, timestamp time.Time) utils.Result[*models.Subscription] {
-	prefix := fmt.Sprintf("%s:%s:%s", subscriptionPrefix, organizationID, externalID)
+	prefix := fmt.Sprintf("%s:%s:%s:", subscriptionPrefix, organizationID, externalID)
 	result := searchJSON[models.Subscription](c, prefix)
 
 	if result.Failure() {
@@ -84,10 +84,12 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 		}
 	}
 
-	c.logger.Debug(
-		"search subscription result",
-		slog.String("subscription external id: ", bestMatch.ExternalID),
-	)
+	if bestMatch != nil {
+		c.logger.Debug(
+			"search subscription result",
+			slog.String("subscription external id: ", bestMatch.ExternalID),
+		)
+	}
 
 	return utils.SuccessResult(bestMatch)
 }
