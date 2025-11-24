@@ -9,6 +9,9 @@ This document summarizes the application's architecture and core flows.
 - [Global Architecture Diagram](#global-architecture-diagram)
 - [System Overview](#system-overview)
 - [Worker Architecture](#worker-architecture)
+  - [Worker Flow & Error Handling](#worker-flow--error-handling)
+  - [Complete Worker Reference](#complete-worker-reference)
+  - [Resource Configuration Guide](#resource-configuration-guide)
 - [Clock System](#clock-system)
 - [Redis Architecture](#redis-architecture)
 - [Encryption & Security](#encryption--security)
@@ -110,6 +113,208 @@ end
   - Jobs go to the `webhook` queue on the default worker
 
 This pattern is applied across all dedicated worker types, allowing flexible scaling and performance optimization of specific job categories based on workload requirements.
+
+### Worker Flow & Error Handling
+
+#### Job Execution Flow
+
+1. **Job Enqueuing**
+   - Main Rails API receives requests and enqueues jobs to appropriate queues
+   - Clock process schedules recurring jobs at specified intervals
+   - Jobs are stored in Primary Redis (Sidekiq Queue Storage)
+
+2. **Job Processing**
+   - Workers poll their assigned queues based on priority order
+   - Each worker processes jobs according to its concurrency setting
+   - Jobs timeout after 25 seconds by default
+   - Workers acknowledge job completion or failure back to Redis
+
+3. **Job States**
+   - **Enqueued**: Job is waiting in queue
+   - **Processing**: Job is actively being executed by a worker
+   - **Completed**: Job finished successfully
+   - **Failed**: Job encountered an error
+   - **Retrying**: Job is being retried after failure
+   - **Dead**: Job exhausted all retries and is moved to dead queue
+
+#### Error Handling & Retry Mechanism
+
+**Default Retry Configuration**:
+- **Retry attempts**: 1 (configurable per job class)
+- **Retry strategy**: Exponential backoff with jitter
+- **Dead queue**: Failed jobs after exhausting retries are moved to the dead queue for manual inspection
+
+**Retry Behavior**:
+```ruby
+# Default Sidekiq retry configuration
+sidekiq_options retry: 1
+
+# Jobs can override retry behavior
+sidekiq_options retry: 3
+sidekiq_options retry: false  # Disable retries
+```
+
+**Error Handling Patterns**:
+
+1. **Transient Errors** (Network issues, temporary service unavailability)
+   - Automatically retried according to retry policy
+   - Examples: API timeouts, temporary Redis connection loss
+
+2. **Permanent Errors** (Invalid data, business logic failures)
+   - May skip retries or fail immediately
+   - Logged to Sentry for monitoring
+   - Examples: Invalid customer data, missing required records
+
+3. **Timeout Handling**
+   - Jobs exceeding 25-second timeout are terminated
+   - Marked as failed and subject to retry policy
+   - Long-running jobs should be routed to `long_running` queue
+
+**Fallback Mechanisms**:
+
+1. **Scheduled Retry Jobs**
+   - Clock jobs like "Retry Failed Invoices" (every 15 minutes) and "Retry Generating Subscription Invoices" (hourly) provide secondary retry mechanisms
+   - These jobs scan for failed operations and attempt to reprocess them
+
+2. **Dead Queue Processing**
+   - Failed jobs in dead queue can be manually retried via Sidekiq web UI
+   - Dead jobs are retained for inspection and debugging
+
+3. **Monitoring & Alerting**
+   - All jobs tagged with Sentry metadata for error tracking
+   - Failed jobs trigger alerts for investigation
+   - Queue depth monitoring prevents backlog buildup
+
+**Error Recovery Flow**:
+```
+Job Fails → Retry #1 (with exponential backoff)
+         → Still Fails → Move to Dead Queue
+         → Manual Investigation
+         → Optional: Manual Retry from Dead Queue
+         → OR: Scheduled Retry Job picks up related operation
+```
+
+#### Queue Priority & Job Distribution
+
+Workers process jobs from queues in strict priority order:
+
+1. `high_priority` - Critical operations processed first
+2. `default` - Standard operations
+3. Lower priority queues processed only when higher queues are empty
+
+**Best Practices**:
+- Use `high_priority` sparingly for truly urgent operations
+- Route long-running jobs to `long_running` queue to prevent blocking
+- Enable dedicated workers for high-volume job types (events, webhooks, PDFs)
+
+### Complete Worker Reference
+
+Lago's production deployment includes multiple worker types, each handling specific workloads:
+
+#### Core Workers
+
+| Worker | Queue(s) | Purpose | Required | Scaling Considerations |
+|--------|----------|---------|----------|----------------------|
+| **Default Worker** (`worker`) | `high_priority`, `default`, `mailers`, `clock`, `providers`, `webhook`, `invoices`, `wallets`, `integrations`, `low_priority`, `long_running` | Handles all job types when dedicated workers are disabled | ✅ Yes | Scale based on overall job volume; start with 3-5 replicas |
+| **Analytics Worker** | `analytics` | Processes analytics calculations and reporting | Optional | Enable with `SIDEKIQ_ANALYTICS=true`; scale based on analytics job volume |
+| **Billing Worker** | `billing` | Handles billing operations and invoice generation | Recommended | Enable with `SIDEKIQ_BILLING=true`; critical for billing-heavy workloads |
+| **Clock Worker** | `clock_worker` | Processes scheduled jobs from Clockwork | Optional | Enable with `SIDEKIQ_CLOCK=true`; single instance usually sufficient |
+| **Events Worker** | `events` | Processes incoming usage events | Highly Recommended | Enable with `SIDEKIQ_EVENTS=true`; scale based on event ingestion rate |
+| **Payments Worker** | `payments` | Handles payment processing operations | Recommended | Enable with `SIDEKIQ_PAYMENTS=true`; scale based on payment volume |
+| **PDF Worker** | `pdfs` | Generates PDF invoices and documents | Highly Recommended | Enable with `SIDEKIQ_PDF=true`; PDF generation is CPU-intensive |
+| **Webhook Worker** | `webhook_worker` | Delivers webhooks to customer endpoints | Highly Recommended | Enable with `SIDEKIQ_WEBHOOK=true`; isolate webhook delays from core processing |
+
+#### Specialized Workers
+
+Those workers are not related to Sidekiq and do not pull jobs from Redis. They
+are part of the event processing pipeline and use Kafka as their event store.
+
+| Worker | Purpose | Required | Notes |
+|--------|---------|----------|-------|
+| **Events Consumer Worker** | Consumes events from external queue (e.g., Kafka, SQS) | Conditional | Required if using event streaming architecture |
+| **Events Processor Worker** | Processes and aggregates usage events | Conditional | Part of event processing pipeline; handles complex event transformations |
+
+#### Web Services
+
+| Service | Purpose | Required | Notes |
+|---------|---------|----------|-------|
+| **API** (`api`) | Main Rails API server | ✅ Yes | Handles HTTP requests; scale based on request volume |
+| **App** (`app`) | Frontend application | ✅ Yes | Serves the user interface |
+| **PDF** (`pdf`) | PDF generation service | Recommended | Repackaged Gotemberg server, it generates PDF and is triggered by the `pdf-worker` process through an API call |
+
+#### Supporting Services
+
+| Service | Purpose | Required |
+|---------|---------|----------|
+| **Clock Process** (`clock`) | Clockwork scheduler for recurring jobs | ✅ Yes |
+
+### Resource Configuration Guide
+
+Based on production deployment data from high-volume clusters, here are recommended resource configurations:
+
+| Workload    | CPU Request | CPU Limit | Memory Request | Memory Limit | Recommended Replicas | Notes |
+|-------------|-------------|-----------|----------------|--------------|----------------------|-------|
+| **API**     | 4 cores     | -         | 4Gi            | 4Gi          | 10-30+               | Scale based on request volume; high traffic requires more replicas |
+| **App**     | 100m     | -         | 128Mi            | 128Mi          | 2-3               | Only serves static assets through nginx, no need to allocate a lot of resources |
+| **Clock Process**    | 100m     | -    | 812Mi          | 812Mi        | 1   | This only enqueues jobs and is not impacted by the volume of requests |
+| **Default Worker**   | 1100m    | -    | 2Gi            | 2Gi          | 3-5 | Reduce replicas when using dedicated workers |
+| **Analytics Worker** | 1core    | -    | 1100Mi         | 1100Mi       | 3-5 | CPU-intensive analytics calculations |
+| **Billing Worker**   | 1100m    | -    | 1100Mi         | 1100Mi       | 3-5 | Critical for billing operations; scale during billing cycles |
+| **Events Worker**    | 500m     | -    | 1Gi            | 1Gi          | 2-5 | Scale based on event ingestion rate |
+| **Events Consumer Worker**  | 1100m   | - | 1Gi | 1Gi | 1 | Single replica often sufficient with consumer groups |
+| **Events Processor Worker** | 2 cores | - | 2Gi | 2Gi | 1 | CPU and memory intensive event processing |
+| **PDF Worker**       | 1100m   | - | 1Gi | 1Gi | 2-4 | PDF generation is CPU-intensive; scale for invoice generation peaks |
+| **PDF**              | 2 cores | - | 1Gi | 1Gi | 2-4 | Handles synchronous PDF requests |
+| **Webhook Worker**   | 1100m   | - | 1Gi | 1Gi | 3-10 | Scale based on webhook volume; network I/O bound |
+| **Clock Worker**     | 3 cores | - | 8Gi | 8Gi | 1 | High-memory variant for special processing needs |
+
+#### Scaling Guidelines
+
+**When to Scale Up (Increase Resources)**:
+- High CPU usage (>80% sustained)
+- Memory pressure or OOM kills
+- Job processing latency increases
+- Queue depth growing consistently
+
+**When to Scale Out (Add Replicas)**:
+- Queue backlog building up
+- Job wait times increasing
+- High request volume to API web
+- Peak load periods (billing cycles, month-end)
+
+**Resource Optimization Tips**:
+
+1. **CPU Limits**: Generally avoid CPU limits to prevent throttling; use requests for scheduling
+2. **Memory Limits**: Set memory limits to prevent OOM but allow headroom (20-50% above requests)
+3. **Dedicated Workers**: Enable dedicated workers for high-volume job types to isolate resource usage
+4. **Autoscaling**: Configure Horizontal Pod Autoscaler (HPA) based on:
+   - CPU utilization (70-80% target)
+   - Queue depth metrics (custom metrics)
+   - Memory utilization (60-70% target)
+
+5. **Concurrency Tuning**: Adjust `SIDEKIQ_CONCURRENCY` based on:
+   - Available memory (higher concurrency requires more memory)
+   - Job characteristics (I/O bound vs CPU bound)
+   - Database connection pool size
+
+```
+
+#### Minimal Production Setup
+
+For smaller deployments, minimum required services:
+
+| Service | Replicas | Resources |
+|---------|----------|-----------|
+| API  | 2 | 1 core, 2Gi RAM |
+| Default Worker | 2 | 500m CPU, 1Gi RAM |
+| Clock Worker | 1 | 100m CPU, 512Mi RAM |
+| App | 1 | 100m CPU, 128Mi RAM |
+
+**Recommended additions as you scale**:
+1. Enable PDF Worker first (offload PDF generation)
+2. Enable Webhook Worker second (isolate webhook delays)
+3. Enable Events Worker third (handle high event volume)
+4. Enable Billing Worker for high invoice volume
 
 ---
 
