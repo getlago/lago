@@ -2,7 +2,7 @@
 [build]
 
 send_interrupt = true
-kill_delay = "10s"
+kill_delay = "1010s"
 
 [log]
 
