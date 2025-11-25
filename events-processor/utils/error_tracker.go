@@ -1,6 +1,10 @@
 package utils
 
-import "github.com/getsentry/sentry-go"
+import (
+	"log/slog"
+
+	"github.com/getsentry/sentry-go"
+)
 
 func CaptureErrorResult(errResult AnyResult) {
 	CaptureErrorResultWithExtra(errResult, "", nil)
@@ -21,4 +25,10 @@ func CaptureErrorResultWithExtra(errResult AnyResult, extraKey string, extraValu
 
 func CaptureError(err error) {
 	sentry.CaptureException(err)
+}
+
+func LogAndPanic(logger *slog.Logger, err error, message string) {
+	logger.Error(message, slog.String("error", err.Error()))
+	CaptureError(err)
+	panic(err.Error())
 }
