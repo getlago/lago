@@ -29,7 +29,7 @@ services:
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   db:
-    image: postgres:14.0-alpine
+    image: postgres:15.0-alpine
     container_name: lago_db_dev
     restart: unless-stopped
     command: -c config_file=/etc/postgresql.conf
@@ -75,9 +75,9 @@ services:
       context: ./front
       dockerfile: Dockerfile.dev
     volumes:
-      - ./front:/app:delegated
-      - front_node_modules_dev:/app/node_modules:delegated
-      - front_dist_dev:/app/dist:delegated
+      - ./front:/app:cached
+      - front_node_modules_dev:/app/node_modules
+      - front_dist_dev:/app/dist
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
@@ -151,7 +151,7 @@ services:
       clickhouse:
         condition: service_healthy
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -183,7 +183,7 @@ services:
       api:
         condition: service_started
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -266,7 +266,7 @@ services:
       api:
         condition: service_started
     volumes:
-      - ./api:/app:delegated
+      - ./api:/app:cached
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -296,7 +296,7 @@ services:
       - path: ./.env.development
         required: false
     volumes:
-      - ./events-processor:/app:delegated
+      - ./events-processor:/app:cached
 
   pdf:
     image: getlago/lago-gotenberg:8
@@ -325,7 +325,7 @@ services:
       - "traefik.http.services.mail.loadbalancer.server.port=8025"
 
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
+    image: docker.redpanda.com/redpandadata/redpanda:v25.2.10
     container_name: lago_redpanda_dev
     restart: unless-stopped
     hostname: redpanda
@@ -348,7 +348,7 @@ services:
       start_period: 30s
 
   redpandacreatetopics:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.2.9
+    image: docker.redpanda.com/redpandadata/redpanda:v25.2.10
     depends_on:
       redpanda:
         condition: service_healthy
@@ -367,22 +367,20 @@ services:
       - RPK_BROKERS=redpanda:9092
 
   redpanda-console:
-    image: docker.redpanda.com/redpandadata/console:v2.3.1
+    image: docker.redpanda.com/redpandadata/console:v3.2.2
     container_name: lago_redpanda_console_dev
     entrypoint: /bin/sh
-    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
         kafka:
           brokers: ["redpanda:9092"]
-          schemaRegistry:
-            enabled: false
-            urls: ["http://redpanda:8081"]
-        redpanda:
-          adminApi:
-            enabled: true
-            urls: ["http://redpanda:9644"]
+        kafkaConnect:
+          enabled: true
+          clusters:
+            - name: lago-kafka-connect
+              url: http://redpanda-kafka-connect:8083
     depends_on:
       - redpanda
     labels:
@@ -391,6 +389,31 @@ services:
       - "traefik.http.routers.console.entrypoints=websecure"
       - "traefik.http.routers.console.tls=true"
       - "traefik.http.services.console.loadbalancer.server.port=8080"
+
+  
+  redpanda-kafka-connect:
+    image: docker.redpanda.com/redpandadata/connectors:latest
+    hostname: redpanda-kafka-connect
+    volumes:
+      - ./extra/kafka-connect:/opt/kafka/connect-plugins
+    ports:
+      - 8083:8083
+    environment:
+      CONNECT_CONFIGURATION: |
+        key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+        group.id=redpanda-kafka-connect-group
+        offset.storage.topic=_connectors_offsets
+        config.storage.topic=_connectors_configs
+        status.storage.topic=_connectors_status
+        config.storage.replication.factor=-1
+        offset.storage.replication.factor=-1
+        status.storage.replication.factor=-1
+      CONNECT_BOOTSTRAP_SERVERS: redpanda:9092
+      CONNECT_GC_LOG_ENABLED: "true"
+      CONNECT_HEAP_OPTS: -Xms1G -Xmx1G
+      CONNECT_METRICS_ENABLEd: "false"
+      CONNECT_PLUGIN_PATH: "/opt/kafka/connect-plugins"
 
   clickhouse:
     image: clickhouse/clickhouse-server:25.4-alpine
