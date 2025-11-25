@@ -34,8 +34,7 @@ func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentSe
 	}
 }
 
-func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Record {
-	ctx := context.Background()
+func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
 	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
 	recordsAttr := attribute.Int("records.length", len(records))
 	span.SetAttributes(recordsAttr)
@@ -85,7 +84,7 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 					}
 
 					// Push failed records to the dead letter queue
-					go processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
+					processor.ProducerService.ProduceToDeadLetterQueue(ctx, event, result)
 				}
 
 				// Track processed records
@@ -99,7 +98,6 @@ func (processor *EventProcessor) ProcessEvents(records []*kgo.Record) []*kgo.Rec
 	}
 
 	g.Wait()
-
 	return processedRecords
 }
 
