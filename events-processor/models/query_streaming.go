@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -97,6 +98,7 @@ func GetAllWithStreaming[T any](db *gorm.DB, config StreamQueryConfig) utils.Res
 	logger := slog.Default()
 
 	_, err := StreamRows(db, config, func(item T) error {
+		fmt.Printf("ITEM: %v\n", item)
 		items = append(items, item)
 		return nil
 	})

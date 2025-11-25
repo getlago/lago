@@ -10,7 +10,7 @@ type ChargeFilterValue struct {
 	OrganizationID         string            `gorm:"->" json:"organization_id"`
 	ChargeFilterID         string            `gorm:"->" json:"charge_filter_id"`
 	BillableMetricFilterID string            `gorm:"->" json:"billable_metric_filter_id"`
-	Values                 utils.StringArray `gorm:"->" json:"values"`
+	Values                 utils.StringArray `gorm:"type:text[];->" json:"values"`
 	CreatedAt              utils.NullTime    `gorm:"->" json:"created_at"`
 	UpdatedAt              utils.NullTime    `gorm:"->" json:"updated_at"`
 	DeletedAt              utils.NullTime    `gorm:"->" json:"deleted_at"`

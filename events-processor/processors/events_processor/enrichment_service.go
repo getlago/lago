@@ -126,9 +126,6 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		// No filters found, return the original event without charge information
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
-	for _, filter := range filters {
-		fmt.Printf("FILTER: %v\n", filter)
-	}
 
 	// Index filters by charge ID (an event can match multiple charges and filters)
 	charges := make(map[string][]models.FlatFilter)
@@ -142,7 +139,6 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 	var enrichedEvents []*models.EnrichedEvent
 	// For each charge, find matching filter and create an enriched event
 	for _, chargeFilters := range charges {
-		fmt.Printf("CHARGE FILTER: %v\n", charges)
 		matchingFilter := models.MatchingFilter(chargeFilters, enrichedEvent)
 
 		// Create a copy of the enriched event for this filter

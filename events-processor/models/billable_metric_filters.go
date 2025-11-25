@@ -10,7 +10,7 @@ type BillableMetricFilter struct {
 	OrganizationID   string            `gorm:"->" json:"organization_id"`
 	BillableMetricID string            `gorm:"->" json:"billable_metric_id"`
 	Key              string            `gorm:"->" json:"key"`
-	Values           utils.StringArray `gorm:"type:jsonb;->" json:"values"`
+	Values           utils.StringArray `gorm:"type:text[];->" json:"values"`
 	CreatedAt        utils.NullTime    `gorm:"->" json:"created_at"`
 	UpdatedAt        utils.NullTime    `gorm:"->" json:"updated_at"`
 	DeletedAt        utils.NullTime    `gorm:"->" json:"deleted_at"`
