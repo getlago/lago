@@ -263,8 +263,8 @@ Based on production deployment data from high-volume clusters, here are recommen
 | **Events Worker**    | 500m     | -    | 1Gi            | 1Gi          | 2-5 | Scale based on event ingestion rate |
 | **Events Consumer Worker**  | 1100m   | - | 1Gi | 1Gi | 1 | Single replica often sufficient with consumer groups |
 | **Events Processor Worker** | 2 cores | - | 2Gi | 2Gi | 1 | CPU and memory intensive event processing |
-| **PDF Worker**       | 1100m   | - | 1Gi | 1Gi | 2-4 | PDF generation is CPU-intensive; scale for invoice generation peaks |
-| **PDF**              | 2 cores | - | 1Gi | 1Gi | 2-4 | Handles synchronous PDF requests |
+| **PDF Worker**       | 1100m   | - | 1Gi | 1Gi | 1 | Only reads from sidekiq queue and trigger a PDF generation through the PDF deployment (see next) |
+| **PDF**              | 2 cores | - | 1Gi | 1Gi | 2-4 | Generates PDF through gotemberg, triggered by worker through HTTP call |
 | **Webhook Worker**   | 1100m   | - | 1Gi | 1Gi | 3-10 | Scale based on webhook volume; network I/O bound |
 | **Clock Worker**     | 3 cores | - | 8Gi | 8Gi | 1 | High-memory variant for special processing needs |
 
