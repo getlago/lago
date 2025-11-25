@@ -77,6 +77,9 @@ type TracerProviderOptions struct {
 	// Turn On/Off Secure Mode
 	SecureMode bool
 
+	// Turn On/Off Kafka Tracing
+	KafkaTracing bool
+
 	// Provider type
 	TracingProvider TracingProvider
 }

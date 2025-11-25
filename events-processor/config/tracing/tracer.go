@@ -23,8 +23,9 @@ const (
 	EmptyProvider   TracingProvider = "none"
 
 	// Environment variables
-	envEnv             = "ENV"
-	envTracingProvider = "TRACING_PROVIDER"
+	envEnv                 = "ENV"
+	envTracingProvider     = "TRACING_PROVIDER"
+	envKafkaTracingEnabled = "KAFKA_TRACING_ENABLED"
 
 	// OpenTelemetry environment variables
 	envOtelExporterOtlpEndpoint = "OTEL_EXPORTER_OTLP_ENDPOINT"
@@ -113,6 +114,9 @@ func initTracerProviderOpts(tracingProvider TracingProvider) TracerProviderOptio
 		TracingProvider: tracingProvider,
 	}
 	// TODO: fetch version
+
+	kafkaTracing := utils.GetEnvAsBool(envKafkaTracingEnabled, false)
+	opts.KafkaTracing = kafkaTracing
 
 	switch tracingProvider {
 	case OTelProvider:
