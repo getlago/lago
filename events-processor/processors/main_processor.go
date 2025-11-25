@@ -134,7 +134,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 
 	kafkaConfig = kafka.ServerConfig{
 		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
-		TLS:            os.Getenv(envLagoKafkaTLS) == "true",
+		TLS:            utils.GetEnvAsBool(envLagoKafkaTLS, false),
 		Servers:        serverBrokers,
 		UseTelemetry:   config.UseTelemetry,
 		UserName:       os.Getenv(envLagoKafkaUsername),
