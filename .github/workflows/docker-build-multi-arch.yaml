@@ -353,3 +353,33 @@ jobs:
           digest=$(docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }} --format '{{json .Manifest.Digest}}' | tr -d '"')
           echo "digest=$digest" >> $GITHUB_OUTPUT
           docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }}
+
+      - name: Write job summary
+        if: inputs.push
+        run: |
+          # Build tags list
+          TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r '.tags[]' | sed 's/^/- `/' | sed 's/$/`/')
+          # Add combined tag if present
+          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
+            TAGS_LIST="${TAGS_LIST}
+          - \`${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}\`"
+          fi
+
+          {
+            cat <<EOF
+          ## Docker Build Summary
+
+          ### Image
+          \`${{ inputs.image-name }}\`
+
+          ### Tags
+
+          ${TAGS_LIST}
+
+          ### Digest
+          \`${{ steps.inspect.outputs.digest }}\`
+
+          ### Platforms
+          \`${{ inputs.platforms }}\`
+          EOF
+          } >> $GITHUB_STEP_SUMMARY
