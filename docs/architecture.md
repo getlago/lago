@@ -140,19 +140,10 @@ This pattern is applied across all dedicated worker types, allowing flexible sca
 #### Error Handling & Retry Mechanism
 
 **Default Retry Configuration**:
-- **Retry attempts**: 1 (configurable per job class)
-- **Retry strategy**: Exponential backoff with jitter
+- **Retry attempts**: We are not retrying jobs by default:
+	- `max_retries` set to 0 in `config/initializers/sidekiq.rb`
+	- `sidekiq_options retry: 0` in `app/jobs/application_job.rb`.
 - **Dead queue**: Failed jobs after exhausting retries are moved to the dead queue for manual inspection
-
-**Retry Behavior**:
-```ruby
-# Default Sidekiq retry configuration
-sidekiq_options retry: 1
-
-# Jobs can override retry behavior
-sidekiq_options retry: 3
-sidekiq_options retry: false  # Disable retries
-```
 
 **Error Handling Patterns**:
 
@@ -166,9 +157,8 @@ sidekiq_options retry: false  # Disable retries
    - Examples: Invalid customer data, missing required records
 
 3. **Timeout Handling**
-   - Jobs exceeding 25-second timeout are terminated
-   - Marked as failed and subject to retry policy
-   - Long-running jobs should be routed to `long_running` queue
+   - Jobs do not have execution timeout
+   - Redis poll has a 5s timeout in `config/initializers/sidekiq.rb`
 
 **Fallback Mechanisms**:
 
