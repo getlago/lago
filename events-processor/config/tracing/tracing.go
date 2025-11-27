@@ -2,6 +2,8 @@ package tracing
 
 import (
 	"context"
+
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 // Generic tracing span interface
@@ -56,6 +58,9 @@ type TracerProvider interface {
 
 	// InitTracer initializes a new tracer for the provider with the given service name.
 	InitTracer(serviceName string) Tracer
+
+	// GetKafkaHooks returns the Kafka hooks for the provider.
+	GetKafkaHooks() []kgo.Hook
 }
 
 // TracerProviderOptions is a struct that holds the options for configuring a tracer provider.

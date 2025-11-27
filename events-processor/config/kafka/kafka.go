@@ -1,19 +1,12 @@
 package kafka
 
 import (
-	"context"
 	"log/slog"
-	"time"
 
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
-	"github.com/twmb/franz-go/plugin/kotel"
 	"github.com/twmb/franz-go/plugin/kslog"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 const (
@@ -25,7 +18,7 @@ type ServerConfig struct {
 	ScramAlgorithm string
 	TLS            bool
 	Servers        []string
-	UseTelemetry   bool
+	TracerProvider tracing.TracerProvider
 	UserName       string
 	Password       string
 }
@@ -43,32 +36,12 @@ func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, e
 		opts = append(opts, config...)
 	}
 
-	if serverConfig.UseTelemetry {
-		meterProvider, err := initMeterProvider(context.Background())
-		if err != nil {
-			return nil, err
+	if serverConfig.TracerProvider != nil {
+		hooks := serverConfig.TracerProvider.GetKafkaHooks()
+		if len(hooks) > 0 {
+			kotelOpt := kgo.WithHooks(hooks...)
+			opts = append(opts, kotelOpt)
 		}
-		meterOpts := []kotel.MeterOpt{kotel.MeterProvider(meterProvider)}
-		meter := kotel.NewMeter(meterOpts...)
-
-		tracerProvider, err := initTracerProvider(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		tracerOpts := []kotel.TracerOpt{
-			kotel.TracerProvider(tracerProvider),
-			kotel.TracerPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{})),
-		}
-		tracer := kotel.NewTracer(tracerOpts...)
-
-		kotelOps := []kotel.Opt{
-			kotel.WithTracer(tracer),
-			kotel.WithMeter(meter),
-		}
-
-		kotelService := kotel.NewKotel(kotelOps...)
-		kotelOpt := kgo.WithHooks(kotelService.Hooks()...)
-		opts = append(opts, kotelOpt)
 	}
 
 	if serverConfig.ScramAlgorithm != "" {
@@ -100,31 +73,4 @@ func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, e
 	}
 
 	return client, nil
-}
-
-func initTracerProvider(ctx context.Context) (*trace.TracerProvider, error) {
-	traceExporter, err := otlptracegrpc.New(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tracerProvider := trace.NewTracerProvider(
-		trace.WithBatcher(traceExporter),
-	)
-
-	return tracerProvider, nil
-}
-
-func initMeterProvider(ctx context.Context) (*metric.MeterProvider, error) {
-	metricExporter, err := otlpmetricgrpc.New(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(metricExporter,
-			metric.WithInterval(60*time.Second))),
-	)
-
-	return meterProvider, nil
 }
