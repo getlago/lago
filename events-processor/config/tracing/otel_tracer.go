@@ -92,6 +92,7 @@ type OTelTracerProvider struct {
 	ctx      context.Context
 	logger   *slog.Logger
 	exporter *otlptrace.Exporter
+	options  TracerProviderOptions
 }
 
 func (p *OTelTracerProvider) Stop() {
@@ -99,6 +100,14 @@ func (p *OTelTracerProvider) Stop() {
 	if err != nil {
 		p.logger.Error("Could not shutdown exporter", slog.String("error", err.Error()))
 	}
+}
+
+func (p *OTelTracerProvider) GetOptions() TracerProviderOptions {
+	return p.options
+}
+
+func (p *OTelTracerProvider) InitTracer(serviceName string) Tracer {
+	return NewOTelTracer(serviceName)
 }
 
 func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTelTracerProvider {
@@ -115,7 +124,7 @@ func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTe
 		ctx,
 		otlptracegrpc.NewClient(
 			secureOpt,
-			otlptracegrpc.WithEndpoint(opts.EndPoint),
+			otlptracegrpc.WithEndpoint(opts.ProviderURL),
 		),
 	)
 
@@ -150,6 +159,7 @@ func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTe
 		ctx:      ctx,
 		logger:   logger,
 		exporter: exporter,
+		options:  opts,
 	}
 }
 

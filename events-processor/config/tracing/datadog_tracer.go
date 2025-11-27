@@ -74,10 +74,20 @@ func (t *DatadogTracer) StartSpan(ctx context.Context, operationName string, opt
 }
 
 // DatadogTracerProvider implements the TracerProvider interface
-type DatadogTracerProvider struct{}
+type DatadogTracerProvider struct {
+	options TracerProviderOptions
+}
+
+func (p *DatadogTracerProvider) GetOptions() TracerProviderOptions {
+	return p.options
+}
 
 func (p *DatadogTracerProvider) Stop() {
 	ddtracer.Stop()
+}
+
+func (p *DatadogTracerProvider) InitTracer(serviceName string) Tracer {
+	return NewDatadogTracer(serviceName)
 }
 
 func NewDatadogTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *DatadogTracerProvider {
@@ -86,12 +96,12 @@ func NewDatadogTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *
 		ddtracer.WithEnv(opts.Env),
 	}
 
-	options = append(options, ddtracer.WithAgentAddr(opts.EndPoint))
+	options = append(options, ddtracer.WithAgentAddr(opts.ProviderURL))
 
 	ddtracer.Start(options...)
 	logger.Info("Datadog tracer started",
 		slog.String("service", opts.ServiceName),
 	)
 
-	return &DatadogTracerProvider{}
+	return &DatadogTracerProvider{options: opts}
 }

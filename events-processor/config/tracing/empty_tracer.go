@@ -27,6 +27,16 @@ func (t *EmptyTracer) StartSpan(ctx context.Context, operationName string, opts 
 }
 
 // EmptyTracerProvider implements the TracerProvider interface
-type EmptyTracerProvider struct{}
+type EmptyTracerProvider struct {
+	options TracerProviderOptions
+}
+
+func (p *EmptyTracerProvider) GetOptions() TracerProviderOptions {
+	return p.options
+}
 
 func (p *EmptyTracerProvider) Stop() {}
+
+func (p *EmptyTracerProvider) InitTracer(serviceName string) Tracer {
+	return NewEmptyTracer()
+}
