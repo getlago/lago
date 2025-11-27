@@ -72,3 +72,16 @@ func TestGetEnvAsBool(t *testing.T) {
 		assert.False(t, value)
 	})
 }
+
+func TestGetEnvOrDefault(t *testing.T) {
+	t.Run("should return environment variable value when set", func(t *testing.T) {
+		t.Setenv("TEST_DEFAULT_ENV", "test_value")
+		value := GetEnvOrDefault("TEST_DEFAULT_ENV", "default_value")
+		assert.Equal(t, "test_value", value)
+	})
+
+	t.Run("should return default value when environment variable is not set", func(t *testing.T) {
+		value := GetEnvOrDefault("NON_EXISTENT_DEFAULT_ENV", "default_value")
+		assert.Equal(t, "default_value", value)
+	})
+}
