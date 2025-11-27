@@ -11,16 +11,13 @@ import (
 
 	"github.com/getsentry/sentry-go"
 
-	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
 )
 
 const (
-	envEnv                      = "ENV"
-	envSentryDsn                = "SENTRY_DSN"
-	envOtelExporterOtlpEndpoint = "OTEL_EXPORTER_OTLP_ENDPOINT"
-	envOtelInsecure             = "OTEL_INSECURE"
-	envOtelServiceName          = "OTEL_SERVICE_NAME"
+	envEnv       = "ENV"
+	envSentryDsn = "SENTRY_DSN"
 )
 
 func main() {
@@ -33,15 +30,10 @@ func main() {
 
 	setupGracefulShutdown(cancel, logger)
 
-	otelEndpoint := os.Getenv(envOtelExporterOtlpEndpoint)
-	if otelEndpoint != "" {
-		telemetryCfg := tracer.TracerConfig{
-			ServiceName: os.Getenv(envOtelServiceName),
-			EndpointURL: otelEndpoint,
-			Insecure:    os.Getenv(envOtelInsecure),
-		}
-		tracer.InitOTLPTracer(telemetryCfg)
-	}
+	tracerProvider := tracing.InitTracerProvider(logger)
+	defer tracerProvider.Stop()
+
+	tracing.InitTracer(tracerProvider)
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv(envSentryDsn),
@@ -57,7 +49,10 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	// start processing events & loop forever
-	processors.StartProcessingEvents(ctx, &processors.Config{Logger: logger, UseTelemetry: otelEndpoint != ""})
+	processors.StartProcessingEvents(ctx, &processors.Config{
+		Logger:       logger,
+		UseTelemetry: tracerProvider.GetOptions().TracingProvider == tracing.OTelProvider, // TODO: Check for datadog
+	})
 }
 
 func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {

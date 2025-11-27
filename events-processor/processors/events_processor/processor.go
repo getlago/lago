@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
-	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -35,10 +34,10 @@ func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentSe
 }
 
 func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
-	span := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessEvents")
-	recordsAttr := attribute.Int("records.length", len(records))
-	span.SetAttributes(recordsAttr)
+	span := tracing.StartSpan(ctx, "PostProcess.ProcessEvents")
 	defer span.End()
+
+	span.SetAttribute("records.length", len(records))
 
 	g := errgroup.Group{}
 
@@ -48,7 +47,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 	for _, record := range records {
 		g.Go(func() error {
 			func(record *kgo.Record) {
-				sp := tracer.GetTracerSpan(ctx, "post_process", "PostProcess.ProcessOneEvent")
+				sp := tracing.StartSpan(ctx, "PostProcess.ProcessOneEvent")
 				defer sp.End()
 
 				event := models.Event{}

@@ -6,7 +6,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
@@ -50,7 +50,7 @@ func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, err
 }
 
 func (p *Producer) Produce(ctx context.Context, msg *ProducerMessage) bool {
-	span := tracer.GetTracerSpan(ctx, "post_process", "Producer.Produce")
+	span := tracing.StartSpan(ctx, "Producer.Produce")
 	defer span.End()
 
 	record := &kgo.Record{

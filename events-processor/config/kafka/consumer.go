@@ -9,10 +9,9 @@ import (
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 
-	tracer "github.com/getlago/lago/events-processor/config"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
@@ -82,10 +81,10 @@ func (pc *PartitionConsumer) closeQuitChannel() {
 
 func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
 	ctx := context.Background()
-	span := tracer.GetTracerSpan(ctx, "post_process", "Consumer.Consume")
-	recordsAttr := attribute.Int("records.length", len(records))
-	span.SetAttributes(recordsAttr)
+	span := tracing.StartSpan(ctx, "Consumer.Consume")
 	defer span.End()
+
+	span.SetAttribute("records.length", len(records))
 
 	processedRecords := pc.processRecords(ctx, records)
 	commitableRecords := records
