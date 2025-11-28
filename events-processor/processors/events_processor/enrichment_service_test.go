@@ -156,7 +156,7 @@ func TestEnrichEvent(t *testing.T) {
 
 		enrichResult := processor.EnrichEvent(&event)
 		assert.False(t, enrichResult.Success())
-		assert.Contains(t, enrichResult.ErrorMsg(), "Failed to evaluate expr: round(event.properties.value)")
+		assert.Contains(t, enrichResult.ErrorMsg(), "failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", enrichResult.ErrorCode())
 		assert.Equal(t, "Error evaluating custom expression", enrichResult.ErrorMessage())
 	})

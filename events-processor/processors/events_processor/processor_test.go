@@ -139,6 +139,16 @@ func TestProcessEvent(t *testing.T) {
 		}
 		memCache.SetSubscription(&sub)
 
+		charge := &models.Charge{
+			ID:               "ch123",
+			OrganizationID:   event.OrganizationID,
+			PlanID:           "plan123",
+			BillableMetricID: bm.ID,
+			PayInAdvance:     false,
+			UpdatedAt:        utils.NowNullTime(),
+		}
+		memCache.SetCharge(charge)
+
 		ctx := context.Background()
 		result := processor.processEvent(ctx, &event)
 
@@ -354,7 +364,7 @@ func TestProcessEvent(t *testing.T) {
 			ID:             "sub123",
 			OrganizationID: &event.OrganizationID,
 			ExternalID:     event.ExternalSubscriptionID,
-			PlanID:         "plan123",
+			PlanID:         "plan_id",
 		}
 		result = memCache.SetSubscription(&sub)
 		require.True(t, result.Success())
@@ -418,7 +428,7 @@ func TestProcessEvent(t *testing.T) {
 		assert.Equal(t, "12.0", *evResult.Value().Value)
 		assert.Equal(t, "sum", evResult.Value().AggregationType)
 		assert.Equal(t, "sub123", evResult.Value().SubscriptionID)
-		assert.Equal(t, "plan123", evResult.Value().PlanID)
+		assert.Equal(t, "plan_id", evResult.Value().PlanID)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
