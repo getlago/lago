@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -147,7 +146,6 @@ func TestBuildFlatFilters_WithChargeFilters(t *testing.T) {
 	require.Len(t, flatFilters, 1)
 
 	ff := flatFilters[0]
-	fmt.Printf("FLAT FILTER FILTERS: %v\n", ff.Filters)
 	assert.Equal(t, orgID, ff.OrganizationID)
 	assert.Equal(t, bmCode, ff.BillableMetricCode)
 	assert.Equal(t, planID, ff.PlanID)

@@ -98,7 +98,8 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 // we update the cache entry with a 1 month TTL
 func (c *Cache) DeleteSubscription(sub *models.Subscription) utils.Result[bool] {
 	key := c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
-	return deleteWithTTL(c, key, sub, time.Hour)
+	ttl := 30 * 24 * time.Hour
+	return deleteWithTTL(c, key, sub, ttl)
 }
 
 func (c *Cache) LoadSubscriptionsSnapshot(db *gorm.DB) utils.Result[int] {
