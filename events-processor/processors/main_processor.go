@@ -11,6 +11,7 @@ import (
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/config/redis"
+	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/processors/events_processor"
 	"github.com/getlago/lago/events-processor/utils"
@@ -48,8 +49,8 @@ const (
 )
 
 type Config struct {
-	Logger       *slog.Logger
-	UseTelemetry bool
+	Logger         *slog.Logger
+	TracerProvider tracing.TracerProvider
 }
 
 func initProducer(ctx context.Context, topicEnv string) (*kafka.Producer, error) {
@@ -135,7 +136,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
 		TLS:            utils.GetEnvAsBool(envLagoKafkaTLS, false),
 		Servers:        serverBrokers,
-		UseTelemetry:   config.UseTelemetry,
+		TracerProvider: config.TracerProvider,
 		UserName:       os.Getenv(envLagoKafkaUsername),
 		Password:       os.Getenv(envLagoKafkaPassword),
 	}

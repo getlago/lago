@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/twmb/franz-go/pkg/kgo"
 	ddtracer "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
@@ -88,6 +89,11 @@ func (p *DatadogTracerProvider) Stop() {
 
 func (p *DatadogTracerProvider) InitTracer(serviceName string) Tracer {
 	return NewDatadogTracer(serviceName)
+}
+
+// Hooks returns the kgo hooks for Datadog instrumentation
+func (p *DatadogTracerProvider) GetKafkaHooks() []kgo.Hook {
+	return []kgo.Hook{} // TODO(datadog): implement
 }
 
 func NewDatadogTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *DatadogTracerProvider {

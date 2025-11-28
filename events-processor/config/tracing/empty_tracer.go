@@ -2,6 +2,8 @@ package tracing
 
 import (
 	"context"
+
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 // EmptySpan implements the Span interface.
@@ -40,3 +42,5 @@ func (p *EmptyTracerProvider) Stop() {}
 func (p *EmptyTracerProvider) InitTracer(serviceName string) Tracer {
 	return NewEmptyTracer()
 }
+
+func (p *EmptyTracerProvider) GetKafkaHooks() []kgo.Hook { return []kgo.Hook{} }

@@ -50,8 +50,8 @@ func main() {
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{
-		Logger:       logger,
-		UseTelemetry: tracerProvider.GetOptions().TracingProvider == tracing.OTelProvider, // TODO: Check for datadog
+		Logger:         logger,
+		TracerProvider: tracerProvider,
 	})
 }
 
