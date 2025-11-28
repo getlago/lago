@@ -22,7 +22,7 @@ func TestBuildSubscriptionKey(t *testing.T) {
 		organizationID: "org-123",
 	}
 
-	expectedKey := "sub:org-123:sub1"
+	expectedKey := "sub:org-123:sub1:123"
 	key := cache.buildSubscriptionKey(testModel.organizationID, testModel.externalID, testModel.id)
 	assert.Equal(t, expectedKey, key)
 }
