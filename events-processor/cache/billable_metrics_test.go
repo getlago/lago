@@ -85,7 +85,7 @@ func TestGetBillableMetric_Success(t *testing.T) {
 func TestGetBillableMetric_NotFound(t *testing.T) {
 	cache := setupTestCache(t)
 
-	result := cache.GetBillableMetric("org-123", "nonexistdent")
+	result := cache.GetBillableMetric("org-123", "nonexistent")
 
 	assert.True(t, result.Failure())
 }

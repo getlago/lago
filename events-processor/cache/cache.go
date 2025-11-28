@@ -14,7 +14,7 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
-// Cache wraps BadgerDB to provide an in§memory key§value store with JSON serialization
+// Cache wraps BadgerDB to provide an in-memory key-value store with JSON serialization
 // It manages the lifecycle of cached data and coordinates snapshot loading and CDC consumption.
 type Cache struct {
 	ctx    context.Context
