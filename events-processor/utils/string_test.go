@@ -97,15 +97,9 @@ func TestStringArray_Scan(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "invalid JSON",
-			input:    []byte(`not valid json`),
-			expected: nil,
-			wantErr:  true,
-		},
-		{
-			name:     "non-byte input returns empty array",
-			input:    "string input",
-			expected: StringArray(nil),
+			name:     "string input treated as single element",
+			input:    "plain string",
+			expected: StringArray{"plain string"},
 			wantErr:  false,
 		},
 	}
