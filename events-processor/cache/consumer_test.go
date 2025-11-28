@@ -192,6 +192,7 @@ func TestProcessRecord_SkipUpdate_SameTimestamp(t *testing.T) {
 func TestProcessRecord_Delete_MatchingID(t *testing.T) {
 	cache := setupTestCache(t)
 
+	var deleteCalled bool
 	config := ConsumerConfig[testModel]{
 		ModelName:    "test_model",
 		IsDeleted:    func(m *testModel) bool { return m.DeletedAt },
@@ -202,6 +203,10 @@ func TestProcessRecord_Delete_MatchingID(t *testing.T) {
 			return utils.SuccessResult(&testModel{ID: "123"})
 		},
 		SetCache: func(m *testModel) utils.Result[bool] {
+			return utils.SuccessResult(true)
+		},
+		Delete: func(m *testModel) utils.Result[bool] {
+			deleteCalled = true
 			return utils.SuccessResult(true)
 		},
 	}
@@ -218,11 +223,7 @@ func TestProcessRecord_Delete_MatchingID(t *testing.T) {
 
 	processRecord(cache, record, config)
 
-	err := cache.db.View(func(txn *badger.Txn) error {
-		_, err := txn.Get([]byte(key))
-		return err
-	})
-	assert.Error(t, err, "Key should be deleted from cache")
+	assert.True(t, deleteCalled, "Delete should have been called")
 }
 
 func TestProcessRecord_Delete_NotInCache(t *testing.T) {

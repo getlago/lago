@@ -55,16 +55,6 @@ type BillableMetric struct {
 	DeletedAt       utils.NullTime  `gorm:"index;->" json:"deleted_at"`
 }
 
-func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
-	var bm BillableMetric
-	result := store.db.Connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
-	if result.Error != nil {
-		return failedBillableMetricResult(result.Error)
-	}
-
-	return utils.SuccessResult(&bm)
-}
-
 func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
 	config := StreamQueryConfig{
 		TableName: "billable_metrics",
@@ -84,14 +74,4 @@ func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
 	}
 
 	return GetAllWithStreaming[BillableMetric](db, config)
-}
-
-func failedBillableMetricResult(err error) utils.Result[*BillableMetric] {
-	result := utils.FailedResult[*BillableMetric](err)
-
-	if err.Error() == gorm.ErrRecordNotFound.Error() {
-		result = result.NonCapturable().NonRetryable()
-	}
-
-	return result
 }
