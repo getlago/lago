@@ -84,7 +84,8 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService,
 
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		processor, _, _, _ := setupProcessorTestEnv(t)
+		processor, _, _, cache := setupProcessorTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -102,6 +103,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
 		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
+		defer memCache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -167,6 +169,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
 		processor, _, _, cache := setupProcessorTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -198,6 +201,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
 		processor, _, _, cache := setupProcessorTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -225,6 +229,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
 		processor, _, _, memCache := setupProcessorTestEnv(t)
+		defer memCache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -263,6 +268,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
 		processor, testProducers, flagger, memCache := setupProcessorTestEnv(t)
+		defer memCache.Close()
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -323,6 +329,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
 		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
+		defer memCache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -439,6 +446,7 @@ func TestProcessEvent(t *testing.T) {
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
 		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
+		defer memCache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",

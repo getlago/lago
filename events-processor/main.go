@@ -83,6 +83,7 @@ func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
 	go func() {
 		sig := <-signChan
 		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+		memCache.Close()
 		cancel()
 	}()
 }

@@ -30,7 +30,8 @@ func setupEnrichmentTestEnv(t *testing.T) (*EventEnrichmentService, *cache.Cache
 
 func TestEnrichEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		processor, _ := setupEnrichmentTestEnv(t)
+		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -48,6 +49,7 @@ func TestEnrichEvent(t *testing.T) {
 
 	t.Run("When event source is post processed on API and the result is successful", func(t *testing.T) {
 		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -101,6 +103,7 @@ func TestEnrichEvent(t *testing.T) {
 
 	t.Run("When timestamp is invalid", func(t *testing.T) {
 		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -132,6 +135,7 @@ func TestEnrichEvent(t *testing.T) {
 
 	t.Run("When expression failed to evaluate", func(t *testing.T) {
 		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -163,6 +167,7 @@ func TestEnrichEvent(t *testing.T) {
 
 	t.Run("With a flat filter", func(t *testing.T) {
 		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -209,6 +214,7 @@ func TestEnrichEvent(t *testing.T) {
 
 	t.Run("With multiple flat filters", func(t *testing.T) {
 		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
 		properties := map[string]any{
 			"value":  "12.12",
@@ -386,7 +392,8 @@ func TestEnrichEvent(t *testing.T) {
 }
 
 func TestEvaluateExpression(t *testing.T) {
-	processor, _ := setupEnrichmentTestEnv(t)
+	processor, cache := setupEnrichmentTestEnv(t)
+	defer cache.Close()
 
 	bm := models.BillableMetric{}
 	event := models.EnrichedEvent{Timestamp: 1741007009.0, Code: "foo"}
