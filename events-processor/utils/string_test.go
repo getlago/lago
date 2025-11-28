@@ -10,9 +10,10 @@ import (
 
 func TestStringArray_Value(t *testing.T) {
 	tests := []struct {
-		name     string
-		array    StringArray
-		expected string
+		name      string
+		array     StringArray
+		expected  string
+		expectNil bool
 	}{
 		{
 			name:     "empty array",
@@ -20,9 +21,9 @@ func TestStringArray_Value(t *testing.T) {
 			expected: "[]",
 		},
 		{
-			name:     "nil array",
-			array:    nil,
-			expected: "null",
+			name:      "nil array",
+			array:     nil,
+			expectNil: true,
 		},
 		{
 			name:     "single element",
@@ -46,6 +47,12 @@ func TestStringArray_Value(t *testing.T) {
 			value, err := tt.array.Value()
 
 			require.NoError(t, err)
+
+			if tt.expectNil {
+				assert.Nil(t, value)
+				return
+			}
+
 			assert.IsType(t, []byte{}, value)
 			assert.JSONEq(t, tt.expected, string(value.([]byte)))
 		})
