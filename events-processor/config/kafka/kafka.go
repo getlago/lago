@@ -38,7 +38,7 @@ func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, e
 
 	if serverConfig.TracerProvider != nil {
 		hooks := serverConfig.TracerProvider.GetKafkaHooks()
-		if len(hooks) > 0 {
+		if serverConfig.TracerProvider.GetOptions().KafkaTracing && len(hooks) > 0 {
 			kotelOpt := kgo.WithHooks(hooks...)
 			opts = append(opts, kotelOpt)
 		}
