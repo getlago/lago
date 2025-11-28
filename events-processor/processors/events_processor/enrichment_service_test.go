@@ -9,6 +9,7 @@ import (
 	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -293,102 +294,103 @@ func TestEnrichEvent(t *testing.T) {
 	})
 
 	// TODO: Rewrite this test since its not working with the new cache behavior
-	// t.Run("When event source is not post process on API with a flat filter with pricing group keys", func(t *testing.T) {
-	// 	cache := setupTestEnv(t)
+	t.Run("When event source is not post process on API with a flat filter with pricing group keys", func(t *testing.T) {
+		processor, cache := setupEnrichmentTestEnv(t)
+		defer cache.Close()
 
-	// 	orgID := uuid.New().String()
-	// 	bmID := uuid.New().String()
-	// 	extSubID := "sub_id"
-	// 	bmCode := "test_metric"
-	// 	planID := "plan_id"
+		orgID := uuid.New().String()
+		bmID := uuid.New().String()
+		extSubID := "sub_id"
+		bmCode := "test_metric"
+		planID := "plan_id"
 
-	// 	properties := map[string]any{
-	// 		"value":   "12.12",
-	// 		"scheme":  "visa",
-	// 		"country": "US",
-	// 		"type":    "debit",
-	// 	}
+		properties := map[string]any{
+			"value":   "12.12",
+			"scheme":  "visa",
+			"country": "US",
+			"type":    "debit",
+		}
 
-	// 	now := utils.NowNullTime()
-	// 	event := models.Event{
-	// 		OrganizationID:         orgID,
-	// 		ExternalSubscriptionID: extSubID,
-	// 		Code:                   bmCode,
-	// 		Timestamp:              now,
-	// 		Properties:             properties,
-	// 		Source:                 "SQS",
-	// 	}
+		event := models.Event{
+			OrganizationID:         orgID,
+			ExternalSubscriptionID: extSubID,
+			Code:                   bmCode,
+			Timestamp:              1741007009.0,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
 
-	// 	bm := &models.BillableMetric{
-	// 		ID:              bmID,
-	// 		OrganizationID:  orgID,
-	// 		Code:            bmCode,
-	// 		AggregationType: models.AggregationTypeWeightedSum,
-	// 		FieldName:       "api_requests",
-	// 		Expression:      "round(event.properties.value)",
-	// 		CreatedAt:       utils.NowNullTime(),
-	// 		UpdatedAt:       utils.NowNullTime(),
-	// 	}
-	// 	result := cache.SetBillableMetric(bm)
-	// 	require.True(t, result.Success())
+		bm := &models.BillableMetric{
+			ID:              bmID,
+			OrganizationID:  orgID,
+			Code:            bmCode,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
+		}
+		result := cache.SetBillableMetric(bm)
+		require.True(t, result.Success())
 
-	// 	bmf := &models.BillableMetricFilter{
-	// 		ID:               "bmf123",
-	// 		OrganizationID:   orgID,
-	// 		BillableMetricID: bmID,
-	// 		Key:              "country",
-	// 		Values:           []string{"US"},
-	// 	}
-	// 	result = cache.SetBillableMetricFilter(bmf)
-	// 	require.True(t, result.Success())
+		bmf := &models.BillableMetricFilter{
+			ID:               "bmf123",
+			OrganizationID:   orgID,
+			BillableMetricID: bmID,
+			Key:              "country",
+			Values:           []string{"US"},
+		}
+		result = cache.SetBillableMetricFilter(bmf)
+		require.True(t, result.Success())
 
-	// 	sub := &models.Subscription{
-	// 		ID:             "sub123",
-	// 		OrganizationID: &orgID,
-	// 		ExternalID:     extSubID,
-	// 		PlanID:         planID,
-	// 	}
-	// 	result = cache.SetSubscription(sub)
-	// 	require.True(t, result.Success())
+		sub := &models.Subscription{
+			ID:             "sub123",
+			OrganizationID: &orgID,
+			ExternalID:     extSubID,
+			PlanID:         planID,
+		}
+		result = cache.SetSubscription(sub)
+		require.True(t, result.Success())
 
-	// 	charge := &models.Charge{
-	// 		ID:               "charge_id1",
-	// 		OrganizationID:   orgID,
-	// 		BillableMetricID: bmID,
-	// 		PlanID:           planID,
-	// 		UpdatedAt:        utils.NowNullTime(),
-	// 		PricingGroupKeys: []string{"country", "type"},
-	// 	}
-	// 	result = cache.SetCharge(charge)
-	// 	require.True(t, result.Success())
+		charge := &models.Charge{
+			ID:               "charge_id1",
+			OrganizationID:   orgID,
+			BillableMetricID: bmID,
+			PlanID:           planID,
+			UpdatedAt:        utils.NowNullTime(),
+			PricingGroupKeys: []string{"country", "type"},
+		}
+		result = cache.SetCharge(charge)
+		require.True(t, result.Success())
 
-	// 	chargeFilter := &models.ChargeFilter{
-	// 		ID:             "charge_filter_id1",
-	// 		OrganizationID: orgID,
-	// 		ChargeID:       charge.ID,
-	// 	}
-	// 	result = cache.SetChargeFilter(chargeFilter)
-	// 	require.True(t, result.Success())
+		chargeFilter := &models.ChargeFilter{
+			ID:               "charge_filter_id1",
+			OrganizationID:   orgID,
+			ChargeID:         charge.ID,
+			PricingGroupKeys: []string{"country", "type"},
+		}
+		result = cache.SetChargeFilter(chargeFilter)
+		require.True(t, result.Success())
 
-	// 	chargeFilterValue := &models.ChargeFilterValue{
-	// 		ID:                     uuid.New().String(),
-	// 		OrganizationID:         orgID,
-	// 		ChargeFilterID:         chargeFilter.ID,
-	// 		BillableMetricFilterID: bmf.ID,
-	// 		Values:                 []string{"US"},
-	// 	}
-	// 	result = cache.SetChargeFilterValue(chargeFilterValue)
-	// 	require.True(t, result.Success())
+		chargeFilterValue := &models.ChargeFilterValue{
+			ID:                     uuid.New().String(),
+			OrganizationID:         orgID,
+			ChargeFilterID:         chargeFilter.ID,
+			BillableMetricFilterID: bmf.ID,
+			Values:                 []string{"US"},
+		}
+		result = cache.SetChargeFilterValue(chargeFilterValue)
+		require.True(t, result.Success())
 
-	// 	enrichResult := processor.EnrichEvent(&event)
-	// 	assert.True(t, enrichResult.Success())
-	// 	assert.Equal(t, 1, len(enrichResult.Value()))
+		enrichResult := processor.EnrichEvent(&event)
+		assert.True(t, enrichResult.Success())
+		assert.Equal(t, 1, len(enrichResult.Value()))
 
-	// 	eventResult := enrichResult.Value()[0]
-	// 	assert.Equal(t, "12", *eventResult.Value)
-	// 	assert.Equal(t, "charge_id1", *eventResult.ChargeID)
-	// 	assert.Equal(t, map[string]string{"country": "US", "type": "debit"}, eventResult.GroupedBy)
-	// })
+		eventResult := enrichResult.Value()[0]
+		assert.Equal(t, "12", *eventResult.Value)
+		assert.Equal(t, "charge_id1", *eventResult.ChargeID)
+		assert.Equal(t, map[string]string{"country": "US", "type": "debit"}, eventResult.GroupedBy)
+	})
 }
 
 func TestEvaluateExpression(t *testing.T) {
