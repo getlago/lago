@@ -287,8 +287,6 @@ Based on production deployment data from high-volume clusters, here are recommen
    - Job characteristics (I/O bound vs CPU bound)
    - Database connection pool size
 
-```
-
 #### Minimal Production Setup
 
 For smaller deployments, minimum required services:
