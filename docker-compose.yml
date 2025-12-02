@@ -73,6 +73,10 @@ x-frontend-environment: &frontend-env
   "APP_ENV": production
   "LAGO_OAUTH_PROXY_URL": https://proxy.getlago.com
   "LAGO_DISABLE_PDF_GENERATION": ${LAGO_DISABLE_PDF_GENERATION:-false}
+  "SENTRY_DSN": ${SENTRY_DSN:-}
+  "SENTRY_ORG": ${SENTRY_ORG:-}
+  "SENTRY_PROJECT": ${SENTRY_PROJECT:-}
+  "SENTRY_AUTH_TOKEN": ${SENTRY_AUTH_TOKEN:-}
 
 services:
   db:

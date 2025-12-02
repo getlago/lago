@@ -86,6 +86,10 @@ services:
       - LAGO_DISABLE_SIGNUP=${LAGO_DISABLE_SIGNUP:-}
       - LAGO_DISABLE_PDF_GENERATION=${LAGO_DISABLE_PDF_GENERATION:-false}
       - NANGO_SECRET_KEY=${NANGO_SECRET_KEY:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ORG=${SENTRY_ORG:-}
+      - SENTRY_PROJECT=${SENTRY_PROJECT:-}
+      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.app.rule=Host(`app.lago.dev`)"
