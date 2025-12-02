@@ -51,6 +51,12 @@ on:
         type: string
         default: ''
 
+      target:
+        description: 'Dockerfile target stage to build'
+        required: false
+        type: string
+        default: 'default'
+
       cache-type:
         description: 'Cache type (gha or registry)'
         required: false
@@ -234,6 +240,7 @@ jobs:
         with:
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
+          target: ${{ inputs.target }}
           platforms: linux/${{ matrix.arch }}
           build-args: ${{ inputs.build-args }}
           outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=${{ inputs.push }}
