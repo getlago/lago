@@ -5,17 +5,18 @@ import (
 	"fmt"
 
 	"github.com/getlago/lago-expression/expression-go"
+	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
 type EventEnrichmentService struct {
-	apiStore *models.ApiStore
+	memCache *cache.Cache
 }
 
-func NewEventEnrichmentService(apiStore *models.ApiStore) *EventEnrichmentService {
+func NewEventEnrichmentService(memCache *cache.Cache) *EventEnrichmentService {
 	return &EventEnrichmentService{
-		apiStore: apiStore,
+		memCache: memCache,
 	}
 }
 
@@ -26,7 +27,7 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	}
 	enrichedEvent := enrichedEventResult.Value()
 
-	bmResult := s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
+	bmResult := s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
 	if bmResult.Failure() {
 		return failedMultiEventsResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
@@ -39,7 +40,8 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 		}
 	}
 
-	subResult := s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	subResult := s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	// TODO: Check if cache result IsCapturable when its needed
 	if subResult.Failure() && subResult.IsCapturable() {
 		// We want to keep processing the event even if the subscription is not found
 		return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
@@ -94,7 +96,7 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 		ev.Properties[bm.FieldName] = *result
 	} else {
 		return utils.
-			FailedBoolResult(fmt.Errorf("Failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
+			FailedBoolResult(fmt.Errorf("failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).
 			NonRetryable()
 	}
 
@@ -114,7 +116,7 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
 
-	filtersResult := s.apiStore.FetchFlatFilters(enrichedEvent.PlanID, enrichedEvent.Code)
+	filtersResult := s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
 	if filtersResult.Failure() {
 		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
 	}
@@ -131,7 +133,7 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		if charges[filter.ChargeID] == nil {
 			charges[filter.ChargeID] = []models.FlatFilter{}
 		}
-		charges[filter.ChargeID] = append(charges[filter.ChargeID], filter)
+		charges[filter.ChargeID] = append(charges[filter.ChargeID], *filter)
 	}
 
 	var enrichedEvents []*models.EnrichedEvent

@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -103,4 +106,70 @@ func (ct CustomTime) Time() time.Time {
 
 func (ct CustomTime) String() string {
 	return ct.Time().Format("2006-01-02T15:04:05")
+}
+
+type NullTime struct {
+	sql.NullTime
+}
+
+func (nt *NullTime) Scan(value interface{}) error {
+	return nt.NullTime.Scan(value)
+}
+
+func (nt NullTime) Value() (driver.Value, error) {
+	return nt.NullTime.Value()
+}
+
+func (nt *NullTime) MarshalJSON() ([]byte, error) {
+	if !nt.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(nt.Time.UnixMicro())
+}
+
+func (nt *NullTime) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		nt.Valid = false
+		return nil
+	}
+
+	// Try to parse as int64 (microseconds)
+	var microseconds int64
+	if err := json.Unmarshal(data, &microseconds); err == nil {
+		nt.Time = time.UnixMicro(microseconds).UTC()
+		nt.Valid = true
+		return nil
+	}
+
+	// Try to parse timestamp as string
+	var timestampStr string
+	if err := json.Unmarshal(data, &timestampStr); err != nil {
+		return err
+	}
+
+	if timestampStr == "" {
+		nt.Valid = false
+		return nil
+	}
+
+	if t, err := time.Parse(time.RFC3339, timestampStr); err == nil {
+		nt.Time = t
+		nt.Valid = true
+		return nil
+	}
+
+	return fmt.Errorf("unable to parse timestamp string: %s", timestampStr)
+}
+
+func NewNullTime(t time.Time) NullTime {
+	return NullTime{
+		NullTime: sql.NullTime{
+			Time:  t,
+			Valid: true,
+		},
+	}
+}
+
+func NowNullTime() NullTime {
+	return NewNullTime(time.Now())
 }
