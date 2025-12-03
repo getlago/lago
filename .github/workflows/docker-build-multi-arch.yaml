@@ -55,7 +55,7 @@ on:
         description: 'Dockerfile target stage to build'
         required: false
         type: string
-        default: 'default'
+        default: ''
 
       cache-type:
         description: 'Cache type (gha or registry)'
