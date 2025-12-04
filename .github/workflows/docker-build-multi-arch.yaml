@@ -93,9 +93,9 @@ on:
         description: 'The image digest'
         value: ${{ jobs.merge.outputs.digest }}
 
-      combined-tag:
-        description: 'Combined SHA and build args hash tag (if build args provided)'
-        value: ${{ jobs.build.outputs.combined-tag }}
+      tag:
+        description: 'The primary tag (sha-<short_sha> or combined tag if build args provided)'
+        value: ${{ jobs.merge.outputs.tag }}
 
 jobs:
   prepare:
@@ -271,6 +271,7 @@ jobs:
     outputs:
       image-tag: ${{ steps.meta.outputs.version }}
       digest: ${{ steps.inspect.outputs.digest }}
+      tag: ${{ steps.summary.outputs.tag }}
 
     steps:
       - name: Download digests
@@ -362,6 +363,7 @@ jobs:
           docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }}
 
       - name: Write job summary
+        id: summary
         if: inputs.push
         run: |
           # Build tags list
@@ -370,6 +372,14 @@ jobs:
           if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
             TAGS_LIST="${TAGS_LIST}
           - \`${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}\`"
+          fi
+
+          # Output tag: combined-tag if present, otherwise sha-<short_sha>
+          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
+            echo "tag=${{ needs.build.outputs.combined-tag }}" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA="${{ github.sha }}"
+            echo "tag=sha-${SHORT_SHA:0:7}" >> $GITHUB_OUTPUT
           fi
 
           {
