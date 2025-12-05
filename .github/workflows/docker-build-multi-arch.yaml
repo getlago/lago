@@ -84,6 +84,10 @@ on:
         description: 'Registry password/token or AWS Secret Access Key'
         required: false
 
+      build-secrets:
+        description: 'Build secrets values (multiline string, format: id=value)'
+        required: false
+
     outputs:
       image-tag:
         description: 'The primary image tag that was built'
@@ -197,16 +201,36 @@ jobs:
             type=sha
             ${{ inputs.tags }}
 
-      - name: Generate build args hash
+      - name: Generate build hash
         id: build-hash
-        if: inputs.build-args != ''
         run: |
-          # Create a deterministic hash from build args
+          # Create a deterministic hash from build args and secrets
           BUILD_ARGS="${{ inputs.build-args }}"
+          BUILD_SECRETS="${{ secrets.build-secrets }}"
+
+          # Skip if no build args or secrets
+          if [[ -z "$BUILD_ARGS" && -z "$BUILD_SECRETS" ]]; then
+            echo "No build args or secrets provided, skipping hash generation"
+            exit 0
+          fi
+
           # Sort and normalize the build args to ensure consistency
-          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          SORTED_ARGS=""
+          if [[ -n "$BUILD_ARGS" ]]; then
+            SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          fi
+
+          # Sort and normalize the secrets (values included in hash for differentiation)
+          SORTED_SECRETS=""
+          if [[ -n "$BUILD_SECRETS" ]]; then
+            SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          fi
+
+          # Combine args and secrets for hashing
+          COMBINED_INPUT="${SORTED_ARGS}${SORTED_SECRETS}"
+
           # Generate short hash (8 chars)
-          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          HASH=$(echo -n "$COMBINED_INPUT" | sha256sum | cut -c1-8)
           echo "hash=$HASH" >> $GITHUB_OUTPUT
           echo "Generated build hash: $HASH"
           echo "From args: $SORTED_ARGS"
@@ -243,6 +267,7 @@ jobs:
           target: ${{ inputs.target }}
           platforms: linux/${{ matrix.arch }}
           build-args: ${{ inputs.build-args }}
+          secrets: ${{ secrets.build-secrets }}
           outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=${{ inputs.push }}
           # Registry cache - persistent and shared across runners
           cache-from: |
@@ -324,19 +349,38 @@ jobs:
             type=sha
             ${{ inputs.tags }}
 
-      - name: Generate build args hash
+      - name: Generate build hash
         id: build-hash
-        if: inputs.build-args != ''
         run: |
-          # Create a deterministic hash from build args
+          # Create a deterministic hash from build args and secrets
           BUILD_ARGS="${{ inputs.build-args }}"
+          BUILD_SECRETS="${{ secrets.build-secrets }}"
+
+          # Skip if no build args or secrets
+          if [[ -z "$BUILD_ARGS" && -z "$BUILD_SECRETS" ]]; then
+            echo "No build args or secrets provided, skipping hash generation"
+            exit 0
+          fi
+
           # Sort and normalize the build args to ensure consistency
-          SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          SORTED_ARGS=""
+          if [[ -n "$BUILD_ARGS" ]]; then
+            SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          fi
+
+          # Sort and normalize the secrets (values included in hash for differentiation)
+          SORTED_SECRETS=""
+          if [[ -n "$BUILD_SECRETS" ]]; then
+            SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+          fi
+
+          # Combine args and secrets for hashing
+          COMBINED_INPUT="${SORTED_ARGS}${SORTED_SECRETS}"
+
           # Generate short hash (8 chars)
-          HASH=$(echo -n "$SORTED_ARGS" | sha256sum | cut -c1-8)
+          HASH=$(echo -n "$COMBINED_INPUT" | sha256sum | cut -c1-8)
           echo "hash=$HASH" >> $GITHUB_OUTPUT
           echo "Generated build hash: $HASH"
-          echo "From args: $SORTED_ARGS"
 
       - name: Create manifest list and push
         if: inputs.push
