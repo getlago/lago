@@ -75,6 +75,12 @@ on:
         type: string
         default: ''
 
+      repository:
+        description: 'Repository to checkout (owner/repo). Defaults to the repository that triggered the workflow'
+        required: false
+        type: string
+        default: ''
+
     secrets:
       registry-user:
         description: 'Registry username or AWS Access Key ID'
@@ -156,6 +162,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref }}
 
       - name: Set up Docker Buildx
