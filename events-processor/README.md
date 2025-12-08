@@ -65,3 +65,5 @@ Additionally there's a few optional environment variables
 | OTEL_SERVICE_NAME             | OpenTelemetry service name (eg: `events-processor`)                                                                                |
 | OTEL_EXPORTER_OTLP_ENDPOINT   | OpenTelemetry server URL. Setting this environment variable will enable tracing                                                    |
 | OTEL_INSECURE                 | Set to `true` to use the insecure mode of OpenTelemetry                                                                            |
+| LAGO_USE_MEMORY_CACHE         | Use the new in memory cache instead of DB calls                                                                                    |
+| LAGO_DEBEZIUM_TOPIC_PREFIX    | Mandatory is USE_MEMORY_CACHE is set to true, debezium kafka topic prefix (eg: `lago_dbz`)                                         |

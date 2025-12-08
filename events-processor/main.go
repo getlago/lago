@@ -9,15 +9,24 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/getsentry/sentry-go"
-
+	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
+	"github.com/getlago/lago/events-processor/utils"
+	"github.com/getsentry/sentry-go"
+)
+
+var (
+	ctx      context.Context
+	logger   *slog.Logger
+	memCache *cache.Cache
 )
 
 const (
-	envEnv       = "ENV"
-	envSentryDsn = "SENTRY_DSN"
+	envEnv                 = "ENV"
+	envSentryDsn           = "SENTRY_DSN"
+	envUseMemoryCache      = "LAGO_USE_MEMORY_CACHE"
+	envDebeziumTopicPrefix = "LAGO_DEBEZIUM_TOPIC_PREFIX"
 )
 
 func main() {
@@ -48,10 +57,27 @@ func main() {
 
 	defer sentry.Flush(2 * time.Second)
 
+	var memCache *cache.Cache
+	if os.Getenv(envUseMemoryCache) == "true" {
+		memCache, err = cache.NewCache(cache.CacheConfig{
+			Context:             ctx,
+			Logger:              logger,
+			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
+		})
+		if err != nil {
+			utils.LogAndPanic(logger, err, "Error creating the cache")
+		}
+		defer memCache.Close()
+
+		memCache.LoadInitialSnapshot()
+		memCache.ConsumeChanges()
+	}
+
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{
 		Logger:         logger,
 		TracerProvider: tracerProvider,
+		Cache:          memCache,
 	})
 }
 

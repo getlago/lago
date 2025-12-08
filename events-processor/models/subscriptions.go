@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,13 +9,14 @@ import (
 )
 
 type Subscription struct {
-	ID           string       `gorm:"primaryKey;->"`
-	ExternalID   string       `gorm:"->"`
-	PlanID       string       `gorm:"->"`
-	CreatedAt    time.Time    `gorm:"->"`
-	UpdatedAt    time.Time    `gorm:"->"`
-	StartedAt    sql.NullTime `gorm:"->"`
-	TerminatedAt sql.NullTime `gorm:"->"`
+	ID             string         `gorm:"primaryKey;->" json:"id"`
+	OrganizationID *string        `gorm:"->" json:"organization_id"`
+	ExternalID     string         `gorm:"->" json:"external_id"`
+	PlanID         string         `gorm:"->" json:"plan_id"`
+	CreatedAt      utils.NullTime `gorm:"->" json:"created_at"`
+	UpdatedAt      utils.NullTime `gorm:"->" json:"updated_at"`
+	StartedAt      utils.NullTime `gorm:"->" json:"started_at"`
+	TerminatedAt   utils.NullTime `gorm:"->" json:"terminated_at"`
 }
 
 func (store *ApiStore) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
@@ -44,6 +44,31 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	}
 
 	return utils.SuccessResult(&sub)
+}
+
+// We want to get terminated subscriptions to permit grace period events backfill
+// So we select all non terminated subscriptions and subs terminated less that one month ago
+func GetAllSubscriptions(db *gorm.DB) utils.Result[[]Subscription] {
+	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+
+	config := StreamQueryConfig{
+		TableName: "subscriptions",
+		SelectFields: []string{
+			"id",
+			"organization_id",
+			"external_id",
+			"plan_id",
+			"created_at",
+			"updated_at",
+			"started_at",
+			"terminated_at",
+		},
+		WhereCondition: "terminated_at IS NULL OR terminated_at >= ?",
+		WhereArgs:      []any{oneMonthAgo},
+		LogInterval:    50000,
+	}
+
+	return GetAllWithStreaming[Subscription](db, config)
 }
 
 func failedSubscriptionResult(err error) utils.Result[*Subscription] {

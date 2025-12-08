@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/utils"
@@ -46,15 +44,15 @@ func (t AggregationType) String() string {
 }
 
 type BillableMetric struct {
-	ID              string          `gorm:"primaryKey;->"`
-	OrganizationID  string          `gorm:"->"`
-	Code            string          `gorm:"->"`
-	AggregationType AggregationType `gorm:"->"`
-	FieldName       string          `gorm:"->"`
-	Expression      string          `gorm:"->"`
-	CreatedAt       time.Time       `gorm:"->"`
-	UpdatedAt       time.Time       `gorm:"->"`
-	DeletedAt       gorm.DeletedAt  `gorm:"index;->"`
+	ID              string          `gorm:"primaryKey;->" json:"id"`
+	OrganizationID  string          `gorm:"->" json:"organization_id"`
+	Code            string          `gorm:"->" json:"code"`
+	AggregationType AggregationType `gorm:"->" json:"aggregation_type"`
+	FieldName       string          `gorm:"->" json:"field_name"`
+	Expression      string          `gorm:"->" json:"expression"`
+	CreatedAt       utils.NullTime  `gorm:"->" json:"created_at"`
+	UpdatedAt       utils.NullTime  `gorm:"->" json:"updated_at"`
+	DeletedAt       utils.NullTime  `gorm:"index;->" json:"deleted_at"`
 }
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
@@ -75,4 +73,25 @@ func failedBillabmeMetricResult(err error) utils.Result[*BillableMetric] {
 	}
 
 	return result
+}
+
+func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
+	config := StreamQueryConfig{
+		TableName: "billable_metrics",
+		SelectFields: []string{
+			"id",
+			"organization_id",
+			"code",
+			"aggregation_type",
+			"field_name",
+			"expression",
+			"created_at",
+			"updated_at",
+		},
+		WhereCondition: "deleted_at IS NULL",
+		WhereArgs:      []any{},
+		LogInterval:    50000,
+	}
+
+	return GetAllWithStreaming[BillableMetric](db, config)
 }

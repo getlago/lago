@@ -10,7 +10,7 @@ volumes:
 
 services:
   traefik:
-    image: "traefik:v3"
+    image: traefik:v3
     container_name: lago_traefik_dev
     restart: unless-stopped
     ports:

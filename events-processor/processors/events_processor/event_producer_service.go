@@ -124,7 +124,7 @@ func (eps *EventProducerService) produceEvent(context context.Context, event *mo
 	})
 
 	if !pushed {
-		eps.ProduceToDeadLetterQueue(context, *event.InitialEvent, utils.FailedBoolResult(fmt.Errorf("Failed to push to %s topic", producer.GetTopic())))
+		eps.ProduceToDeadLetterQueue(context, *event.InitialEvent, utils.FailedBoolResult(fmt.Errorf("failed to push to %s topic", producer.GetTopic())))
 	}
 
 	return nil
