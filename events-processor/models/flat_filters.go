@@ -96,12 +96,12 @@ type FlatFilter struct {
 	PayInAdvance          bool              `gorm:"type:boolean"`
 }
 
-func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string) utils.Result[[]FlatFilter] {
-	var filters []FlatFilter
+func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string) utils.Result[[]*FlatFilter] {
+	var filters []*FlatFilter
 
 	result := store.db.Connection.Find(&filters, "plan_id = ? AND billable_metric_code = ?", planID, billableMetricCode)
 	if result.Error != nil {
-		return utils.FailedResult[[]FlatFilter](result.Error)
+		return utils.FailedResult[[]*FlatFilter](result.Error)
 	}
 
 	return utils.SuccessResult(filters)

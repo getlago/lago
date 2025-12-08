@@ -56,17 +56,20 @@ func main() {
 
 	defer sentry.Flush(2 * time.Second)
 
-	memCache, err = cache.NewCache(cache.CacheConfig{
-		Context: ctx,
-		Logger:  logger,
-	})
-	if err != nil {
-		utils.LogAndPanic(logger, err, "Error creating the cache")
-	}
-	defer memCache.Close()
+	var memCache *cache.Cache
+	if os.Getenv("USE_MEMORY_CACHE") == "true" {
+		memCache, err = cache.NewCache(cache.CacheConfig{
+			Context: ctx,
+			Logger:  logger,
+		})
+		if err != nil {
+			utils.LogAndPanic(logger, err, "Error creating the cache")
+		}
+		defer memCache.Close()
 
-	memCache.LoadInitialSnapshot()
-	memCache.ConsumeChanges()
+		memCache.LoadInitialSnapshot()
+		memCache.ConsumeChanges()
+	}
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{

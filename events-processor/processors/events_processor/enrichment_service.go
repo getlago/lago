@@ -11,11 +11,13 @@ import (
 )
 
 type EventEnrichmentService struct {
+	apiStore *models.ApiStore
 	memCache *cache.Cache
 }
 
-func NewEventEnrichmentService(memCache *cache.Cache) *EventEnrichmentService {
+func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache) *EventEnrichmentService {
 	return &EventEnrichmentService{
+		apiStore: apiStore,
 		memCache: memCache,
 	}
 }
@@ -27,7 +29,13 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	}
 	enrichedEvent := enrichedEventResult.Value()
 
-	bmResult := s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
+	var bmResult utils.Result[*models.BillableMetric]
+
+	if s.memCache != nil {
+		bmResult = s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
+	} else {
+		bmResult = s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
+	}
 	if bmResult.Failure() {
 		return failedMultiEventsResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
@@ -40,7 +48,13 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 		}
 	}
 
-	subResult := s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	var subResult utils.Result[*models.Subscription]
+	if s.memCache != nil {
+		subResult = s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	} else {
+		subResult = s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	}
+
 	// TODO: Check if cache result IsCapturable when its needed
 	if subResult.Failure() && subResult.IsCapturable() {
 		// We want to keep processing the event even if the subscription is not found
@@ -116,7 +130,12 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
 	}
 
-	filtersResult := s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
+	var filtersResult utils.Result[[]*models.FlatFilter]
+	if s.memCache != nil {
+		filtersResult = s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
+	} else {
+		filtersResult = s.apiStore.FetchFlatFilters(enrichedEvent.PlanID, enrichedEvent.Code)
+	}
 	if filtersResult.Failure() {
 		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
 	}

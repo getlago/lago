@@ -56,6 +56,8 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService,
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
+	var apiStore *models.ApiStore
+
 	testProducers := setupProducers()
 
 	cacheStore := tests.MockCacheStore{}
@@ -73,7 +75,7 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService,
 
 	processor := NewEventProcessor(
 		logger,
-		NewEventEnrichmentService(memCache),
+		NewEventEnrichmentService(apiStore, memCache),
 		testProducers.producers,
 		flagger,
 		NewCacheService(chargeCacheStore),
