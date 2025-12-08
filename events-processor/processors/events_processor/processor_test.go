@@ -25,7 +25,7 @@ type testProducerService struct {
 	enrichedExpandedProducer *tests.MockMessageProducer
 	inAdvanceProducer        *tests.MockMessageProducer
 	deadLetterProducer       *tests.MockMessageProducer
-	producers                *EventProducerService
+	producerService          *EventProducerService
 }
 
 func setupProducers() *testProducerService {
@@ -37,7 +37,7 @@ func setupProducers() *testProducerService {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	producers := NewEventProducerService(
+	producerService := NewEventProducerService(
 		&enrichedProducer,
 		&enrichedExpandedProducer,
 		&inAdvanceProducer,
@@ -50,919 +50,624 @@ func setupProducers() *testProducerService {
 		enrichedExpandedProducer: &enrichedExpandedProducer,
 		inAdvanceProducer:        &inAdvanceProducer,
 		deadLetterProducer:       &deadLetterProducer,
-		producers:                producers,
+		producerService:          producerService,
 	}
 }
 
+// DataStore abstracts cache vs DB mock setup
+type DataStore interface {
+	SetBillableMetric(bm *models.BillableMetric)
+	SetSubscription(sub *models.Subscription)
+	SetCharge(charge *models.Charge)
+	SetFlatFilters(filters []*models.FlatFilter)
+	SetBillableMetricFilter(bmf *models.BillableMetricFilter)
+	SetChargeFilter(cf *models.ChargeFilter)
+	SetChargeFilterValue(cfv *models.ChargeFilterValue)
+	ExpectSubscriptionNotFound()
+	ExpectSubscriptionError()
+	ExpectBillableMetricNotFound()
+}
+
+// CacheDataStore wraps cache for test setup
+type CacheDataStore struct {
+	cache *cache.Cache
+	t     *testing.T
+}
+
+func (s *CacheDataStore) SetBillableMetric(bm *models.BillableMetric) {
+	result := s.cache.SetBillableMetric(bm)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetSubscription(sub *models.Subscription) {
+	result := s.cache.SetSubscription(sub)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetCharge(charge *models.Charge) {
+	result := s.cache.SetCharge(charge)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetBillableMetricFilter(bmf *models.BillableMetricFilter) {
+	result := s.cache.SetBillableMetricFilter(bmf)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetChargeFilter(cf *models.ChargeFilter) {
+	result := s.cache.SetChargeFilter(cf)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetChargeFilterValue(cfv *models.ChargeFilterValue) {
+	result := s.cache.SetChargeFilterValue(cfv)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) SetFlatFilters(filters []*models.FlatFilter) {}
+func (s *CacheDataStore) ExpectSubscriptionNotFound()                 {}
+func (s *CacheDataStore) ExpectSubscriptionError()                    {}
+func (s *CacheDataStore) ExpectBillableMetricNotFound()               {}
+
+// MockDataStore wraps SQL mock for test setup
+type MockDataStore struct {
+	mock *tests.MockedStore
+	t    *testing.T
+}
+
+func (s *MockDataStore) SetBillableMetric(bm *models.BillableMetric) {
+	columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
+	s.mock.SQLMock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) SetSubscription(sub *models.Subscription) {
+	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
+	s.mock.SQLMock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) SetFlatFilters(filters []*models.FlatFilter) {
+	columns := []string{
+		"organization_id", "billable_metric_code", "pay_in_advance", "plan_id",
+		"charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at",
+		"filters", "pricing_group_keys",
+	}
+	rows := sqlmock.NewRows(columns)
+	for _, filter := range filters {
+		rows.AddRow(
+			filter.OrganizationID, filter.BillableMetricCode, filter.PayInAdvance, filter.PlanID,
+			filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt,
+			filter.Filters, filter.PricingGroupKeys,
+		)
+	}
+	s.mock.SQLMock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) ExpectSubscriptionNotFound() {
+	s.mock.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
+}
+
+func (s *MockDataStore) ExpectSubscriptionError() {
+	s.mock.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
+}
+
+func (s *MockDataStore) ExpectBillableMetricNotFound() {
+	s.mock.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
+}
+
+func (s *MockDataStore) SetCharge(charge *models.Charge)                          {}
+func (s *MockDataStore) SetBillableMetricFilter(bmf *models.BillableMetricFilter) {}
+func (s *MockDataStore) SetChargeFilter(cf *models.ChargeFilter)                  {}
+func (s *MockDataStore) SetChargeFilterValue(cfv *models.ChargeFilterValue)       {}
+
 type ProcessorTestEnv struct {
-	EventProcessor  *EventProcessor
-	ProducerService *testProducerService
-	FlagStore       *tests.MockFlagStore
-	Cache           *cache.Cache
-	MockedStore     *tests.MockedStore
-	Delete          func()
+	EventProcessor *EventProcessor
+	Producers      *testProducerService
+	FlagStore      *tests.MockFlagStore
+	DataStore      DataStore
+	Cleanup        func()
 }
 
 func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	var mockedStore *tests.MockedStore
-	var delete func()
-	var apiStore *models.ApiStore
 	var chargeCache models.Cacher
 	var memCache *cache.Cache
+	var apiStore *models.ApiStore
+	var dataStore DataStore
+	var cleanup func()
 
-	if !useCache {
-		mockedStore, delete = tests.SetupMockStore(t)
-		apiStore = models.NewApiStore(mockedStore.DB)
-	} else {
+	testProducers := setupProducers()
+	chargeCache = &tests.MockCacheStore{}
+	chargeCacheStore := models.NewChargeCache(&chargeCache)
+	flagStore := tests.MockFlagStore{}
+	flagger := NewSubscriptionRefreshService(&flagStore)
+
+	if useCache {
 		ctx := context.Background()
 		memCache, _ = cache.NewCache(cache.CacheConfig{
 			Context: ctx,
 			Logger:  logger,
 		})
+		dataStore = &CacheDataStore{cache: memCache, t: t}
+		cleanup = func() { memCache.Close() }
+	} else {
+		mockedStore, deleteFunc := tests.SetupMockStore(t)
+		apiStore = models.NewApiStore(mockedStore.DB)
+		dataStore = &MockDataStore{mock: mockedStore, t: t}
+		cleanup = deleteFunc
 	}
-
-	testProducers := setupProducers()
-
-	chargeCache = &tests.MockCacheStore{}
-	chargeCacheStore := models.NewChargeCache(&chargeCache)
-
-	flagStore := tests.MockFlagStore{}
-	flagger := NewSubscriptionRefreshService(&flagStore)
 
 	processor := NewEventProcessor(
 		logger,
 		NewEventEnrichmentService(apiStore, memCache),
-		testProducers.producers,
+		testProducers.producerService,
 		flagger,
 		NewCacheService(chargeCacheStore),
 	)
 
 	return &ProcessorTestEnv{
-		EventProcessor:  processor,
-		ProducerService: testProducers,
-		FlagStore:       &flagStore,
-		Cache:           memCache,
-		MockedStore:     mockedStore,
-		Delete:          delete,
+		EventProcessor: processor,
+		Producers:      testProducers,
+		FlagStore:      &flagStore,
+		DataStore:      dataStore,
+		Cleanup:        cleanup,
 	}
 }
 
-func mockBmLookup(mock *tests.MockedStore, bm *models.BillableMetric) {
-	columns := []string{"id", "organization_id", "code", "aggregation_type", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
-
-	rows := sqlmock.NewRows(columns).
-		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
-
-	mock.SQLMock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
-}
-
-func mockSubscriptionLookup(mock *tests.MockedStore, sub *models.Subscription) {
-	columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "terminated_at"}
-
-	rows := sqlmock.NewRows(columns).
-		AddRow(sub.ID, sub.ExternalID, sub.PlanID, sub.CreatedAt, sub.UpdatedAt, sub.TerminatedAt)
-
-	mock.SQLMock.ExpectQuery(".* FROM \"subscriptions\".*").WillReturnRows(rows)
-}
-
-func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter) {
-	columns := []string{
-		"organization_id",
-		"billable_metric_code",
-		"pay_in_advance",
-		"plan_id",
-		"charge_id",
-		"charge_updated_at",
-		"charge_filter_id",
-		"charge_filter_updated_at",
-		"filters",
-		"pricing_group_keys",
+func TestProcessEvent(t *testing.T) {
+	testModes := []struct {
+		name     string
+		useCache bool
+	}{
+		{"WithCache", true},
+		{"WithoutCache", false},
 	}
 
-	rows := sqlmock.NewRows(columns)
-
-	for _, filter := range filters {
-		rows.AddRow(
-			filter.OrganizationID,
-			filter.BillableMetricCode,
-			filter.PayInAdvance,
-			filter.PlanID,
-			filter.ChargeID,
-			filter.ChargeUpdatedAt,
-			filter.ChargeFilterID,
-			filter.ChargeFilterUpdatedAt,
-			filter.Filters,
-			filter.PricingGroupKeys,
-		)
-	}
-
-	mock.SQLMock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
-}
-
-func TestProcessEvent_WithCache(t *testing.T) {
-	t.Run("Without Billable Metric", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-		}
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.False(t, result.Success())
-		assert.Equal(t, "Key not found", result.ErrorMsg())
-		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
-		assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
-	})
-
-	t.Run("When event source is post processed on API", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 models.HTTP_RUBY,
-			Properties:             properties,
-			SourceMetadata: &models.SourceMetadata{
-				ApiPostProcess: true,
-			},
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(&bm)
-
-		sub := models.Subscription{
-			ID:             "sub123",
-			OrganizationID: &event.OrganizationID,
-			ExternalID:     event.ExternalSubscriptionID,
-			PlanID:         "plan123",
-		}
-		testEnv.Cache.SetSubscription(&sub)
-
-		charge := &models.Charge{
-			ID:               "ch123",
-			OrganizationID:   event.OrganizationID,
-			PlanID:           "plan123",
-			BillableMetricID: bm.ID,
-			PayInAdvance:     false,
-			UpdatedAt:        utils.NowNullTime(),
-		}
-		testEnv.Cache.SetCharge(charge)
-
-		ctx := context.Background()
-		result := testEnv.EventProcessor.processEvent(ctx, &event)
-
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
-
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
-
-	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              "2025-03-06T12:00:00Z",
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(&bm)
-
-		ctx := context.Background()
-		result := testEnv.EventProcessor.processEvent(ctx, &event)
-		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
-		assert.Equal(t, "build_enriched_event", result.ErrorCode())
-		assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
-	})
-
-	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(&bm)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, result.Success())
-	})
-
-	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              "1741007009.123",
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "round(event.properties.value)",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(&bm)
-
-		sub := models.Subscription{
-			ID:             "sub123",
-			OrganizationID: &event.OrganizationID,
-			ExternalID:     event.ExternalSubscriptionID,
-		}
-		testEnv.Cache.SetSubscription(&sub)
-
-		ctx := context.Background()
-		result := testEnv.EventProcessor.processEvent(ctx, &event)
-		assert.False(t, result.Success())
-		assert.Contains(t, result.ErrorMsg(), "failed to evaluate expr: round(event.properties.value)")
-		assert.Equal(t, "evaluate_expression", result.ErrorCode())
-		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
-	})
-
-	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		properties := map[string]any{
-			"value": "12.12",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009.0,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
-
-		bm := &models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "round(event.properties.value)",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(bm)
-
-		sub := &models.Subscription{
-			ID:             "sub123",
-			OrganizationID: &event.OrganizationID,
-			ExternalID:     event.ExternalSubscriptionID,
-			PlanID:         "plan_id",
-		}
-		testEnv.Cache.SetSubscription(sub)
-
-		charge := &models.Charge{
-			ID:               "ch123",
-			OrganizationID:   event.OrganizationID,
-			PlanID:           "plan_id",
-			BillableMetricID: bm.ID,
-			UpdatedAt:        utils.NowNullTime(),
-			PayInAdvance:     true,
-		}
-		testEnv.Cache.SetCharge(charge)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, result.Success())
-		assert.Equal(t, "12", *result.Value().Value)
-
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.inAdvanceProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-
-		assert.Equal(t, 1, testEnv.FlagStore.ExecutionCount)
-	})
-
-	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		result := testEnv.Cache.SetBillableMetric(&bm)
-		require.True(t, result.Success())
-
-		bmf1 := &models.BillableMetricFilter{
-			ID:               uuid.New().String(),
-			OrganizationID:   event.OrganizationID,
-			BillableMetricID: bm.ID,
-			Key:              "scheme",
-			Values:           []string{"visa"},
-		}
-		result = testEnv.Cache.SetBillableMetricFilter(bmf1)
-		require.True(t, result.Success())
-
-		sub := models.Subscription{
-			ID:             "sub123",
-			OrganizationID: &event.OrganizationID,
-			ExternalID:     event.ExternalSubscriptionID,
-			PlanID:         "plan_id",
-		}
-		result = testEnv.Cache.SetSubscription(&sub)
-		require.True(t, result.Success())
-
-		charge1 := &models.Charge{
-			ID:               "charge_id1",
-			OrganizationID:   event.OrganizationID,
-			PlanID:           "plan_id",
-			BillableMetricID: bm.ID,
-			UpdatedAt:        utils.NowNullTime(),
-		}
-		result = testEnv.Cache.SetCharge(charge1)
-		require.True(t, result.Success())
-
-		chargeFilter1 := &models.ChargeFilter{
-			ID:             "charge_filter_id1",
-			OrganizationID: event.OrganizationID,
-			ChargeID:       charge1.ID,
-		}
-		result = testEnv.Cache.SetChargeFilter(chargeFilter1)
-		require.True(t, result.Success())
-
-		chargeFilterValue1 := &models.ChargeFilterValue{
-			ID:                     uuid.New().String(),
-			OrganizationID:         event.OrganizationID,
-			ChargeFilterID:         chargeFilter1.ID,
-			BillableMetricFilterID: bmf1.ID,
-		}
-		result = testEnv.Cache.SetChargeFilterValue(chargeFilterValue1)
-		require.True(t, result.Success())
-
-		charge2 := &models.Charge{
-			ID:               "charge_id2",
-			OrganizationID:   event.OrganizationID,
-			PlanID:           "plan_id",
-			BillableMetricID: bm.ID,
-			UpdatedAt:        utils.NowNullTime(),
-		}
-		result = testEnv.Cache.SetCharge(charge2)
-		require.True(t, result.Success())
-
-		chargeFilter2 := &models.ChargeFilter{
-			ID:             "charge_filter_id2",
-			OrganizationID: event.OrganizationID,
-			ChargeID:       charge2.ID,
-		}
-		result = testEnv.Cache.SetChargeFilter(chargeFilter2)
-		require.True(t, result.Success())
-
-		chargeFilterValue2 := &models.ChargeFilterValue{
-			ID:                     uuid.New().String(),
-			OrganizationID:         event.OrganizationID,
-			ChargeFilterID:         chargeFilter2.ID,
-			BillableMetricFilterID: bmf1.ID,
-		}
-		result = testEnv.Cache.SetChargeFilterValue(chargeFilterValue2)
-		require.True(t, result.Success())
-
-		evResult := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, evResult.Success())
-		assert.Equal(t, "12.0", *evResult.Value().Value)
-		assert.Equal(t, "sum", evResult.Value().AggregationType)
-		assert.Equal(t, "sub123", evResult.Value().SubscriptionID)
-		assert.Equal(t, "plan_id", evResult.Value().PlanID)
-
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 2, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
-
-	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, true)
-		defer testEnv.Cache.Close()
-
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		testEnv.Cache.SetBillableMetric(&bm)
-
-		sub := models.Subscription{
-			ID:             "sub123",
-			OrganizationID: &event.OrganizationID,
-			ExternalID:     event.ExternalSubscriptionID,
-			PlanID:         "plan123",
-		}
-		testEnv.Cache.SetSubscription(&sub)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
-
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 0, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
-}
-
-// Run Test with DB mocked store
-func TestProcessEvent_WithoutCache(t *testing.T) {
-	t.Run("Without Billable Metric", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-		}
-
-		testEnv.MockedStore.SQLMock.ExpectQuery(".*").WillReturnError(gorm.ErrRecordNotFound)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.False(t, result.Success())
-		assert.Equal(t, "record not found", result.ErrorMsg())
-		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
-		assert.Equal(t, "Error fetching billable metric", result.ErrorMessage())
-	})
-
-	t.Run("When event source is post processed on API", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 models.HTTP_RUBY,
-			Properties:             properties,
-			SourceMetadata: &models.SourceMetadata{
-				ApiPostProcess: true,
-			},
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(testEnv.MockedStore, &sub)
-
-		mockFlatFiltersLookup(testEnv.MockedStore, []*models.FlatFilter{
-			{
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("Without Billable Metric", func(t *testing.T) {
+				testEnv := setupProcessorTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				testEnv.DataStore.ExpectBillableMetricNotFound()
+
+				event := models.Event{
+					OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              1741007009,
+				}
+
+				result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+				assert.False(t, result.Success())
+				assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
+			})
+		})
+
+		t.Run("When event source is post processed on API", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
+
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Source:                 models.HTTP_RUBY,
+				Properties:             map[string]any{"api_requests": "12.0"},
+				SourceMetadata:         &models.SourceMetadata{ApiPostProcess: true},
+			}
+
+			bm := &models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeSum,
+				FieldName:       "api_requests",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(bm)
+
+			sub := &models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan123",
+			}
+			testEnv.DataStore.SetSubscription(sub)
+
+			charge := &models.Charge{
+				ID:               "ch123",
+				OrganizationID:   event.OrganizationID,
+				PlanID:           "plan123",
+				BillableMetricID: bm.ID,
+				PayInAdvance:     false,
+				UpdatedAt:        utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetCharge(charge)
+			testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{{
 				OrganizationID:     event.OrganizationID,
 				BillableMetricCode: event.Code,
-				PlanID:             "plan_id",
-				ChargeID:           "charge_idxx",
+				PlanID:             "plan123",
+				ChargeID:           "ch123",
 				ChargeUpdatedAt:    time.Now(),
-				PayInAdvance:       true,
-			},
+				PayInAdvance:       false,
+			}})
+
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+
+			assert.True(t, result.Success())
+			assert.Equal(t, "12.0", *result.Value().Value)
+			assert.Equal(t, "sum", result.Value().AggregationType)
+			assert.Equal(t, "sub123", result.Value().SubscriptionID)
+
+			time.Sleep(50 * time.Millisecond)
+			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 1, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
 		})
 
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+		t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
 
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              "2025-03-06T12:00:00Z",
+				Source:                 "SQS",
+			}
 
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeWeightedSum,
+				FieldName:       "api_requests",
+				Expression:      "",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
 
-	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              "2025-03-06T12:00:00Z",
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
-		assert.Equal(t, "build_enriched_event", result.ErrorCode())
-		assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
-	})
-
-	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		testEnv.MockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrRecordNotFound)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, result.Success())
-	})
-
-	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		testEnv.MockedStore.SQLMock.ExpectQuery(".* FROM \"subscriptions\"").WillReturnError(gorm.ErrNotImplemented)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.False(t, result.Success())
-		assert.NotNil(t, result.ErrorMsg())
-		assert.Equal(t, "fetch_subscription", result.ErrorCode())
-		assert.Equal(t, "Error fetching subscription", result.ErrorMessage())
-	})
-
-	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              "1741007009.123",
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "round(event.properties.value)",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(testEnv.MockedStore, &sub)
-
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.False(t, result.Success())
-		assert.Contains(t, result.ErrorMsg(), "failed to evaluate expr: round(event.properties.value)")
-		assert.Equal(t, "evaluate_expression", result.ErrorCode())
-		assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
-	})
-
-	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
-
-		properties := map[string]any{
-			"value": "12.12",
-		}
-
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009.0,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
-
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeWeightedSum,
-			FieldName:       "api_requests",
-			Expression:      "round(event.properties.value)",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
-
-		sub := models.Subscription{ID: "sub123"}
-		mockSubscriptionLookup(testEnv.MockedStore, &sub)
-
-		now := time.Now()
-
-		mockFlatFiltersLookup(testEnv.MockedStore, []*models.FlatFilter{
-			{
-				OrganizationID:     "org_id",
-				BillableMetricCode: "api_call",
-				PlanID:             "plan_id",
-				ChargeID:           "charge_idxx",
-				ChargeUpdatedAt:    now,
-				PayInAdvance:       true,
-			},
+			ctx := context.Background()
+			result := testEnv.EventProcessor.processEvent(ctx, &event)
+			assert.False(t, result.Success())
+			assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
+			assert.Equal(t, "build_enriched_event", result.ErrorCode())
+			assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 		})
 
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-		assert.True(t, result.Success())
-		assert.Equal(t, "12", *result.Value().Value)
+		t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
 
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.inAdvanceProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Source:                 "SQS",
+			}
 
-		assert.Equal(t, 1, testEnv.FlagStore.ExecutionCount)
-	})
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeWeightedSum,
+				FieldName:       "api_requests",
+				Expression:      "",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
+			testEnv.DataStore.ExpectSubscriptionNotFound()
 
-	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			assert.True(t, result.Success())
+		})
 
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
+		t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
 
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              "1741007009.123",
+				Source:                 "SQS",
+			}
 
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeWeightedSum,
+				FieldName:       "api_requests",
+				Expression:      "round(event.properties.value)",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
 
-		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(testEnv.MockedStore, &sub)
+			sub := models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+			}
+			testEnv.DataStore.SetSubscription(&sub)
 
-		now := time.Now()
+			ctx := context.Background()
+			result := testEnv.EventProcessor.processEvent(ctx, &event)
+			assert.False(t, result.Success())
+			assert.Contains(t, result.ErrorMsg(), "failed to evaluate expr: round(event.properties.value)")
+			assert.Equal(t, "evaluate_expression", result.ErrorCode())
+			assert.Equal(t, "Error evaluating custom expression", result.ErrorMessage())
+		})
 
-		flatFilter1 := &models.FlatFilter{
-			OrganizationID:        "org_id",
-			BillableMetricCode:    "api_calls",
-			PlanID:                "plan_id",
-			ChargeID:              "charge_id1",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
-			ChargeFilterUpdatedAt: &now,
-			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
-		}
+		t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
 
-		flatFilter2 := &models.FlatFilter{
-			OrganizationID:        "org_id",
-			BillableMetricCode:    "api_calls",
-			PlanID:                "plan_id",
-			ChargeID:              "charge_id2",
-			ChargeUpdatedAt:       now,
-			ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
-			ChargeFilterUpdatedAt: &now,
-			Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
-		}
-		mockFlatFiltersLookup(testEnv.MockedStore, []*models.FlatFilter{flatFilter1, flatFilter2})
+			properties := map[string]any{
+				"value": "12.12",
+			}
 
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009.0,
+				Properties:             properties,
+				Source:                 "SQS",
+			}
 
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+			bm := &models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeWeightedSum,
+				FieldName:       "api_requests",
+				Expression:      "round(event.properties.value)",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(bm)
 
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 2, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
+			sub := &models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan_id",
+			}
+			testEnv.DataStore.SetSubscription(sub)
 
-	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		testEnv := setupProcessorTestEnv(t, false)
-		defer testEnv.Delete()
+			charge := &models.Charge{
+				ID:               "ch123",
+				OrganizationID:   event.OrganizationID,
+				PlanID:           "plan_id",
+				BillableMetricID: bm.ID,
+				UpdatedAt:        utils.NowNullTime(),
+				PayInAdvance:     true,
+			}
+			testEnv.DataStore.SetCharge(charge)
 
-		properties := map[string]any{
-			"api_requests": "12.0",
-		}
+			flatFilters := []*models.FlatFilter{
+				{
+					OrganizationID:     "org_id",
+					BillableMetricCode: "api_call",
+					PlanID:             "plan_id",
+					ChargeID:           "ch123",
+					ChargeUpdatedAt:    utils.NowNullTime().Time,
+					PayInAdvance:       true,
+				},
+			}
+			testEnv.DataStore.SetFlatFilters(flatFilters)
 
-		event := models.Event{
-			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
-			ExternalSubscriptionID: "sub_id",
-			Code:                   "api_calls",
-			Timestamp:              1741007009,
-			Properties:             properties,
-			Source:                 "SQS",
-		}
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			assert.True(t, result.Success())
+			assert.Equal(t, "12", *result.Value().Value)
 
-		bm := models.BillableMetric{
-			ID:              "bm123",
-			OrganizationID:  event.OrganizationID,
-			Code:            event.Code,
-			AggregationType: models.AggregationTypeSum,
-			FieldName:       "api_requests",
-			Expression:      "",
-			CreatedAt:       utils.NowNullTime(),
-			UpdatedAt:       utils.NowNullTime(),
-		}
-		mockBmLookup(testEnv.MockedStore, &bm)
+			// Give some time to the go routine to complete
+			// TODO: Improve this by using channels in the producers methods
+			time.Sleep(50 * time.Millisecond)
+			assert.Equal(t, 1, testEnv.Producers.inAdvanceProducer.ExecutionCount)
+			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 1, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
 
-		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
-		mockSubscriptionLookup(testEnv.MockedStore, &sub)
-		mockFlatFiltersLookup(testEnv.MockedStore, []*models.FlatFilter{})
+			assert.Equal(t, 1, testEnv.FlagStore.ExecutionCount)
+		})
 
-		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+		t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
 
-		assert.True(t, result.Success())
-		assert.Equal(t, "12.0", *result.Value().Value)
-		assert.Equal(t, "sum", result.Value().AggregationType)
-		assert.Equal(t, "sub123", result.Value().SubscriptionID)
-		assert.Equal(t, "plan123", result.Value().PlanID)
+			properties := map[string]any{
+				"api_requests": "12.0",
+			}
 
-		// Give some time to the go routine to complete
-		// TODO: Improve this by using channels in the producers methods
-		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 0, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
-	})
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Properties:             properties,
+				Source:                 "SQS",
+			}
+
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeSum,
+				FieldName:       "api_requests",
+				Expression:      "",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
+
+			bmf1 := &models.BillableMetricFilter{
+				ID:               uuid.New().String(),
+				OrganizationID:   event.OrganizationID,
+				BillableMetricID: bm.ID,
+				Key:              "scheme",
+				Values:           []string{"visa"},
+			}
+			testEnv.DataStore.SetBillableMetricFilter(bmf1)
+
+			sub := models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan_id",
+			}
+			testEnv.DataStore.SetSubscription(&sub)
+
+			charge1 := &models.Charge{
+				ID:               "charge_id1",
+				OrganizationID:   event.OrganizationID,
+				PlanID:           "plan_id",
+				BillableMetricID: bm.ID,
+				UpdatedAt:        utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetCharge(charge1)
+
+			chargeFilter1 := &models.ChargeFilter{
+				ID:             "charge_filter_id1",
+				OrganizationID: event.OrganizationID,
+				ChargeID:       charge1.ID,
+			}
+			testEnv.DataStore.SetChargeFilter(chargeFilter1)
+
+			chargeFilterValue1 := &models.ChargeFilterValue{
+				ID:                     uuid.New().String(),
+				OrganizationID:         event.OrganizationID,
+				ChargeFilterID:         chargeFilter1.ID,
+				BillableMetricFilterID: bmf1.ID,
+			}
+			testEnv.DataStore.SetChargeFilterValue(chargeFilterValue1)
+
+			charge2 := &models.Charge{
+				ID:               "charge_id2",
+				OrganizationID:   event.OrganizationID,
+				PlanID:           "plan_id",
+				BillableMetricID: bm.ID,
+				UpdatedAt:        utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetCharge(charge2)
+
+			chargeFilter2 := &models.ChargeFilter{
+				ID:             "charge_filter_id2",
+				OrganizationID: event.OrganizationID,
+				ChargeID:       charge2.ID,
+			}
+			testEnv.DataStore.SetChargeFilter(chargeFilter2)
+
+			chargeFilterValue2 := &models.ChargeFilterValue{
+				ID:                     uuid.New().String(),
+				OrganizationID:         event.OrganizationID,
+				ChargeFilterID:         chargeFilter2.ID,
+				BillableMetricFilterID: bmf1.ID,
+			}
+			testEnv.DataStore.SetChargeFilterValue(chargeFilterValue2)
+
+			if !mode.useCache {
+				now := time.Now()
+				flatFilter1 := &models.FlatFilter{
+					OrganizationID:        "org_id",
+					BillableMetricCode:    "api_calls",
+					PlanID:                "plan_id",
+					ChargeID:              "charge_id1",
+					ChargeUpdatedAt:       now,
+					ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
+					ChargeFilterUpdatedAt: &now,
+					Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+				}
+
+				flatFilter2 := &models.FlatFilter{
+					OrganizationID:        "org_id",
+					BillableMetricCode:    "api_calls",
+					PlanID:                "plan_id",
+					ChargeID:              "charge_id2",
+					ChargeUpdatedAt:       now,
+					ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
+					ChargeFilterUpdatedAt: &now,
+					Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+				}
+				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{flatFilter1, flatFilter2})
+			}
+
+			evResult := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			assert.True(t, evResult.Success())
+			assert.Equal(t, "12.0", *evResult.Value().Value)
+			assert.Equal(t, "sum", evResult.Value().AggregationType)
+			assert.Equal(t, "sub123", evResult.Value().SubscriptionID)
+			assert.Equal(t, "plan_id", evResult.Value().PlanID)
+
+			// Give some time to the go routine to complete
+			// TODO: Improve this by using channels in the producers methods
+			time.Sleep(50 * time.Millisecond)
+			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 2, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+		})
+
+		t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, true)
+			defer testEnv.Cleanup()
+
+			properties := map[string]any{
+				"api_requests": "12.0",
+			}
+
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Properties:             properties,
+				Source:                 "SQS",
+			}
+
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeSum,
+				FieldName:       "api_requests",
+				Expression:      "",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
+
+			sub := models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan123",
+			}
+			testEnv.DataStore.SetSubscription(&sub)
+
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			assert.True(t, result.Success())
+			assert.Equal(t, "12.0", *result.Value().Value)
+			assert.Equal(t, "sum", result.Value().AggregationType)
+			assert.Equal(t, "sub123", result.Value().SubscriptionID)
+			assert.Equal(t, "plan123", result.Value().PlanID)
+
+			// Give some time to the go routine to complete
+			// TODO: Improve this by using channels in the producers methods
+			time.Sleep(50 * time.Millisecond)
+			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+		})
+	}
 }
