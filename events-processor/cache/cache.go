@@ -45,9 +45,10 @@ func NewCache(config CacheConfig) (*Cache, error) {
 	}
 
 	return &Cache{
-		db:     db,
-		logger: logger,
-		ctx:    config.Context,
+		db:                  db,
+		logger:              logger,
+		debeziumTopicPrefix: config.DebeziumTopicPrefix,
+		ctx:                 config.Context,
 	}, nil
 }
 

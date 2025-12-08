@@ -25,7 +25,8 @@ var (
 const (
 	envEnv                 = "ENV"
 	envSentryDsn           = "SENTRY_DSN"
-	envDebeziumTopicPrefix = "DEBEZIUM_TOPIC_PREFIX"
+	envUseMemoryCache      = "LAGO_USE_MEMORY_CACHE"
+	envDebeziumTopicPrefix = "LAGO_DEBEZIUM_TOPIC_PREFIX"
 )
 
 func main() {
@@ -57,10 +58,11 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 
 	var memCache *cache.Cache
-	if os.Getenv("USE_MEMORY_CACHE") == "true" {
+	if os.Getenv(envUseMemoryCache) == "true" {
 		memCache, err = cache.NewCache(cache.CacheConfig{
-			Context: ctx,
-			Logger:  logger,
+			Context:             ctx,
+			Logger:              logger,
+			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
 		})
 		if err != nil {
 			utils.LogAndPanic(logger, err, "Error creating the cache")
