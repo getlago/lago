@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -9,7 +10,9 @@ import (
 )
 
 const (
-	chargeFilterPrefix = "cf"
+	chargeFilterPrefix    = "cf"
+	chargeFilterModelName = "charge_filters"
+	chargeFilterTopic     = ".public.charge_filters"
 )
 
 func (c *Cache) buildChargeFilterKey(organizationID, chargeID, id string) string {
@@ -39,7 +42,7 @@ func (c *Cache) DeleteChargeFilter(cf *models.ChargeFilter) utils.Result[bool] {
 func (c *Cache) LoadChargeFiltersSnapshot(db *gorm.DB) utils.Result[int] {
 	return LoadSnapshot(
 		c,
-		"charge_filters",
+		chargeFilterModelName,
 		func() ([]models.ChargeFilter, error) {
 			res := models.GetAllChargeFilters(db)
 			if res.Failure() {
@@ -51,4 +54,32 @@ func (c *Cache) LoadChargeFiltersSnapshot(db *gorm.DB) utils.Result[int] {
 			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
 		},
 	)
+}
+
+func (c *Cache) StartChargeFiltersConsumer(ctx context.Context) error {
+	return startGenericConsumer(ctx, c, ConsumerConfig[models.ChargeFilter]{
+		Topic:     c.debeziumTopicPrefix + chargeFilterTopic,
+		ModelName: chargeFilterModelName,
+		IsDeleted: func(cf *models.ChargeFilter) bool {
+			return cf.DeletedAt.Valid
+		},
+		GetKey: func(cf *models.ChargeFilter) string {
+			return c.buildChargeFilterKey(cf.OrganizationID, cf.ChargeID, cf.ID)
+		},
+		GetID: func(cf *models.ChargeFilter) string {
+			return cf.ID
+		},
+		GetUpdatedAt: func(cf *models.ChargeFilter) int64 {
+			return cf.UpdatedAt.Time.UnixMilli()
+		},
+		GetCached: func(cf *models.ChargeFilter) utils.Result[*models.ChargeFilter] {
+			return c.GetChargeFilter(cf.OrganizationID, cf.ChargeID, cf.ID)
+		},
+		SetCache: func(cf *models.ChargeFilter) utils.Result[bool] {
+			return c.SetChargeFilter(cf)
+		},
+		Delete: func(cf *models.ChargeFilter) utils.Result[bool] {
+			return c.DeleteChargeFilter(cf)
+		},
+	})
 }

@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -9,7 +10,9 @@ import (
 )
 
 const (
-	chargePrefix = "ch"
+	chargePrefix    = "ch"
+	chargeModelName = "charges"
+	chargeTopic     = ".public.charges"
 )
 
 func (c *Cache) buildChargeKey(organizationID, planID, billableMetricID, id string) string {
@@ -39,7 +42,7 @@ func (c *Cache) DeleteCharge(ch *models.Charge) utils.Result[bool] {
 func (c *Cache) LoadChargesSnapshot(db *gorm.DB) utils.Result[int] {
 	return LoadSnapshot(
 		c,
-		"charges",
+		chargeModelName,
 		func() ([]models.Charge, error) {
 			res := models.GetAllCharges(db)
 			if res.Failure() {
@@ -51,4 +54,32 @@ func (c *Cache) LoadChargesSnapshot(db *gorm.DB) utils.Result[int] {
 			return c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
 		},
 	)
+}
+
+func (c *Cache) StartChargesConsumer(ctx context.Context) error {
+	return startGenericConsumer(ctx, c, ConsumerConfig[models.Charge]{
+		Topic:     c.debeziumTopicPrefix + chargeTopic,
+		ModelName: chargeModelName,
+		IsDeleted: func(ch *models.Charge) bool {
+			return ch.DeletedAt.Valid
+		},
+		GetKey: func(ch *models.Charge) string {
+			return c.buildChargeKey(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
+		},
+		GetID: func(ch *models.Charge) string {
+			return ch.ID
+		},
+		GetUpdatedAt: func(ch *models.Charge) int64 {
+			return ch.UpdatedAt.Time.UnixMilli()
+		},
+		GetCached: func(ch *models.Charge) utils.Result[*models.Charge] {
+			return c.GetCharge(ch.OrganizationID, ch.PlanID, ch.BillableMetricID, ch.ID)
+		},
+		SetCache: func(ch *models.Charge) utils.Result[bool] {
+			return c.SetCharge(ch)
+		},
+		Delete: func(ch *models.Charge) utils.Result[bool] {
+			return c.DeleteCharge(ch)
+		},
+	})
 }

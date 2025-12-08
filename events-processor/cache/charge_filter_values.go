@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -9,7 +10,9 @@ import (
 )
 
 const (
-	chargeFilterValuePrefix = "cfv"
+	chargeFilterValuePrefix    = "cfv"
+	chargeFilterValueModelName = "charge_filter_values"
+	chargeFilterValueTopic     = ".public.charge_filter_values"
 )
 
 func (c *Cache) buildChargeFilterValueKey(organizationID, chargeFilterID, billableMetricFilterID, id string) string {
@@ -39,7 +42,7 @@ func (c *Cache) DeleteChargeFilterValue(cfv *models.ChargeFilterValue) utils.Res
 func (c *Cache) LoadChargeFilterValuesSnapshot(db *gorm.DB) utils.Result[int] {
 	return LoadSnapshot(
 		c,
-		"charge_filter_values",
+		chargeFilterValueModelName,
 		func() ([]models.ChargeFilterValue, error) {
 			res := models.GetAllChargeFilterValues(db)
 			if res.Failure() {
@@ -51,4 +54,32 @@ func (c *Cache) LoadChargeFilterValuesSnapshot(db *gorm.DB) utils.Result[int] {
 			return c.buildChargeFilterValueKey(cfv.OrganizationID, cfv.ChargeFilterID, cfv.BillableMetricFilterID, cfv.ID)
 		},
 	)
+}
+
+func (c *Cache) StartChargeFilterValuesConsumer(ctx context.Context) error {
+	return startGenericConsumer(ctx, c, ConsumerConfig[models.ChargeFilterValue]{
+		Topic:     c.debeziumTopicPrefix + chargeFilterValueTopic,
+		ModelName: chargeFilterValueModelName,
+		IsDeleted: func(cfv *models.ChargeFilterValue) bool {
+			return cfv.DeletedAt.Valid
+		},
+		GetKey: func(cfv *models.ChargeFilterValue) string {
+			return c.buildChargeFilterValueKey(cfv.OrganizationID, cfv.ChargeFilterID, cfv.BillableMetricFilterID, cfv.ID)
+		},
+		GetID: func(cfv *models.ChargeFilterValue) string {
+			return cfv.ID
+		},
+		GetUpdatedAt: func(cfv *models.ChargeFilterValue) int64 {
+			return cfv.UpdatedAt.Time.UnixMilli()
+		},
+		GetCached: func(cfv *models.ChargeFilterValue) utils.Result[*models.ChargeFilterValue] {
+			return c.GetChargeFilterValue(cfv.OrganizationID, cfv.ChargeFilterID, cfv.BillableMetricFilterID, cfv.ID)
+		},
+		SetCache: func(cfv *models.ChargeFilterValue) utils.Result[bool] {
+			return c.SetChargeFilterValue(cfv)
+		},
+		Delete: func(cfv *models.ChargeFilterValue) utils.Result[bool] {
+			return c.DeleteChargeFilterValue(cfv)
+		},
+	})
 }

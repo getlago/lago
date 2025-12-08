@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
@@ -11,7 +12,9 @@ import (
 )
 
 const (
-	subscriptionPrefix = "sub"
+	subscriptionPrefix    = "sub"
+	subscriptionModelName = "subscriptions"
+	subscriptionTopic     = ".public.subscriptions"
 )
 
 func (c *Cache) buildSubscriptionKey(organizationID, externalID, ID string) string {
@@ -98,14 +101,14 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 // we update the cache entry with a 1 month TTL
 func (c *Cache) DeleteSubscription(sub *models.Subscription) utils.Result[bool] {
 	key := c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
-	ttl := 30 * 24 * time.Hour
+	ttl := 60 * 24 * time.Hour
 	return deleteWithTTL(c, key, sub, ttl)
 }
 
 func (c *Cache) LoadSubscriptionsSnapshot(db *gorm.DB) utils.Result[int] {
 	return LoadSnapshot(
 		c,
-		"subscriptions",
+		subscriptionModelName,
 		func() ([]models.Subscription, error) {
 			res := models.GetAllSubscriptions(db)
 			if res.Failure() {
@@ -117,4 +120,32 @@ func (c *Cache) LoadSubscriptionsSnapshot(db *gorm.DB) utils.Result[int] {
 			return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
 		},
 	)
+}
+
+func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
+	return startGenericConsumer(ctx, c, ConsumerConfig[models.Subscription]{
+		Topic:     c.debeziumTopicPrefix + subscriptionTopic,
+		ModelName: subscriptionModelName,
+		IsDeleted: func(sub *models.Subscription) bool {
+			return sub.TerminatedAt.Valid
+		},
+		GetKey: func(sub *models.Subscription) string {
+			return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
+		},
+		GetID: func(sub *models.Subscription) string {
+			return sub.ID
+		},
+		GetUpdatedAt: func(sub *models.Subscription) int64 {
+			return sub.UpdatedAt.Time.UnixMilli()
+		},
+		GetCached: func(sub *models.Subscription) utils.Result[*models.Subscription] {
+			return c.GetSubscription(*sub.OrganizationID, sub.ExternalID, sub.ID)
+		},
+		SetCache: func(sub *models.Subscription) utils.Result[bool] {
+			return c.SetSubscription(sub)
+		},
+		Delete: func(sub *models.Subscription) utils.Result[bool] {
+			return c.DeleteSubscription(sub)
+		},
+	})
 }

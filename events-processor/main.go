@@ -23,8 +23,9 @@ var (
 )
 
 const (
-	envEnv       = "ENV"
-	envSentryDsn = "SENTRY_DSN"
+	envEnv                 = "ENV"
+	envSentryDsn           = "SENTRY_DSN"
+	envDebeziumTopicPrefix = "DEBEZIUM_TOPIC_PREFIX"
 )
 
 func main() {
@@ -60,10 +61,9 @@ func main() {
 		Logger:  logger,
 	})
 	if err != nil {
-		logger.Error("Error creating the cache", slog.String("error", err.Error()))
-		utils.CaptureError(err)
-		panic(err.Error())
+		utils.LogAndPanic(logger, err, "Error creating the cache")
 	}
+	defer memCache.Close()
 
 	memCache.LoadInitialSnapshot()
 	memCache.ConsumeChanges()
@@ -83,7 +83,6 @@ func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
 	go func() {
 		sig := <-signChan
 		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
-		memCache.Close()
 		cancel()
 	}()
 }

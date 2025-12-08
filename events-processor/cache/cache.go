@@ -17,16 +17,18 @@ import (
 // Cache wraps BadgerDB to provide an in-memory key-value store with JSON serialization
 // It manages the lifecycle of cached data and coordinates snapshot loading and CDC consumption.
 type Cache struct {
-	ctx    context.Context
-	db     *badger.DB
-	logger *slog.Logger
-	wg     sync.WaitGroup
+	ctx                 context.Context
+	db                  *badger.DB
+	logger              *slog.Logger
+	debeziumTopicPrefix string
+	wg                  sync.WaitGroup
 }
 
 // CacheConfig holds the configuration needed to initialize a new Cache instance.
 type CacheConfig struct {
-	Context context.Context
-	Logger  *slog.Logger
+	Context             context.Context
+	Logger              *slog.Logger
+	DebeziumTopicPrefix string
 }
 
 // NewCache creates and initializes a new in-memory cache instance.
@@ -65,9 +67,7 @@ func (c *Cache) LoadInitialSnapshot() {
 
 	db, err := database.NewConnection(dbConfig)
 	if err != nil {
-		c.logger.Error("Error connecting to the database", slog.String("error", err.Error()))
-		utils.CaptureError(err)
-		panic(err.Error())
+		utils.LogAndPanic(c.logger, err, "Error connecting to the database")
 	}
 
 	var wg sync.WaitGroup
