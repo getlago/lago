@@ -531,78 +531,85 @@ func TestProcessEvent(t *testing.T) {
 			}
 			testEnv.DataStore.SetSubscription(&sub)
 
-			charge1 := &models.Charge{
-				ID:               "charge_id1",
-				OrganizationID:   event.OrganizationID,
-				PlanID:           "plan_id",
-				BillableMetricID: bm.ID,
-				UpdatedAt:        utils.NowNullTime(),
-			}
-			testEnv.DataStore.SetCharge(charge1)
+			if mode.useCache {
+				charges := []*models.Charge{
+					{
+						ID:               "charge_id1",
+						OrganizationID:   event.OrganizationID,
+						PlanID:           "plan_id",
+						BillableMetricID: bm.ID,
+						UpdatedAt:        utils.NowNullTime(),
+					},
+					{
+						ID:               "charge_id2",
+						OrganizationID:   event.OrganizationID,
+						PlanID:           "plan_id",
+						BillableMetricID: bm.ID,
+						UpdatedAt:        utils.NowNullTime(),
+					},
+				}
+				for _, charge := range charges {
+					testEnv.DataStore.SetCharge(charge)
+				}
 
-			chargeFilter1 := &models.ChargeFilter{
-				ID:             "charge_filter_id1",
-				OrganizationID: event.OrganizationID,
-				ChargeID:       charge1.ID,
-			}
-			testEnv.DataStore.SetChargeFilter(chargeFilter1)
+				charge_filters := []*models.ChargeFilter{
+					{
+						ID:             "charge_filter_id1",
+						OrganizationID: event.OrganizationID,
+						ChargeID:       charges[0].ID,
+					},
+					{
+						ID:             "charge_filter_id2",
+						OrganizationID: event.OrganizationID,
+						ChargeID:       charges[1].ID,
+					},
+				}
+				for _, cf := range charge_filters {
+					testEnv.DataStore.SetChargeFilter(cf)
+				}
 
-			chargeFilterValue1 := &models.ChargeFilterValue{
-				ID:                     uuid.New().String(),
-				OrganizationID:         event.OrganizationID,
-				ChargeFilterID:         chargeFilter1.ID,
-				BillableMetricFilterID: bmf1.ID,
-			}
-			testEnv.DataStore.SetChargeFilterValue(chargeFilterValue1)
-
-			charge2 := &models.Charge{
-				ID:               "charge_id2",
-				OrganizationID:   event.OrganizationID,
-				PlanID:           "plan_id",
-				BillableMetricID: bm.ID,
-				UpdatedAt:        utils.NowNullTime(),
-			}
-			testEnv.DataStore.SetCharge(charge2)
-
-			chargeFilter2 := &models.ChargeFilter{
-				ID:             "charge_filter_id2",
-				OrganizationID: event.OrganizationID,
-				ChargeID:       charge2.ID,
-			}
-			testEnv.DataStore.SetChargeFilter(chargeFilter2)
-
-			chargeFilterValue2 := &models.ChargeFilterValue{
-				ID:                     uuid.New().String(),
-				OrganizationID:         event.OrganizationID,
-				ChargeFilterID:         chargeFilter2.ID,
-				BillableMetricFilterID: bmf1.ID,
-			}
-			testEnv.DataStore.SetChargeFilterValue(chargeFilterValue2)
-
-			if !mode.useCache {
+				charge_filter_values := []*models.ChargeFilterValue{
+					{
+						ID:                     uuid.New().String(),
+						OrganizationID:         event.OrganizationID,
+						ChargeFilterID:         charge_filters[0].ID,
+						BillableMetricFilterID: bmf1.ID,
+					},
+					{
+						ID:                     uuid.New().String(),
+						OrganizationID:         event.OrganizationID,
+						ChargeFilterID:         charge_filters[1].ID,
+						BillableMetricFilterID: bmf1.ID,
+					},
+				}
+				for _, cfv := range charge_filter_values {
+					testEnv.DataStore.SetChargeFilterValue(cfv)
+				}
+			} else {
 				now := time.Now()
-				flatFilter1 := &models.FlatFilter{
-					OrganizationID:        "org_id",
-					BillableMetricCode:    "api_calls",
-					PlanID:                "plan_id",
-					ChargeID:              "charge_id1",
-					ChargeUpdatedAt:       now,
-					ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
-					ChargeFilterUpdatedAt: &now,
-					Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+				flat_filters := []*models.FlatFilter{
+					{
+						OrganizationID:        "org_id",
+						BillableMetricCode:    "api_calls",
+						PlanID:                "plan_id",
+						ChargeID:              "charge_id1",
+						ChargeUpdatedAt:       now,
+						ChargeFilterID:        utils.StringPtr("charge_filter_id1"),
+						ChargeFilterUpdatedAt: &now,
+						Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+					},
+					{
+						OrganizationID:        "org_id",
+						BillableMetricCode:    "api_calls",
+						PlanID:                "plan_id",
+						ChargeID:              "charge_id2",
+						ChargeUpdatedAt:       now,
+						ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
+						ChargeFilterUpdatedAt: &now,
+						Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
+					},
 				}
-
-				flatFilter2 := &models.FlatFilter{
-					OrganizationID:        "org_id",
-					BillableMetricCode:    "api_calls",
-					PlanID:                "plan_id",
-					ChargeID:              "charge_id2",
-					ChargeUpdatedAt:       now,
-					ChargeFilterID:        utils.StringPtr("charge_filter_id2"),
-					ChargeFilterUpdatedAt: &now,
-					Filters:               &models.FlatFilterValues{"scheme": []string{"visa"}},
-				}
-				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{flatFilter1, flatFilter2})
+				testEnv.DataStore.SetFlatFilters(flat_filters)
 			}
 
 			evResult := testEnv.EventProcessor.processEvent(context.Background(), &event)
