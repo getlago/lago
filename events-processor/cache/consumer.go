@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/getlago/lago/events-processor/utils"
 	"github.com/google/uuid"
@@ -24,10 +25,11 @@ type ConsumerConfig[T any] struct {
 }
 
 func startGenericConsumer[T any](ctx context.Context, cache *Cache, config ConsumerConfig[T]) error {
-	groupID := fmt.Sprintf("lago_evt_proc_che_%s_%s", config.ModelName, uuid.New().String())
+	groupID := fmt.Sprintf("lago_evp_%s_%s", config.ModelName, uuid.New().String())
+	brokers := os.Getenv("LAGO_KAFKA_BOOTSTRAP_SERVERS")
 
 	client, err := kgo.NewClient(
-		kgo.SeedBrokers("redpanda:9092"),
+		kgo.SeedBrokers(brokers),
 		kgo.ConsumerGroup(groupID),
 		kgo.ConsumeTopics(config.Topic),
 		kgo.DisableAutoCommit(),
