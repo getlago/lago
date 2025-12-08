@@ -52,16 +52,32 @@ func setupProducers() *testProducerService {
 	}
 }
 
-func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService, *tests.MockFlagStore, *cache.Cache) {
+type ProcessorTestEnv struct {
+	EventProcessor  *EventProcessor
+	ProducerService *testProducerService
+	FlagStore       *tests.MockFlagStore
+	Cache           *cache.Cache
+	MockedStore     *tests.MockedStore
+	Delete          func()
+}
+
+func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
+	var mockedStore *tests.MockedStore
+	var delete func()
 	var apiStore *models.ApiStore
+	var chargeCache models.Cacher
+
+	if !useCache {
+		mockedStore, delete = tests.SetupMockStore(t)
+		apiStore = models.NewApiStore(mockedStore.DB)
+	}
 
 	testProducers := setupProducers()
 
-	cacheStore := tests.MockCacheStore{}
-	var chargeCache models.Cacher = &cacheStore
+	chargeCache = &tests.MockCacheStore{}
 	chargeCacheStore := models.NewChargeCache(&chargeCache)
 
 	flagStore := tests.MockFlagStore{}
@@ -81,13 +97,20 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *testProducerService,
 		NewCacheService(chargeCacheStore),
 	)
 
-	return processor, testProducers, &flagStore, memCache
+	return &ProcessorTestEnv{
+		EventProcessor:  processor,
+		ProducerService: testProducers,
+		FlagStore:       &flagStore,
+		Cache:           memCache,
+		MockedStore:     mockedStore,
+		Delete:          delete,
+	}
 }
 
-func TestProcessEvent(t *testing.T) {
+func TestProcessEvent_WithCache(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		processor, _, _, cache := setupProcessorTestEnv(t)
-		defer cache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -96,7 +119,7 @@ func TestProcessEvent(t *testing.T) {
 			Timestamp:              1741007009,
 		}
 
-		result := processor.processEvent(context.Background(), &event)
+		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "Key not found", result.ErrorMsg())
 		assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
@@ -104,8 +127,8 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
-		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
-		defer memCache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -133,7 +156,7 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(&bm)
+		testEnv.Cache.SetBillableMetric(&bm)
 
 		sub := models.Subscription{
 			ID:             "sub123",
@@ -141,7 +164,7 @@ func TestProcessEvent(t *testing.T) {
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan123",
 		}
-		memCache.SetSubscription(&sub)
+		testEnv.Cache.SetSubscription(&sub)
 
 		charge := &models.Charge{
 			ID:               "ch123",
@@ -151,10 +174,10 @@ func TestProcessEvent(t *testing.T) {
 			PayInAdvance:     false,
 			UpdatedAt:        utils.NowNullTime(),
 		}
-		memCache.SetCharge(charge)
+		testEnv.Cache.SetCharge(charge)
 
 		ctx := context.Background()
-		result := processor.processEvent(ctx, &event)
+		result := testEnv.EventProcessor.processEvent(ctx, &event)
 
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
@@ -165,13 +188,13 @@ func TestProcessEvent(t *testing.T) {
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		processor, _, _, cache := setupProcessorTestEnv(t)
-		defer cache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -191,10 +214,10 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		cache.SetBillableMetric(&bm)
+		testEnv.Cache.SetBillableMetric(&bm)
 
 		ctx := context.Background()
-		result := processor.processEvent(ctx, &event)
+		result := testEnv.EventProcessor.processEvent(ctx, &event)
 		assert.False(t, result.Success())
 		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
 		assert.Equal(t, "build_enriched_event", result.ErrorCode())
@@ -202,8 +225,8 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		processor, _, _, cache := setupProcessorTestEnv(t)
-		defer cache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -223,15 +246,15 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		cache.SetBillableMetric(&bm)
+		testEnv.Cache.SetBillableMetric(&bm)
 
-		result := processor.processEvent(context.Background(), &event)
+		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 	})
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		processor, _, _, memCache := setupProcessorTestEnv(t)
-		defer memCache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		event := models.Event{
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -251,17 +274,17 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(&bm)
+		testEnv.Cache.SetBillableMetric(&bm)
 
 		sub := models.Subscription{
 			ID:             "sub123",
 			OrganizationID: &event.OrganizationID,
 			ExternalID:     event.ExternalSubscriptionID,
 		}
-		memCache.SetSubscription(&sub)
+		testEnv.Cache.SetSubscription(&sub)
 
 		ctx := context.Background()
-		result := processor.processEvent(ctx, &event)
+		result := testEnv.EventProcessor.processEvent(ctx, &event)
 		assert.False(t, result.Success())
 		assert.Contains(t, result.ErrorMsg(), "failed to evaluate expr: round(event.properties.value)")
 		assert.Equal(t, "evaluate_expression", result.ErrorCode())
@@ -269,8 +292,8 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		processor, testProducers, flagger, memCache := setupProcessorTestEnv(t)
-		defer memCache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		properties := map[string]any{
 			"value": "12.12",
@@ -295,7 +318,7 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(bm)
+		testEnv.Cache.SetBillableMetric(bm)
 
 		sub := &models.Subscription{
 			ID:             "sub123",
@@ -303,7 +326,7 @@ func TestProcessEvent(t *testing.T) {
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan_id",
 		}
-		memCache.SetSubscription(sub)
+		testEnv.Cache.SetSubscription(sub)
 
 		charge := &models.Charge{
 			ID:               "ch123",
@@ -313,25 +336,25 @@ func TestProcessEvent(t *testing.T) {
 			UpdatedAt:        utils.NowNullTime(),
 			PayInAdvance:     true,
 		}
-		memCache.SetCharge(charge)
+		testEnv.Cache.SetCharge(charge)
 
-		result := processor.processEvent(context.Background(), &event)
+		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12", *result.Value().Value)
 
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testProducers.inAdvanceProducer.ExecutionCount)
-		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.inAdvanceProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
 
-		assert.Equal(t, 1, flagger.ExecutionCount)
+		assert.Equal(t, 1, testEnv.FlagStore.ExecutionCount)
 	})
 
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
-		defer memCache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -356,7 +379,7 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		result := memCache.SetBillableMetric(&bm)
+		result := testEnv.Cache.SetBillableMetric(&bm)
 		require.True(t, result.Success())
 
 		bmf1 := &models.BillableMetricFilter{
@@ -366,7 +389,7 @@ func TestProcessEvent(t *testing.T) {
 			Key:              "scheme",
 			Values:           []string{"visa"},
 		}
-		result = memCache.SetBillableMetricFilter(bmf1)
+		result = testEnv.Cache.SetBillableMetricFilter(bmf1)
 		require.True(t, result.Success())
 
 		sub := models.Subscription{
@@ -375,7 +398,7 @@ func TestProcessEvent(t *testing.T) {
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan_id",
 		}
-		result = memCache.SetSubscription(&sub)
+		result = testEnv.Cache.SetSubscription(&sub)
 		require.True(t, result.Success())
 
 		charge1 := &models.Charge{
@@ -385,7 +408,7 @@ func TestProcessEvent(t *testing.T) {
 			BillableMetricID: bm.ID,
 			UpdatedAt:        utils.NowNullTime(),
 		}
-		result = memCache.SetCharge(charge1)
+		result = testEnv.Cache.SetCharge(charge1)
 		require.True(t, result.Success())
 
 		chargeFilter1 := &models.ChargeFilter{
@@ -393,7 +416,7 @@ func TestProcessEvent(t *testing.T) {
 			OrganizationID: event.OrganizationID,
 			ChargeID:       charge1.ID,
 		}
-		result = memCache.SetChargeFilter(chargeFilter1)
+		result = testEnv.Cache.SetChargeFilter(chargeFilter1)
 		require.True(t, result.Success())
 
 		chargeFilterValue1 := &models.ChargeFilterValue{
@@ -402,7 +425,7 @@ func TestProcessEvent(t *testing.T) {
 			ChargeFilterID:         chargeFilter1.ID,
 			BillableMetricFilterID: bmf1.ID,
 		}
-		result = memCache.SetChargeFilterValue(chargeFilterValue1)
+		result = testEnv.Cache.SetChargeFilterValue(chargeFilterValue1)
 		require.True(t, result.Success())
 
 		charge2 := &models.Charge{
@@ -412,7 +435,7 @@ func TestProcessEvent(t *testing.T) {
 			BillableMetricID: bm.ID,
 			UpdatedAt:        utils.NowNullTime(),
 		}
-		result = memCache.SetCharge(charge2)
+		result = testEnv.Cache.SetCharge(charge2)
 		require.True(t, result.Success())
 
 		chargeFilter2 := &models.ChargeFilter{
@@ -420,7 +443,7 @@ func TestProcessEvent(t *testing.T) {
 			OrganizationID: event.OrganizationID,
 			ChargeID:       charge2.ID,
 		}
-		result = memCache.SetChargeFilter(chargeFilter2)
+		result = testEnv.Cache.SetChargeFilter(chargeFilter2)
 		require.True(t, result.Success())
 
 		chargeFilterValue2 := &models.ChargeFilterValue{
@@ -429,10 +452,10 @@ func TestProcessEvent(t *testing.T) {
 			ChargeFilterID:         chargeFilter2.ID,
 			BillableMetricFilterID: bmf1.ID,
 		}
-		result = memCache.SetChargeFilterValue(chargeFilterValue2)
+		result = testEnv.Cache.SetChargeFilterValue(chargeFilterValue2)
 		require.True(t, result.Success())
 
-		evResult := processor.processEvent(context.Background(), &event)
+		evResult := testEnv.EventProcessor.processEvent(context.Background(), &event)
 		assert.True(t, evResult.Success())
 		assert.Equal(t, "12.0", *evResult.Value().Value)
 		assert.Equal(t, "sum", evResult.Value().AggregationType)
@@ -442,13 +465,13 @@ func TestProcessEvent(t *testing.T) {
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 2, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 2, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
 	})
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		processor, testProducers, _, memCache := setupProcessorTestEnv(t)
-		defer memCache.Close()
+		testEnv := setupProcessorTestEnv(t, true)
+		defer testEnv.Cache.Close()
 
 		properties := map[string]any{
 			"api_requests": "12.0",
@@ -473,7 +496,7 @@ func TestProcessEvent(t *testing.T) {
 			CreatedAt:       utils.NowNullTime(),
 			UpdatedAt:       utils.NowNullTime(),
 		}
-		memCache.SetBillableMetric(&bm)
+		testEnv.Cache.SetBillableMetric(&bm)
 
 		sub := models.Subscription{
 			ID:             "sub123",
@@ -481,9 +504,9 @@ func TestProcessEvent(t *testing.T) {
 			ExternalID:     event.ExternalSubscriptionID,
 			PlanID:         "plan123",
 		}
-		memCache.SetSubscription(&sub)
+		testEnv.Cache.SetSubscription(&sub)
 
-		result := processor.processEvent(context.Background(), &event)
+		result := testEnv.EventProcessor.processEvent(context.Background(), &event)
 		assert.True(t, result.Success())
 		assert.Equal(t, "12.0", *result.Value().Value)
 		assert.Equal(t, "sum", result.Value().AggregationType)
@@ -493,7 +516,7 @@ func TestProcessEvent(t *testing.T) {
 		// Give some time to the go routine to complete
 		// TODO: Improve this by using channels in the producers methods
 		time.Sleep(50 * time.Millisecond)
-		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
-		assert.Equal(t, 0, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 1, testEnv.ProducerService.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 0, testEnv.ProducerService.enrichedExpandedProducer.ExecutionCount)
 	})
 }
