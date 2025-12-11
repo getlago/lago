@@ -73,7 +73,7 @@ jobs:
           rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
   merge:
     name: Merge Images
-    runs-on: lago-runner
+    runs-on: ubuntu-latest
     needs: [build-single-docker-image]
     steps:
       - name: Download Digests
