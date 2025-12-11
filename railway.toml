@@ -1,0 +1,22 @@
+# Railway Configuration for Lago Payment Module
+# This file tells Railway to use Docker instead of Railpack/Nixpacks
+
+[build]
+# Use the Dockerfile at root which handles submodule cloning
+dockerfilePath = "Dockerfile"
+
+# Build arguments (can be overridden in Railway dashboard)
+[build.args]
+NODE_VERSION = "20"
+RUBY_VERSION = "3.4.7"
+
+[deploy]
+# Health check configuration
+healthcheckPath = "/"
+healthcheckTimeout = 300
+
+# Start command is handled by the Dockerfile ENTRYPOINT
+# No need to specify here as runner.sh handles everything
+
+# Number of restart attempts
+restartPolicyMaxRetries = 3
