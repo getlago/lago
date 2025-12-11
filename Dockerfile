@@ -96,21 +96,35 @@ COPY --from=submodules /repos/api ./api
 
 # Copy configuration files
 COPY ./docker/Procfile ./api/Procfile
-COPY ./docker/runner.sh ./runner.sh
+COPY ./docker/runner.sh ./runner-original.sh
+COPY ./railway/runner-railway.sh ./runner-railway.sh
 COPY ./docker/redis.conf /etc/redis/redis.conf
 
-# Make runner script executable
-RUN chmod +x ./runner.sh
+# Make runner scripts executable
+RUN chmod +x ./runner-original.sh ./runner-railway.sh
+
+# Create main runner script that selects appropriate runner
+RUN echo '#!/bin/bash\n\
+if [ "${RAILWAY_ENVIRONMENT}" != "" ] || [ "${USE_RAILWAY_RUNNER}" = "true" ]; then\n\
+    exec ./runner-railway.sh\n\
+else\n\
+    exec ./runner-original.sh\n\
+fi' > ./runner.sh && chmod +x ./runner.sh
 
 # Expose ports
+# Port 80: Frontend (Nginx)
+# Port 3000: API (Rails)
 EXPOSE 80
 EXPOSE 3000
+
+# Railway uses PORT environment variable
+ENV PORT=80
 
 # Data volume for persistence
 VOLUME /data
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:80/ || exit 1
+    CMD curl -f http://localhost:80/ || curl -f http://localhost:${PORT:-80}/ || exit 1
 
 ENTRYPOINT ["./runner.sh"]

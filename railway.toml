@@ -1,22 +1,45 @@
+# =============================================================================
 # Railway Configuration for Lago Payment Module
+# =============================================================================
 # This file tells Railway to use Docker instead of Railpack/Nixpacks
+# Documentation: https://docs.railway.app/reference/config-as-code
+# =============================================================================
 
 [build]
 # Use the Dockerfile at root which handles submodule cloning
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 # Build arguments (can be overridden in Railway dashboard)
 [build.args]
 NODE_VERSION = "20"
 RUBY_VERSION = "3.4.7"
+LAGO_VERSION = "v1.37.0"
 
 [deploy]
+# Number of replicas (set to 1 for all-in-one deployment)
+numReplicas = 1
+
 # Health check configuration
 healthcheckPath = "/"
 healthcheckTimeout = 300
 
-# Start command is handled by the Dockerfile ENTRYPOINT
-# No need to specify here as runner.sh handles everything
-
-# Number of restart attempts
+# Restart policy
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# Start command is handled by the Dockerfile ENTRYPOINT
+# Uncomment to override:
+# startCommand = "./runner-railway.sh"
+
+# =============================================================================
+# Required Environment Variables (set in Railway Dashboard)
+# =============================================================================
+# DATABASE_URL          - PostgreSQL connection string
+# REDIS_URL             - Redis connection string
+# SECRET_KEY_BASE       - Rails secret (openssl rand -hex 64)
+# LAGO_RSA_PRIVATE_KEY  - JWT key (openssl genrsa 2048 | base64 -w 0)
+# LAGO_ENCRYPTION_*     - Encryption keys (openssl rand -hex 32)
+# LAGO_API_URL          - Public API URL
+# LAGO_FRONT_URL        - Public frontend URL
+# =============================================================================
