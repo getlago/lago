@@ -98,6 +98,8 @@ COPY --from=submodules /repos/api ./api
 COPY ./docker/Procfile ./api/Procfile
 COPY ./docker/runner.sh ./runner-original.sh
 COPY ./railway/runner-railway.sh ./runner-railway.sh
+
+RUN chmod +x ./runner-railway.sh
 COPY ./docker/redis.conf /etc/redis/redis.conf
 
 # Make runner scripts executable

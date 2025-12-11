@@ -30,7 +30,7 @@ restartPolicyMaxRetries = 3
 
 # Start command is handled by the Dockerfile ENTRYPOINT
 # Uncomment to override:
-# startCommand = "./runner-railway.sh"
+startCommand = "./runner-railway.sh"
 
 # =============================================================================
 # Required Environment Variables (set in Railway Dashboard)
