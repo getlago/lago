@@ -1,0 +1,84 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "name": "Lago Payment Module",
+  "description": "Open-source metering and usage-based billing platform",
+  "icon": "https://raw.githubusercontent.com/getlago/lago/main/front/public/favicon.ico",
+  "services": [
+    {
+      "name": "lago",
+      "description": "Lago all-in-one service",
+      "source": {
+        "type": "github",
+        "repo": "{{GITHUB_REPO}}"
+      },
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile"
+      },
+      "deploy": {
+        "healthcheckPath": "/",
+        "healthcheckTimeout": 300,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3
+      },
+      "variables": {
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}",
+        "RAILS_ENV": "production",
+        "RAILS_LOG_TO_STDOUT": "true",
+        "USE_RAILWAY_RUNNER": "true",
+        "USE_EMBEDDED_DB": "false",
+        "USE_EMBEDDED_REDIS": "false",
+        "LAGO_DISABLE_SSL": "true",
+        "LAGO_DISABLE_PDF_GENERATION": "true",
+        "LAGO_DISABLE_SEGMENT": "true"
+      },
+      "volumes": [
+        {
+          "mountPath": "/data",
+          "name": "lago-data"
+        }
+      ]
+    },
+    {
+      "name": "Postgres",
+      "description": "PostgreSQL database for Lago",
+      "plugin": "postgresql"
+    },
+    {
+      "name": "Redis",
+      "description": "Redis for job queue and caching",
+      "plugin": "redis"
+    }
+  ],
+  "variables": {
+    "SECRET_KEY_BASE": {
+      "description": "Rails secret key (generate with: openssl rand -hex 64)",
+      "required": true
+    },
+    "LAGO_RSA_PRIVATE_KEY": {
+      "description": "RSA key for JWT (generate with: openssl genrsa 2048 | base64 -w 0)",
+      "required": true
+    },
+    "LAGO_ENCRYPTION_PRIMARY_KEY": {
+      "description": "Primary encryption key (generate with: openssl rand -hex 32)",
+      "required": true
+    },
+    "LAGO_ENCRYPTION_DETERMINISTIC_KEY": {
+      "description": "Deterministic encryption key (generate with: openssl rand -hex 32)",
+      "required": true
+    },
+    "LAGO_ENCRYPTION_KEY_DERIVATION_SALT": {
+      "description": "Key derivation salt (generate with: openssl rand -hex 32)",
+      "required": true
+    },
+    "LAGO_API_URL": {
+      "description": "Public URL for the API",
+      "required": true
+    },
+    "LAGO_FRONT_URL": {
+      "description": "Public URL for the frontend",
+      "required": true
+    }
+  }
+}
