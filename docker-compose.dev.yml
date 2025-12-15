@@ -358,6 +358,7 @@ services:
       - events-raw
       - events_enriched
       - events_charged_in_advance
+      - events_enriched_expanded
       - events_dead_letter
       - activity_logs
       - api_logs
