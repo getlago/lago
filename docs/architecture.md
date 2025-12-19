@@ -88,6 +88,7 @@ Lago supports dedicated workers for specific job types to improve performance an
 | `SIDEKIQ_PAYMENTS`   | `payments`       | 10                               | Payment operations   |
 | `SIDEKIQ_PDF`        | `pdfs`           | 10                               | PDF generation       |
 | `SIDEKIQ_WEBHOOK`    | `webhook_worker` | 10                               | Webhook delivery     |
+| `SIDEKIQ_AI_AGENT`   | `ai_agent`       | 10                               | AI Agent             |
 
 #### Queue Routing Logic
 
