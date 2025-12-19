@@ -257,6 +257,17 @@ services:
         bundle install && ./scripts/start.analytics.worker.sh
       '
 
+  api-ai-agent-worker:
+    <<: *api_worker
+    container_name: lago_api_ai_agent_worker_dev
+    command: |
+      bash -c '
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_AI_AGENT}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_AI_AGENT}
+        fi
+        bundle install && ./scripts/start.ai_agent.worker.sh
+      '
+
   api-clock:
     image: api_dev
     container_name: lago_api_clock_dev

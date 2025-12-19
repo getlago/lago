@@ -68,6 +68,7 @@ x-backend-environment: &backend-env
   # - SIDEKIQ_BILLING=true
   # - SIDEKIQ_CLOCK=true
   # - SIDEKIQ_WEBHOOK=true
+  # - SIDEKIQ_AI_AGENT=true
 x-frontend-environment: &frontend-env
   "API_URL": ${LAGO_API_URL:-http://localhost:3000}
   "APP_ENV": production
@@ -285,6 +286,18 @@ services:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.analytics.worker.sh"]
+  #  environment:
+  #    <<: [*backend-env, *lago-api-url]
+
+  # You can uncomment this if you want to use a dedicated Sidekiq worker for the AI Agent-related jobs.
+  #api-ai-agent-worker:
+  #  <<: *backend-image
+  #  container_name: api-ai-agent-worker
+  #  restart: unless-stopped
+  #  depends_on:
+  #    api:
+  #      condition: service_healthy
+  #  command: ["./scripts/start.ai_agent.worker.sh"]
   #  environment:
   #    <<: [*backend-env, *lago-api-url]
 
