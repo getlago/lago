@@ -357,6 +357,7 @@ services:
     command:
       - events-raw
       - events_enriched
+      - events_enriched_expanded
       - events_charged_in_advance
       - events_dead_letter
       - activity_logs
@@ -390,7 +391,6 @@ services:
       - "traefik.http.routers.console.tls=true"
       - "traefik.http.services.console.loadbalancer.server.port=8080"
 
-  
   redpanda-kafka-connect:
     image: docker.redpanda.com/redpandadata/connectors:latest
     hostname: redpanda-kafka-connect
@@ -436,7 +436,15 @@ services:
       - 9000:9000
       - 8123:8123
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--password", "default", "--query", "SELECT 1"]
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--password",
+          "default",
+          "--query",
+          "SELECT 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
