@@ -1,4 +1,4 @@
-FROM rust:1.82 AS rust-build
+FROM rust:1.85 AS rust-build
 
 RUN git clone https://github.com/getlago/lago-expression/
 WORKDIR /lago-expression/expression-go
