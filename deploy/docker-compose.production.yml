@@ -52,6 +52,8 @@ x-backend-environment: &backend-env
   LAGO_PDF_URL: http://pdf:3000
   LAGO_REDIS_CACHE_URL: redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
   LAGO_REDIS_CACHE_PASSWORD: ${LAGO_REDIS_CACHE_PASSWORD:-}
+  LAGO_REDIS_FEATURE_FLAGS_URL: ${LAGO_REDIS_FEATURE_FLAGS_URL:-}
+  LAGO_REDIS_FEATURE_FLAGS_PASSWORD: ${LAGO_REDIS_FEATURE_FLAGS_PASSWORD:-}
   LAGO_DISABLE_SEGMENT: ${LAGO_DISABLE_SEGMENT:-}
   LAGO_DISABLE_WALLET_REFRESH: ${LAGO_DISABLE_WALLET_REFRESH:-}
   LAGO_DISABLE_SIGNUP: ${LAGO_DISABLE_SIGNUP:-false}
@@ -90,7 +92,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
-      
+
   db:
     <<: *postgres-image
     container_name: lago-db
@@ -244,7 +246,7 @@ services:
       - "traefik.http.routers.lago-front.rule=Host(`${LAGO_DOMAIN}`)"
       - "traefik.http.routers.lago-front.tls.certresolver=letsencrypt"
       - "traefik.http.services.lago-front.loadbalancer.server.port=80"
-      
+
 
   worker:
     <<: *backend-image
@@ -296,7 +298,7 @@ services:
       - lago_rsa_data:/app/config/keys
     environment:
       <<: [*backend-env, *backend-urls]
-  
+
   billing-worker:
     <<: *backend-image
     container_name: lago-billing-worker
@@ -326,7 +328,7 @@ services:
     volumes:
       - lago_storage_data:/app/storage
       - lago_rsa_data:/app/config/keys
-  
+
   pdf-worker:
     <<: *backend-image
     container_name: lago-pdf-worker
@@ -356,7 +358,7 @@ services:
     volumes:
       - lago_storage_data:/app/storage
       - lago_rsa_data:/app/config/keys
-  
+
   webhook-worker:
     <<: *backend-image
     container_name: lago-webhook-worker
@@ -384,7 +386,7 @@ services:
     volumes:
       - lago_storage_data:/app/storage
       - lago_rsa_data:/app/config/keys
-  
+
   clock-worker:
     <<: *backend-image
     container_name: lago-clock-worker
@@ -412,7 +414,7 @@ services:
     volumes:
       - lago_storage_data:/app/storage
       - lago_rsa_data:/app/config/keys
-  
+
   events-worker:
     <<: *backend-image
     container_name: lago-events-worker
