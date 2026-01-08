@@ -1,6 +1,6 @@
 FROM rust:1.85 AS rust-build
 
-RUN git clone https://github.com/getlago/lago-expression/
+RUN git clone --tags https://github.com/getlago/lago-expression/
 WORKDIR /lago-expression/expression-go
 RUN git checkout v0.2.0 && cargo build --release
 
