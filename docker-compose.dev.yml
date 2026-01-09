@@ -29,8 +29,11 @@ services:
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   db:
-    image: postgres:15.0-alpine
+    image: postgres-partman
     container_name: lago_db_dev
+    build:
+      context: .
+      dockerfile: extra/postgres.Dockerfile
     restart: unless-stopped
     command: -c config_file=/etc/postgresql.conf
     environment:
@@ -402,7 +405,6 @@ services:
       - "traefik.http.routers.console.tls=true"
       - "traefik.http.services.console.loadbalancer.server.port=8080"
 
-  
   redpanda-kafka-connect:
     image: docker.redpanda.com/redpandadata/connectors:latest
     hostname: redpanda-kafka-connect
