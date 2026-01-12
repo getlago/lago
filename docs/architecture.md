@@ -175,6 +175,7 @@ This pattern is applied across all dedicated worker types, allowing flexible sca
    - All jobs tagged with Sentry metadata for error tracking
    - Failed jobs trigger alerts for investigation
    - Queue depth monitoring prevents backlog buildup
+   - See [Monitoring](./monitoring.md#sidekiq-monitoring) for Prometheus metrics and alerting configuration
 
 **Error Recovery Flow**:
 ```
@@ -261,11 +262,11 @@ Based on production deployment data from high-volume clusters, here are recommen
 
 #### Scaling Guidelines
 
-**When to Scale Up (Increase Resources)**:
+**When to Scale Up (Increase Resources)** (see [Monitoring](./monitoring.md#sidekiq-monitoring) for metrics):
 - High CPU usage (>80% sustained)
 - Memory pressure or OOM kills
-- Job processing latency increases
-- Queue depth growing consistently
+- Job processing latency increases (`sidekiq_queue_latency_seconds`)
+- Queue depth growing consistently (`sidekiq_queue_enqueued_jobs`)
 
 **When to Scale Out (Add Replicas)**:
 - Queue backlog building up
@@ -280,7 +281,7 @@ Based on production deployment data from high-volume clusters, here are recommen
 3. **Dedicated Workers**: Enable dedicated workers for high-volume job types to isolate resource usage
 4. **Autoscaling**: Configure Horizontal Pod Autoscaler (HPA) based on:
    - CPU utilization (70-80% target)
-   - Queue depth metrics (custom metrics)
+   - Queue depth metrics (`sidekiq_queue_enqueued_jobs` - see [Monitoring](./monitoring.md))
    - Memory utilization (60-70% target)
 
 5. **Concurrency Tuning**: Adjust `SIDEKIQ_CONCURRENCY` based on:

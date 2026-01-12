@@ -73,6 +73,7 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 ## 📚 Documentation
 - **[Development Environment](./docs/dev_environment.md)**: Learn how to set up and run Lago locally for development
 - **[Architecture](./docs/architecture.md)**: Understand Lago's technical architecture and flows
+- **[Monitoring](./docs/monitoring.md)**: Prometheus metrics and alerting for Sidekiq and other components
 
 ## 🔔 Stay up to date
 Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates.

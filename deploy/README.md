@@ -166,3 +166,10 @@ docker compose up --profile all-no-keys
 ```
 
 *All BE Services use the same RSA key, they will exit immediately if no key is provided.*
+
+## Monitoring
+
+For production deployments, we recommend setting up monitoring for Sidekiq workers. See the [Monitoring documentation](../docs/monitoring.md) for:
+- Prometheus metrics endpoints and available metrics
+- Recommended alerting rules
+- Grafana dashboard recommendations
