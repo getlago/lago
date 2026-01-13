@@ -1,0 +1,62 @@
+# Docker Compose Test Overlay
+# This file extends docker-compose.yml to add Pebble for SSL testing
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml --profile light --profile db --profile redis up -d
+
+volumes:
+  pebble_certs:
+
+services:
+  # ===========================================================================
+  # Pebble ACME Server (Let's Encrypt Test Server)
+  # ===========================================================================
+
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:latest
+    container_name: lago-pebble
+    command:
+      - -config
+      - /test/config/pebble-config.json
+      - -strict
+    environment:
+      PEBBLE_VA_NOSLEEP: "1"
+      PEBBLE_VA_ALWAYS_VALID: "1"
+    ports:
+      - "14000:14000"
+      - "15000:15000"
+    volumes:
+      - pebble_certs:/test/certs
+    profiles:
+      - light
+      - production
+
+  # ===========================================================================
+  # Traefik Override for Pebble
+  # ===========================================================================
+
+  traefik:
+    depends_on:
+      - pebble
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=test@lago.test"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.caServer=https://pebble:14000/dir"
+    environment:
+      LEGO_CA_CERTIFICATES: /pebble-certs/pebble.minica.pem
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "pebble_certs:/pebble-certs:ro"
