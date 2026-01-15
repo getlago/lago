@@ -402,6 +402,8 @@ Lago uses three separate Redis instances for different purposes:
 **Configuration**:
 - `LAGO_REDIS_STORE_URL` - Connection URI
 - `LAGO_REDIS_STORE_PASSWORD` - Password (separate for security)
+- `LAGO_REDIS_STORE_SSL` - Use SSL to access Redis. It will be used only if `LAGO_REDIS_STORE_URL` does not contains the `rediss://` prefix
+- `LAGO_REDIS_STORE_DISABLE_SSL_VERIFY` - Turn off SSL certificate verification
 
 **Purpose**: Dedicated storage for event-related data and event processing workflows
 
