@@ -33,7 +33,7 @@ services:
     container_name: lago_db_dev
     build:
       context: .
-      dockerfile: extra/postgres.Dockerfile
+      dockerfile: extra/postgres-partman/postgres.Dockerfile
     restart: unless-stopped
     command: -c config_file=/etc/postgresql.conf
     environment:
