@@ -29,11 +29,8 @@ services:
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
   db:
-    image: postgres-partman
+    image: "getlago/postgres-partman:15.0-alpine"
     container_name: lago_db_dev
-    build:
-      context: .
-      dockerfile: extra/postgres-partman/postgres.Dockerfile
     restart: unless-stopped
     command: -c config_file=/etc/postgresql.conf
     environment:
