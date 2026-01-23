@@ -33,12 +33,6 @@ on:
         type: string
         default: 'dockerhub'
 
-      push:
-        description: 'Push images to registry'
-        required: false
-        type: boolean
-        default: true
-
       build-args:
         description: 'Build arguments (multiline string)'
         required: false
@@ -88,6 +82,10 @@ on:
 
       registry-token:
         description: 'Registry password/token or AWS Secret Access Key'
+        required: false
+
+      repository-token:
+        description: 'Repository token for github checkout'
         required: false
 
       build-secrets:
@@ -157,6 +155,9 @@ jobs:
     outputs:
       build-hash: ${{ steps.build-hash.outputs.hash }}
       combined-tag: ${{ steps.build-hash.outputs.combined }}
+      digest-key: ${{ steps.build-hash.outputs.digest-key }}
+      metadata-json: ${{ steps.meta.outputs.json }}
+      metadata-version: ${{ steps.meta.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -164,6 +165,7 @@ jobs:
         with:
           repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref }}
+          token: ${{ secrets.repository-token || github.token }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -181,14 +183,14 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Login to Docker Hub
-        if: inputs.registry == 'dockerhub' && inputs.push
+        if: inputs.registry == 'dockerhub'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.registry-user }}
           password: ${{ secrets.registry-token }}
 
       - name: Login to GitHub Container Registry
-        if: inputs.registry == 'ghcr' && inputs.push
+        if: inputs.registry == 'ghcr'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -200,70 +202,55 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image-name }}
+          context: 'git'
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
+            type=ref,event=pr
+            type=ref,event=branch
+            type=sha,priority=1000
             ${{ inputs.tags }}
 
       - name: Generate build hash
         id: build-hash
         run: |
+          # Use version from metadata (sha-{short_sha} from checked-out repo)
+          VERSION="${{ steps.meta.outputs.version }}"
+
           # Create a deterministic hash from build args and secrets
           BUILD_ARGS="${{ inputs.build-args }}"
           BUILD_SECRETS="${{ secrets.build-secrets }}"
 
-          # Skip if no build args or secrets
-          if [[ -z "$BUILD_ARGS" && -z "$BUILD_SECRETS" ]]; then
-            echo "No build args or secrets provided, skipping hash generation"
-            exit 0
-          fi
+          if [[ -n "$BUILD_ARGS" || -n "$BUILD_SECRETS" ]]; then
+            # Sort and normalize the build args to ensure consistency
+            SORTED_ARGS=""
+            if [[ -n "$BUILD_ARGS" ]]; then
+              SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+            fi
 
-          # Sort and normalize the build args to ensure consistency
-          SORTED_ARGS=""
-          if [[ -n "$BUILD_ARGS" ]]; then
-            SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
-          fi
+            # Sort and normalize the secrets (values included in hash for differentiation)
+            SORTED_SECRETS=""
+            if [[ -n "$BUILD_SECRETS" ]]; then
+              SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
+            fi
 
-          # Sort and normalize the secrets (values included in hash for differentiation)
-          SORTED_SECRETS=""
-          if [[ -n "$BUILD_SECRETS" ]]; then
-            SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
-          fi
+            # Generate short hash (8 chars)
+            HASH=$(echo -n "${SORTED_ARGS}${SORTED_SECRETS}" | sha256sum | cut -c1-8)
+            echo "hash=$HASH" >> $GITHUB_OUTPUT
 
-          # Combine args and secrets for hashing
-          COMBINED_INPUT="${SORTED_ARGS}${SORTED_SECRETS}"
-
-          # Generate short hash (8 chars)
-          HASH=$(echo -n "$COMBINED_INPUT" | sha256sum | cut -c1-8)
-          echo "hash=$HASH" >> $GITHUB_OUTPUT
-          echo "Generated build hash: $HASH"
-          echo "From args: $SORTED_ARGS"
-
-          # Get short commit SHA (7 chars)
-          GIT_SHA="${{ github.sha }}"
-          SHORT_SHA="${GIT_SHA:0:7}"
-
-          # Determine tag based on event type
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR: pr-{number} (no build hash)
-            PR_NUMBER="${{ github.event.pull_request.number }}"
-            COMBINED_TAG="pr-${PR_NUMBER}"
-          elif [[ "${{ github.ref_name }}" == "${{ github.event.repository.default_branch }}" ]]; then
-            # Default branch: {sha}.b-{hash}
-            COMBINED_TAG="${SHORT_SHA}.b-${HASH}"
+            COMBINED_TAG="${VERSION}.build-${HASH}"
           else
-            # Other branches: {branch} (no build hash)
-            BRANCH_NAME="${{ github.ref_name }}"
-            # Sanitize branch name for Docker tag (replace / with -)
-            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
-            COMBINED_TAG="${SAFE_BRANCH}"
+            COMBINED_TAG="${VERSION}"
           fi
 
           echo "combined=$COMBINED_TAG" >> $GITHUB_OUTPUT
+
+          # Generate unique digest key from image name + combined tag (for artifact naming)
+          DIGEST_KEY=$(echo -n "${{ inputs.image-name }}:${COMBINED_TAG}" | sha256sum | cut -c1-16)
+          echo "digest-key=$DIGEST_KEY" >> $GITHUB_OUTPUT
+
           echo "Combined tag: $COMBINED_TAG"
+          echo "Digest key: $DIGEST_KEY"
 
       - name: Build and push by digest
         id: build
@@ -275,12 +262,10 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           build-args: ${{ inputs.build-args }}
           secrets: ${{ secrets.build-secrets }}
-          outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=${{ inputs.push }}
+          outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=true
           # Registry cache - persistent and shared across runners
-          cache-from: |
-            type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}-${{ github.ref_name }}
-            type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}-${{ github.ref_name }},mode=max
+          cache-from: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }},mode=max
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Export digest
@@ -292,7 +277,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.arch }}
+          name: digests-${{ steps.build-hash.outputs.digest-key }}-${{ matrix.arch }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -301,7 +286,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
+      image-tag: ${{ steps.summary.outputs.image-tag }}
       digest: ${{ steps.inspect.outputs.digest }}
       tag: ${{ steps.summary.outputs.tag }}
 
@@ -310,7 +295,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-*
+          pattern: digests-${{ needs.build.outputs.digest-key }}-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -329,84 +314,38 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Login to Docker Hub
-        if: inputs.registry == 'dockerhub' && inputs.push
+        if: inputs.registry == 'dockerhub'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.registry-user }}
           password: ${{ secrets.registry-token }}
 
       - name: Login to GitHub Container Registry
-        if: inputs.registry == 'ghcr' && inputs.push
+        if: inputs.registry == 'ghcr'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ secrets.registry-user || github.actor }}
           password: ${{ secrets.registry-token || secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ inputs.image-name }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-            ${{ inputs.tags }}
-
-      - name: Generate build hash
-        id: build-hash
-        run: |
-          # Create a deterministic hash from build args and secrets
-          BUILD_ARGS="${{ inputs.build-args }}"
-          BUILD_SECRETS="${{ secrets.build-secrets }}"
-
-          # Skip if no build args or secrets
-          if [[ -z "$BUILD_ARGS" && -z "$BUILD_SECRETS" ]]; then
-            echo "No build args or secrets provided, skipping hash generation"
-            exit 0
-          fi
-
-          # Sort and normalize the build args to ensure consistency
-          SORTED_ARGS=""
-          if [[ -n "$BUILD_ARGS" ]]; then
-            SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
-          fi
-
-          # Sort and normalize the secrets (values included in hash for differentiation)
-          SORTED_SECRETS=""
-          if [[ -n "$BUILD_SECRETS" ]]; then
-            SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
-          fi
-
-          # Combine args and secrets for hashing
-          COMBINED_INPUT="${SORTED_ARGS}${SORTED_SECRETS}"
-
-          # Generate short hash (8 chars)
-          HASH=$(echo -n "$COMBINED_INPUT" | sha256sum | cut -c1-8)
-          echo "hash=$HASH" >> $GITHUB_OUTPUT
-          echo "Generated build hash: $HASH"
-
       - name: Create manifest list and push
-        if: inputs.push
+        id: meta
         working-directory: /tmp/digests
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ needs.build.outputs.metadata-json }}
         run: |
-          # Build tag list from metadata
-          TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          # Set version output and re-export metadata for subsequent steps
+          echo "version=${{ needs.build.outputs.metadata-version }}" >> $GITHUB_OUTPUT
+          echo "DOCKER_METADATA_OUTPUT_JSON=$DOCKER_METADATA_OUTPUT_JSON" >> $GITHUB_ENV
 
-          # Add combined SHA + build hash tag if build args were provided
-          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
-            TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
-            echo "Adding combined tag: ${{ needs.build.outputs.combined-tag }}"
-          fi
+          # Build tag list from metadata and add combined tag
+          TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
 
           docker buildx imagetools create $TAG_ARGS \
             $(printf '${{ inputs.image-name }}@sha256:%s ' *)
 
       - name: Inspect image
-        if: inputs.push
         id: inspect
         run: |
           digest=$(docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }} --format '{{json .Manifest.Digest}}' | tr -d '"')
@@ -415,23 +354,15 @@ jobs:
 
       - name: Write job summary
         id: summary
-        if: inputs.push
         run: |
-          # Build tags list
-          TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r '.tags[]' | sed 's/^/- `/' | sed 's/$/`/')
-          # Add combined tag if present
-          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
-            TAGS_LIST="${TAGS_LIST}
-          - \`${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}\`"
-          fi
+          IMAGE_TAG="${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          # Build tags list with combined tag, formatted as markdown
+          TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r \
+            --arg combined "$IMAGE_TAG" \
+            '.tags + [$combined] | unique | map("- `" + . + "`") | join("\n")')
 
-          # Output tag: combined-tag if present, otherwise sha-<short_sha>
-          if [[ -n "${{ needs.build.outputs.combined-tag }}" ]]; then
-            echo "tag=${{ needs.build.outputs.combined-tag }}" >> $GITHUB_OUTPUT
-          else
-            SHORT_SHA="${{ github.sha }}"
-            echo "tag=sha-${SHORT_SHA:0:7}" >> $GITHUB_OUTPUT
-          fi
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "tag=${{ needs.build.outputs.combined-tag }}" >> $GITHUB_OUTPUT
 
           {
             cat <<EOF
