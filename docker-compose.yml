@@ -8,9 +8,9 @@ x-postgres-image: &postgres-image
 x-redis-image: &redis-image
   image: redis:7-alpine
 x-backend-image: &backend-image
-  image: getlago/api:v1.40.0
+  image: getlago/api:v1.41.0
 x-frontend-image: &frontend-image
-  image: getlago/front:v1.40.0
+  image: getlago/front:v1.41.0
 
 x-lago-api-url: &lago-api-url
   "LAGO_API_URL": ${LAGO_API_URL:-http://localhost:3000}
