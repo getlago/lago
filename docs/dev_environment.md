@@ -2,7 +2,7 @@
 
 Welcome to the Lago development environment setup guide!
 
-This documentation is designed for contributors who want to work on Lago. If you're just looking to try Lago locally, please refer to the [Lago public documentation](https://doc.getlago.com/docs/guide/self-hosting/docker) for a simpler setup.
+This documentation is designed for contributors who want to work on Lago. If you're just looking to try Lago locally, please refer to the [Lago public documentation](https://doc.getlago.com/guide/lago-self-hosted/docker) for a simpler setup.
 
 ## Prerequisites
 
