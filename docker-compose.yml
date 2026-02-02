@@ -8,7 +8,7 @@ x-postgres-image: &postgres-image
 x-redis-image: &redis-image
   image: redis:7-alpine
 x-backend-image: &backend-image
-  image: getlago/api:v1.41.0
+  image: getlago/api:v1.41.1
 x-frontend-image: &frontend-image
   image: getlago/front:v1.41.0
 
