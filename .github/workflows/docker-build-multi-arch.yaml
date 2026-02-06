@@ -95,15 +95,15 @@ on:
     outputs:
       image-tag:
         description: 'The primary image tag that was built'
-        value: ${{ jobs.merge.outputs.image-tag }}
+        value: ${{ jobs.check.outputs.image-tag || jobs.merge.outputs.image-tag }}
 
       digest:
         description: 'The image digest'
-        value: ${{ jobs.merge.outputs.digest }}
+        value: ${{ jobs.check.outputs.digest || jobs.merge.outputs.digest }}
 
       tag:
         description: 'The primary tag (sha-<short_sha> or combined tag if build args provided)'
-        value: ${{ jobs.merge.outputs.tag }}
+        value: ${{ jobs.check.outputs.tag || jobs.merge.outputs.tag }}
 
 jobs:
   prepare:
@@ -144,20 +144,17 @@ jobs:
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
           echo "Generated matrix: $matrix_json"
 
-  build:
-    needs: prepare
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
-
-    runs-on: ${{ matrix.runner }}
-
+  check:
+    runs-on: ubuntu-latest
     outputs:
-      build-hash: ${{ steps.build-hash.outputs.hash }}
+      exists: ${{ steps.check.outputs.exists }}
       combined-tag: ${{ steps.build-hash.outputs.combined }}
       digest-key: ${{ steps.build-hash.outputs.digest-key }}
       metadata-json: ${{ steps.meta.outputs.json }}
       metadata-version: ${{ steps.meta.outputs.version }}
+      image-tag: ${{ steps.check.outputs.image-tag }}
+      digest: ${{ steps.check.outputs.digest }}
+      tag: ${{ steps.check.outputs.tag }}
 
     steps:
       - name: Checkout code
@@ -214,27 +211,21 @@ jobs:
       - name: Generate build hash
         id: build-hash
         run: |
-          # Use version from metadata (sha-{short_sha} from checked-out repo)
           VERSION="${{ steps.meta.outputs.version }}"
-
-          # Create a deterministic hash from build args and secrets
           BUILD_ARGS="${{ inputs.build-args }}"
           BUILD_SECRETS="${{ secrets.build-secrets }}"
 
           if [[ -n "$BUILD_ARGS" || -n "$BUILD_SECRETS" ]]; then
-            # Sort and normalize the build args to ensure consistency
             SORTED_ARGS=""
             if [[ -n "$BUILD_ARGS" ]]; then
               SORTED_ARGS=$(echo "$BUILD_ARGS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
             fi
 
-            # Sort and normalize the secrets (values included in hash for differentiation)
             SORTED_SECRETS=""
             if [[ -n "$BUILD_SECRETS" ]]; then
               SORTED_SECRETS=$(echo "$BUILD_SECRETS" | tr '\n' ' ' | tr -s ' ' | xargs -n1 | sort | tr '\n' ' ')
             fi
 
-            # Generate short hash (8 chars)
             HASH=$(echo -n "${SORTED_ARGS}${SORTED_SECRETS}" | sha256sum | cut -c1-8)
             echo "hash=$HASH" >> $GITHUB_OUTPUT
 
@@ -245,12 +236,116 @@ jobs:
 
           echo "combined=$COMBINED_TAG" >> $GITHUB_OUTPUT
 
-          # Generate unique digest key from image name + combined tag (for artifact naming)
           DIGEST_KEY=$(echo -n "${{ inputs.image-name }}:${COMBINED_TAG}" | sha256sum | cut -c1-16)
           echo "digest-key=$DIGEST_KEY" >> $GITHUB_OUTPUT
 
           echo "Combined tag: $COMBINED_TAG"
           echo "Digest key: $DIGEST_KEY"
+
+      - name: Check if image exists
+        id: check
+        run: |
+          IMAGE="${{ inputs.image-name }}:${{ steps.build-hash.outputs.combined }}"
+
+          if docker buildx imagetools inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+
+            DIGEST=$(docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest.Digest}}' | tr -d '"')
+            echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+            echo "image-tag=$IMAGE" >> $GITHUB_OUTPUT
+            echo "tag=${{ steps.build-hash.outputs.combined }}" >> $GITHUB_OUTPUT
+
+            echo "::notice::Image $IMAGE already exists (digest: $DIGEST), skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image $IMAGE not found, proceeding with build"
+          fi
+
+      - name: Write skip summary
+        if: steps.check.outputs.exists == 'true'
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          IMAGE_TAG="${{ steps.check.outputs.image-tag }}"
+          TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r \
+            --arg combined "$IMAGE_TAG" \
+            '.tags + [$combined] | unique | map("- `" + . + "`") | join("\n")')
+
+          {
+            cat <<EOF
+          ## Docker Build Summary (Skipped - Image Already Exists)
+
+          ### Image
+          \`${{ inputs.image-name }}\`
+
+          ### Tags
+
+          ${TAGS_LIST}
+
+          ### Digest
+          \`${{ steps.check.outputs.digest }}\`
+
+          ### Platforms
+          \`${{ inputs.platforms }}\`
+          EOF
+          } >> $GITHUB_STEP_SUMMARY
+
+  build:
+    needs: [prepare, check]
+    if: needs.check.outputs.exists != 'true'
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository || github.repository }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.repository-token || github.token }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.registry-user }}
+          aws-secret-access-key: ${{ secrets.registry-token }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Login to Amazon ECR
+        if: inputs.registry == 'ecr'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Login to Docker Hub
+        if: inputs.registry == 'dockerhub'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.registry-user }}
+          password: ${{ secrets.registry-token }}
+
+      - name: Login to GitHub Container Registry
+        if: inputs.registry == 'ghcr'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.registry-user || github.actor }}
+          password: ${{ secrets.registry-token || secrets.GITHUB_TOKEN }}
+
+      - name: Extract labels from metadata
+        id: meta
+        env:
+          METADATA_JSON: ${{ needs.check.outputs.metadata-json }}
+        run: |
+          LABELS=$(echo "$METADATA_JSON" | jq -r '.labels | to_entries | map(.key + "=" + .value) | join("\n")')
+          echo "labels<<EOF" >> $GITHUB_OUTPUT
+          echo "$LABELS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build and push by digest
         id: build
@@ -277,14 +372,15 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ steps.build-hash.outputs.digest-key }}-${{ matrix.arch }}
+          name: digests-${{ needs.check.outputs.digest-key }}-${{ matrix.arch }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
 
   merge:
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build, check]
+    if: needs.check.outputs.exists != 'true'
     outputs:
       image-tag: ${{ steps.summary.outputs.image-tag }}
       digest: ${{ steps.inspect.outputs.digest }}
@@ -295,7 +391,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
-          pattern: digests-${{ needs.build.outputs.digest-key }}-*
+          pattern: digests-${{ needs.check.outputs.digest-key }}-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -332,15 +428,15 @@ jobs:
         id: meta
         working-directory: /tmp/digests
         env:
-          DOCKER_METADATA_OUTPUT_JSON: ${{ needs.build.outputs.metadata-json }}
+          DOCKER_METADATA_OUTPUT_JSON: ${{ needs.check.outputs.metadata-json }}
         run: |
           # Set version output and re-export metadata for subsequent steps
-          echo "version=${{ needs.build.outputs.metadata-version }}" >> $GITHUB_OUTPUT
+          echo "version=${{ needs.check.outputs.metadata-version }}" >> $GITHUB_OUTPUT
           echo "DOCKER_METADATA_OUTPUT_JSON=$DOCKER_METADATA_OUTPUT_JSON" >> $GITHUB_ENV
 
           # Build tag list from metadata and add combined tag
           TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-          TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.check.outputs.combined-tag }}"
 
           docker buildx imagetools create $TAG_ARGS \
             $(printf '${{ inputs.image-name }}@sha256:%s ' *)
@@ -355,14 +451,14 @@ jobs:
       - name: Write job summary
         id: summary
         run: |
-          IMAGE_TAG="${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          IMAGE_TAG="${{ inputs.image-name }}:${{ needs.check.outputs.combined-tag }}"
           # Build tags list with combined tag, formatted as markdown
           TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r \
             --arg combined "$IMAGE_TAG" \
             '.tags + [$combined] | unique | map("- `" + . + "`") | join("\n")')
 
           echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "tag=${{ needs.build.outputs.combined-tag }}" >> $GITHUB_OUTPUT
+          echo "tag=${{ needs.check.outputs.combined-tag }}" >> $GITHUB_OUTPUT
 
           {
             cat <<EOF
