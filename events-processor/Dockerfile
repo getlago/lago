@@ -14,7 +14,7 @@ RUN go mod download
 COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
 RUN go build -o event_processors .
 
-FROM debian:bookworm
+FROM debian:trixie
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y ca-certificates
 
