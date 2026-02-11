@@ -66,6 +66,7 @@ services:
 
   front:
     image: front_dev
+    pull_policy: never
     container_name: lago_front_dev
     stdin_open: true
     restart: unless-stopped
@@ -110,6 +111,7 @@ services:
   migrate:
     container_name: lago-migrate_dev
     image: api_dev
+    pull_policy: never
     depends_on:
       db:
         condition: service_healthy
@@ -132,6 +134,7 @@ services:
 
   api:
     image: api_dev
+    pull_policy: never
     container_name: lago_api_dev
     restart: unless-stopped
     command: ["./scripts/start.dev.sh"]
@@ -176,6 +179,7 @@ services:
 
   api-worker: &api_worker
     image: api_dev
+    pull_policy: never
     container_name: lago_api_worker
     restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.worker.sh"
@@ -270,6 +274,7 @@ services:
 
   api-clock:
     image: api_dev
+    pull_policy: never
     container_name: lago_api_clock_dev
     restart: unless-stopped
     command: bash -c "bundle install && ./scripts/start.clock.sh"
@@ -290,6 +295,7 @@ services:
 
   events-processor:
     image: events-processor_dev
+    pull_policy: never
     container_name: lago_events-processor
     restart: unless-stopped
     build:
