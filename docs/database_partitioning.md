@@ -201,13 +201,15 @@ pg_cron also requires being loaded at server start. In `postgresql.conf`:
 ```conf
 shared_preload_libraries = 'pg_cron'
 
-cron.database_name = 'lago'
+cron.database_name = 'postgres'
 ```
 
 Changes to `shared_preload_libraries` require a full server restart.
 
 
 #### 2. Enable the extension
+
+Open a connection to the `postgres` database
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -216,10 +218,11 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 #### 3. Schedule the maintenance job
 
 ```sql
-SELECT cron.schedule(
-  'partman-maintenance',        -- job name
-  '@hourly',                    -- every hour 
-  $$CALL partman.run_maintenance_proc()$$
+SELECT cron.schedule_in_database(
+  'partman-maintenance', 
+  '@hourly',
+  $$CALL partman.run_maintenance_proc()$$,
+  'lago'
 );
 ```
 
