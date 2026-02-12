@@ -1,10 +1,13 @@
 name: lago_dev
-
+configs:
+  redis-sentinel-conf:
+    file: ./extra/redis/sentinel.dev.conf
 volumes:
   front_node_modules_dev:
   front_dist_dev:
   postgres_data_dev:
   redis_data_dev:
+  redis_replica_data_dev:
   redpanda_data_dev:
   clickhouse_data_dev:
 
@@ -447,7 +450,15 @@ services:
       - 9000:9000
       - 8123:8123
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--password", "default", "--query", "SELECT 1"]
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--password",
+          "default",
+          "--query",
+          "SELECT 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -477,3 +488,51 @@ services:
       - "traefik.http.routers.pghero.entrypoints=web,websecure"
       - "traefik.http.routers.pghero.tls=true"
       - "traefik.http.services.pghero.loadbalancer.server.port=8080"
+
+  redis-replica:
+    command: ["redis-server", "--replicaof", "redis", "6379"]
+    container_name: lago_redis_replica_dev
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+    image: redis:7-alpine
+    profiles:
+      - redis-sentinel
+    restart: unless-stopped
+    volumes:
+      - redis_replica_data_dev:/data
+
+  redis-sentinel-1: &redis-sentinel
+  # Sentinel requires write to the configuration file so we cannot use volume for it, we need to copy it to the container and then run sentinel with the copied file.
+    command: sh -c 'cp /tmp/sentinel.conf /etc/sentinel.conf && redis-sentinel /etc/sentinel.conf'
+    configs:
+      - source: redis-sentinel-conf
+        target: /tmp/sentinel.conf
+    container_name: lago_redis_sentinel_1_dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      redis-replica:
+        condition: service_healthy
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      timeout: 3s
+    image: redis:7-alpine
+    profiles:
+      - redis-sentinel
+    restart: unless-stopped
+
+  redis-sentinel-2:
+    <<: *redis-sentinel
+    container_name: lago_redis_sentinel_2_dev
+
+  redis-sentinel-3:
+    <<: *redis-sentinel
+    container_name: lago_redis_sentinel_3_dev
