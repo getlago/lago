@@ -189,6 +189,23 @@ To get the full list of workers, run:
 lago config --services | grep 'worker'
 ```
 
+### Running with Redis Sentinel
+
+By default, the app is configured to use a single Redis instance. However, the docker compose file also includes a Redis Sentinel setup for testing purposes.
+
+To use Redis Sentinel locally, you can enable it in your `.env.development` file:
+
+```shell
+LAGO_REDIS_SIDEKIQ_SENTINELS=redis-sentinel-1:26379, redis-sentinel-2:26379,redis-sentinel-3:26379
+LAGO_REDIS_SIDEKIQ_MASTER_NAME=master
+```
+
+Then, you can start the Sentinel services:
+
+```shell
+lago --profile redis-sentinel up -d
+```
+
 ## Testing
 
 Before running tests, you'll need to create the test database:
