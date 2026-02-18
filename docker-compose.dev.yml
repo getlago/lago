@@ -57,7 +57,7 @@ services:
     image: redis:7-alpine
     container_name: lago_redis_dev
     restart: unless-stopped
-    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    command: ["sh", "-c", "redis-server $${REDIS_PASSWORD:+--requirepass \"$$REDIS_PASSWORD\"}"]
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
@@ -501,7 +501,7 @@ services:
       - "traefik.http.services.pghero.loadbalancer.server.port=8080"
 
   redis-replica:
-    command: ["sh", "-c", "redis-server --replicaof redis 6379 --requirepass \"$$REDIS_PASSWORD\" --masterauth \"$$REDIS_PASSWORD\""]
+    command: ["sh", "-c", "redis-server --replicaof redis 6379 $${REDIS_PASSWORD:+--requirepass \"$$REDIS_PASSWORD\" --masterauth \"$$REDIS_PASSWORD\"}"]
     container_name: lago_redis_replica_dev
     depends_on:
       redis:
