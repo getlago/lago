@@ -57,12 +57,17 @@ services:
     image: redis:7-alpine
     container_name: lago_redis_dev
     restart: unless-stopped
+    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     volumes:
       - redis_data_dev:/data
     ports:
       - 6379:6379
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -496,15 +501,19 @@ services:
       - "traefik.http.services.pghero.loadbalancer.server.port=8080"
 
   redis-replica:
-    command: ["redis-server", "--replicaof", "redis", "6379"]
+    command: ["sh", "-c", "redis-server --replicaof redis 6379 --requirepass \"$$REDIS_PASSWORD\" --masterauth \"$$REDIS_PASSWORD\""]
     container_name: lago_redis_replica_dev
     depends_on:
       redis:
         condition: service_healthy
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     healthcheck:
       interval: 10s
       retries: 3
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} ping"]
       timeout: 3s
     image: redis:7-alpine
     profiles:
@@ -515,7 +524,10 @@ services:
 
   redis-sentinel-1: &redis-sentinel
   # Sentinel requires write to the configuration file so we cannot use volume for it, we need to copy it to the container and then run sentinel with the copied file.
-    command: sh -c 'cp /tmp/sentinel.conf /etc/sentinel.conf && redis-sentinel /etc/sentinel.conf'
+    command: >-
+      sh -c 'cp /tmp/sentinel.conf /etc/sentinel.conf &&
+      if [ -n "$$REDIS_PASSWORD" ]; then echo "sentinel auth-pass master $$REDIS_PASSWORD" >> /etc/sentinel.conf; fi &&
+      redis-sentinel /etc/sentinel.conf'
     configs:
       - source: redis-sentinel-conf
         target: /tmp/sentinel.conf
@@ -525,6 +537,10 @@ services:
         condition: service_healthy
       redis-replica:
         condition: service_healthy
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
     healthcheck:
       interval: 10s
       retries: 3
