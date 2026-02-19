@@ -35,9 +35,33 @@ func TestFetchFlatFilters(t *testing.T) {
 		pricingGroupKeysJSON, _ := json.Marshal(pricingGroupKeys)
 
 		// Define expected rows and columns
-		columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters", "pricing_group_keys"}
+		columns := []string{
+			"organization_id",
+			"billable_metric_code",
+			"plan_id",
+			"charge_id",
+			"charge_updated_at",
+			"charge_filter_id",
+			"charge_filter_updated_at",
+			"filters",
+			"pricing_group_keys",
+			"pay_in_advance",
+			"accepts_target_wallet",
+		}
 		rows := sqlmock.NewRows(columns).
-			AddRow("1a901a90-1a90-1a90-1a90-1a901a901a90", code, planID, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, "1a901a90-1a90-1a90-1a90-1a901a901a90", now, filtersJSON, pricingGroupKeysJSON)
+			AddRow(
+				"1a901a90-1a90-1a90-1a90-1a901a901a90",
+				code,
+				planID,
+				"1a901a90-1a90-1a90-1a90-1a901a901a90",
+				now,
+				"1a901a90-1a90-1a90-1a90-1a901a901a90",
+				now,
+				filtersJSON,
+				pricingGroupKeysJSON,
+				true,
+				true,
+			)
 
 		// Expect the query
 		mock.ExpectQuery(fetchFiltersQuery).
@@ -58,6 +82,8 @@ func TestFetchFlatFilters(t *testing.T) {
 		assert.Equal(t, filters, actualFilters)
 
 		assert.Equal(t, pricingGroupKeys, []string(flatFilter.PricingGroupKeys))
+		assert.True(t, flatFilter.PayInAdvance)
+		assert.True(t, flatFilter.AcceptsTargetWallet)
 	})
 
 	t.Run("should return an empty result when not found", func(t *testing.T) {
@@ -69,7 +95,19 @@ func TestFetchFlatFilters(t *testing.T) {
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 
 		// Define expected rows and columns
-		columns := []string{"organization_id", "billable_metric_code", "plan_id", "charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at", "filters"}
+		columns := []string{
+			"organization_id",
+			"billable_metric_code",
+			"plan_id",
+			"charge_id",
+			"charge_updated_at",
+			"charge_filter_id",
+			"charge_filter_updated_at",
+			"filters",
+			"pricing_group_keys",
+			"pay_in_advance",
+			"accepts_target_wallet",
+		}
 		rows := sqlmock.NewRows(columns)
 
 		// Expect the query
@@ -196,6 +234,8 @@ func TestToDefaultFilter(t *testing.T) {
 				"scheme":         {"visa", "mastercard"},
 				"payment_method": {"debit"},
 			},
+			PayInAdvance:        true,
+			AcceptsTargetWallet: false,
 		}
 
 		filter := flatFilter.ToDefaultFilter()
@@ -207,6 +247,8 @@ func TestToDefaultFilter(t *testing.T) {
 		assert.Nil(t, filter.ChargeFilterID)
 		assert.Nil(t, filter.ChargeFilterUpdatedAt)
 		assert.Nil(t, filter.Filters)
+		assert.True(t, filter.PayInAdvance)
+		assert.False(t, filter.AcceptsTargetWallet)
 	})
 }
 

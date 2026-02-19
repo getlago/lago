@@ -94,6 +94,7 @@ type FlatFilter struct {
 	Filters               *FlatFilterValues `gorm:"type:jsonb"`
 	PricingGroupKeys      PricingGroupKeys  `gorm:"type:jsonb"`
 	PayInAdvance          bool              `gorm:"type:boolean"`
+	AcceptsTargetWallet   bool              `gorm:"type:boolean"`
 }
 
 func (store *ApiStore) FetchFlatFilters(planID string, billableMetricCode string) utils.Result[[]FlatFilter] {
@@ -149,12 +150,13 @@ func (ff *FlatFilter) IsMatchingEvent(event *EnrichedEvent) utils.Result[bool] {
 
 func (ff *FlatFilter) ToDefaultFilter() *FlatFilter {
 	defaultFilter := &FlatFilter{
-		OrganizationID:     ff.OrganizationID,
-		BillableMetricCode: ff.BillableMetricCode,
-		PlanID:             ff.PlanID,
-		ChargeID:           ff.ChargeID,
-		ChargeUpdatedAt:    ff.ChargeUpdatedAt,
-		PayInAdvance:       ff.PayInAdvance,
+		OrganizationID:      ff.OrganizationID,
+		BillableMetricCode:  ff.BillableMetricCode,
+		PlanID:              ff.PlanID,
+		ChargeID:            ff.ChargeID,
+		ChargeUpdatedAt:     ff.ChargeUpdatedAt,
+		PayInAdvance:        ff.PayInAdvance,
+		AcceptsTargetWallet: ff.AcceptsTargetWallet,
 	}
 
 	return defaultFilter

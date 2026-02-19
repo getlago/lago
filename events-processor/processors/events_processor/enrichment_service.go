@@ -159,11 +159,22 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 }
 
 func enrichWithPricingGroupKeys(event *models.EnrichedEvent) {
-	if event.FlatFilter == nil || event.FlatFilter.PricingGroupKeys == nil {
+	if event.FlatFilter == nil {
 		return
 	}
 
-	for _, key := range event.FlatFilter.PricingGroupKeys {
-		event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
+	if event.FlatFilter.PricingGroupKeys != nil {
+		for _, key := range event.FlatFilter.PricingGroupKeys {
+			event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
+		}
+	}
+
+	// Enrich with target wallet code when applicable
+	if event.FlatFilter.AcceptsTargetWallet {
+		if raw, ok := event.Properties[models.TARGET_WALLET_CODE]; ok && raw != nil {
+			formatted := fmt.Sprintf("%v", raw)
+			event.GroupedBy[models.TARGET_WALLET_CODE] = formatted
+			event.TargetWalletCode = utils.StringPtr(formatted)
+		}
 	}
 }

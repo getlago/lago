@@ -108,6 +108,7 @@ func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter
 		"charge_filter_updated_at",
 		"filters",
 		"pricing_group_keys",
+		"accepts_target_wallet",
 	}
 
 	rows := sqlmock.NewRows(columns)
@@ -124,6 +125,7 @@ func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter
 			filter.ChargeFilterUpdatedAt,
 			filter.Filters,
 			filter.PricingGroupKeys,
+			filter.AcceptsTargetWallet,
 		)
 	}
 
