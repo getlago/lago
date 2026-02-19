@@ -1,0 +1,42 @@
+name: Release Images
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  api:
+    uses: ./.github/workflows/docker-build-multi-arch.yaml
+    with:
+      image-name: ghcr.io/getlago/api
+      registry: ghcr
+      cache-type: disabled
+      repository: getlago/lago-api
+      platforms: amd64
+      ref: ${{ github.ref }}
+    secrets:
+      repository-token: ${{ secrets.GH_TOKEN }}
+
+  front:
+    uses: ./.github/workflows/docker-build-multi-arch.yaml
+    with:
+      image-name: ghcr.io/getlago/front
+      registry: ghcr
+      cache-type: disabled
+      platforms: amd64
+      repository: getlago/lago-front
+      ref: ${{ github.ref }}
+    secrets:
+      repository-token: ${{ secrets.GH_TOKEN }}
+
+  events-processor:
+    uses: ./.github/workflows/docker-build-multi-arch.yaml
+    with:
+      image-name: ghcr.io/getlago/events-processor
+      registry: ghcr
+      cache-type: disabled
+      platforms: amd64
+      context: events-processor
+      dockerfile: events-processor/Dockerfile
+    secrets: inherit
