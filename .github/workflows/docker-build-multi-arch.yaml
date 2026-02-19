@@ -52,7 +52,7 @@ on:
         default: ''
 
       cache-type:
-        description: 'Cache type (gha or registry)'
+        description: 'Cache type (gha, registry, or disabled)'
         required: false
         type: string
         default: 'registry'
@@ -263,9 +263,8 @@ jobs:
           build-args: ${{ inputs.build-args }}
           secrets: ${{ secrets.build-secrets }}
           outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=true
-          # Registry cache - persistent and shared across runners
-          cache-from: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache-${{ matrix.arch }},mode=max
+          cache-from: ${{ inputs.cache-type != 'disabled' && format('type=registry,ref={0}:buildcache-{1}', inputs.image-name, matrix.arch) || '' }}
+          cache-to: ${{ inputs.cache-type != 'disabled' && format('type=registry,ref={0}:buildcache-{1},mode=max', inputs.image-name, matrix.arch) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Export digest
