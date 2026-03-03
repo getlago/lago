@@ -39,10 +39,12 @@ func NewConnection(config DBConfig) (*DB, error) {
 	})
 
 	conn, err := OpenConnection(dialector)
-	if err == nil {
-		conn.pool = pool
+	if err != nil {
+		pool.Close()
+		return nil, err
 	}
-	return conn, err
+	conn.pool = pool
+	return conn, nil
 }
 
 func OpenConnection(dialector gorm.Dialector) (*DB, error) {

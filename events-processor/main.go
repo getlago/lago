@@ -40,9 +40,12 @@ func main() {
 	setupGracefulShutdown(cancel)
 
 	tracerProvider := tracing.InitTracerProvider()
-	defer tracerProvider.Stop()
-
-	tracing.InitTracer(tracerProvider)
+	if tracerProvider == nil {
+		slog.Error("Failed to initialize tracer provider, tracing disabled")
+	} else {
+		defer tracerProvider.Stop()
+		tracing.InitTracer(tracerProvider)
+	}
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv(envSentryDsn),
