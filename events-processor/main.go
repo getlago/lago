@@ -13,6 +13,7 @@ import (
 
 	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 const (
@@ -24,8 +25,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).
-		With("service", "post_process")
+	env := utils.GetEnvOrDefault(envEnv, "development")
+
+	logLevel := slog.LevelInfo
+	if env == "development" {
+		logLevel = slog.LevelDebug
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	})).With("service", "post_process")
 	slog.SetDefault(logger)
 
 	setupGracefulShutdown(cancel, logger)
@@ -37,7 +46,7 @@ func main() {
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv(envSentryDsn),
-		Environment:      os.Getenv(envEnv),
+		Environment:      env,
 		Debug:            false,
 		AttachStacktrace: true,
 	})
