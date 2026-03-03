@@ -2,8 +2,6 @@ package events_processor
 
 import (
 	"context"
-	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -31,15 +29,11 @@ func setupProducers() *testProducerService {
 	inAdvanceProducer := tests.MockMessageProducer{}
 	deadLetterProducer := tests.MockMessageProducer{}
 
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	producers := NewEventProducerService(
 		&enrichedProducer,
 		&enrichedExpandedProducer,
 		&inAdvanceProducer,
 		&deadLetterProducer,
-		logger,
 	)
 
 	return &testProducerService{
@@ -52,9 +46,6 @@ func setupProducers() *testProducerService {
 }
 
 func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *testProducerService, *tests.MockFlagStore, func()) {
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	mockedStore, delete := tests.SetupMockStore(t)
 	apiStore := models.NewApiStore(mockedStore.DB)
 
@@ -68,7 +59,6 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *
 	flagger := NewSubscriptionRefreshService(&flagStore)
 
 	processor := NewEventProcessor(
-		logger,
 		NewEventEnrichmentService(apiStore),
 		testProducers.producers,
 		flagger,

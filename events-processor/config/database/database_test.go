@@ -22,5 +22,5 @@ func TestNewConnection(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 	assert.NotNil(t, db.Connection)
-	assert.NotNil(t, db.logger)
+	assert.NotNil(t, db.pool)
 }

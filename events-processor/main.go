@@ -37,9 +37,9 @@ func main() {
 	})).With("service", "post_process")
 	slog.SetDefault(logger)
 
-	setupGracefulShutdown(cancel, logger)
+	setupGracefulShutdown(cancel)
 
-	tracerProvider := tracing.InitTracerProvider(logger)
+	tracerProvider := tracing.InitTracerProvider()
 	defer tracerProvider.Stop()
 
 	tracing.InitTracer(tracerProvider)
@@ -59,18 +59,17 @@ func main() {
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{
-		Logger:         logger,
 		TracerProvider: tracerProvider,
 	})
 }
 
-func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
+func setupGracefulShutdown(cancel context.CancelFunc) {
 	signChan := make(chan os.Signal, 1)
 	signal.Notify(signChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		sig := <-signChan
-		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+		slog.Info("Received shutdown signal", slog.String("signal", sig.String()))
 		cancel()
 	}()
 }

@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"sync"
 
@@ -44,7 +43,7 @@ const (
 // If nil, it will check for the `DD_TRACE_ENABLED` (datadog)
 // and finaly `OTEL_EXPORTER_OTLP_ENDPOINT` (opentelemetry)
 // An "Empty" provider will be returned if no provider is found
-func InitTracerProvider(logger *slog.Logger) TracerProvider {
+func InitTracerProvider() TracerProvider {
 	tracingProvider := findTracingProvider(os.Getenv(envTracingProvider))
 
 	var provider TracerProvider
@@ -52,9 +51,9 @@ func InitTracerProvider(logger *slog.Logger) TracerProvider {
 
 	switch tracingProvider {
 	case OTelProvider:
-		provider = NewOTelTracerProvider(logger, opts)
+		provider = NewOTelTracerProvider(opts)
 	case DatadogProvider:
-		provider = NewDatadogTracerProvider(logger, opts)
+		provider = NewDatadogTracerProvider(opts)
 	default:
 		provider = &EmptyTracerProvider{}
 	}

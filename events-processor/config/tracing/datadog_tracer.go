@@ -100,7 +100,7 @@ func (p *DatadogTracerProvider) GetKafkaHooks() []kgo.Hook {
 	}
 }
 
-func NewDatadogTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *DatadogTracerProvider {
+func NewDatadogTracerProvider(opts TracerProviderOptions) *DatadogTracerProvider {
 	options := []ddtracer.StartOption{
 		ddtracer.WithService(opts.ServiceName),
 		ddtracer.WithEnv(opts.Env),
@@ -109,7 +109,7 @@ func NewDatadogTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *
 	options = append(options, ddtracer.WithAgentAddr(opts.ProviderURL))
 
 	ddtracer.Start(options...)
-	logger.Info("Datadog tracer started",
+	slog.Info("Datadog tracer started",
 		slog.String("service", opts.ServiceName),
 	)
 
