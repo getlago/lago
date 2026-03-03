@@ -236,6 +236,7 @@ func TestToDefaultFilter(t *testing.T) {
 			},
 			PayInAdvance:        true,
 			AcceptsTargetWallet: false,
+			PricingGroupKeys:    []string{"region"},
 		}
 
 		filter := flatFilter.ToDefaultFilter()
@@ -244,6 +245,7 @@ func TestToDefaultFilter(t *testing.T) {
 		assert.Equal(t, filter.PlanID, flatFilter.PlanID)
 		assert.Equal(t, filter.ChargeID, flatFilter.ChargeID)
 		assert.Equal(t, filter.ChargeUpdatedAt, flatFilter.ChargeUpdatedAt)
+		assert.Equal(t, filter.PricingGroupKeys, flatFilter.PricingGroupKeys)
 		assert.Nil(t, filter.ChargeFilterID)
 		assert.Nil(t, filter.ChargeFilterUpdatedAt)
 		assert.Nil(t, filter.Filters)

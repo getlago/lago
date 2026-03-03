@@ -165,7 +165,12 @@ func enrichWithPricingGroupKeys(event *models.EnrichedEvent) {
 
 	if event.FlatFilter.PricingGroupKeys != nil {
 		for _, key := range event.FlatFilter.PricingGroupKeys {
-			event.GroupedBy[key] = fmt.Sprintf("%v", event.Properties[key])
+			property := event.Properties[key]
+			if property != nil {
+				event.GroupedBy[key] = fmt.Sprintf("%v", property)
+			} else {
+				event.GroupedBy[key] = ""
+			}
 		}
 	}
 

@@ -225,6 +225,118 @@ func TestEnrichEvent(t *testing.T) {
 		assert.Equal(t, map[string]string{}, eventResult2.GroupedBy)
 	})
 
+	t.Run("With a flat filter without charge filter ID and pricing_group_keys", func(t *testing.T) {
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"value":   "12.12",
+			"scheme":  "visa",
+			"country": "US",
+			"type":    "debit",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009.0,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(mockedStore, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(mockedStore, &sub)
+
+		now := time.Now()
+
+		flatFilter := &models.FlatFilter{
+			OrganizationID:     "org_id",
+			BillableMetricCode: "api_calls",
+			PlanID:             "plan_id",
+			ChargeID:           "charge_id1",
+			ChargeUpdatedAt:    now,
+			PricingGroupKeys:   []string{"country", "type"},
+		}
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter})
+
+		result := processor.EnrichEvent(&event)
+		assert.True(t, result.Success())
+		assert.Equal(t, 1, len(result.Value()))
+
+		eventResult := result.Value()[0]
+		assert.Equal(t, "12", *eventResult.Value)
+		assert.Equal(t, "charge_id1", *eventResult.ChargeID)
+		assert.Equal(t, map[string]string{"country": "US", "type": "debit"}, eventResult.GroupedBy)
+	})
+
+	t.Run("With a flat filter without charge filter ID and pricing_group_keys and event does not have group properties", func(t *testing.T) {
+		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"value":  "12.12",
+			"scheme": "visa",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009.0,
+			Properties:             properties,
+			Source:                 "SQS",
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeWeightedSum,
+			FieldName:       "api_requests",
+			Expression:      "round(event.properties.value)",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(mockedStore, &bm)
+
+		sub := models.Subscription{ID: "sub123"}
+		mockSubscriptionLookup(mockedStore, &sub)
+
+		now := time.Now()
+
+		flatFilter := &models.FlatFilter{
+			OrganizationID:     "org_id",
+			BillableMetricCode: "api_calls",
+			PlanID:             "plan_id",
+			ChargeID:           "charge_id1",
+			ChargeUpdatedAt:    now,
+			PricingGroupKeys:   []string{"country", "type"},
+		}
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{flatFilter})
+
+		result := processor.EnrichEvent(&event)
+		assert.True(t, result.Success())
+		assert.Equal(t, 1, len(result.Value()))
+
+		eventResult := result.Value()[0]
+		assert.Equal(t, "12", *eventResult.Value)
+		assert.Equal(t, "charge_id1", *eventResult.ChargeID)
+		assert.Equal(t, map[string]string{"country": "", "type": ""}, eventResult.GroupedBy)
+	})
+
 	t.Run("With a flat filter with pricing group keys", func(t *testing.T) {
 		processor, mockedStore, delete := setupEnrichmentTestEnv(t)
 		defer delete()
