@@ -10,13 +10,24 @@ import (
 )
 
 func TestLevelHandler_Enabled(t *testing.T) {
-	inner := slog.NewJSONHandler(&bytes.Buffer{}, &slog.HandlerOptions{Level: slog.LevelDebug})
-	handler := NewLevelHandler(slog.LevelInfo, inner)
+	t.Run("Filters below LevelHandler threshold", func(t *testing.T) {
+		inner := slog.NewJSONHandler(&bytes.Buffer{}, &slog.HandlerOptions{Level: slog.LevelDebug})
+		handler := NewLevelHandler(slog.LevelInfo, inner)
 
-	assert.False(t, handler.Enabled(context.Background(), slog.LevelDebug))
-	assert.True(t, handler.Enabled(context.Background(), slog.LevelInfo))
-	assert.True(t, handler.Enabled(context.Background(), slog.LevelWarn))
-	assert.True(t, handler.Enabled(context.Background(), slog.LevelError))
+		assert.False(t, handler.Enabled(context.Background(), slog.LevelDebug))
+		assert.True(t, handler.Enabled(context.Background(), slog.LevelInfo))
+		assert.True(t, handler.Enabled(context.Background(), slog.LevelWarn))
+		assert.True(t, handler.Enabled(context.Background(), slog.LevelError))
+	})
+
+	t.Run("Respects inner handler threshold", func(t *testing.T) {
+		inner := slog.NewJSONHandler(&bytes.Buffer{}, &slog.HandlerOptions{Level: slog.LevelError})
+		handler := NewLevelHandler(slog.LevelInfo, inner)
+
+		assert.False(t, handler.Enabled(context.Background(), slog.LevelInfo))
+		assert.False(t, handler.Enabled(context.Background(), slog.LevelWarn))
+		assert.True(t, handler.Enabled(context.Background(), slog.LevelError))
+	})
 }
 
 func TestLevelHandler_Handle(t *testing.T) {

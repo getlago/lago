@@ -16,8 +16,8 @@ func NewLevelHandler(level slog.Leveler, handler slog.Handler) *LevelHandler {
 	return &LevelHandler{level: level, handler: handler}
 }
 
-func (h *LevelHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return level >= h.level.Level()
+func (h *LevelHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= h.level.Level() && h.handler.Enabled(ctx, level)
 }
 
 func (h *LevelHandler) Handle(ctx context.Context, r slog.Record) error {
