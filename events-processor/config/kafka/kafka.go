@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/getlago/lago/events-processor/config/tracing"
+	"github.com/getlago/lago/events-processor/utils"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kslog"
@@ -24,8 +25,8 @@ type ServerConfig struct {
 }
 
 func NewKafkaClient(serverConfig ServerConfig, config []kgo.Opt) (*kgo.Client, error) {
-	logger := slog.Default()
-	logger = logger.With("component", "kafka")
+	logger := slog.New(utils.NewLevelHandler(slog.LevelInfo, slog.Default().Handler())).
+		With("component", "kafka")
 
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(serverConfig.Servers...),

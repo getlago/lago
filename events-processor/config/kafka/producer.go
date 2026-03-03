@@ -37,8 +37,8 @@ func NewProducer(serverConfig ServerConfig, cfg *ProducerConfig) (*Producer, err
 		return nil, err
 	}
 
-	logger := slog.Default()
-	logger = logger.With("component", "kafka-producer")
+	logger := slog.New(utils.NewLevelHandler(slog.LevelInfo, slog.Default().Handler())).
+		With("component", "kafka-producer")
 
 	pdr := &Producer{
 		client: kcl,

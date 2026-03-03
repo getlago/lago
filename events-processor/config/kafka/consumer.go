@@ -219,8 +219,8 @@ func (cg *ConsumerGroup) gracefulShutdown() {
 }
 
 func NewConsumerGroup(serverConfig ServerConfig, cfg *ConsumerGroupConfig) (*ConsumerGroup, error) {
-	logger := slog.Default()
-	logger = logger.With("kafka-topic-consumer", cfg.Topic)
+	logger := slog.New(utils.NewLevelHandler(slog.LevelInfo, slog.Default().Handler())).
+		With("kafka-topic-consumer", cfg.Topic)
 
 	cg := &ConsumerGroup{
 		consumers:      make(map[TopicPartition]*PartitionConsumer),
