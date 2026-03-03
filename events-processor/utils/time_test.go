@@ -35,6 +35,14 @@ func TestToTime(t *testing.T) {
 				timestamp:   fmt.Sprintf("%f", 1741007009.344),
 				parsedValue: valueFloat,
 			},
+			expectedTime{
+				timestamp:   "2025-03-03T13:03:29Z",
+				parsedValue: valueInt,
+			},
+			expectedTime{
+				timestamp:   "2025-03-03T13:03:29.344Z",
+				parsedValue: valueFloat,
+			},
 		}
 
 		for _, test := range expectations {
@@ -45,9 +53,9 @@ func TestToTime(t *testing.T) {
 	})
 
 	t.Run("With unsuported time format", func(t *testing.T) {
-		result := ToTime("2025-03-03T13:03:29Z")
+		result := ToTime("2025-03-03 13:03:29")
 		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
+		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03 13:03:29\": invalid syntax", result.ErrorMsg())
 	})
 }
 
@@ -75,6 +83,14 @@ func TestToFloat64Timestamp(t *testing.T) {
 				timestamp:   fmt.Sprintf("%f", 1741007009.344),
 				parsedValue: 1741007009.344,
 			},
+			expectedTime64{
+				timestamp:   "2025-03-03T13:03:29Z",
+				parsedValue: 1741007009.0,
+			},
+			expectedTime64{
+				timestamp:   "2025-03-03T13:03:29.344Z",
+				parsedValue: 1741007009.344,
+			},
 		}
 
 		for _, test := range expectations {
@@ -85,9 +101,9 @@ func TestToFloat64Timestamp(t *testing.T) {
 	})
 
 	t.Run("With unsuported time format", func(t *testing.T) {
-		result := ToFloat64Timestamp("2025-03-03T13:03:29Z")
+		result := ToFloat64Timestamp("2025-03-03 13:03:29")
 		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
+		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03 13:03:29\": invalid syntax", result.ErrorMsg())
 	})
 }
 
@@ -110,7 +126,7 @@ func TestCustomTime(t *testing.T) {
 	t.Run("With invalid time format", func(t *testing.T) {
 		ct := &CustomTime{}
 
-		time := "2025-03-03T13:03:29Z"
+		time := "2025-03-03 13:03:29"
 		err := ct.UnmarshalJSON([]byte(time))
 		assert.Error(t, err)
 	})
