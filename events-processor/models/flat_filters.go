@@ -157,6 +157,7 @@ func (ff *FlatFilter) ToDefaultFilter() *FlatFilter {
 		ChargeUpdatedAt:     ff.ChargeUpdatedAt,
 		PayInAdvance:        ff.PayInAdvance,
 		AcceptsTargetWallet: ff.AcceptsTargetWallet,
+		PricingGroupKeys:    ff.PricingGroupKeys,
 	}
 
 	return defaultFilter
