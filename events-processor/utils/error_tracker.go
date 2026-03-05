@@ -27,8 +27,8 @@ func CaptureError(err error) {
 	sentry.CaptureException(err)
 }
 
-func LogAndPanic(logger *slog.Logger, err error, message string) {
-	logger.Error(message, slog.String("error", err.Error()))
+func LogAndPanic(err error, message string) {
+	slog.Error(message, slog.String("error", err.Error()))
 	CaptureError(err)
 	panic(err.Error())
 }

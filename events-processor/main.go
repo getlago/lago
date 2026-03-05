@@ -13,6 +13,7 @@ import (
 
 	"github.com/getlago/lago/events-processor/config/tracing"
 	"github.com/getlago/lago/events-processor/processors"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 const (
@@ -24,20 +25,31 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil)).
-		With("service", "post_process")
+	env := utils.GetEnvOrDefault(envEnv, "development")
+
+	logLevel := slog.LevelInfo
+	if env == "development" {
+		logLevel = slog.LevelDebug
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel,
+	})).With("service", "post_process")
 	slog.SetDefault(logger)
 
-	setupGracefulShutdown(cancel, logger)
+	setupGracefulShutdown(cancel)
 
-	tracerProvider := tracing.InitTracerProvider(logger)
-	defer tracerProvider.Stop()
-
-	tracing.InitTracer(tracerProvider)
+	tracerProvider := tracing.InitTracerProvider()
+	if tracerProvider == nil {
+		slog.Error("Failed to initialize tracer provider, tracing disabled")
+	} else {
+		defer tracerProvider.Stop()
+		tracing.InitTracer(tracerProvider)
+	}
 
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv(envSentryDsn),
-		Environment:      os.Getenv(envEnv),
+		Environment:      env,
 		Debug:            false,
 		AttachStacktrace: true,
 	})
@@ -50,18 +62,17 @@ func main() {
 
 	// start processing events & loop forever
 	processors.StartProcessingEvents(ctx, &processors.Config{
-		Logger:         logger,
 		TracerProvider: tracerProvider,
 	})
 }
 
-func setupGracefulShutdown(cancel context.CancelFunc, logger *slog.Logger) {
+func setupGracefulShutdown(cancel context.CancelFunc) {
 	signChan := make(chan os.Signal, 1)
 	signal.Notify(signChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		sig := <-signChan
-		logger.Info("Received shutdown signal", slog.String("signal", sig.String()))
+		slog.Info("Received shutdown signal", slog.String("signal", sig.String()))
 		cancel()
 	}()
 }

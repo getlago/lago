@@ -96,7 +96,6 @@ func (t *OTelTracer) StartSpan(ctx context.Context, operationName string, opts .
 // OTelTracerProvider implements the TracerProvider interface
 type OTelTracerProvider struct {
 	ctx      context.Context
-	logger   *slog.Logger
 	exporter *otlptrace.Exporter
 	meter    *otlpmetricgrpc.Exporter
 	options  TracerProviderOptions
@@ -105,12 +104,12 @@ type OTelTracerProvider struct {
 func (p *OTelTracerProvider) Stop() {
 	err := p.exporter.Shutdown(p.ctx)
 	if err != nil {
-		p.logger.Error("Could not shutdown exporter", slog.String("error", err.Error()))
+		slog.Error("Could not shutdown exporter", slog.String("error", err.Error()))
 	}
 
 	err = p.meter.Shutdown(p.ctx)
 	if err != nil {
-		p.logger.Error("Could not shutdown meter", slog.String("error", err.Error()))
+		slog.Error("Could not shutdown meter", slog.String("error", err.Error()))
 	}
 }
 
@@ -145,17 +144,17 @@ func (p *OTelTracerProvider) GetKafkaHooks() []kgo.Hook {
 	return kotelService.Hooks()
 }
 
-func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTelTracerProvider {
+func NewOTelTracerProvider(opts TracerProviderOptions) *OTelTracerProvider {
 	ctx := context.Background()
 	exporter, err := initTracerExporter(ctx, opts)
 	if err != nil {
-		logger.Error("Could not create open telemetry exporter", slog.String("error", err.Error()))
+		slog.Error("Could not create open telemetry exporter", slog.String("error", err.Error()))
 		return nil
 	}
 
 	meter, err := initMeterExporter(ctx, opts)
 	if err != nil {
-		logger.Error("Could not create open telemetry meter", slog.String("error", err.Error()))
+		slog.Error("Could not create open telemetry meter", slog.String("error", err.Error()))
 		return nil
 	}
 
@@ -169,7 +168,7 @@ func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTe
 	)
 
 	if err != nil {
-		logger.Error("Could not set open telemetry resource: %v", slog.String("error", err.Error()))
+		slog.Error("Could not set open telemetry resource", slog.String("error", err.Error()))
 		return nil
 	}
 
@@ -192,7 +191,6 @@ func NewOTelTracerProvider(logger *slog.Logger, opts TracerProviderOptions) *OTe
 
 	return &OTelTracerProvider{
 		ctx:      ctx,
-		logger:   logger,
 		exporter: exporter,
 		meter:    meter,
 		options:  opts,

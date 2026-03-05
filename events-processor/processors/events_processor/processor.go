@@ -16,16 +16,14 @@ import (
 )
 
 type EventProcessor struct {
-	logger            *slog.Logger
 	EnrichmentService *EventEnrichmentService
 	ProducerService   *EventProducerService
 	RefreshService    *SubscriptionRefreshService
 	CacheService      *CacheService
 }
 
-func NewEventProcessor(logger *slog.Logger, enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
+func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
 	return &EventProcessor{
-		logger:            logger,
 		EnrichmentService: enrichmentService,
 		ProducerService:   producerService,
 		RefreshService:    refreshService,
@@ -53,7 +51,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 				event := models.Event{}
 				err := json.Unmarshal(record.Value, &event)
 				if err != nil {
-					processor.logger.Error("Error unmarshalling message", slog.String("error", err.Error()))
+					slog.Error("Error unmarshalling message", slog.String("error", err.Error()))
 					utils.CaptureError(err)
 
 					mu.Lock()
@@ -65,7 +63,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 
 				result := processor.processEvent(ctx, &event)
 				if result.Failure() {
-					processor.logger.Error(
+					slog.Error(
 						result.ErrorMessage(),
 						slog.String("error_code", result.ErrorCode()),
 						slog.String("error", result.ErrorMsg()),

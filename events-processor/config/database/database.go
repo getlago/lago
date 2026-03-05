@@ -13,7 +13,6 @@ import (
 
 type DB struct {
 	Connection *gorm.DB
-	logger     *slog.Logger
 	pool       *pgxpool.Pool
 }
 
@@ -23,9 +22,6 @@ type DBConfig struct {
 }
 
 func NewConnection(config DBConfig) (*DB, error) {
-	logger := slog.Default()
-	logger = logger.With("component", "db")
-
 	poolConfig, err := pgxpool.ParseConfig(config.Url)
 	if err != nil {
 		return nil, err
@@ -42,14 +38,17 @@ func NewConnection(config DBConfig) (*DB, error) {
 		Conn: stdlib.OpenDBFromPool(pool),
 	})
 
-	conn, err := OpenConnection(logger, dialector)
-	if err == nil {
-		conn.pool = pool
+	conn, err := OpenConnection(dialector)
+	if err != nil {
+		pool.Close()
+		return nil, err
 	}
-	return conn, err
+	conn.pool = pool
+	return conn, nil
 }
 
-func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) {
+func OpenConnection(dialector gorm.Dialector) (*DB, error) {
+	logger := slog.Default().With("component", "db")
 	gormLogger := slogGorm.New(
 		slogGorm.WithHandler(logger.Handler()),
 	)
@@ -62,7 +61,7 @@ func OpenConnection(logger *slog.Logger, dialector gorm.Dialector) (*DB, error) 
 		return nil, err
 	}
 
-	return &DB{Connection: db, logger: logger}, nil
+	return &DB{Connection: db}, nil
 }
 
 func (db *DB) Close() {
