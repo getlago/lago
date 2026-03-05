@@ -47,12 +47,12 @@ func TestToEnrichedEvent(t *testing.T) {
 			Code:                    "api_calls",
 			PreciseTotalAmountCents: "100.00",
 			Source:                  HTTP_RUBY,
-			Timestamp:               "2025-03-03T13:03:29Z",
+			Timestamp:               "2025-03-03 13:03:29",
 		}
 
 		result := event.ToEnrichedEvent()
 		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03T13:03:29Z\": invalid syntax", result.ErrorMsg())
+		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03 13:03:29\": invalid syntax", result.ErrorMsg())
 		assert.False(t, result.Retryable)
 	})
 }

@@ -222,7 +222,7 @@ func TestProcessEvent(t *testing.T) {
 			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 			ExternalSubscriptionID: "sub_id",
 			Code:                   "api_calls",
-			Timestamp:              "2025-03-06T12:00:00Z",
+			Timestamp:              "2025-03-06 12:00:00",
 			Source:                 "SQS",
 		}
 
@@ -240,7 +240,7 @@ func TestProcessEvent(t *testing.T) {
 
 		result := processor.processEvent(context.Background(), &event)
 		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
+		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06 12:00:00\": invalid syntax", result.ErrorMsg())
 		assert.Equal(t, "build_enriched_event", result.ErrorCode())
 		assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 	})
