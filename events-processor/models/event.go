@@ -25,6 +25,11 @@ type Event struct {
 
 type SourceMetadata struct {
 	ApiPostProcess bool `json:"api_post_processed"`
+	Reprocess      bool `json:"reprocess"`
+}
+
+func (ev *Event) IsReprocess() bool {
+	return ev.SourceMetadata != nil && ev.SourceMetadata.Reprocess
 }
 
 type EnrichedEvent struct {

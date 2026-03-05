@@ -110,6 +110,19 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	enrichedEvents := enrichedEventResult.Value()
 	enrichedEvent := enrichedEvents[0]
 
+	if event.IsReprocess() {
+		// When reprocessing events, we only need to produce new enriched expanded events
+		for _, ev := range enrichedEvents {
+			if ev.ChargeID != nil {
+				errgroup.Go(func() error {
+					processor.ProducerService.ProduceEnrichedExpandedEvent(ctx, ev)
+					return nil
+				})
+			}
+		}
+		return utils.SuccessResult(enrichedEvent)
+	}
+
 	errgroup.Go(func() error {
 		processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 		return nil
