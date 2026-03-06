@@ -45,7 +45,7 @@ func setupProducers() *testProducerService {
 	}
 }
 
-func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *testProducerService, *tests.MockFlagStore, func()) {
+func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *testProducerService, *tests.MockFlagStore, *tests.MockCacheStore, func()) {
 	mockedStore, delete := tests.SetupMockStore(t)
 	apiStore := models.NewApiStore(mockedStore.DB)
 
@@ -65,7 +65,7 @@ func setupProcessorTestEnv(t *testing.T) (*EventProcessor, *tests.MockedStore, *
 		NewCacheService(chargeCacheStore),
 	)
 
-	return processor, mockedStore, testProducers, &flagStore, delete
+	return processor, mockedStore, testProducers, &flagStore, &cacheStore, delete
 }
 
 func mockBmLookup(mock *tests.MockedStore, bm *models.BillableMetric) {
@@ -124,7 +124,7 @@ func mockFlatFiltersLookup(mock *tests.MockedStore, filters []*models.FlatFilter
 
 func TestProcessEvent(t *testing.T) {
 	t.Run("Without Billable Metric", func(t *testing.T) {
-		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, _, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -144,7 +144,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is post processed on API", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, testProducers, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -205,7 +205,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
-		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, _, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -236,7 +236,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
-		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, _, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -266,7 +266,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API with error when fetching subscription", func(t *testing.T) {
-		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, _, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		event := models.Event{
@@ -299,7 +299,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
-		processor, mockedStore, _, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, _, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		// properties := map[string]any{
@@ -338,7 +338,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post process on API and events belongs to an in advance charge", func(t *testing.T) {
-		processor, mockedStore, testProducers, flagger, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, testProducers, flagger, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -397,7 +397,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches multiple charges", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, testProducers, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -469,7 +469,7 @@ func TestProcessEvent(t *testing.T) {
 	})
 
 	t.Run("When event source is not post processed on API and it matches no charges", func(t *testing.T) {
-		processor, mockedStore, testProducers, _, delete := setupProcessorTestEnv(t)
+		processor, mockedStore, testProducers, _, _, delete := setupProcessorTestEnv(t)
 		defer delete()
 
 		properties := map[string]any{
@@ -514,5 +514,66 @@ func TestProcessEvent(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		assert.Equal(t, 1, testProducers.enrichedProducer.ExecutionCount)
 		assert.Equal(t, 0, testProducers.enrichedExpandedProducer.ExecutionCount)
+	})
+
+	t.Run("When reprocess flag is set, only produces to enriched expanded topic", func(t *testing.T) {
+		processor, mockedStore, testProducers, flagger, cacheStore, delete := setupProcessorTestEnv(t)
+		defer delete()
+
+		properties := map[string]any{
+			"api_requests": "12.0",
+		}
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009,
+			Properties:             properties,
+			Source:                 models.HTTP_RUBY,
+			SourceMetadata: &models.SourceMetadata{
+				ApiPostProcess: true,
+				Reprocess:      true,
+			},
+		}
+
+		bm := models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "api_requests",
+			Expression:      "",
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		mockBmLookup(mockedStore, &bm)
+
+		sub := models.Subscription{ID: "sub123", PlanID: "plan123"}
+		mockSubscriptionLookup(mockedStore, &sub)
+
+		now := time.Now()
+
+		mockFlatFiltersLookup(mockedStore, []*models.FlatFilter{
+			{
+				OrganizationID:     event.OrganizationID,
+				BillableMetricCode: event.Code,
+				PlanID:             "plan_id",
+				ChargeID:           "charge_id1",
+				ChargeUpdatedAt:    now,
+				PayInAdvance:       true,
+			},
+		})
+
+		result := processor.processEvent(context.Background(), &event)
+
+		assert.True(t, result.Success())
+		assert.Equal(t, "12.0", *result.Value().Value)
+
+		assert.Equal(t, 1, testProducers.enrichedExpandedProducer.ExecutionCount)
+		assert.Equal(t, 0, testProducers.enrichedProducer.ExecutionCount)
+		assert.Equal(t, 0, testProducers.inAdvanceProducer.ExecutionCount)
+		assert.Equal(t, 0, flagger.ExecutionCount)
+		assert.Equal(t, 0, cacheStore.ExecutionCount)
 	})
 }
