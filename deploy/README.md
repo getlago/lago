@@ -1,175 +1,169 @@
 # Lago Deploy
 
-This repository contains the necessary files to deploy the Lago project.
+This directory contains deployment templates for self-hosting Lago with Docker Compose, including VPS and reverse-proxy friendly setups.
 
-## Docker Compose Local
+## Deployment modes
 
-To deploy the project locally, you need to have Docker and Docker Compose installed on your machine.
-This configuration can be used for small production usages but it's not recommended for large scale deployments.
+| Mode | Best for | SSL / Reverse proxy | Files |
+| --- | --- | --- | --- |
+| Quickstart | Fast evaluation on one host | No | `docker run` |
+| Local | Local testing and staging | No | `docker-compose.local.yml` |
+| Light | Small production workloads | Yes (Traefik + Let's Encrypt) | `docker-compose.light.yml` + `.env.light.example` |
+| Production | Higher throughput production | Yes (Traefik + Let's Encrypt) | `docker-compose.production.yml` + `.env.production.example` |
 
-### Get Started
+## Prerequisites
 
-1. Get the docker compose file
+1. Docker engine installed
+2. Docker Compose (`docker compose` plugin or `docker-compose`)
+3. For `Light` and `Production`: a public domain with valid DNS A/AAAA records
+4. For `Light` and `Production`: ports `80` and `443` reachable from the internet
+
+## Option A: Interactive deploy script
+
+Use the guided deploy script when you want the quickest path on a VPS:
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.local.yml
+curl -fsSL -o deploy.sh https://raw.githubusercontent.com/getlago/lago/main/deploy/deploy.sh
+bash deploy.sh
 ```
 
-2. Run the following command to start the project:
+The script lets you choose the deployment mode, downloads the right files, asks for required environment variables, and starts the stack.
+
+## Option B: Manual Docker Compose deployment
+
+### Local mode
 
 ```bash
-docker compose up --profile all
-
-# If you want to run it in the background
-docker compose up -d --profile all
+curl -fsSL -o docker-compose.local.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.local.yml
+docker compose -f docker-compose.local.yml up -d --profile all
 ```
 
-## Docker Compose Light
-
-This configuration provide Traefik as a reverse proxy to ease your deployment.
-It supports SSL with Let's Encrypt. :warning: You need a valid domain (with at least one A or AAA record)!
-
-1. Get the docker compose file
+### Light mode (VPS + reverse proxy + TLS)
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.light.yml
-curl -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.light.example
+curl -fsSL -o docker-compose.light.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.light.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.light.example
 ```
 
-2. Replace the .env values with yours
+Set `.env`:
 
 ```bash
-LAGO_DOMAIN=domain.tld
-LAGO_ACME_EMAIL=email@domain.tld
+LAGO_DOMAIN=billing.example.com
+LAGO_ACME_EMAIL=infra@example.com
 ```
 
-3. Run the following command to start the project
+Run:
 
 ```bash
-docker compose up --profile all
-
-# If you want to run it in the background
-docker compose up -d --profile all
+docker compose -f docker-compose.light.yml up -d --profile all
 ```
 
-## Docker Compose Production
-
-This configuration provide Traefik as a reverse proxy to ease your deployment.
-It supports SSL wth Let's Encrypt. :warning: You need a valid domain (with at least one A or AAA record)!
-It also adds multiple services that will help your to handle more load.
-Portainer is also packed to help you scale services and manage your Lago stack.
+### Production mode
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.production.yml
-curl -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.production.example
+curl -fsSL -o docker-compose.production.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.production.yml
+curl -fsSL -o .env https://raw.githubusercontent.com/getlago/lago/main/deploy/.env.production.example
 ```
 
-2. Replace the .env values with yours
+Set `.env`:
 
 ```bash
-LAGO_DOMAIN=domain.tld
-LAGO_ACME_EMAIL=email@domain.tld
+LAGO_DOMAIN=billing.example.com
+LAGO_ACME_EMAIL=infra@example.com
 PORTAINER_USER=lago
-PORTAINER_PASSWORD=changeme
+PORTAINER_PASSWORD=change-me
 ```
 
-3. Run the following command to start the project
+Run:
 
 ```bash
-docker compose up --profile all
-
-# If you want to run it in the background
-docker compose up -d --profile all
+docker compose -f docker-compose.production.yml up -d --profile all
 ```
 
+## VPS and reverse-proxy checklist
+
+1. Point DNS to your VPS (`A`/`AAAA` record for `LAGO_DOMAIN`)
+2. Open inbound ports `80` and `443`
+3. Use `Light` or `Production` mode (both ship with Traefik)
+4. Set `LAGO_DOMAIN` and `LAGO_ACME_EMAIL` in `.env`
+5. Start with `--profile all` (or selective profiles below)
+6. Verify `https://<LAGO_DOMAIN>` and `https://<LAGO_DOMAIN>/api`
 
 ## Configuration
 
 ### Profiles
 
-The docker compose file contains multiple profiles to enable or disable some services.
-Here are the available profiles:
-- `all`: Enable all services
-- `all-no-pg`: Disable the PostgreSQL service
-- `all-no-redis`: Disable the Redis service
-- `all-no-keys`: Disable the RSA keys generation service
+The compose files support these profiles:
 
-This allow you to start only the service you want to use, please see the following sections for more information.
+- `all`: enable all services
+- `all-no-pg`: disable PostgreSQL (use external PostgreSQL)
+- `all-no-redis`: disable Redis (use external Redis)
+- `all-no-db`: disable PostgreSQL and Redis
+- `all-no-keys`: disable RSA key generation
+
+Examples:
 
 ```bash
-# Start all services
-docker compose up --profile all
+# Without PostgreSQL
+docker compose -f docker-compose.light.yml up -d --profile all-no-pg
 
-# Start without PostgreSQL
-docker compose up --profile all-no-pg
+# Without Redis
+docker compose -f docker-compose.light.yml up -d --profile all-no-redis
 
-# Start without Redis
-docker compose up --profile all-no-redis
+# Without PostgreSQL and Redis
+docker compose -f docker-compose.light.yml up -d --profile all-no-db
 
-# Start without PostgreSQL and Redis
-docker compose up --profile all-no-db
-
-# Start without RSA keys generation
-docker compose up --profile all-no-keys
-
-# Start without PostgreSQL, Redis and RSA keys generation
-docker compose up
+# Without generated RSA key
+docker compose -f docker-compose.light.yml up -d --profile all-no-keys
 ```
 
-### PostgreSQL
+### External PostgreSQL
 
-It is possible to disable the usage of the PostgreSQL database to use an external database instance.
+Set:
 
-1. Set those environment variables:
-
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
 - `POSTGRES_USER`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
-- `POSTGRES_HOST`
-- `POSTGRES_PORT`
-- `POSTGRES_SCHEMA` optional
+- `POSTGRES_SCHEMA` (optional)
 
-2. Run the following command to start the project without PostgreSQL:
+Then run with `--profile all-no-pg`.
 
-```bash
-docker compose up --profile all-no-pg
-```
+### External Redis
 
-### Redis
-
-It is possible to disable the usage of the Redis database to use an external Redis instance.
-
-1. Set those environment variables:
+Set:
 
 - `REDIS_HOST`
 - `REDIS_PORT`
-- `REDIS_PASSWORD` optional
+- `REDIS_PASSWORD` (optional)
 
-2. Run the following command to start the project without Redis:
+Then run with `--profile all-no-redis`.
+
+### RSA key management
+
+By default, compose generates an RSA key pair used for JWT signing. To provide your own key:
+
+1. Remove the `lago_rsa_data` volume
+2. Generate a key with `openssl genrsa 2048 | openssl base64 -A`
+3. Set `LAGO_RSA_PRIVATE_KEY`
+4. Start with `--profile all-no-keys`
+
+All backend services must share the same private key.
+
+### Apply `.env` changes safely
+
+When changing public URL variables (`LAGO_DOMAIN`, `LAGO_API_URL`, `LAGO_FRONT_URL`, `API_URL`), recreate the impacted services so runtime config is regenerated:
 
 ```bash
-docker compose up --profile all-no-redis
+docker compose down
+docker compose up -d --profile all
 ```
-
-### RSA Keys
-
-Those docker compose file generates an RSA Keys pair for the JWT tokens generation.
-You can find the keys in the `lago_rsa_data` volume or in the `/app/config/keys` directory in the backends containers.
-If you do not want to use those keys:
-- Remove the `lago_rsa_data` volume
-- Generate your own key using `openssl genrsa 2048 | openssl base64 -A`
-- Export this generated key to the `LAGO_RSA_PRIVATE_KEY` env var.
-- Run the following command to start the project without the RSA keys generation:
-
-```bash
-docker compose up --profile all-no-keys
-```
-
-*All BE Services use the same RSA key, they will exit immediately if no key is provided.*
 
 ## Monitoring
 
-For production deployments, we recommend setting up monitoring for Sidekiq workers. See the [Monitoring documentation](../docs/monitoring.md) for:
-- Prometheus metrics endpoints and available metrics
+For production deployments, set up Sidekiq monitoring. See [Monitoring documentation](../docs/monitoring.md) for:
+
+- Prometheus metrics and available metrics
 - Recommended alerting rules
 - Grafana dashboard recommendations

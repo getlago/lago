@@ -8,6 +8,7 @@ NORMAL=$(tput sgr0)
 BOLD=$(tput bold)
 
 ENV_FILE=".env"
+COMPOSE_FILE=""
 
 check_command() {
     if ! command -v "$1" &> /dev/null; then
@@ -16,6 +17,59 @@ check_command() {
     else
         echo "${GREEN}✅ $1 is installed.${NORMAL}"
         return 0
+    fi
+}
+
+check_docker_compose() {
+    if docker compose version &> /dev/null; then
+        echo "${GREEN}✅ docker compose is installed.${NORMAL}"
+        return 0
+    fi
+
+    if command -v docker-compose &> /dev/null; then
+        echo "${GREEN}✅ docker-compose is installed.${NORMAL}"
+        return 0
+    fi
+
+    echo "${RED}❌ Error:${NORMAL} ${BOLD}Docker Compose${NORMAL} is not installed."
+    return 1
+}
+
+run_compose() {
+    if docker compose version &> /dev/null; then
+        docker compose -f "$COMPOSE_FILE" "$@"
+    else
+        docker-compose -f "$COMPOSE_FILE" "$@"
+    fi
+}
+
+check_domain_dns() {
+    local domain="$1"
+
+    # Remove protocol if present
+    domain=$(echo "$domain" | sed -E 's|^https?://||')
+
+    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
+
+    if command -v dig &> /dev/null; then
+        if dig +short A "$domain" | grep -q '^[0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    elif command -v nslookup &> /dev/null; then
+        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    else
+        echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
+        return 2
     fi
 }
 
@@ -55,7 +109,7 @@ echo ""
 
 echo "${CYAN}${BOLD}🔍 Checking Dependencies...${NORMAL}"
 check_command docker || MISSING_DOCKER=true
-check_command docker-compose || check_command "docker compose" || MISSING_DOCKER_COMPOSE=true
+check_docker_compose || MISSING_DOCKER_COMPOSE=true
 
 if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true ]]; then
     echo "${YELLOW}⚠️ Please install missing dependencies:${NORMAL}"
@@ -65,8 +119,10 @@ if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true ]]; then
     fi
 
     if [ "$MISSING_DOCKER_COMPOSE" = true ]; then
-        👉 Docker Compose: https://docs.docker.com/compose/install/
+        echo "👉 Docker Compose: https://docs.docker.com/compose/install/"
     fi
+
+    exit 1
 fi
 
 echo ""
@@ -103,12 +159,21 @@ check_and_stop_containers(){
 
     compose_projects=("lago-local" "lago-light" "lago-production")
     for project in "${compose_projects[@]}"; do
-        running_services=$(docker compose -p "$project" ps -q &>/dev/null || docker-compose -p "$project" ps -q &>/dev/null)
+        if docker compose version &> /dev/null; then
+            running_services=$(docker compose -p "$project" ps -q 2>/dev/null)
+        else
+            running_services=$(docker-compose -p "$project" ps -q 2>/dev/null)
+        fi
+
         if [ -n "$running_services" ]; then
             echo "${YELLOW}⚠️  Detected running Docker Compose project: ${BOLD}$project${NORMAL}"
 
             if ask_yes_no "Do you want to stop ${BOLD}${project}${NORMAL}?"; then
-                docker compose -p "$project" down &>/dev/null || docker-compose -p "$project" down &>/dev/null
+                if docker compose version &> /dev/null; then
+                    docker compose -p "$project" down &>/dev/null
+                else
+                    docker-compose -p "$project" down &>/dev/null
+                fi
                 echo "${GREEN}✅ ${project} stopped.${NORMAL}"
 
                 if ask_yes_no "Do you want to clean volumes and all data from ${BOLD}${project}${NORMAL}?"; then
@@ -166,7 +231,8 @@ profile="all"
 case "$selected_key" in
     "Local")
         echo "${CYAN}${BOLD}🚀 Downloading Local deployment files...${NORMAL}"
-        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.local.yml
+        COMPOSE_FILE="docker-compose.local.yml"
+        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.local.yml
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
         else
@@ -176,7 +242,8 @@ case "$selected_key" in
         ;;
     "Light")
         echo "${CYAN}${BOLD}🚀 Downloading Light deployment files...${NORMAL}"
-        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.light.yml
+        COMPOSE_FILE="docker-compose.light.yml"
+        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.light.yml
         curl -s -o .env https://deploy.getlago.com/.env.light.example
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
@@ -187,7 +254,8 @@ case "$selected_key" in
         ;;
     "Production")
         echo "${CYAN}${BOLD}🚀 Downloading Production deployment files...${NORMAL}"
-        curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.production.yml
+        COMPOSE_FILE="docker-compose.production.yml"
+        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.production.yml
         curl -s -o .env https://deploy.getlago.com/.env.production.example
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
@@ -202,7 +270,10 @@ echo ""
 
 # Check Env Vars depending on the deployment
 if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
-    mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL" "PORTAINER_USER" "PORTAINER_PASSWORD")
+    mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL")
+    if [[ "$selected_key" == "Production" ]]; then
+        mandatory_vars+=("PORTAINER_USER" "PORTAINER_PASSWORD")
+    fi
     external_pg=false
     external_redis=false
 
@@ -271,37 +342,6 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     echo ""
 fi
 
-# Check if domain has A record
-check_domain_dns() {
-    local domain="$1"
-    
-    # Remove protocol if present
-    domain=$(echo "$domain" | sed -E 's|^https?://||')
-    
-    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
-    
-    if command -v dig &> /dev/null; then
-        if dig +short A "$domain" | grep -q '^[0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
-    elif command -v nslookup &> /dev/null; then
-        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
-    else
-        echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
-        return 2
-    fi
-}
-
 # Execute selected deployment
 case "$selected_key" in
     Quickstart)
@@ -310,19 +350,15 @@ case "$selected_key" in
         ;;
     Local)
         echo "${CYAN}🚧 Running Local Docker Compose deployment...${NORMAL}"
-        docker compose -f docker-compose.local.yml up -d || docker-compose -f docker-compose.local.yml up -d &>/dev/null
+        run_compose up -d
         ;;
     Light)
         echo "${CYAN}🚧 Running Light Docker Compose deployment...${NORMAL}"
-        
-        docker compose -f docker-compose.light.yml --profile "$profile" up -d &>/dev/null || \
-        docker-compose -f docker-compose.light.yml --profile "$profile" up -d &>/dev/null
+        run_compose up -d --profile "$profile"
         ;;
     Production)
         echo "${CYAN}🚧 Running Production Docker Compose deployment...${NORMAL}"
-
-        docker compose -f docker-compose.production.yml --profile "$profile" up -d &>/dev/null || \
-        docker-compose -f docker-compose.production.yml --profile "$profile" up -d &>/dev/null
+        run_compose up -d --profile "$profile"
         ;;
 esac
 
