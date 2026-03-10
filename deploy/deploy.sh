@@ -43,34 +43,57 @@ run_compose() {
     fi
 }
 
+download_file() {
+    local url="$1"
+    local output="$2"
+    local label="$3"
+
+    if curl -fsSL -o "$output" "$url"; then
+        echo "${GREEN}✅ Downloaded ${label}.${NORMAL}"
+    else
+        echo "${RED}❌ Failed to download ${label} from ${url}.${NORMAL}"
+        exit 1
+    fi
+}
+
 check_domain_dns() {
     local domain="$1"
+    local has_a=false
+    local has_aaaa=false
 
     # Remove protocol if present
     domain=$(echo "$domain" | sed -E 's|^https?://||')
 
-    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
+    echo "${CYAN}${BOLD}🔍 Checking DNS records (A/AAAA) for ${domain}...${NORMAL}"
 
     if command -v dig &> /dev/null; then
-        if dig +short A "$domain" | grep -q '^[0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
+        dig +short A "$domain" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' && has_a=true
+        dig +short AAAA "$domain" | grep -Eq ':' && has_aaaa=true
     elif command -v nslookup &> /dev/null; then
-        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
+        nslookup -type=A "$domain" 2>/dev/null | grep -Eq 'Address: [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' && has_a=true
+        nslookup -type=AAAA "$domain" 2>/dev/null | grep -Eq 'Address: .*:' && has_aaaa=true
     else
         echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
         return 2
     fi
+
+    if $has_a || $has_aaaa; then
+        local record_types=""
+        $has_a && record_types="A"
+        if $has_aaaa; then
+            if [ -n "$record_types" ]; then
+                record_types="${record_types}/AAAA"
+            else
+                record_types="AAAA"
+            fi
+        fi
+
+        echo "${GREEN}✅ Valid DNS record (${record_types}) found for ${BOLD}${domain}${NORMAL}"
+        return 0
+    fi
+
+    echo "${RED}❌ No valid A or AAAA record found for ${BOLD}${domain}${NORMAL}"
+    return 1
 }
 
 ask_yes_no() {
@@ -232,37 +255,22 @@ case "$selected_key" in
     "Local")
         echo "${CYAN}${BOLD}🚀 Downloading Local deployment files...${NORMAL}"
         COMPOSE_FILE="docker-compose.local.yml"
-        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.local.yml
-        if [ $? -eq 0 ]; then
-            echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
-        else
-            echo "${RED}❌ Failed to download Local deployment files${NORMAL}"
-            exit 1
-        fi
+        download_file "https://deploy.getlago.com/docker-compose.local.yml" "$COMPOSE_FILE" "Local deployment compose file"
+        echo "${GREEN}✅ Successfully downloaded Local deployment files${NORMAL}"
         ;;
     "Light")
         echo "${CYAN}${BOLD}🚀 Downloading Light deployment files...${NORMAL}"
         COMPOSE_FILE="docker-compose.light.yml"
-        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.light.yml
-        curl -s -o .env https://deploy.getlago.com/.env.light.example
-        if [ $? -eq 0 ]; then
-            echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
-        else
-            echo "${RED}❌ Failed to download Light deployment files${NORMAL}"
-            exit 1
-        fi
+        download_file "https://deploy.getlago.com/docker-compose.light.yml" "$COMPOSE_FILE" "Light deployment compose file"
+        download_file "https://deploy.getlago.com/.env.light.example" ".env" "Light deployment environment file"
+        echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
         ;;
     "Production")
         echo "${CYAN}${BOLD}🚀 Downloading Production deployment files...${NORMAL}"
         COMPOSE_FILE="docker-compose.production.yml"
-        curl -s -o "$COMPOSE_FILE" https://deploy.getlago.com/docker-compose.production.yml
-        curl -s -o .env https://deploy.getlago.com/.env.production.example
-        if [ $? -eq 0 ]; then
-            echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
-        else
-            echo "${RED}❌ Failed to download Production deployment files${NORMAL}"
-            exit 1
-        fi
+        download_file "https://deploy.getlago.com/docker-compose.production.yml" "$COMPOSE_FILE" "Production deployment compose file"
+        download_file "https://deploy.getlago.com/.env.production.example" ".env" "Production deployment environment file"
+        echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
         ;;
 esac
 
@@ -277,12 +285,16 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     external_pg=false
     external_redis=false
 
-    if [[ -n "$LAGO_DOMAIN" ]]; then
-        check_domain_dns "$LAGO_DOMAIN"
-        if [[ $? -eq 1 ]] && ! ask_yes_no "No valid DNS record found. Continue anyway?"; then
-            echo "${YELLOW}⚠️ Deployment aborted.${NORMAL}"
-            exit 1
-        fi
+    echo "${CYAN}${BOLD}🔧 Checking mandatory environment variables...${NORMAL}"
+
+    # Load Existing .env values
+    if [ -f "$ENV_FILE" ]; then
+        # shellcheck disable=SC2046
+        export $(grep -v '^#' "$ENV_FILE" | xargs)
+        echo "${GREEN}✅ Loaded existing .env file.${NORMAL}"
+    else
+        touch "$ENV_FILE"
+        echo "${YELLOW}⚠️  No .env file found. Created a new one.${NORMAL}"
     fi
 
     if ask_yes_no "Do you want to use an external PostgreSQL instance?"; then
@@ -302,7 +314,7 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
             mandatory_vars+=("REDIS_PASSWORD")
         fi
     fi
-    
+
     if $external_pg && $external_redis; then
         profile="all-no-db"
     elif $external_pg; then
@@ -312,18 +324,6 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     fi
 
     echo ""
-
-    echo "${CYAN}${BOLD}🔧 Checking mandatory environment variables...${NORMAL}"
-
-    # Load Existing .env values
-    if [ -f "$ENV_FILE" ]; then
-        # shellcheck disable=SC2046
-        export $(grep -v '^#' "$ENV_FILE" | xargs)
-        echo "${GREEN}✅ Loaded existing .env file.${NORMAL}"
-    else
-        touch "$ENV_FILE"
-        echo "${YELLOW}⚠️  No .env file found. Created a new one.${NORMAL}"
-    fi
 
     {
         echo "# Updated by Lago Deploy"
@@ -340,6 +340,12 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
 
     echo "${GREEN}${BOLD}✅ .env file updated successfully.${NORMAL}"
     echo ""
+
+    check_domain_dns "$LAGO_DOMAIN"
+    if [[ $? -eq 1 ]] && ! ask_yes_no "No valid DNS record found. Continue anyway?"; then
+        echo "${YELLOW}⚠️ Deployment aborted.${NORMAL}"
+        exit 1
+    fi
 fi
 
 # Execute selected deployment
@@ -350,7 +356,7 @@ case "$selected_key" in
         ;;
     Local)
         echo "${CYAN}🚧 Running Local Docker Compose deployment...${NORMAL}"
-        run_compose up -d
+        run_compose up -d --profile "$profile"
         ;;
     Light)
         echo "${CYAN}🚧 Running Light Docker Compose deployment...${NORMAL}"

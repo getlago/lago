@@ -16,7 +16,7 @@ This directory contains deployment templates for self-hosting Lago with Docker C
 1. Docker engine installed
 2. Docker Compose (`docker compose` plugin or `docker-compose`)
 3. For `Light` and `Production`: a public domain with valid DNS A/AAAA records
-4. For `Light` and `Production`: ports `80` and `443` reachable from the internet
+4. For `Light` and `Production`: port `443` reachable from the internet (`8080` is used for Traefik dashboard/health checks)
 
 ## Option A: Interactive deploy script
 
@@ -83,7 +83,7 @@ docker compose -f docker-compose.production.yml up -d --profile all
 ## VPS and reverse-proxy checklist
 
 1. Point DNS to your VPS (`A`/`AAAA` record for `LAGO_DOMAIN`)
-2. Open inbound ports `80` and `443`
+2. Open inbound port `443` (and `8080` only if you expose Traefik dashboard/health checks)
 3. Use `Light` or `Production` mode (both ship with Traefik)
 4. Set `LAGO_DOMAIN` and `LAGO_ACME_EMAIL` in `.env`
 5. Start with `--profile all` (or selective profiles below)
@@ -156,9 +156,11 @@ All backend services must share the same private key.
 When changing public URL variables (`LAGO_DOMAIN`, `LAGO_API_URL`, `LAGO_FRONT_URL`, `API_URL`), recreate the impacted services so runtime config is regenerated:
 
 ```bash
-docker compose down
-docker compose up -d --profile all
+docker compose -f <compose-file>.yml down
+docker compose -f <compose-file>.yml up -d --profile all
 ```
+
+Use the same compose file you started with (for example `docker-compose.light.yml` or `docker-compose.production.yml`).
 
 ## Monitoring
 
