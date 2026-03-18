@@ -51,6 +51,12 @@ on:
         type: string
         default: ''
 
+      exact-tags-only:
+        description: 'Only push the semver tag (e.g., 1.2.3). Requires the git ref to be a valid semver tag.'
+        required: false
+        type: boolean
+        default: false
+
       cache-type:
         description: 'Cache type (gha, registry, or disabled)'
         required: false
@@ -204,7 +210,7 @@ jobs:
           images: ${{ inputs.image-name }}
           context: 'git'
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=ref,event=pr
             type=ref,event=branch
@@ -214,8 +220,17 @@ jobs:
       - name: Generate build hash
         id: build-hash
         run: |
-          # Use version from metadata (sha-{short_sha} from checked-out repo)
-          VERSION="${{ steps.meta.outputs.version }}"
+          if [[ "${{ inputs.exact-tags-only }}" == "true" ]]; then
+            # Extract full semver tag (X.Y.Z) from metadata, failing if not found
+            VERSION=$(echo '${{ steps.meta.outputs.json }}' | jq -r '.tags[] | split(":") | last | select(test("^v?[0-9]+\\.[0-9]+\\.[0-9]+"))' | head -1)
+
+            if [[ -z "$VERSION" ]]; then
+              echo "::error::exact-tags-only is set but no semver tag (X.Y.Z) found in docker metadata. Ensure the git ref is a semver tag (e.g., v1.2.3)."
+              exit 1
+            fi
+          else
+            VERSION="${{ steps.meta.outputs.version }}"
+          fi
 
           # Create a deterministic hash from build args and secrets
           BUILD_ARGS="${{ inputs.build-args }}"
@@ -337,9 +352,13 @@ jobs:
           echo "version=${{ needs.build.outputs.metadata-version }}" >> $GITHUB_OUTPUT
           echo "DOCKER_METADATA_OUTPUT_JSON=$DOCKER_METADATA_OUTPUT_JSON" >> $GITHUB_ENV
 
-          # Build tag list from metadata and add combined tag
-          TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-          TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          # Build tag list
+          if [[ "${{ inputs.exact-tags-only }}" == "true" ]]; then
+            TAG_ARGS="-t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          else
+            TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+            TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+          fi
 
           docker buildx imagetools create $TAG_ARGS \
             $(printf '${{ inputs.image-name }}@sha256:%s ' *)
@@ -347,18 +366,22 @@ jobs:
       - name: Inspect image
         id: inspect
         run: |
-          digest=$(docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }} --format '{{json .Manifest.Digest}}' | tr -d '"')
+          digest=$(docker buildx imagetools inspect ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }} --format '{{json .Manifest.Digest}}' | tr -d '"')
           echo "digest=$digest" >> $GITHUB_OUTPUT
-          docker buildx imagetools inspect ${{ inputs.image-name }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}
 
       - name: Write job summary
         id: summary
         run: |
           IMAGE_TAG="${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
-          # Build tags list with combined tag, formatted as markdown
-          TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r \
-            --arg combined "$IMAGE_TAG" \
-            '.tags + [$combined] | unique | map("- `" + . + "`") | join("\n")')
+          # Build tags list formatted as markdown
+          if [[ "${{ inputs.exact-tags-only }}" == "true" ]]; then
+            TAGS_LIST="- \`${IMAGE_TAG}\`"
+          else
+            TAGS_LIST=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r \
+              --arg combined "$IMAGE_TAG" \
+              '.tags + [$combined] | unique | map("- `" + . + "`") | join("\n")')
+          fi
 
           echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "tag=${{ needs.build.outputs.combined-tag }}" >> $GITHUB_OUTPUT
