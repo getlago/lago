@@ -387,6 +387,7 @@ services:
       - events_dead_letter
       - activity_logs
       - api_logs
+      - security_logs
     volumes:
       - ./scripts/create-topics.sh:/usr/local/bin/create-topics
     environment:
