@@ -1,3 +1,3 @@
-FROM docker.redpanda.com/redpandadata/connect:4.78.0
+FROM docker.redpanda.com/redpandadata/connect:4.83.0
 
 COPY *.yml ./
