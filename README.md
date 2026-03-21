@@ -98,15 +98,15 @@ Distributed under the AGPLv3 License. Read more [here](https://www.getlago.com/b
 | **Lago Ruby Client**     | [![Lago Ruby Client Release](https://img.shields.io/github/v/release/getlago/lago-ruby-client)](https://github.com/getlago/lago-ruby-client/releases) |
 
 
-## 💻 Deploy locally
+## 💻 Self-host deployment
 
 ### Requirements
 1. Install Docker on your machine;
 2. Make sure Docker Compose is installed and available (it should be the case if you have chosen to install Docker via Docker Desktop); and
 3. Make sure Git is installed on your machine.
 
-### Run the app
-To start using Lago, run the following commands in a shell:
+### Run the app locally
+To start using Lago locally, run the following commands in a shell:
 
 
 #### On a fresh install
@@ -139,6 +139,15 @@ Note that if our docker server is not at http://localhost, the following env var
 LAGO_API_URL="http://192.168.122.71:3000"
 LAGO_FRONT_URL="http://192.168.122.71"
 ```
+
+### Run Lago on a VPS or behind a reverse proxy
+
+For non-localhost setups (domain name, TLS, and reverse proxy), use the deployment templates in [`deploy/README.md`](./deploy/README.md):
+
+- `Local` for basic single-host usage
+- `Light` for small production workloads with Traefik + Let's Encrypt
+- `Production` for higher-throughput setups with additional services
+- `deploy.sh` for an interactive guided installation
 
 ### Find your API key
 Your API Key can be found directly in the UI:
