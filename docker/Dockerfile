@@ -1,5 +1,5 @@
 ARG NODE_VERSION=20
-ARG RUBY_VERSION=4.0.1
+ARG RUBY_VERSION=4.0.2
 
 # Front Build
 FROM node:$NODE_VERSION-alpine AS front_build
