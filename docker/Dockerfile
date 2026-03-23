@@ -1,5 +1,5 @@
 ARG NODE_VERSION=20
-ARG RUBY_VERSION=3.4.8
+ARG RUBY_VERSION=4.0.2
 
 # Front Build
 FROM node:$NODE_VERSION-alpine AS front_build
@@ -15,7 +15,7 @@ RUN apk add python3 build-base && \
 # API Build
 FROM ruby:$RUBY_VERSION-slim AS api_build
 
-ENV BUNDLER_VERSION='2.5.5'
+ENV BUNDLER_VERSION=4.0.4
 ENV PATH="$PATH:/root/.cargo/bin/"
 
 WORKDIR /app
@@ -27,7 +27,7 @@ RUN apt-get update && apt-get upgrade -y && \
 COPY ./api/Gemfile /app/Gemfile
 COPY ./api/Gemfile.lock /app/Gemfile.lock
 
-RUN gem install bundler --no-document -v '2.5.5' && \
+RUN gem install bundler --no-document -v $BUNDLER_VERSION && \
   gem install foreman && \
   bundle config build.nokogiri --use-system-libraries &&\
   bundle install --jobs=3 --retry=3 --without development test
