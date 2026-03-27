@@ -84,6 +84,10 @@ func TestToFloat64Timestamp(t *testing.T) {
 				parsedValue: 1741007009.344,
 			},
 			expectedTime64{
+				timestamp:   "1741007009.000001",
+				parsedValue: 1741007009.000,
+			},
+			expectedTime64{
 				timestamp:   "2025-03-03T13:03:29Z",
 				parsedValue: 1741007009.0,
 			},

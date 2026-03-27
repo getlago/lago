@@ -177,7 +177,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	apiStore = models.NewApiStore(db)
 	defer db.Close()
 
-	flagger, err := initFlagStore(ctx, "subscription_refreshed")
+	flagger, err := initFlagStore(ctx, "subscription_refreshed_v2")
 	if err != nil {
 		utils.LogAndPanic(err, "Error connecting to the flag store")
 	}

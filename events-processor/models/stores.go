@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/config/redis"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
-const EXPIRATION_TIME = 5 * time.Second
+const EXPIRATION_TIME = 15 * time.Second
+const CLICKHOUSE_MERGE_DELAY int64 = 15
 
 type ApiStore struct {
 	db *database.DB
@@ -40,8 +43,22 @@ func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagS
 	}
 }
 
+// Flag adds a subscription to the sorted set for delayed refresh.
+// The member key includes a time bucket (value|bucket) so that events within
+// the same CLICKHOUSE_MERGE_DELAY window share a member — ZADD overwrites the
+// score to the latest event, waiting after the last event in that window.
+// Once the window elapses, new events create a new member, ensuring the
+// previous one ages out and gets picked up by the consumer (no starvation).
 func (store *FlagStore) Flag(value string) error {
-	result := store.db.Client.SAdd(store.context, store.name, fmt.Sprintf("%s", value))
+	now := time.Now().Unix()
+
+	// Calculate the bucket (time window) for the event
+	bucket := (now / CLICKHOUSE_MERGE_DELAY) * CLICKHOUSE_MERGE_DELAY
+
+	result := store.db.Client.ZAdd(store.context, store.name, goredis.Z{
+		Score:  float64(now),
+		Member: fmt.Sprintf("%s|%d", value, bucket),
+	})
 	if err := result.Err(); err != nil {
 		return err
 	}
