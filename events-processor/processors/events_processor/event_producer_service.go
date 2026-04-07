@@ -18,16 +18,14 @@ type EventProducerService struct {
 	enrichedExpendedProducer kafka.MessageProducer
 	inAdvanceProducer        kafka.MessageProducer
 	deadLetterProducer       kafka.MessageProducer
-	logger                   *slog.Logger
 }
 
-func NewEventProducerService(enrichedProducer, enrichedExpendedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer, logger *slog.Logger) *EventProducerService {
+func NewEventProducerService(enrichedProducer, enrichedExpendedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer) *EventProducerService {
 	return &EventProducerService{
 		enrichedProducer:         enrichedProducer,
 		enrichedExpendedProducer: enrichedExpendedProducer,
 		inAdvanceProducer:        inAdvanceProducer,
 		deadLetterProducer:       deadLetterProducer,
-		logger:                   logger,
 	}
 }
 
@@ -37,7 +35,7 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 	err := eps.produceEvent(context, event, msgKey, eps.enrichedProducer)
 
 	if err != nil {
-		eps.logger.Error("error while marshaling enriched events")
+		slog.Error("error while marshaling enriched events")
 		utils.CaptureError(err)
 	}
 }
@@ -71,7 +69,7 @@ func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Co
 
 	err := eps.produceEvent(context, event, msgKey, eps.enrichedExpendedProducer)
 	if err != nil {
-		eps.logger.Error("error while marshaling enriched expended events")
+		slog.Error("error while marshaling enriched expended events")
 		utils.CaptureError(err)
 	}
 }
@@ -82,7 +80,7 @@ func (eps *EventProducerService) ProduceChargedInAdvanceEvent(context context.Co
 	err := eps.produceEvent(context, event, msgKey, eps.inAdvanceProducer)
 
 	if err != nil {
-		eps.logger.Error("error while marshaling charged in advance events")
+		slog.Error("error while marshaling charged in advance events")
 		utils.CaptureError(err)
 	}
 }
@@ -98,7 +96,7 @@ func (eps *EventProducerService) ProduceToDeadLetterQueue(context context.Contex
 
 	eventJson, err := json.Marshal(failedEvent)
 	if err != nil {
-		eps.logger.Error("error while marshaling failed event with error details")
+		slog.Error("error while marshaling failed event with error details")
 		utils.CaptureError(err)
 	}
 
@@ -107,7 +105,7 @@ func (eps *EventProducerService) ProduceToDeadLetterQueue(context context.Contex
 	})
 
 	if !pushed {
-		eps.logger.Error("error while pushing to dead letter topic", slog.String("topic", eps.deadLetterProducer.GetTopic()))
+		slog.Error("error while pushing to dead letter topic", slog.String("topic", eps.deadLetterProducer.GetTopic()))
 		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
 	}
 }

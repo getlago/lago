@@ -2,8 +2,6 @@ package events_processor
 
 import (
 	"context"
-	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -34,15 +32,11 @@ func setupProducers() *testProducerService {
 	inAdvanceProducer := tests.MockMessageProducer{}
 	deadLetterProducer := tests.MockMessageProducer{}
 
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	producerService := NewEventProducerService(
 		&enrichedProducer,
 		&enrichedExpandedProducer,
 		&inAdvanceProducer,
 		&deadLetterProducer,
-		logger,
 	)
 
 	return &testProducerService{
@@ -172,9 +166,6 @@ type ProcessorTestEnv struct {
 }
 
 func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	var chargeCache models.Cacher
 	var memCache *cache.Cache
 	var apiStore *models.ApiStore
@@ -191,7 +182,6 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 		ctx := context.Background()
 		memCache, _ = cache.NewCache(cache.CacheConfig{
 			Context: ctx,
-			Logger:  logger,
 		})
 		dataStore = &CacheDataStore{cache: memCache, t: t}
 		cleanup = func() { memCache.Close() }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -21,7 +19,6 @@ var (
 	enrichedExpandedProducer *tests.MockMessageProducer
 	inAdvanceProducer        *tests.MockMessageProducer
 	deadLetterProducer       *tests.MockMessageProducer
-	logger                   *slog.Logger
 )
 
 func setupProducerServiceEnv() {
@@ -30,15 +27,11 @@ func setupProducerServiceEnv() {
 	inAdvanceProducer = &tests.MockMessageProducer{}
 	deadLetterProducer = &tests.MockMessageProducer{}
 
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	producerService = NewEventProducerService(
 		enrichedProducer,
 		enrichedExpandedProducer,
 		inAdvanceProducer,
 		deadLetterProducer,
-		logger,
 	)
 }
 

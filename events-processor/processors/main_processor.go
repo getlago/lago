@@ -202,7 +202,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 			eventsEnrichedExpandedProducer,
 			eventsInAdvanceProducer,
 			eventsDeadLetterQueue,
-			config.Logger,
 		),
 		events_processor.NewSubscriptionRefreshService(flagger),
 		events_processor.NewCacheService(chargeCacheStore),

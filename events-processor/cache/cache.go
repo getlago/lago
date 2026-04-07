@@ -37,7 +37,7 @@ func NewCache(config CacheConfig) (*Cache, error) {
 	opts := badger.DefaultOptions("").WithInMemory(true)
 	opts.Logger = nil
 
-	logger := config.Logger.With("pkg", "cache")
+	logger := slog.Default().With("pkg", "cache")
 
 	db, err := badger.Open(opts)
 	if err != nil {
