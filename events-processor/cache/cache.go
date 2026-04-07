@@ -68,7 +68,7 @@ func (c *Cache) LoadInitialSnapshot() {
 
 	db, err := database.NewConnection(dbConfig)
 	if err != nil {
-		utils.LogAndPanic(c.logger, err, "Error connecting to the database")
+		utils.LogAndPanic(err, "Error connecting to the database")
 	}
 
 	var wg sync.WaitGroup

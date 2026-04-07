@@ -71,7 +71,7 @@ func main() {
 			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
 		})
 		if err != nil {
-			utils.LogAndPanic(logger, err, "Error creating the cache")
+			utils.LogAndPanic(err, "Error creating the cache")
 		}
 		defer memCache.Close()
 
