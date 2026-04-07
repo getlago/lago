@@ -42,7 +42,7 @@ func main() {
 
 	setupGracefulShutdown(cancel, logger)
 
-	tracerProvider := tracing.InitTracerProvider()
+	tracerProvider := tracing.InitTracerProvider(logger)
 	if tracerProvider == nil {
 		slog.Error("Failed to initialize tracer provider, tracing disabled")
 	} else {
