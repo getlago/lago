@@ -16,12 +16,6 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-var (
-	ctx      context.Context
-	logger   *slog.Logger
-	memCache *cache.Cache
-)
-
 const (
 	envEnv                 = "ENV"
 	envSentryDsn           = "SENTRY_DSN"
