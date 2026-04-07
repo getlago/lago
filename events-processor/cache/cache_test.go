@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 func TestNewCache(t *testing.T) {
 	cache, err := NewCache(CacheConfig{
 		Context: context.Background(),
-		Logger:  slog.Default(),
 	})
 
 	require.NoError(t, err)

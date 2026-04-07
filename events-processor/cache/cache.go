@@ -27,7 +27,6 @@ type Cache struct {
 // CacheConfig holds the configuration needed to initialize a new Cache instance.
 type CacheConfig struct {
 	Context             context.Context
-	Logger              *slog.Logger
 	DebeziumTopicPrefix string
 }
 
@@ -70,6 +69,7 @@ func (c *Cache) LoadInitialSnapshot() {
 	if err != nil {
 		utils.LogAndPanic(err, "Error connecting to the database")
 	}
+	defer db.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(6)
@@ -107,30 +107,26 @@ func (c *Cache) LoadInitialSnapshot() {
 	wg.Wait()
 }
 
-func (c *Cache) ConsumeChanges() {
-	if err := c.StartBillableMetricsConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start billable metrics consumer", slog.String("error", err.Error()))
+func (c *Cache) ConsumeChanges() error {
+	consumers := []struct {
+		name  string
+		start func(context.Context) error
+	}{
+		{"billable metrics", c.StartBillableMetricsConsumer},
+		{"subscriptions", c.StartSubscriptionsConsumer},
+		{"charges", c.StartChargesConsumer},
+		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
+		{"charge filters", c.StartChargeFiltersConsumer},
+		{"charge filter values", c.StartChargeFilterValuesConsumer},
 	}
 
-	if err := c.StartSubscriptionsConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start subscriptions consumer", slog.String("error", err.Error()))
+	for _, consumer := range consumers {
+		if err := consumer.start(c.ctx); err != nil {
+			return fmt.Errorf("failed to start %s consumer: %w", consumer.name, err)
+		}
 	}
 
-	if err := c.StartChargesConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start charges consumer", slog.String("error", err.Error()))
-	}
-
-	if err := c.StartBillableMetricFiltersConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start billable metric filters consumer", slog.String("error", err.Error()))
-	}
-
-	if err := c.StartChargeFiltersConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start charge filters consumer", slog.String("error", err.Error()))
-	}
-
-	if err := c.StartChargeFilterValuesConsumer(c.ctx); err != nil {
-		c.logger.Error("failed to start charge filter values consumer", slog.String("error", err.Error()))
-	}
+	return nil
 }
 
 func setJSON[T any](cache *Cache, key string, value *T) utils.Result[bool] {

@@ -105,6 +105,28 @@ func TestUnmarshalNestedJSON_InvalidJSON(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestUnmarshalNestedJSON_WrongTypeFlat(t *testing.T) {
+	// "active" is bool but payload sends an object
+	data := []byte(`{"id": "123", "active": {"not": "a bool"}}`)
+
+	var result TestStruct
+	err := UnmarshalNestedJSON(data, &result)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "active")
+}
+
+func TestUnmarshalNestedJSON_WrongTypeNested(t *testing.T) {
+	// "properties.tags" is StringArray but payload sends a string
+	data := []byte(`{"id": "123", "properties": {"tags": "not-an-array"}}`)
+
+	var result TestStruct
+	err := UnmarshalNestedJSON(data, &result)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "properties.tags")
+}
+
 func TestUnmarshalNestedJSON_EmptyJSON(t *testing.T) {
 	data := []byte(`{}`)
 

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -36,14 +37,18 @@ func UnmarshalNestedJSON(data []byte, v interface{}) error {
 					var parent map[string]json.RawMessage
 					if err := json.Unmarshal(parentJSON, &parent); err == nil {
 						if childJSON, ok := parent[parts[1]]; ok {
-							json.Unmarshal(childJSON, field.Addr().Interface())
+							if err := json.Unmarshal(childJSON, field.Addr().Interface()); err != nil {
+								return fmt.Errorf("failed to unmarshal nested field %s: %w", jsonTag, err)
+							}
 						}
 					}
 				}
 			}
 		} else {
 			if rawValue, exists := raw[jsonTag]; exists {
-				json.Unmarshal(rawValue, field.Addr().Interface())
+				if err := json.Unmarshal(rawValue, field.Addr().Interface()); err != nil {
+					return fmt.Errorf("failed to unmarshal field %s: %w", jsonTag, err)
+				}
 			}
 		}
 	}

@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -92,7 +91,7 @@ func startGenericConsumer[T any](ctx context.Context, cache *Cache, config Consu
 
 func processRecord[T any](cache *Cache, record *kgo.Record, config ConsumerConfig[T]) {
 	var model T
-	if err := json.Unmarshal(record.Value, &model); err != nil {
+	if err := utils.UnmarshalNestedJSON(record.Value, &model); err != nil {
 		cache.logger.Error(
 			"Failed to unmarshal",
 			slog.String("model", config.ModelName),

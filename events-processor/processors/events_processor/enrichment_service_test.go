@@ -2,7 +2,6 @@ package events_processor
 
 import (
 	"context"
-	"log/slog"
 	"sort"
 	"testing"
 	"time"
@@ -29,10 +28,8 @@ func setupEnrichmentTestEnv(t *testing.T, useCache bool) *enrichmentTestEnv {
 
 	if useCache {
 		ctx := context.Background()
-		logger := slog.Default()
 		memCache, _ = cache.NewCache(cache.CacheConfig{
 			Context: ctx,
-			Logger:  logger,
 		})
 		dataStore = &CacheDataStore{cache: memCache, t: t}
 		cleanup = func() { memCache.Close() }

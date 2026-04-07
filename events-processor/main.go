@@ -67,7 +67,6 @@ func main() {
 	if os.Getenv(envUseMemoryCache) == "true" {
 		memCache, err = cache.NewCache(cache.CacheConfig{
 			Context:             ctx,
-			Logger:              logger,
 			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
 		})
 		if err != nil {
@@ -76,7 +75,9 @@ func main() {
 		defer memCache.Close()
 
 		memCache.LoadInitialSnapshot()
-		memCache.ConsumeChanges()
+		if err := memCache.ConsumeChanges(); err != nil {
+			utils.LogAndPanic(err, "Error starting cache consumers")
+		}
 	}
 
 	// start processing events & loop forever

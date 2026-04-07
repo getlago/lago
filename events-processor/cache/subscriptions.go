@@ -21,8 +21,18 @@ func (c *Cache) buildSubscriptionKey(organizationID, externalID, ID string) stri
 	return fmt.Sprintf("%s:%s:%s:%s", subscriptionPrefix, organizationID, externalID, ID)
 }
 
+func (c *Cache) subscriptionKey(sub *models.Subscription) (string, error) {
+	if sub.OrganizationID == nil {
+		return "", fmt.Errorf("subscription %s has nil OrganizationID", sub.ID)
+	}
+	return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID), nil
+}
+
 func (c *Cache) SetSubscription(sub *models.Subscription) utils.Result[bool] {
-	key := c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
+	key, err := c.subscriptionKey(sub)
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
 	return setJSON(c, key, sub)
 }
 
@@ -100,7 +110,10 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 // Since we want to keep terminated subscriptions to permit grace period events backfill
 // we update the cache entry with a 1 month TTL
 func (c *Cache) DeleteSubscription(sub *models.Subscription) utils.Result[bool] {
-	key := c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
+	key, err := c.subscriptionKey(sub)
+	if err != nil {
+		return utils.FailedBoolResult(err)
+	}
 	ttl := 60 * 24 * time.Hour
 	return deleteWithTTL(c, key, sub, ttl)
 }
@@ -117,7 +130,12 @@ func (c *Cache) LoadSubscriptionsSnapshot(db *gorm.DB) utils.Result[int] {
 			return res.Value(), nil
 		},
 		func(sub *models.Subscription) string {
-			return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
+			key, err := c.subscriptionKey(sub)
+			if err != nil {
+				c.logger.Error("Skipping subscription in snapshot", slog.String("error", err.Error()))
+				return ""
+			}
+			return key
 		},
 	)
 }
@@ -130,7 +148,8 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 			return sub.TerminatedAt.Valid
 		},
 		GetKey: func(sub *models.Subscription) string {
-			return c.buildSubscriptionKey(*sub.OrganizationID, sub.ExternalID, sub.ID)
+			key, _ := c.subscriptionKey(sub)
+			return key
 		},
 		GetID: func(sub *models.Subscription) string {
 			return sub.ID
@@ -139,6 +158,9 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 			return sub.UpdatedAt.Time.UnixMilli()
 		},
 		GetCached: func(sub *models.Subscription) utils.Result[*models.Subscription] {
+			if sub.OrganizationID == nil {
+				return utils.FailedResult[*models.Subscription](fmt.Errorf("subscription %s has nil OrganizationID", sub.ID))
+			}
 			return c.GetSubscription(*sub.OrganizationID, sub.ExternalID, sub.ID)
 		},
 		SetCache: func(sub *models.Subscription) utils.Result[bool] {

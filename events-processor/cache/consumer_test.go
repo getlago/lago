@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
@@ -25,7 +24,6 @@ type testModel struct {
 func setupTestCache(t *testing.T) *Cache {
 	cache, err := NewCache(CacheConfig{
 		Context: context.Background(),
-		Logger:  slog.Default(),
 	})
 	require.NoError(t, err)
 
@@ -248,6 +246,49 @@ func TestProcessRecord_Delete_NotInCache(t *testing.T) {
 	record := createTestRecord(t, deleteModel)
 
 	processRecord(cache, record, config)
+}
+
+type testModelWithNestedJSON struct {
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	PricingGroupKeys utils.StringArray `json:"properties.pricing_group_keys"`
+	UpdatedAt        int64             `json:"updated_at"`
+	DeletedAt        bool              `json:"deleted_at"`
+}
+
+func TestProcessRecord_NestedJSON(t *testing.T) {
+	cache := setupTestCache(t)
+
+	var capturedModel testModelWithNestedJSON
+	var capturedCalled bool
+	config := ConsumerConfig[testModelWithNestedJSON]{
+		ModelName:    "test_model",
+		IsDeleted:    func(m *testModelWithNestedJSON) bool { return m.DeletedAt },
+		GetKey:       func(m *testModelWithNestedJSON) string { return "test:" + m.ID },
+		GetID:        func(m *testModelWithNestedJSON) string { return m.ID },
+		GetUpdatedAt: func(m *testModelWithNestedJSON) int64 { return m.UpdatedAt },
+		GetCached: func(m *testModelWithNestedJSON) utils.Result[*testModelWithNestedJSON] {
+			return utils.FailedResult[*testModelWithNestedJSON](errors.New("not found")).NonRetryable()
+		},
+		SetCache: func(m *testModelWithNestedJSON) utils.Result[bool] {
+			capturedModel = *m
+			capturedCalled = true
+			return utils.SuccessResult(true)
+		},
+	}
+
+	// Simulate a Debezium CDC payload where pricing_group_keys is nested inside properties
+	record := &kgo.Record{
+		Value: []byte(`{"id":"charge-1","name":"Standard","properties":{"pricing_group_keys":["region","tier"]},"updated_at":1700000000}`),
+		Topic: "test_topic",
+	}
+
+	processRecord(cache, record, config)
+
+	require.True(t, capturedCalled, "SetCache should have been called")
+	assert.Equal(t, "charge-1", capturedModel.ID)
+	assert.Equal(t, "Standard", capturedModel.Name)
+	assert.Equal(t, utils.StringArray{"region", "tier"}, capturedModel.PricingGroupKeys)
 }
 
 func TestProcessRecord_InvalidJSON(t *testing.T) {
