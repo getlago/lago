@@ -196,7 +196,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	defer chargeCacheStore.CacheStore.Close()
 
 	processor = events_processor.NewEventProcessor(
-		config.Logger,
 		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
 		events_processor.NewEventProducerService(
 			eventsEnrichedProducer,

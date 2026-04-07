@@ -203,7 +203,6 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 	}
 
 	processor := NewEventProcessor(
-		logger,
 		NewEventEnrichmentService(apiStore, memCache),
 		testProducers.producerService,
 		flagger,
