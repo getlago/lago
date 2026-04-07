@@ -18,12 +18,16 @@ func ToTime(timestamp any) Result[time.Time] {
 	switch timestamp := timestamp.(type) {
 	case string:
 		floatTimestamp, err := strconv.ParseFloat(timestamp, 64)
-		if err != nil {
-			return FailedResult[time.Time](err)
+		if err == nil {
+			seconds = int64(floatTimestamp)
+			nanoseconds = int64((floatTimestamp - float64(seconds)) * 1e9)
+		} else {
+			timeValue, timeError := time.Parse(time.RFC3339, timestamp)
+			if timeError != nil {
+				return FailedResult[time.Time](err)
+			}
+			return SuccessResult(timeValue)
 		}
-
-		seconds = int64(floatTimestamp)
-		nanoseconds = int64((floatTimestamp - float64(seconds)) * 1e9)
 
 	case int:
 		seconds = int64(timestamp)
@@ -50,10 +54,16 @@ func ToFloat64Timestamp(timeValue any) Result[float64] {
 	switch timestamp := timeValue.(type) {
 	case string:
 		floatTimestamp, err := strconv.ParseFloat(timestamp, 64)
-		if err != nil {
-			return FailedResult[float64](err)
+		if err == nil {
+			value = math.Trunc(floatTimestamp*1000) / 1000
+		} else {
+			timeValue, timeError := time.Parse(time.RFC3339, timestamp)
+
+			if timeError != nil {
+				return FailedResult[float64](err)
+			}
+			value = float64(timeValue.UnixMilli()) / 1e3
 		}
-		value = math.Trunc(floatTimestamp*1000) / 1000
 	case int:
 		value = float64(timestamp)
 	case int64:

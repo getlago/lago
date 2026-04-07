@@ -127,14 +127,14 @@ func (s *MockDataStore) SetFlatFilters(filters []*models.FlatFilter) {
 	columns := []string{
 		"organization_id", "billable_metric_code", "pay_in_advance", "plan_id",
 		"charge_id", "charge_updated_at", "charge_filter_id", "charge_filter_updated_at",
-		"filters", "pricing_group_keys",
+		"filters", "pricing_group_keys", "accepts_target_wallet",
 	}
 	rows := sqlmock.NewRows(columns)
 	for _, filter := range filters {
 		rows.AddRow(
 			filter.OrganizationID, filter.BillableMetricCode, filter.PayInAdvance, filter.PlanID,
 			filter.ChargeID, filter.ChargeUpdatedAt, filter.ChargeFilterID, filter.ChargeFilterUpdatedAt,
-			filter.Filters, filter.PricingGroupKeys,
+			filter.Filters, filter.PricingGroupKeys, filter.AcceptsTargetWallet,
 		)
 	}
 	s.mock.SQLMock.ExpectQuery(".* FROM \"flat_filters\".*").WillReturnRows(rows)
@@ -309,7 +309,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
 				ExternalSubscriptionID: "sub_id",
 				Code:                   "api_calls",
-				Timestamp:              "2025-03-06T12:00:00Z",
+				Timestamp:              "2025-03-06 12:00:00",
 				Source:                 "SQS",
 			}
 
@@ -328,7 +328,7 @@ func TestProcessEvent(t *testing.T) {
 			ctx := context.Background()
 			result := testEnv.EventProcessor.processEvent(ctx, &event)
 			assert.False(t, result.Success())
-			assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06T12:00:00Z\": invalid syntax", result.ErrorMsg())
+			assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06 12:00:00\": invalid syntax", result.ErrorMsg())
 			assert.Equal(t, "build_enriched_event", result.ErrorCode())
 			assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 		})

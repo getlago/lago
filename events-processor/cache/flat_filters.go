@@ -52,6 +52,7 @@ func (c *Cache) BuildFlatFilters(organizationID, billableMetricCode, planID stri
 				Filters:               nil,
 				PricingGroupKeys:      models.PricingGroupKeys(charge.PricingGroupKeys),
 				PayInAdvance:          charge.PayInAdvance,
+				AcceptsTargetWallet:   charge.AcceptsTargetWallet,
 			}
 			flatFilters = append(flatFilters, flatFilter)
 		} else {
@@ -93,6 +94,7 @@ func (c *Cache) BuildFlatFilters(organizationID, billableMetricCode, planID stri
 					Filters:               &filters,
 					PricingGroupKeys:      models.PricingGroupKeys(chargeFilter.PricingGroupKeys),
 					PayInAdvance:          charge.PayInAdvance,
+					AcceptsTargetWallet:   charge.AcceptsTargetWallet,
 				}
 				flatFilters = append(flatFilters, flatFilter)
 			}

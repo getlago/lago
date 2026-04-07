@@ -1,8 +1,6 @@
 package tests
 
 import (
-	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -27,9 +25,7 @@ func SetupMockStore(t *testing.T) (*MockedStore, func()) {
 		DriverName: "postgres",
 	})
 
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.Level(-4)}))
-
-	db, err := database.OpenConnection(logger, dialector)
+	db, err := database.OpenConnection(dialector)
 	if err != nil {
 		t.Fatalf("Failed to open gorm connection: %v", err)
 	}

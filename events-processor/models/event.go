@@ -8,6 +8,7 @@ import (
 )
 
 const HTTP_RUBY string = "http_ruby"
+const TARGET_WALLET_CODE string = "target_wallet_code"
 
 type Event struct {
 	OrganizationID          string           `json:"organization_id"`
@@ -51,6 +52,7 @@ type EnrichedEvent struct {
 	ChargeFilterID          *string           `json:"charge_filter_id"`
 	ChargeFilterUpdatedAt   *time.Time        `json:"charge_filter_updated_at"`
 	GroupedBy               map[string]string `json:"grouped_by"`
+	TargetWalletCode        *string           `json:"target_wallet_code"`
 }
 
 type FailedEvent struct {
