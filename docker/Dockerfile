@@ -1,5 +1,5 @@
 ARG NODE_VERSION=20
-ARG RUBY_VERSION=3.4.7
+ARG RUBY_VERSION=4.0.2
 
 # Front Build
 FROM node:$NODE_VERSION-alpine AS front_build
@@ -15,7 +15,7 @@ RUN apk add python3 build-base && \
 # API Build
 FROM ruby:$RUBY_VERSION-slim AS api_build
 
-ENV BUNDLER_VERSION='2.5.5'
+ENV BUNDLER_VERSION=4.0.4
 ENV PATH="$PATH:/root/.cargo/bin/"
 
 WORKDIR /app
@@ -27,10 +27,11 @@ RUN apt-get update && apt-get upgrade -y && \
 COPY ./api/Gemfile /app/Gemfile
 COPY ./api/Gemfile.lock /app/Gemfile.lock
 
-RUN gem install bundler --no-document -v '2.5.5' && \
+RUN gem install bundler --no-document -v $BUNDLER_VERSION && \
   gem install foreman && \
   bundle config build.nokogiri --use-system-libraries &&\
-  bundle install --jobs=3 --retry=3 --without development test
+  bundle config set without 'development test' && \
+  bundle install --jobs=3 --retry=3
 
 # Final Image
 FROM ruby:$RUBY_VERSION-slim
@@ -45,7 +46,7 @@ RUN apt-get update -y && \
   chmod a+r /etc/apt/keyrings/docker.asc && \
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   apt-get update && \
-  apt-get install nginx xz-utils git libpq-dev postgresql-17 redis-server docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y && \
+  apt-get install nginx xz-utils git libpq-dev postgresql-17 postgresql-17-partman redis-server docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y && \
   apt-get remove apt-transport-https -y
 
 COPY ./docker/nginx.conf /etc/nginx/sites-enabled/default

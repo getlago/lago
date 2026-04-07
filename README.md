@@ -73,6 +73,7 @@ Read more first-hand experiences from Qonto, Algolia, Pleo, Segment, or the 350+
 ## 📚 Documentation
 - **[Development Environment](./docs/dev_environment.md)**: Learn how to set up and run Lago locally for development
 - **[Architecture](./docs/architecture.md)**: Understand Lago's technical architecture and flows
+- **[Monitoring](./docs/monitoring.md)**: Prometheus metrics and alerting for Sidekiq and other components
 
 ## 🔔 Stay up to date
 Lago launched its v0.1 on June 2nd, 2022. Lots of new features are coming, and are generally released on a bi-weekly basis. Watch updates of this repository to be notified of future updates.
@@ -149,12 +150,12 @@ Your API Key can be found directly in the UI:
 ### Analytics and tracking
 Please note that Lago, by default, tracks basic actions performed on your self-hosted instance. If you do not disable tracking, you may receive specific communications or product updates. However, rest assured that Lago will not collect any personal information about your customers or financial information about your invoices.
 
-If you would like to know more about Lago's analytics or remove the entire tracking, please refer to [this page](https://doc.getlago.com/guide/self-hosted/tracking-analytics) for comprehensive information.
+If you would like to know more about Lago's analytics or remove the entire tracking, please refer to [this page](https://doc.getlago.com/guide/lago-self-hosted/tracking-analytics) for comprehensive information.
 
 ### Version, environment variables and components
 Docker images are always updated to the last stable version in the docker-compose.yml file. You can use a different tag if needed by checking the releases list.
 
-Lago uses the following environment variables to configure the components of the application. You can override them to customise your setup. Take a closer look are our [documentation](https://doc.getlago.com/docs/guide/self-hosting/docker#configuration).
+Lago uses the following environment variables to configure the components of the application. You can override them to customise your setup. Take a closer look are our [documentation](https://doc.getlago.com/guide/lago-self-hosted/docker#configuration).
 
 ## ☁️ Use our cloud-based product
 Contact our team at hello@getlago.com to get started with Lago Cloud. More information on [our website](https://www.getlago.com/pricing).

@@ -87,6 +87,7 @@ su -c "psql -tc \"SELECT 1 FROM pg_user WHERE usename = 'lago';\" | grep -q 1 ||
 cd ./api
 bundle exec rake db:create >> ${DATA_DIR}/db.log
 bundle exec rake db:migrate >> ${DATA_DIR}/db.log
+bundle exec rake roles:seed_predefined >> ${DATA_DIR}/db.log
 bundle exec rails signup:seed_organization >> ${DATA_DIR}/db.log
 rm -f ./tmp/pids/server.pid
 foreman start

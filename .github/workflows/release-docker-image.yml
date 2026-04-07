@@ -15,7 +15,7 @@ jobs:
       matrix:
         platform:
           - version: linux/amd64
-            runner: linux/amd64
+            runner: ubuntu-latest
           - version: linux/arm64
             runner: linux-arm64
     name: Build ${{ matrix.platform.version }} Image
@@ -79,7 +79,7 @@ jobs:
           rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
   merge:
     name: Merge Images
-    runs-on: lago-runner
+    runs-on: ubuntu-latest
     needs: [build-single-docker-image]
     steps:
       - name: Download Digests

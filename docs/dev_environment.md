@@ -2,7 +2,7 @@
 
 Welcome to the Lago development environment setup guide!
 
-This documentation is designed for contributors who want to work on Lago. If you're just looking to try Lago locally, please refer to the [Lago public documentation](https://doc.getlago.com/docs/guide/self-hosting/docker) for a simpler setup.
+This documentation is designed for contributors who want to work on Lago. If you're just looking to try Lago locally, please refer to the [Lago public documentation](https://doc.getlago.com/guide/lago-self-hosted/docker) for a simpler setup.
 
 ## Prerequisites
 
@@ -187,6 +187,23 @@ To get the full list of workers, run:
 
 ```shell
 lago config --services | grep 'worker'
+```
+
+### Running with Redis Sentinel
+
+By default, the app is configured to use a single Redis instance. However, the docker compose file also includes a Redis Sentinel setup for testing purposes.
+
+To use Redis Sentinel locally, you can enable it in your `.env.development` file:
+
+```shell
+LAGO_REDIS_SIDEKIQ_SENTINELS=redis-sentinel-1:26379, redis-sentinel-2:26379,redis-sentinel-3:26379
+LAGO_REDIS_SIDEKIQ_MASTER_NAME=master
+```
+
+Then, you can start the Sentinel services:
+
+```shell
+lago --profile redis-sentinel up -d
 ```
 
 ## Testing

@@ -4,13 +4,13 @@ volumes:
   lago_storage_data:
 
 x-postgres-image: &postgres-image
-  image: postgres:14-alpine
+  image: getlago/postgres-partman:15.0-alpine
 x-redis-image: &redis-image
-  image: redis:6-alpine
+  image: redis:7-alpine
 x-backend-image: &backend-image
-  image: getlago/api:v1.36.0
+  image: getlago/api:v1.45.1
 x-frontend-image: &frontend-image
-  image: getlago/front:v1.36.0
+  image: getlago/front:v1.45.1
 
 x-lago-api-url: &lago-api-url
   "LAGO_API_URL": ${LAGO_API_URL:-http://localhost:3000}
@@ -48,6 +48,7 @@ x-backend-environment: &backend-env
   "LAGO_DATA_API_BEARER_TOKEN": ${LAGO_DATA_API_BEARER_TOKEN:-}
   "LAGO_REDIS_CACHE_URL": redis://${LAGO_REDIS_CACHE_HOST:-redis}:${LAGO_REDIS_CACHE_PORT:-6379}
   "LAGO_REDIS_CACHE_PASSWORD": ${LAGO_REDIS_CACHE_PASSWORD}
+  "LAGO_REDIS_CABLE_URL": ${LAGO_REDIS_CABLE_URL:-}
   "LAGO_DISABLE_SEGMENT": ${LAGO_DISABLE_SEGMENT}
   "LAGO_DISABLE_WALLET_REFRESH": ${LAGO_DISABLE_WALLET_REFRESH}
   "LAGO_DISABLE_SIGNUP": ${LAGO_DISABLE_SIGNUP:-false}
@@ -68,6 +69,7 @@ x-backend-environment: &backend-env
   # - SIDEKIQ_BILLING=true
   # - SIDEKIQ_CLOCK=true
   # - SIDEKIQ_WEBHOOK=true
+  # - SIDEKIQ_AI_AGENT=true
 x-frontend-environment: &frontend-env
   "API_URL": ${LAGO_API_URL:-http://localhost:3000}
   "APP_ENV": production
@@ -285,6 +287,18 @@ services:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.analytics.worker.sh"]
+  #  environment:
+  #    <<: [*backend-env, *lago-api-url]
+
+  # You can uncomment this if you want to use a dedicated Sidekiq worker for the AI Agent-related jobs.
+  #api-ai-agent-worker:
+  #  <<: *backend-image
+  #  container_name: api-ai-agent-worker
+  #  restart: unless-stopped
+  #  depends_on:
+  #    api:
+  #      condition: service_healthy
+  #  command: ["./scripts/start.ai_agent.worker.sh"]
   #  environment:
   #    <<: [*backend-env, *lago-api-url]
 

@@ -50,7 +50,6 @@ const (
 )
 
 type Config struct {
-	Logger         *slog.Logger
 	TracerProvider tracing.TracerProvider
 	Cache          *cache.Cache
 }
@@ -130,7 +129,7 @@ func initChargeCacheStore(ctx context.Context) (*models.ChargeCache, error) {
 func StartProcessingEvents(ctx context.Context, config *Config) {
 	serverBrokers := utils.ParseBrokersEnv(os.Getenv(envLagoKafkaBootstrapServers))
 	if len(serverBrokers) == 0 {
-		config.Logger.Error("brokers not found")
+		slog.Error("brokers not found")
 		panic("brokers not found")
 	}
 
@@ -182,7 +181,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		defer db.Close()
 	}
 
-	flagger, err := initFlagStore(ctx, "subscription_refreshed")
+	flagger, err := initFlagStore(ctx, "subscription_refreshed_v2")
 	if err != nil {
 		utils.LogAndPanic(err, "Error connecting to the flag store")
 	}
@@ -220,7 +219,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "Error starting the event consumer")
 	}
 
-	config.Logger.Info("Starting event consumer")
+	slog.Info("Starting event consumer")
 	cg.Start(ctx)
-	config.Logger.Info("Event processor stopped")
+	slog.Info("Event processor stopped")
 }
