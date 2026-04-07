@@ -44,7 +44,7 @@ func NewConnection(config DBConfig) (*DB, error) {
 		return nil, err
 	}
 	conn.pool = pool
-	return conn, err
+	return conn, nil
 }
 
 func OpenConnection(dialector gorm.Dialector) (*DB, error) {
