@@ -168,7 +168,7 @@ func NewOTelTracerProvider(opts TracerProviderOptions) *OTelTracerProvider {
 	)
 
 	if err != nil {
-		slog.Error("Could not set open telemetry resource: %v", slog.String("error", err.Error()))
+		slog.Error("Could not set open telemetry resource", slog.String("error", err.Error()))
 		return nil
 	}
 
