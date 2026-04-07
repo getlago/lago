@@ -30,7 +30,8 @@ COPY ./api/Gemfile.lock /app/Gemfile.lock
 RUN gem install bundler --no-document -v $BUNDLER_VERSION && \
   gem install foreman && \
   bundle config build.nokogiri --use-system-libraries &&\
-  bundle install --jobs=3 --retry=3 --without development test
+  bundle config set without 'development test' && \
+  bundle install --jobs=3 --retry=3
 
 # Final Image
 FROM ruby:$RUBY_VERSION-slim
