@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 	"gorm.io/gorm"
@@ -52,7 +53,11 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 	subscriptions := result.Value()
 	var validSubs []*models.Subscription
 	for _, sub := range subscriptions {
-		if sub.StartedAt.Valid && sub.StartedAt.Time.After(timestamp) {
+		if !sub.StartedAt.Valid {
+			continue
+		}
+
+		if sub.StartedAt.Time.After(timestamp) {
 			continue
 		}
 
@@ -97,7 +102,11 @@ func (c *Cache) SearchSubscriptions(organizationID string, externalID string, ti
 		}
 	}
 
-	if bestMatch != nil {
+	if bestMatch == nil {
+		err := badger.ErrKeyNotFound
+		return utils.FailedResult[*models.Subscription](err).
+			NonCapturable().NonRetryable()
+	} else {
 		c.logger.Debug(
 			"search subscription result",
 			slog.String("subscription external id: ", bestMatch.ExternalID),

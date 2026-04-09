@@ -93,7 +93,7 @@ func StreamRows[T any](db *gorm.DB, config StreamQueryConfig, callback func(T) e
 }
 
 func GetAllWithStreaming[T any](db *gorm.DB, config StreamQueryConfig) utils.Result[[]T] {
-	items := make([]T, 0, 100000)
+	items := make([]T, 0, 10000)
 	logger := slog.Default()
 
 	_, err := StreamRows(db, config, func(item T) error {

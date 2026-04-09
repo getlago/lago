@@ -246,6 +246,9 @@ func LoadSnapshot[T any](
 	for i := range list {
 		item := &list[i]
 		key := keyFn(item)
+		if key == "" {
+			continue
+		}
 		if res := setJSON(cache, key, item); res.Failure() {
 			cache.logger.Error(
 				"Failed to cache item",
