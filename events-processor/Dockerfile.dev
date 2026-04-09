@@ -4,7 +4,7 @@ RUN git clone --tags https://github.com/getlago/lago-expression/
 WORKDIR /lago-expression/expression-go
 RUN git checkout v0.2.0 && cargo build --release
 
-FROM golang:1.24 AS go-build
+FROM golang:1.25 AS go-build
 
 WORKDIR /app
 
