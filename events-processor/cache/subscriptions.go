@@ -148,6 +148,7 @@ func (c *Cache) StartSubscriptionsConsumer(ctx context.Context) error {
 			return sub.TerminatedAt.Valid
 		},
 		GetKey: func(sub *models.Subscription) string {
+			// We swallow the error because a subscription should always have an organization_id
 			key, _ := c.subscriptionKey(sub)
 			return key
 		},

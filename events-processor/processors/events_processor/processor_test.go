@@ -161,6 +161,7 @@ type ProcessorTestEnv struct {
 	EventProcessor *EventProcessor
 	Producers      *testProducerService
 	FlagStore      *tests.MockFlagStore
+	CacheStore     *tests.MockCacheStore
 	DataStore      DataStore
 	Cleanup        func()
 }
@@ -203,6 +204,7 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 		EventProcessor: processor,
 		Producers:      testProducers,
 		FlagStore:      &flagStore,
+		CacheStore:     chargeCache.(*tests.MockCacheStore),
 		DataStore:      dataStore,
 		Cleanup:        cleanup,
 	}
@@ -664,6 +666,81 @@ func TestProcessEvent(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
 			assert.Equal(t, 0, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+		})
+
+		t.Run("When reprocess flag is set, only produces to enriched expanded topic", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, true)
+			defer testEnv.Cleanup()
+
+			properties := map[string]any{
+				"api_requests": "12.0",
+			}
+
+			event := models.Event{
+				OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Properties:             properties,
+				Source:                 models.HTTP_RUBY,
+				SourceMetadata: &models.SourceMetadata{
+					ApiPostProcess: true,
+					Reprocess:      true,
+				},
+			}
+
+			bm := models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  event.OrganizationID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeSum,
+				FieldName:       "api_requests",
+				Expression:      "",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			}
+			testEnv.DataStore.SetBillableMetric(&bm)
+
+			sub := models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan_id",
+			}
+			testEnv.DataStore.SetSubscription(&sub)
+
+			charge := &models.Charge{
+				ID:               "charge_id1",
+				OrganizationID:   event.OrganizationID,
+				PlanID:           "plan_id",
+				BillableMetricID: bm.ID,
+				UpdatedAt:        utils.NowNullTime(),
+				PayInAdvance:     true,
+			}
+			testEnv.DataStore.SetCharge(charge)
+
+			flatFilters := []*models.FlatFilter{
+				{
+					OrganizationID:     event.OrganizationID,
+					BillableMetricCode: event.Code,
+					PlanID:             "plan_id",
+					ChargeID:           "charge_id1",
+					ChargeUpdatedAt:    utils.NowNullTime().Time,
+					PayInAdvance:       true,
+				},
+			}
+			testEnv.DataStore.SetFlatFilters(flatFilters)
+
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+
+			assert.True(t, result.Success())
+			assert.Equal(t, "12.0", *result.Value().Value)
+
+			assert.Equal(t, 1, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.FlagStore.ExecutionCount)
+			assert.Equal(t, 0, testEnv.CacheStore.ExecutionCount)
 		})
 	}
 }

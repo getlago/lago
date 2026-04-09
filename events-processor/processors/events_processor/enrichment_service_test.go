@@ -740,6 +740,162 @@ func TestEnrichEvent(t *testing.T) {
 				assert.Equal(t, map[string]string{}, eventResult.GroupedBy)
 				assert.Nil(t, eventResult.TargetWalletCode)
 			})
+
+			t.Run("With a flat filter without charge filter ID and pricing_group_keys", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := uuid.New().String()
+				bmID := uuid.New().String()
+				extSubID := "sub_id"
+				bmCode := "test_metric"
+				planID := "plan_id"
+
+				properties := map[string]any{
+					"value":   "12.12",
+					"scheme":  "visa",
+					"country": "US",
+					"type":    "debit",
+				}
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: extSubID,
+					Code:                   bmCode,
+					Timestamp:              1741007009.0,
+					Properties:             properties,
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              bmID,
+					OrganizationID:  orgID,
+					Code:            bmCode,
+					AggregationType: models.AggregationTypeWeightedSum,
+					FieldName:       "api_requests",
+					Expression:      "round(event.properties.value)",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &orgID,
+					ExternalID:     extSubID,
+					PlanID:         planID,
+				}
+				testEnv.DataStore.SetSubscription(sub)
+
+				if mode.useCache {
+					charge := &models.Charge{
+						ID:               "charge_id1",
+						OrganizationID:   orgID,
+						BillableMetricID: bmID,
+						PlanID:           planID,
+						UpdatedAt:        utils.NowNullTime(),
+						PricingGroupKeys: []string{"country", "type"},
+					}
+					testEnv.DataStore.SetCharge(charge)
+				} else {
+					now := time.Now()
+					flatFilter := &models.FlatFilter{
+						OrganizationID:     orgID,
+						BillableMetricCode: bmCode,
+						PlanID:             planID,
+						ChargeID:           "charge_id1",
+						ChargeUpdatedAt:    now,
+						PricingGroupKeys:   []string{"country", "type"},
+					}
+					testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{flatFilter})
+				}
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+
+				eventResult := enrichResult.Value()[0]
+				assert.Equal(t, "12", *eventResult.Value)
+				assert.Equal(t, "charge_id1", *eventResult.ChargeID)
+				assert.Equal(t, map[string]string{"country": "US", "type": "debit"}, eventResult.GroupedBy)
+			})
+
+			t.Run("With a flat filter without charge filter ID and pricing_group_keys and event does not have group properties", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := uuid.New().String()
+				bmID := uuid.New().String()
+				extSubID := "sub_id"
+				bmCode := "test_metric"
+				planID := "plan_id"
+
+				properties := map[string]any{
+					"value":  "12.12",
+					"scheme": "visa",
+				}
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: extSubID,
+					Code:                   bmCode,
+					Timestamp:              1741007009.0,
+					Properties:             properties,
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              bmID,
+					OrganizationID:  orgID,
+					Code:            bmCode,
+					AggregationType: models.AggregationTypeWeightedSum,
+					FieldName:       "api_requests",
+					Expression:      "round(event.properties.value)",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &orgID,
+					ExternalID:     extSubID,
+					PlanID:         planID,
+				}
+				testEnv.DataStore.SetSubscription(sub)
+
+				if mode.useCache {
+					charge := &models.Charge{
+						ID:               "charge_id1",
+						OrganizationID:   orgID,
+						BillableMetricID: bmID,
+						PlanID:           planID,
+						UpdatedAt:        utils.NowNullTime(),
+						PricingGroupKeys: []string{"country", "type"},
+					}
+					testEnv.DataStore.SetCharge(charge)
+				} else {
+					now := time.Now()
+					flatFilter := &models.FlatFilter{
+						OrganizationID:     orgID,
+						BillableMetricCode: bmCode,
+						PlanID:             planID,
+						ChargeID:           "charge_id1",
+						ChargeUpdatedAt:    now,
+						PricingGroupKeys:   []string{"country", "type"},
+					}
+					testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{flatFilter})
+				}
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+
+				eventResult := enrichResult.Value()[0]
+				assert.Equal(t, "12", *eventResult.Value)
+				assert.Equal(t, "charge_id1", *eventResult.ChargeID)
+				assert.Equal(t, map[string]string{"country": "", "type": ""}, eventResult.GroupedBy)
+			})
 		})
 	}
 }
