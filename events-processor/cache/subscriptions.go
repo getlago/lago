@@ -114,7 +114,7 @@ func (c *Cache) DeleteSubscription(sub *models.Subscription) utils.Result[bool] 
 	if err != nil {
 		return utils.FailedBoolResult(err)
 	}
-	ttl := 60 * 24 * time.Hour
+	ttl := 30 * 24 * time.Hour
 	return deleteWithTTL(c, key, sub, ttl)
 }
 
