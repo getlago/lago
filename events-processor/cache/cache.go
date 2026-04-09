@@ -12,6 +12,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 // Cache wraps BadgerDB to provide an in-memory key-value store with JSON serialization
@@ -71,40 +72,38 @@ func (c *Cache) LoadInitialSnapshot() {
 	}
 	defer db.Close()
 
-	var wg sync.WaitGroup
-	wg.Add(6)
+	errGroup := errgroup.Group{}
+	defer errGroup.Wait()
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadBillableMetricsSnapshot(db.Connection)
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadSubscriptionsSnapshot(db.Connection)
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadChargesSnapshot(db.Connection)
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadBillableMetricFiltersSnapshot(db.Connection)
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadChargeFiltersSnapshot(db.Connection)
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
+	errGroup.Go(func() error {
 		c.LoadChargeFilterValuesSnapshot(db.Connection)
-	}()
-
-	wg.Wait()
+		return nil
+	})
 }
 
 func (c *Cache) ConsumeChanges() error {
