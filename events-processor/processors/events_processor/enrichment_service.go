@@ -55,10 +55,12 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 		subResult = s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
 	}
 
-	// TODO: Check if cache result IsCapturable when its needed
-	if subResult.Failure() && subResult.IsCapturable() {
-		// We want to keep processing the event even if the subscription is not found
-		return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
+	if subResult.Failure() {
+		if subResult.IsCapturable() {
+			return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
+		}
+
+		subResult = utils.SuccessResult[*models.Subscription](nil)
 	}
 
 	sub := subResult.Value()
