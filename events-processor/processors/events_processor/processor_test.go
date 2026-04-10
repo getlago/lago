@@ -270,6 +270,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
 				PlanID:         "plan123",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(sub)
 
@@ -392,6 +393,7 @@ func TestProcessEvent(t *testing.T) {
 				ID:             "sub123",
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(&sub)
 
@@ -437,6 +439,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
 				PlanID:         "plan_id",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(sub)
 
@@ -519,6 +522,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
 				PlanID:         "plan_id",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(&sub)
 
@@ -651,6 +655,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
 				PlanID:         "plan123",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(&sub)
 
@@ -706,6 +711,7 @@ func TestProcessEvent(t *testing.T) {
 				OrganizationID: &event.OrganizationID,
 				ExternalID:     event.ExternalSubscriptionID,
 				PlanID:         "plan_id",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(&sub)
 
