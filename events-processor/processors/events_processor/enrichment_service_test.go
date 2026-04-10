@@ -182,7 +182,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &event.OrganizationID,
 					ExternalID:     event.ExternalSubscriptionID,
 					PlanID:         "plan_id",
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{})
@@ -230,7 +230,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &event.OrganizationID,
 					ExternalID:     event.ExternalSubscriptionID,
 					PlanID:         "plan_id",
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -354,7 +354,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -465,7 +465,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -576,7 +576,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -689,7 +689,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -790,7 +790,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
@@ -868,7 +868,7 @@ func TestEnrichEvent(t *testing.T) {
 					OrganizationID: &orgID,
 					ExternalID:     extSubID,
 					PlanID:         planID,
-					StartedAt:      utils.NowNullTime(),
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 				}
 				testEnv.DataStore.SetSubscription(sub)
 
