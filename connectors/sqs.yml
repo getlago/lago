@@ -57,10 +57,6 @@ output_resources:
         id: "${SQS_KEY_ID}"
         secret: "${SQS_KEY_SECRET}"
 
-logger:
-  level: env("LOG_LEVEL").or("info")
-  format: json
-
 metrics:
   prometheus: {}
 
