@@ -47,6 +47,26 @@
 |KAFKA_PASSWORD|Redpanda Password|Yes|
 |KAFKA_TOPIC|Redpanda Topic to send events|Yes|
 
+## Kinesis Connector
+
+### Environment Variables
+
+|Environment Variable|Description|Required|
+|---|---|---|
+|KINESIS_STREAM|The name of the Kinesis stream to consume|Yes|
+|AWS_REGION|The AWS region for Kinesis and DynamoDB|Yes|
+|AWS_ROLE|The IAM role ARN to assume for accessing Kinesis|Yes|
+|AWS_ROLE_EXTERNAL_ID|The external ID for the assumed role|Yes|
+|DYNAMODB_TABLE|The DynamoDB table name used for checkpointing|Yes|
+|KAFKA_BROKERS|Redpanda Broker|Yes|
+|KAFKA_USER|Redpanda User|Yes|
+|KAFKA_PASSWORD|Redpanda Password|Yes|
+|KAFKA_TOPIC|Redpanda Topic to send events|Yes|
+|KAFKA_TLS|Enable TLS for Kafka connection, default: false|No|
+|KAFKA_BATCH_COUNT|Number of messages to batch before sending, default: 100|No|
+|KAFKA_BATCH_BYTE_SIZE|Maximum size in bytes for batching, default: 1000000 (1MB)|No|
+|KAFKA_BATCH_PERIOD|Time period for batching, default: 1s|No|
+
 ## HTTP Server
 
 ### Environment Variables
