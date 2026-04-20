@@ -12,8 +12,8 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
-const EXPIRATION_TIME = 15 * time.Second
-const CLICKHOUSE_MERGE_DELAY int64 = 15
+const EXPIRATION_TIME = 10 * time.Second
+const SUBSCRIPTION_BUCKET_DURATION int64 = 10
 
 type ApiStore struct {
 	db *database.DB
@@ -45,7 +45,7 @@ func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagS
 
 // Flag adds a subscription to the sorted set for delayed refresh.
 // The member key includes a time bucket (value|bucket) so that events within
-// the same CLICKHOUSE_MERGE_DELAY window share a member — ZADD overwrites the
+// the same SUBSCRIPTION_BUCKET_DURATION window share a member — ZADD overwrites the
 // score to the latest event, waiting after the last event in that window.
 // Once the window elapses, new events create a new member, ensuring the
 // previous one ages out and gets picked up by the consumer (no starvation).
@@ -53,7 +53,7 @@ func (store *FlagStore) Flag(value string) error {
 	now := time.Now().Unix()
 
 	// Calculate the bucket (time window) for the event
-	bucket := (now / CLICKHOUSE_MERGE_DELAY) * CLICKHOUSE_MERGE_DELAY
+	bucket := (now / SUBSCRIPTION_BUCKET_DURATION) * SUBSCRIPTION_BUCKET_DURATION
 
 	result := store.db.Client.ZAdd(store.context, store.name, goredis.Z{
 		Score:  float64(now),

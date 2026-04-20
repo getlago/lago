@@ -57,7 +57,7 @@ func TestFlag(t *testing.T) {
 		assert.InDelta(t, float64(time.Now().Unix()), score, 2)
 	})
 
-	t.Run("bucket follows CLICKHOUSE_MERGE_DELAY intervals", func(t *testing.T) {
+	t.Run("bucket follows SUBSCRIPTION_BUCKET_DURATION intervals", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
 		err := store.Flag("org1:sub1")
@@ -70,7 +70,7 @@ func TestFlag(t *testing.T) {
 		assert.Len(t, parts, 2)
 
 		now := time.Now().Unix()
-		expectedBucket := (now / CLICKHOUSE_MERGE_DELAY) * CLICKHOUSE_MERGE_DELAY
+		expectedBucket := (now / SUBSCRIPTION_BUCKET_DURATION) * SUBSCRIPTION_BUCKET_DURATION
 		assert.Equal(t, fmt.Sprintf("%d", expectedBucket), parts[1])
 	})
 
@@ -107,12 +107,12 @@ func TestFlag(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fast-forward miniredis past the merge delay window
-		s.FastForward(time.Duration(CLICKHOUSE_MERGE_DELAY+1) * time.Second)
+		s.FastForward(time.Duration(SUBSCRIPTION_BUCKET_DURATION+1) * time.Second)
 		// The bucket is computed from time.Now(), so we can't truly advance real time.
 		// Instead, we verify that if two different buckets are used, two members exist.
 		// Manually add a member with a different bucket to simulate the scenario.
 		now := time.Now().Unix()
-		differentBucket := ((now / CLICKHOUSE_MERGE_DELAY) + 1) * CLICKHOUSE_MERGE_DELAY
+		differentBucket := ((now / SUBSCRIPTION_BUCKET_DURATION) + 1) * SUBSCRIPTION_BUCKET_DURATION
 		s.ZAdd("test_flags", float64(now), fmt.Sprintf("org1:sub1|%d", differentBucket))
 
 		members, err := s.ZMembers("test_flags")
