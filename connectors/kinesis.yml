@@ -28,15 +28,15 @@ output:
 processor_resources:
   - label: lago_event_mapping
     mapping: |
-      root.organization_id = this.event.organization_id
-      root.external_subscription_id = this.event.external_subscription_id
-      root.transaction_id = this.event.transaction_id
-      root.code = this.event.code
-      root.timestamp = this.event.timestamp
-      root.properties = this.event.properties
+      root.organization_id = "${ORGANIZATION_ID}"
+      root.external_subscription_id = this.external_subscription_id
+      root.transaction_id = this.transaction_id
+      root.code = this.code
+      root.timestamp = this.timestamp
+      root.properties = this.properties
       root.ingested_at = timestamp_unix()
-      root.precise_total_amount_cents = if this.event.precise_total_amount_cents.type() == "number" {
-        this.event.precise_total_amount_cents
+      root.precise_total_amount_cents = if this.precise_total_amount_cents.type() == "number" {
+        this.precise_total_amount_cents
       } else {
         "0"
       }
@@ -48,15 +48,15 @@ output_resources:
       topic: "${KAFKA_TOPIC}"
       key: '${! json("organization_id") }-${! json("external_subscription_id") }'
       tls:
-        enabled: '${! env("KAFKA_TLS").or(false) }'
+        enabled: ${KAFKA_TLS:false}
       sasl:
         - mechanism: SCRAM-SHA-512
           username: "${KAFKA_USER}"
           password: "${KAFKA_PASSWORD}"
       batching:
-        count: '${! env("KAFKA_BATCH_COUNT").or(100) }'
-        byte_size: '${! env("KAFKA_BATCH_BYTE_SIZE").or(1000000) }' # 1MB default
-        period: '${! env("KAFKA_BATCH_PERIOD").or("1s") }'
+        count: ${KAFKA_BATCH_COUNT:100}
+        byte_size: ${KAFKA_BATCH_BYTE_SIZE:1000000} # 1MB default
+        period: ${KAFKA_BATCH_PERIOD:1s}
 
 metrics:
   prometheus: {}
