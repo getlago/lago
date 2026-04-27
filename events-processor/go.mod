@@ -10,7 +10,7 @@ require (
 	github.com/getlago/lago-expression/expression-go v0.1.4
 	github.com/getsentry/sentry-go v0.40.0
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.9.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/orandin/slog-gorm v1.4.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.17.1
 	github.com/redis/go-redis/v9 v9.17.1
