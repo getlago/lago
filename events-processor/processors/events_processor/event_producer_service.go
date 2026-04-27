@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"sort"
 	"time"
 
 	"github.com/getlago/lago/events-processor/config/kafka"
@@ -41,20 +40,6 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 }
 
 func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Context, event *models.EnrichedEvent) {
-	groupedBy := ""
-	groupKeys := make([]string, 0, len(event.GroupedBy))
-	for key := range event.GroupedBy {
-		groupKeys = append(groupKeys, key)
-	}
-	sort.Strings(groupKeys)
-
-	for _, key := range groupKeys {
-		if groupedBy != "" {
-			groupedBy += "|"
-		}
-		groupedBy += fmt.Sprintf("%s/%s", key, event.GroupedBy[key])
-	}
-
 	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
 	err := eps.produceEvent(context, event, msgKey, eps.enrichedExpendedProducer)
