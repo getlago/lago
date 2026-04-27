@@ -1,0 +1,62 @@
+input:
+  aws_kinesis:
+    streams: ["${KINESIS_STREAM}"]
+    region: "${AWS_REGION}"
+    dynamodb:
+      table: "${DYNAMODB_TABLE}"
+      create: true
+      billing_mode: PAY_PER_REQUEST
+      region: "${AWS_REGION}"
+    checkpoint_limit: 1024
+    auto_replay_nacks: true
+    commit_period: 1s
+    steal_grace_period: 1s
+    start_from_oldest: true
+    credentials:
+      role: "${AWS_ROLE}"
+      role_external_id: "${AWS_ROLE_EXTERNAL_ID}"
+
+pipeline:
+  processors:
+    - resource: lago_event_mapping
+
+output:
+  broker:
+    outputs:
+      - resource: lago_kafka_events_raw
+
+processor_resources:
+  - label: lago_event_mapping
+    mapping: |
+      root.organization_id = this.event.organization_id
+      root.external_subscription_id = this.event.external_subscription_id
+      root.transaction_id = this.event.transaction_id
+      root.code = this.event.code
+      root.timestamp = this.event.timestamp
+      root.properties = this.event.properties
+      root.ingested_at = timestamp_unix()
+      root.precise_total_amount_cents = if this.event.precise_total_amount_cents.type() == "number" {
+        this.event.precise_total_amount_cents
+      } else {
+        "0"
+      }
+
+output_resources:
+  - label: lago_kafka_events_raw
+    kafka_franz:
+      seed_brokers: ["${KAFKA_BROKERS}"]
+      topic: "${KAFKA_TOPIC}"
+      key: '${! json("organization_id") }-${! json("external_subscription_id") }'
+      tls:
+        enabled: '${! env("KAFKA_TLS").or(false) }'
+      sasl:
+        - mechanism: SCRAM-SHA-512
+          username: "${KAFKA_USER}"
+          password: "${KAFKA_PASSWORD}"
+      batching:
+        count: '${! env("KAFKA_BATCH_COUNT").or(100) }'
+        byte_size: '${! env("KAFKA_BATCH_BYTE_SIZE").or(1000000) }' # 1MB default
+        period: '${! env("KAFKA_BATCH_PERIOD").or("1s") }'
+
+metrics:
+  prometheus: {}
