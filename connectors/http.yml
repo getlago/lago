@@ -42,15 +42,15 @@ output_resources:
       topic: "${KAFKA_TOPIC}"
       key: '${! json("organization_id") }-${! json("external_subscription_id") }'
       tls:
-        enabled: '${! env("KAFKA_TLS").or(false) }'
+        enabled: ${KAFKA_TLS:false}
       sasl:
         - mechanism: SCRAM-SHA-512
           username: "${KAFKA_USER}"
           password: "${KAFKA_PASSWORD}"
       batching:
-        count: '${! env("KAFKA_BATCH_COUNT").or(100) }'
-        byte_size: '${! env("KAFKA_BATCH_BYTE_SIZE").or(1000000) }' # 1MB default
-        period: '${! env("KAFKA_BATCH_PERIOD").or("1s") }
+        count: ${KAFKA_BATCH_COUNT:100}
+        byte_size: ${KAFKA_BATCH_BYTE_SIZE:1000000} # 1MB default
+        period: ${KAFKA_BATCH_PERIOD:1s}
 
 metrics:
   prometheus: {}
