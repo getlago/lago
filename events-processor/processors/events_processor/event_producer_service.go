@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"sort"
 	"time"
 
 	"github.com/getlago/lago/events-processor/config/kafka"
@@ -30,7 +29,7 @@ func NewEventProducerService(enrichedProducer, enrichedExpendedProducer, inAdvan
 }
 
 func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, event *models.EnrichedEvent) {
-	msgKey := fmt.Sprintf("%s-%s-%s", event.OrganizationID, event.ExternalSubscriptionID, event.Code)
+	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
 	err := eps.produceEvent(context, event, msgKey, eps.enrichedProducer)
 
@@ -41,31 +40,7 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 }
 
 func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Context, event *models.EnrichedEvent) {
-	chargeID := ""
-	if event.ChargeID != nil {
-		chargeID = *event.ChargeID
-	}
-
-	chargeFilterID := ""
-	if event.ChargeFilterID != nil {
-		chargeFilterID = *event.ChargeFilterID
-	}
-
-	groupedBy := ""
-	groupKeys := make([]string, 0, len(event.GroupedBy))
-	for key := range event.GroupedBy {
-		groupKeys = append(groupKeys, key)
-	}
-	sort.Strings(groupKeys)
-
-	for _, key := range groupKeys {
-		if groupedBy != "" {
-			groupedBy += "|"
-		}
-		groupedBy += fmt.Sprintf("%s/%s", key, event.GroupedBy[key])
-	}
-
-	msgKey := fmt.Sprintf("%s-%s-%s-%s-%s-%s", event.OrganizationID, event.ExternalSubscriptionID, event.Code, chargeID, chargeFilterID, groupedBy)
+	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
 	err := eps.produceEvent(context, event, msgKey, eps.enrichedExpendedProducer)
 	if err != nil {
@@ -75,7 +50,7 @@ func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Co
 }
 
 func (eps *EventProducerService) ProduceChargedInAdvanceEvent(context context.Context, event *models.EnrichedEvent) {
-	msgKey := fmt.Sprintf("%s-%s-%s", event.OrganizationID, event.ExternalSubscriptionID, event.Code)
+	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
 	err := eps.produceEvent(context, event, msgKey, eps.inAdvanceProducer)
 
