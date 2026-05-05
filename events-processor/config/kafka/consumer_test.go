@@ -108,11 +108,13 @@ func TestFindMaxCommitableRecord(t *testing.T) {
 
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				result := findMaxCommitableRecord(test.processedRecords, test.records)
+				result, ok := findMaxCommitableRecord(test.processedRecords, test.records)
 
 				if test.expected == nil {
 					assert.Nil(t, result)
+					assert.False(t, ok)
 				} else {
+					assert.True(t, ok)
 					assert.NotNil(t, result)
 					assert.Equal(t, test.expected.Key, result.Key)
 					assert.Equal(t, test.expected.Offset, result.Offset)

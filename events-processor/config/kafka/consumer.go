@@ -91,7 +91,13 @@ func (pc *PartitionConsumer) processRecordsAndCommit(records []*kgo.Record) {
 
 	if len(processedRecords) != len(records) {
 		// Ensure we are not committing records that were not processed and can be re-consumed
-		record := findMaxCommitableRecord(processedRecords, records)
+		record, ok := findMaxCommitableRecord(processedRecords, records)
+		if !ok {
+			// No record in the batch is safe to commit (e.g. the first record failed).
+			// Skip the commit; records will be re-polled after the next rebalance.
+			pc.logger.Warn(fmt.Sprintf("No commitable record in batch, skipping commit. topic: %s partition: %d batch_size: %d processed: %d\n", pc.topic, pc.partition, len(records), len(processedRecords)))
+			return
+		}
 		commitableRecords = []*kgo.Record{record}
 	}
 
@@ -265,7 +271,11 @@ func (cg *ConsumerGroup) Start(ctx context.Context) {
 	cg.logger.Info("Consumer group shutdown is complete")
 }
 
-func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) *kgo.Record {
+// findMaxCommitableRecord returns the highest-offset processed record that is
+// strictly below the lowest-offset unprocessed record — i.e. the largest
+// commitable prefix of the batch. ok is false when no such record exists
+// (typically because the first record of the batch was not processed).
+func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Record) (*kgo.Record, bool) {
 	// Keep track of processed records
 	processedMap := make(map[string]bool)
 	for _, record := range processedRecords {
@@ -294,5 +304,5 @@ func findMaxCommitableRecord(processedRecords []*kgo.Record, records []*kgo.Reco
 		}
 	}
 
-	return maxRecord
+	return maxRecord, maxRecord != nil
 }
