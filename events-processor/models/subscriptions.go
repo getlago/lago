@@ -1,9 +1,11 @@
 package models
 
 import (
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -19,6 +21,8 @@ type Subscription struct {
 	TerminatedAt   utils.NullTime `gorm:"->" json:"terminated_at"`
 }
 
+var subscriptionSchema, _ = schema.Parse(&Subscription{}, &sync.Map{}, schema.NamingStrategy{})
+
 func (store *ApiStore) FetchSubscription(organizationID string, externalID string, timestamp time.Time) utils.Result[*Subscription] {
 	var sub Subscription
 
@@ -30,6 +34,7 @@ func (store *ApiStore) FetchSubscription(organizationID string, externalID strin
 	`
 	result := store.db.Connection.
 		Table("subscriptions").
+		Select(subscriptionSchema.DBNames).
 		Unscoped().
 		Where(conditions, organizationID, externalID, timestamp, timestamp).
 		Order("terminated_at DESC NULLS FIRST, started_at DESC").
