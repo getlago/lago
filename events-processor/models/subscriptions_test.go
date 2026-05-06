@@ -12,7 +12,7 @@ import (
 )
 
 var fetchSubscriptionQuery = regexp.QuoteMeta(`
-	SELECT *
+	SELECT "id","organization_id","external_id","plan_id","created_at","updated_at","started_at","terminated_at"
 	FROM "subscriptions"
 	WHERE subscriptions.organization_id = $1
 		AND subscriptions.external_id = $2
@@ -32,9 +32,9 @@ func TestFetchSubscription(t *testing.T) {
 		timestamp := time.Now()
 
 		// Define expected rows and columns
-		columns := []string{"id", "external_id", "plan_id", "created_at", "updated_at", "started_at", "terminated_at"}
+		columns := []string{"id", "organization_id", "external_id", "plan_id", "created_at", "updated_at", "started_at", "terminated_at"}
 		rows := sqlmock.NewRows(columns).
-			AddRow("sub123", externalID, "plan123", timestamp, timestamp, timestamp, timestamp)
+			AddRow("sub123", orgID, externalID, "plan123", timestamp, timestamp, timestamp, timestamp)
 
 		// Expect the query
 		mock.ExpectQuery(fetchSubscriptionQuery).
