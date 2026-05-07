@@ -61,11 +61,11 @@ Lago is the open-source billing platform for usage-based, subscription-based, an
 |---------|-------------|
 | **[Usage Metering](https://www.getlago.com/products/metering)** | Real-time event ingestion and aggregation for any pricing dimension |
 | **[Billing & Invoicing](https://www.getlago.com/products/invoicing)** | Automated invoice generation for subscriptions, usage, and hybrid plans |
-| **[Entitlements](https://www.getlago.com/products/entitlements)** | Feature access management tied directly to your billing plans |
-| **[Cash Collection](https://www.getlago.com/products/payments)** | Payment orchestration with dunning, retries, and multi-gateway support |
-| **[Revenue Analytics](https://www.getlago.com/products/analytics)** | Cross-stream visibility into MRR, usage trends, and revenue drivers |
-| **[Lago Embedded](https://www.getlago.com/products/embedded)** | White-label billing for platforms and marketplaces |
-| **[Lago AI](https://www.getlago.com/products/ai)** | AI-powered billing intelligence and MCP server for AI agents |
+| **[Entitlements](https://www.getlago.com/platform/entitlements)** | Feature access management tied directly to your billing plans |
+| **[Cash Collection](https://www.getlago.com/platform/cash-collection)** | Payment orchestration with dunning, retries, and multi-gateway support |
+| **[Revenue Analytics](https://www.getlago.com/platform/revenue-analytics)** | Cross-stream visibility into MRR, usage trends, and revenue drivers |
+| **[Lago Embedded](https://www.getlago.com/platform/embedded)** | White-label billing for platforms and marketplaces |
+| **[Lago AI](https://www.getlago.com/platform/ai)** | AI-powered billing intelligence and MCP server for AI agents |
 | **[Integrations](https://doc.getlago.com/integrations/overview)** | NetSuite, Xero, Salesforce, HubSpot, Avalara, AWS/Azure/GCP Marketplace, and more |
 
 ## Get Started
