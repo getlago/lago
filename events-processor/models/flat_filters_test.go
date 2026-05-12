@@ -11,7 +11,7 @@ import (
 )
 
 var fetchFiltersQuery = regexp.QuoteMeta(`
-	SELECT * FROM "flat_filters" WHERE plan_id = $1 AND billable_metric_code = $2`)
+	SELECT * FROM "flat_filters" WHERE organization_id = $1 AND plan_id = $2 AND billable_metric_code = $3`)
 
 func TestFetchFlatFilters(t *testing.T) {
 	t.Run("should return flat filters when found", func(t *testing.T) {
@@ -20,6 +20,7 @@ func TestFetchFlatFilters(t *testing.T) {
 		defer cleanup()
 
 		code := "api_calls"
+		organizationID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 		now := time.Now()
 
@@ -50,7 +51,7 @@ func TestFetchFlatFilters(t *testing.T) {
 		}
 		rows := sqlmock.NewRows(columns).
 			AddRow(
-				"1a901a90-1a90-1a90-1a90-1a901a901a90",
+				organizationID,
 				code,
 				planID,
 				"1a901a90-1a90-1a90-1a90-1a901a901a90",
@@ -65,10 +66,10 @@ func TestFetchFlatFilters(t *testing.T) {
 
 		// Expect the query
 		mock.ExpectQuery(fetchFiltersQuery).
-			WithArgs(planID, code).
+			WithArgs(organizationID, planID, code).
 			WillReturnRows(rows)
 
-		result := store.FetchFlatFilters(planID, code)
+		result := store.FetchFlatFilters(organizationID, planID, code)
 
 		// Assert
 		assert.True(t, result.Success())
@@ -92,6 +93,7 @@ func TestFetchFlatFilters(t *testing.T) {
 		defer cleanup()
 
 		code := "api_calls"
+		organizationID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 		planID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
 
 		// Define expected rows and columns
@@ -112,10 +114,10 @@ func TestFetchFlatFilters(t *testing.T) {
 
 		// Expect the query
 		mock.ExpectQuery(fetchFiltersQuery).
-			WithArgs(planID, code).
+			WithArgs(organizationID, planID, code).
 			WillReturnRows(rows)
 
-		result := store.FetchFlatFilters(planID, code)
+		result := store.FetchFlatFilters(organizationID, planID, code)
 
 		// Assert
 		assert.True(t, result.Success())
