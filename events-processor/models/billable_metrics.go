@@ -57,7 +57,13 @@ type BillableMetric struct {
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
 	var bm BillableMetric
-	result := store.db.Connection.First(&bm, "organization_id = ? AND code = ?", organizationID, code)
+	result := store.db.Connection.First(
+		&bm,
+		"organization_id = ? AND code = ? AND deleted_at IS NULL",
+		organizationID,
+		code,
+	)
+
 	if result.Error != nil {
 		return failedBillabmeMetricResult(result.Error)
 	}
