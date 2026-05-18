@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 type StringArray []string
@@ -52,21 +53,56 @@ func parsePostgresArray(s string) []string {
 		return []string{}
 	}
 
-	// Remove curly braces
-	s = strings.TrimPrefix(s, "{")
-	s = strings.TrimSuffix(s, "}")
+	if !strings.HasPrefix(s, "{") || !strings.HasSuffix(s, "}") {
+		return []string{strings.Trim(s, "\"")}
+	}
 
-	// Split by comma and clean up quotes
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
+	s = strings.TrimSuffix(strings.TrimPrefix(s, "{"), "}")
+	result := make([]string, 0)
+	var current strings.Builder
+	inQuotes := false
+	escaped := false
+	quoted := false
+	tokenStarted := false
 
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		part = strings.Trim(part, "\"")
-		if part != "" {
-			result = append(result, part)
+	appendValue := func() {
+		value := current.String()
+		if !quoted {
+			value = strings.TrimSpace(value)
+		}
+		if quoted || value != "" {
+			result = append(result, value)
+		}
+		current.Reset()
+		quoted = false
+		tokenStarted = false
+	}
+
+	for _, char := range s {
+		switch {
+		case escaped:
+			current.WriteRune(char)
+			escaped = false
+			tokenStarted = true
+		case char == '\\' && inQuotes:
+			escaped = true
+		case char == '"':
+			inQuotes = !inQuotes
+			quoted = true
+			tokenStarted = true
+		case char == ',' && !inQuotes:
+			appendValue()
+		case !inQuotes && quoted && unicode.IsSpace(char):
+			continue
+		case !inQuotes && !tokenStarted && unicode.IsSpace(char):
+			continue
+		default:
+			current.WriteRune(char)
+			tokenStarted = true
 		}
 	}
+
+	appendValue()
 
 	return result
 }
