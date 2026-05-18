@@ -136,7 +136,7 @@ func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.Enri
 	if s.memCache != nil {
 		filtersResult = s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
 	} else {
-		filtersResult = s.apiStore.FetchFlatFilters(enrichedEvent.PlanID, enrichedEvent.Code)
+		filtersResult = s.apiStore.FetchFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.PlanID, enrichedEvent.Code)
 	}
 	if filtersResult.Failure() {
 		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
