@@ -11,7 +11,9 @@ import (
 )
 
 var fetchFiltersQuery = regexp.QuoteMeta(`
-	SELECT * FROM "flat_filters" WHERE organization_id = $1 AND plan_id = $2 AND billable_metric_code = $3`)
+	SELECT "organization_id","billable_metric_code","plan_id","charge_id","charge_updated_at","charge_filter_id","charge_filter_updated_at","filters","pricing_group_keys","pay_in_advance","accepts_target_wallet"
+	FROM "flat_filters"
+	WHERE organization_id = $1 AND plan_id = $2 AND billable_metric_code = $3`)
 
 func TestFetchFlatFilters(t *testing.T) {
 	t.Run("should return flat filters when found", func(t *testing.T) {
