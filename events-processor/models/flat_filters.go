@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sync"
 	"time"
+
+	"gorm.io/gorm/schema"
 
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -97,16 +100,21 @@ type FlatFilter struct {
 	AcceptsTargetWallet   bool              `gorm:"type:boolean"`
 }
 
+var flatFilterSchema, _ = schema.Parse(&FlatFilter{}, &sync.Map{}, schema.NamingStrategy{})
+
 func (store *ApiStore) FetchFlatFilters(organizationID string, planID string, billableMetricCode string) utils.Result[[]*FlatFilter] {
 	var filters []*FlatFilter
 
-	result := store.db.Connection.Find(
-		&filters,
-		"organization_id = ? AND plan_id = ? AND billable_metric_code = ?",
-		organizationID,
-		planID,
-		billableMetricCode,
-	)
+	result := store.db.Connection.
+		Table("flat_filters").
+		Select(flatFilterSchema.DBNames).
+		Where(
+			"organization_id = ? AND plan_id = ? AND billable_metric_code = ?",
+			organizationID,
+			planID,
+			billableMetricCode,
+		).
+		Find(&filters)
 	if result.Error != nil {
 		return utils.FailedResult[[]*FlatFilter](result.Error)
 	}
