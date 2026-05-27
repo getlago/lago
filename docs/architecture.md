@@ -398,6 +398,23 @@ Lago uses three separate Redis instances for different purposes:
 - Also used directly for low-level caching operations throughout the application
 - Stores temporary data like wallet balances, computed values, and other cached information
 
+#### High Availability with Sentinel
+
+[Redis Sentinel](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/) is Redis's built-in monitoring and coordination layer for high availability. A small cluster of Sentinel processes continuously watches the Redis nodes, agrees by quorum when a master is unreachable, and promotes one of the existing replicas to be the new master. Clients connect through the Sentinels rather than to a fixed node, so the application keeps working after a master failover with no operator action.
+
+**Configuration**:
+- `LAGO_REDIS_CACHE_SENTINELS` - Comma-separated list of Sentinel addresses (`host:port,host:port,…`)
+- `LAGO_REDIS_CACHE_MASTER_NAME` - The `master_name` declared on the Sentinels. Optional — defaults to `master` when unset or blank.
+- `LAGO_REDIS_CACHE_PASSWORD` continues to authenticate against the data nodes
+
+**Purpose**: Avoid a single-point-of-failure on the Redis Cache instance. When the master node goes down, Sentinel detects the outage, elects a leader, and promotes a replica to master. The Rails cache reconnects to the new master without restart or manual reconfiguration.
+
+**Usage**:
+- The cache activates when **either** `LAGO_REDIS_CACHE_URL` or `LAGO_REDIS_CACHE_SENTINELS` is set, so a Sentinel-only deployment (no static URL) is supported — the master address is discovered dynamically from the Sentinels.
+- URL-only deployments are unaffected; the Sentinel variables are only consulted when set.
+- Implementation lives in `lib/lago/redis_config_builder.rb` (`#cache` method); environment configs in `config/environments/{development,staging,production}.rb` call into the builder.
+- To verify the active master at any time, ask any Sentinel directly: `redis-cli -h <sentinel-host> -p 26379 SENTINEL get-master-addr-by-name <master_name>` (use `master` if `LAGO_REDIS_CACHE_MASTER_NAME` is not set).
+
 ### 3. Redis Store (Event Processing)
 
 **Configuration**:
