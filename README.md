@@ -66,7 +66,7 @@ Lago is the open-source billing platform for usage-based, subscription-based, an
 | **[Revenue Analytics](https://www.getlago.com/platform/revenue-analytics)** | Cross-stream visibility into MRR, usage trends, and revenue drivers |
 | **[Lago Embedded](https://www.getlago.com/platform/embedded)** | White-label billing for platforms and marketplaces |
 | **[Lago AI](https://www.getlago.com/platform/ai)** | AI-powered billing intelligence and MCP server for AI agents |
-| **[Integrations](https://doc.getlago.com/integrations/overview)** | NetSuite, Xero, Salesforce, HubSpot, Avalara, AWS/Azure/GCP Marketplace, and more |
+| **[Integrations](https://doc.getlago.com/integrations/introduction)** | NetSuite, Xero, Salesforce, HubSpot, Avalara, AWS/Azure/GCP Marketplace, and more |
 
 ## Get Started
 
