@@ -61,6 +61,18 @@ func TestGetEnvAsBool(t *testing.T) {
 		assert.False(t, value)
 	})
 
+	t.Run("should return true when environment variable is set to '1'", func(t *testing.T) {
+		t.Setenv("TEST_BOOL_ENV", "1")
+		value := GetEnvAsBool("TEST_BOOL_ENV", false)
+		assert.True(t, value)
+	})
+
+	t.Run("should return false when environment variable is set to '0'", func(t *testing.T) {
+		t.Setenv("TEST_BOOL_ENV", "0")
+		value := GetEnvAsBool("TEST_BOOL_ENV", true)
+		assert.False(t, value)
+	})
+
 	t.Run("should return default value when environment variable is not set", func(t *testing.T) {
 		value := GetEnvAsBool("NON_EXISTENT_BOOL_ENV", true)
 		assert.True(t, value)
