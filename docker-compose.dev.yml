@@ -447,7 +447,7 @@ services:
       CONNECT_PLUGIN_PATH: "/opt/kafka/connect-plugins"
 
   clickhouse:
-    image: clickhouse/clickhouse-server:25.4-alpine
+    image: clickhouse/clickhouse-server:26.2-alpine
     container_name: lago_clickhouse_dev
     restart: unless-stopped
     hostname: clickhouse
