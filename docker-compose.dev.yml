@@ -57,7 +57,13 @@ services:
     image: redis:7-alpine
     container_name: lago_redis_dev
     restart: unless-stopped
-    command: ["sh", "-c", "redis-server $${REDIS_PASSWORD:+--requirepass \"$$REDIS_PASSWORD\"}"]
+    command:
+      [
+        "sh",
+        "-c",
+        "redis-server --enable-debug-command local
+          $${REDIS_PASSWORD:+--requirepass \"$$REDIS_PASSWORD\"}",
+      ]
     env_file:
       - path: ./.env.development.default
       - path: ./.env.development
