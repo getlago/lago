@@ -61,11 +61,21 @@ type EnrichedEvent struct {
 }
 
 type FailedEvent struct {
-	Event               Event     `json:"event"`
-	InitialErrorMessage string    `json:"initial_error_message"`
-	ErrorMessage        string    `json:"error_message"`
-	ErrorCode           string    `json:"error_code"`
-	FailedAt            time.Time `json:"failed_at"`
+	Event                  Event      `json:"event"`
+	InitialErrorMessage    string     `json:"initial_error_message"`
+	ErrorMessage           string     `json:"error_message"`
+	ErrorCode              string     `json:"error_code"`
+	Retryable              bool       `json:"retryable"`
+	Capturable             bool       `json:"capturable"`
+	EventIngestedAt        *time.Time `json:"event_ingested_at,omitempty"`
+	EventAgeSeconds        *int64     `json:"event_age_seconds,omitempty"`
+	RetryWindowSeconds     *int64     `json:"retry_window_seconds,omitempty"`
+	ExpiredRetryWindow     bool       `json:"expired_retry_window"`
+	OrganizationID         string     `json:"organization_id"`
+	ExternalSubscriptionID string     `json:"external_subscription_id"`
+	TransactionID          string     `json:"transaction_id"`
+	Code                   string     `json:"code"`
+	FailedAt               time.Time  `json:"failed_at"`
 }
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {

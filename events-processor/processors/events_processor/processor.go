@@ -22,6 +22,8 @@ type EventProcessor struct {
 	CacheService      *CacheService
 }
 
+const maxRetryableEventAge = 12 * time.Hour
+
 func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
 	return &EventProcessor{
 		EnrichmentService: enrichmentService,
@@ -73,7 +75,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 						utils.CaptureErrorResultWithExtra(result, "event", event)
 					}
 
-					if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
+					if result.IsRetryable() && !retryWindowExpired(event, time.Now()) {
 						// For retryable errors, we should avoid commiting the record,
 						// It will be consumed again and reprocessed
 						// Events older than 12 hours should also be pushed dead letter queue
@@ -96,6 +98,14 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 
 	g.Wait()
 	return processedRecords
+}
+
+func retryWindowExpired(event models.Event, now time.Time) bool {
+	ingestedAt := event.IngestedAt.Time()
+	if ingestedAt.IsZero() {
+		return true
+	}
+	return now.Sub(ingestedAt) >= maxRetryableEventAge
 }
 
 func (processor *EventProcessor) processEvent(ctx context.Context, event *models.Event) utils.Result[*models.EnrichedEvent] {

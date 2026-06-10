@@ -210,9 +210,11 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 		ExternalSubscriptionID: "sub_id",
 		Code:                   "api_calls",
 		TransactionID:          "transaction_id",
+		IngestedAt:             utils.CustomTime(time.Now().Add(-2 * time.Minute)),
 	}
 
 	result := utils.FailedResult[string](fmt.Errorf("Error Message"))
+	result = result.AddErrorDetails("sample_error", "Sample error message")
 	producerService.ProduceToDeadLetterQueue(context.Background(), event, result)
 
 	var producedEvent models.FailedEvent
@@ -223,7 +225,17 @@ func TestProduceToDeadLetterQueue(t *testing.T) {
 
 	assert.Equal(t, event, producedEvent.Event)
 	assert.Equal(t, "Error Message", producedEvent.InitialErrorMessage)
-	assert.Equal(t, "", producedEvent.ErrorCode)
-	assert.Equal(t, "", producedEvent.ErrorMessage)
+	assert.Equal(t, "sample_error", producedEvent.ErrorCode)
+	assert.Equal(t, "Sample error message", producedEvent.ErrorMessage)
+	assert.True(t, producedEvent.Retryable)
+	assert.True(t, producedEvent.Capturable)
+	assert.False(t, producedEvent.ExpiredRetryWindow)
+	assert.Equal(t, event.OrganizationID, producedEvent.OrganizationID)
+	assert.Equal(t, event.ExternalSubscriptionID, producedEvent.ExternalSubscriptionID)
+	assert.Equal(t, event.TransactionID, producedEvent.TransactionID)
+	assert.Equal(t, event.Code, producedEvent.Code)
+	assert.NotNil(t, producedEvent.EventIngestedAt)
+	assert.NotNil(t, producedEvent.EventAgeSeconds)
+	assert.NotNil(t, producedEvent.RetryWindowSeconds)
 	assert.WithinDuration(t, time.Now(), producedEvent.FailedAt, 5*time.Second)
 }
