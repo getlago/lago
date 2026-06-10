@@ -3,6 +3,7 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
 	"github.com/getlago/lago/events-processor/cache"
@@ -58,6 +59,19 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	if subResult.Failure() {
 		if subResult.IsCapturable() {
 			return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
+		}
+
+		if event.ExternalSubscriptionID != "" {
+			err := fmt.Errorf(
+				"no active subscription found for external_subscription_id %q at event timestamp %s",
+				event.ExternalSubscriptionID,
+				enrichedEvent.Time.Format(time.RFC3339Nano),
+			)
+			return failedMultiEventsResult(
+				utils.FailedResult[*models.Subscription](err).NonCapturable(),
+				"subscription_not_found",
+				"No active subscription matched the event external_subscription_id at the event timestamp",
+			)
 		}
 
 		subResult = utils.SuccessResult[*models.Subscription](nil)
