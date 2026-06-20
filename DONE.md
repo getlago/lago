@@ -49,6 +49,20 @@ and a gate for it so it can never escape again.
 
 ---
 
+## Planned integrations (future scope — not built yet; gate each when built)
+
+Per the ratchet rule, each integration ships with its own gate the day it's built.
+
+- [ ] **Middleware → Lago (inbound usage):** a new `connectors/<name>.yml` (Redpanda
+      Connect). Auto-covered by `connectors-gate.sh`; pinning gate covers its deps.
+- [ ] **Lago → accounting (outbound):** the accounting/ERP target is chosen by a
+      **simple option selection in the Gridiron ERP UI, defaulting to the in-house
+      Gridiron accounting module first**, with other targets (NetSuite, QuickBooks,
+      Xero, SAP, …) as secondary options. One config-driven selector, not a
+      hardcoded connector per vendor. Gate to add when built: a contract/smoke check
+      — "given usage event X, the **selected** accounting target receives entry Y,
+      exactly once."
+
 ### Ratchet log (add a line every time a bug slips through)
 
 - _2026-… — example: "smoke test added after an all-404 ASGI bug shipped green."_
