@@ -1,0 +1,107 @@
+# Default values for the Lago chart.
+# Every image tag is PINNED (no :latest) — overridable, but never floating.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Your billing domain. Used to build LAGO_API_URL / LAGO_FRONT_URL and Ingress.
+domain: billing.example.com
+
+image:
+  api:
+    repository: getlago/api
+    tag: "v1.27.1"
+    pullPolicy: IfNotPresent
+  front:
+    repository: getlago/front
+    tag: "v1.27.1"
+    pullPolicy: IfNotPresent
+  pdf:
+    repository: getlago/lago-gotenberg
+    tag: "8.15"
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Sensitive env (DATABASE_URL, REDIS_URL, SECRET_KEY_BASE, LAGO_RSA_PRIVATE_KEY,
+# LAGO_ENCRYPTION_*) come from a Secret you create out-of-band. See README.md.
+# Billing secrets must NEVER live in values.yaml.
+existingSecret: "lago-secrets"
+
+# Non-secret env shared by API + workers.
+env:
+  RAILS_ENV: "production"
+  RAILS_LOG_TO_STDOUT: "true"
+  LAGO_SIDEKIQ_WEB: "true"
+  LAGO_DISABLE_SIGNUP: "true"
+  LAGO_REDIS_CACHE_URL: "redis://lago-redis:6379"
+
+api:
+  replicas: 2
+  port: 3000
+  resources:
+    requests: { cpu: "250m", memory: "512Mi" }
+    limits: { cpu: "1", memory: "1Gi" }
+
+front:
+  replicas: 2
+  port: 80
+  resources:
+    requests: { cpu: "50m", memory: "64Mi" }
+    limits: { cpu: "250m", memory: "256Mi" }
+
+# Sidekiq worker roles — mirrors deploy/docker-compose.production.yml.
+workers:
+  - name: worker
+    cmd: ["./scripts/start.worker.sh"]
+    concurrency: 20
+    pool: 20
+    replicas: 1
+  - name: billing-worker
+    cmd: ["./scripts/start.billing.worker.sh"]
+    concurrency: 5
+    pool: 5
+    replicas: 1
+  - name: webhook-worker
+    cmd: ["./scripts/start.webhook.worker.sh"]
+    concurrency: 10
+    pool: 10
+    replicas: 1
+  - name: pdf-worker
+    cmd: ["./scripts/start.pdf.worker.sh"]
+    concurrency: 5
+    pool: 5
+    replicas: 1
+  - name: events-worker
+    cmd: ["./scripts/start.events.worker.sh"]
+    concurrency: 20
+    pool: 20
+    replicas: 1
+
+clock:
+  enabled: true
+  cmd: ["./scripts/start.clock.sh"]
+
+# In-cluster Gotenberg for PDF generation.
+pdf:
+  enabled: true
+  port: 3000
+  replicas: 1
+
+# Run `./scripts/migrate.sh` as a pre-upgrade Job before the new API rolls out.
+migrate:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  tls: true
+  tlsSecretName: "lago-tls"
+
+# Billing data belongs in managed Postgres/Redis; this chart expects them to be
+# external and reached via DATABASE_URL / REDIS_URL in the Secret above.
+postgresql:
+  external: true
+redis:
+  external: true

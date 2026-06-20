@@ -1,0 +1,27 @@
+# pins-allow.txt - tracked "floating version" debt.
+#
+# These are PRE-EXISTING unpinned versions that were already in the repo before
+# the pinning gate was added. They are allowlisted so the gate is green out of
+# the box (we ratchet, we don't block day one), but every one is printed as
+# [SKIP] tracked debt on each run, and STRICT=1 turns them back into failures.
+#
+# Goal: drive this file to empty. When you pin one, delete its line here.
+# Any NEW floating version (not listed below) always fails the gate.
+#
+# Format: one exact violation "key" per line (no surrounding quotes).
+
+# --- production / deploy (pin these before enterprise go-live) ---------------
+# Portainer admin UI in the production stack -> pin to a specific release.
+compose:deploy/docker-compose.production.yml:portainer/portainer-ce:latest
+# Quickstart helper in deploy.sh runs the all-in-one image at :latest.
+sh:deploy/deploy.sh:getlago/lago:latest
+# Build image pulls newest pnpm -> pin to match front's packageManager (e.g. pnpm@10.x).
+docker:docker/Dockerfile:@latest:pnpm@latest
+
+# --- local dev stack only (docker-compose.dev.yml; never deployed) -----------
+compose:docker-compose.dev.yml:docker.redpanda.com/redpandadata/connectors:latest
+compose:docker-compose.dev.yml:ankane/pghero:latest
+compose:docker-compose.dev.yml:mailhog/mailhog
+compose:docker-compose.dev.yml:front_dev
+compose:docker-compose.dev.yml:api_dev
+compose:docker-compose.dev.yml:events-processor_dev

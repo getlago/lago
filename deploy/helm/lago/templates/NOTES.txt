@@ -1,0 +1,16 @@
+Lago {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}".
+
+1. Make sure the secret "{{ .Values.existingSecret }}" exists in namespace
+   "{{ .Release.Namespace }}" with at least:
+     DATABASE_URL, REDIS_URL, SECRET_KEY_BASE, LAGO_RSA_PRIVATE_KEY,
+     LAGO_ENCRYPTION_PRIMARY_KEY, LAGO_ENCRYPTION_DETERMINISTIC_KEY,
+     LAGO_ENCRYPTION_KEY_DERIVATION_SALT
+
+2. Check rollout:
+     kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "lago.fullname" . }}-api
+
+3. App URL: https://{{ .Values.domain }}
+
+4. Verify the API is actually answering (the all-404 check):
+     kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "lago.fullname" . }}-api -- \
+       curl -fsS http://localhost:{{ .Values.api.port }}/health

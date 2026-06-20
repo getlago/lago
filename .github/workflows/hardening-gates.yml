@@ -1,0 +1,85 @@
+name: Hardening Gates
+
+# The outer loop / bouncer: every PR must pass the gates in STRICT mode before
+# it can merge. STRICT means a skipped check counts as a failure, so a green here
+# is a real green - no check was quietly missing. See HARDENING.md.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# Pinned tool versions (no floating - same rule the pins gate enforces).
+env:
+  GO_VERSION: "1.25.0"
+  LAGO_EXPRESSION_REF: "v0.2.0"
+  HELM_VERSION: "v3.16.2"
+  HADOLINT_VERSION: "2.12.0"
+  GOLANGCI_LINT_VERSION: "2.5.0"
+  RUBY_VERSION: "3.3.6"
+  STRICT: "1"
+  # Lint the connector configs for real via the pinned Redpanda Connect image.
+  CONNECTORS_DOCKER_LINT: "1"
+
+jobs:
+  gates:
+    name: STRICT verify.sh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Go events-processor needs the lago-expression Rust shared lib -------
+      - name: Checkout lago-expression
+        uses: actions/checkout@v4
+        with:
+          repository: getlago/lago-expression
+          path: lago-expression
+          ref: ${{ env.LAGO_EXPRESSION_REF }}
+
+      - name: Build lago-expression (CGO shared lib)
+        working-directory: ./lago-expression
+        run: cargo build --release
+
+      - name: Install libexpression_go.so
+        working-directory: ./lago-expression
+        run: |
+          sudo cp ./target/release/libexpression_go.so /usr/local/lib/libexpression_go.so
+          sudo ldconfig
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install golangci-lint (pinned)
+        run: |
+          curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz" \
+            | sudo tar -xz --strip-components=1 -C /usr/local/bin "golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint"
+          golangci-lint --version
+
+      # --- Deploy gate tools ---------------------------------------------------
+      - name: Set up Ruby + Kamal 2.11.0 (from Gemfile)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Set up Helm (pinned)
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      # --- Lint tools ----------------------------------------------------------
+      - name: Install hadolint + shellcheck + jq (pinned hadolint)
+        run: |
+          sudo curl -sSfL "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64" -o /usr/local/bin/hadolint
+          sudo chmod +x /usr/local/bin/hadolint
+          sudo apt-get update && sudo apt-get install -y shellcheck jq
+
+      # --- The judge -----------------------------------------------------------
+      - name: Run all gates (STRICT)
+        run: ./repo-gates/verify.sh

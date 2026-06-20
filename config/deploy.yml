@@ -1,0 +1,169 @@
+# Kamal 2.11.0 deployment for Lago (metering & billing).
+# Docs: https://kamal-deploy.org  -  Schema validated by ./repo-gates/deploy-check.sh
+#
+# ────────────────────────────────────────────────────────────────────────────
+# BEFORE YOUR FIRST DEPLOY, fill in the <PLACEHOLDERS> below and create
+# .kamal/secrets (copy from .kamal/secrets.example). Nothing secret lives here.
+#
+# IMAGE STRATEGY (pick one, then set `image:` + `builder` to match):
+#   (a) Mirror the official image into your registry, e.g.
+#         docker pull getlago/api:v1.27.1
+#         docker tag  getlago/api:v1.27.1 <YOUR_REGISTRY>/lago-api:v1.27.1
+#         docker push <YOUR_REGISTRY>/lago-api:v1.27.1
+#       and deploy a fixed version:  kamal deploy --version v1.27.1
+#   (b) Build your own image from docker/Dockerfile and let Kamal push it.
+# This scaffold assumes (a): a pinned, pre-built image. That's why `builder`
+# below is configured but you will typically deploy with --version <tag>.
+# ────────────────────────────────────────────────────────────────────────────
+
+service: lago
+
+# Your registry path for the API image (NO floating tag here — Kamal pins the
+# tag per-deploy via --version, e.g. `kamal deploy --version v1.27.1`).
+image: <YOUR_REGISTRY>/lago-api
+
+# Default tag used when you don't pass --version. Pin it to a known-good release.
+# Override at deploy time:  kamal deploy --version v1.27.1
+version: v1.27.1
+
+servers:
+  # The web/API role. This is the only role exposed through the proxy.
+  web:
+    hosts:
+      - <API_HOST_IP>
+    cmd: ./scripts/start.api.sh
+
+  # Background workers. Not web-facing; no proxy. Each runs a Sidekiq queue set,
+  # mirroring deploy/docker-compose.production.yml.
+  worker:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.worker.sh
+    env:
+      clear:
+        SIDEKIQ_CONCURRENCY: 20
+        DATABASE_POOL: 20
+
+  billing-worker:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.billing.worker.sh
+    env:
+      clear:
+        SIDEKIQ_CONCURRENCY: 5
+        DATABASE_POOL: 5
+
+  webhook-worker:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.webhook.worker.sh
+    env:
+      clear:
+        SIDEKIQ_CONCURRENCY: 10
+        DATABASE_POOL: 10
+
+  pdf-worker:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.pdf.worker.sh
+    env:
+      clear:
+        SIDEKIQ_CONCURRENCY: 5
+        DATABASE_POOL: 5
+
+  events-worker:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.events.worker.sh
+    env:
+      clear:
+        SIDEKIQ_CONCURRENCY: 20
+        DATABASE_POOL: 20
+
+  # The clock process (scheduler). Exactly one instance.
+  clock:
+    hosts:
+      - <WORKER_HOST_IP>
+    cmd: ./scripts/start.clock.sh
+
+# kamal-proxy: TLS termination + health-gated zero-downtime deploys.
+proxy:
+  ssl: true
+  host: <YOUR_BILLING_DOMAIN>          # e.g. billing.yourcompany.com
+  app_port: 3000
+  healthcheck:
+    path: /health                      # Lago API health endpoint (returns 200)
+    interval: 3
+    timeout: 60
+
+registry:
+  # Leave `server:` unset for Docker Hub, or set your private registry host.
+  server: <YOUR_REGISTRY_HOST>
+  username: <YOUR_REGISTRY_USERNAME>
+  password:
+    - KAMAL_REGISTRY_PASSWORD          # resolved from .kamal/secrets
+
+# Environment for the API + workers. Secrets are referenced by name and read
+# from .kamal/secrets at deploy time — never committed.
+env:
+  clear:
+    RAILS_ENV: production
+    RAILS_LOG_TO_STDOUT: "true"
+    LAGO_API_URL: https://<YOUR_BILLING_DOMAIN>/api
+    LAGO_FRONT_URL: https://<YOUR_BILLING_DOMAIN>
+    LAGO_PDF_URL: http://lago-pdf:3000
+    LAGO_REDIS_CACHE_URL: redis://lago-redis:6379
+    LAGO_SIDEKIQ_WEB: "true"
+    LAGO_DISABLE_SIGNUP: "true"
+  secret:
+    - DATABASE_URL
+    - REDIS_URL
+    - SECRET_KEY_BASE
+    - LAGO_RSA_PRIVATE_KEY
+    - LAGO_ENCRYPTION_PRIMARY_KEY
+    - LAGO_ENCRYPTION_DETERMINISTIC_KEY
+    - LAGO_ENCRYPTION_KEY_DERIVATION_SALT
+
+# Run the DB migration before booting the new web release (Lago ships migrate.sh).
+boot:
+  limit: 25%
+  wait: 2
+
+# Stateful dependencies as Kamal accessories. Pin every image (the pinning gate
+# and your future self both thank you). For real enterprise scale you may instead
+# point DATABASE_URL/REDIS_URL at managed Postgres/Redis and drop these.
+accessories:
+  postgres:
+    image: postgres:15-alpine
+    host: <DB_HOST_IP>
+    port: "5432"
+    env:
+      clear:
+        POSTGRES_USER: lago
+        POSTGRES_DB: lago
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    host: <REDIS_HOST_IP>
+    port: "6379"
+    directories:
+      - data:/data
+
+  pdf:
+    image: getlago/lago-gotenberg:8.15
+    host: <API_HOST_IP>
+    cmd: gotenberg --api-timeout=300s
+
+# Image build settings. Only used if you choose strategy (b) above.
+builder:
+  arch: amd64
+  context: .
+  dockerfile: docker/Dockerfile
+
+# Run migrations as a one-off before the new release takes traffic:
+#   kamal app exec --reuse "./scripts/migrate.sh"
+# (wire into your deploy hook in .kamal/hooks/ for full automation).

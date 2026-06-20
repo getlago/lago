@@ -10,3 +10,10 @@
 /extra/ssl/nginx*
 /traefik/certs/*
 /deploy/letsencrypt
+
+# Kamal deploy secrets (never commit; use .kamal/secrets.example as a template)
+/.kamal/secrets
+
+# Hardening loop review output
+/review-findings.json
+/review-findings.json.raw

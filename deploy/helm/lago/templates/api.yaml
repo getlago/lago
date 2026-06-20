@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lago.fullname" . }}-api
+  labels:
+    {{- include "lago.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lago.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "lago.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: api
+          image: {{ include "lago.image.api" . | quote }}
+          imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+          command: ["./scripts/start.api.sh"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "lago.fullname" . }}-env
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lago.fullname" . }}-api
+  labels:
+    {{- include "lago.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "lago.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api

@@ -1,0 +1,37 @@
+{{- if .Values.migrate.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "lago.fullname" . }}-migrate
+  labels:
+    {{- include "lago.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    # Run migrations BEFORE the new API/worker pods roll out.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        {{- include "lago.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "lago.image.api" . | quote }}
+          imagePullPolicy: {{ .Values.image.api.pullPolicy }}
+          command: ["./scripts/migrate.sh"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "lago.fullname" . }}-env
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+{{- end }}

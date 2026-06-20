@@ -1,0 +1,42 @@
+{{- /* One Deployment per Sidekiq worker role defined in .Values.workers */ -}}
+{{- range .Values.workers }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lago.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "lago.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "lago.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ .name }}
+  template:
+    metadata:
+      labels:
+        {{- include "lago.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ .name }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .name }}
+          image: {{ include "lago.image.api" $ | quote }}
+          imagePullPolicy: {{ $.Values.image.api.pullPolicy }}
+          command: {{ toJson .cmd }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "lago.fullname" $ }}-env
+            - secretRef:
+                name: {{ $.Values.existingSecret }}
+          env:
+            - name: SIDEKIQ_CONCURRENCY
+              value: {{ .concurrency | default 10 | quote }}
+            - name: DATABASE_POOL
+              value: {{ .pool | default 10 | quote }}
+{{- end }}

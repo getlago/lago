@@ -1,0 +1,51 @@
+{{- if .Values.pdf.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lago.fullname" . }}-pdf
+  labels:
+    {{- include "lago.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pdf
+spec:
+  replicas: {{ .Values.pdf.replicas }}
+  selector:
+    matchLabels:
+      {{- include "lago.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: pdf
+  template:
+    metadata:
+      labels:
+        {{- include "lago.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: pdf
+    spec:
+      containers:
+        - name: gotenberg
+          image: {{ include "lago.image.pdf" . | quote }}
+          imagePullPolicy: {{ .Values.image.pdf.pullPolicy }}
+          args:
+            - "gotenberg"
+            - "--api-timeout=300s"
+            - "--chromium-disable-javascript=true"
+            - "--chromium-ignore-certificate-errors=true"
+          ports:
+            - name: http
+              containerPort: {{ .Values.pdf.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "lago.fullname" . }}-pdf
+  labels:
+    {{- include "lago.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pdf
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.pdf.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "lago.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: pdf
+{{- end }}
