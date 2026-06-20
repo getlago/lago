@@ -141,8 +141,9 @@ while IFS= read -r sh; do
   while IFS= read -r hit; do
     [[ -z "${hit}" ]] && continue
     report "sh:${sh}:${hit}" "${sh}: floating image '${hit}'"
-  done < <(grep -E '(docker run|docker pull)' "${sh}" 2>/dev/null \
-            | grep -oE '[A-Za-z0-9._/-]+:latest\b' | sort -u || true)
+  done < <(grep -vE '^[[:space:]]*#' "${sh}" 2>/dev/null \
+            | grep -E '(docker run|docker pull)' \
+            | grep -oE '[A-Za-z0-9][A-Za-z0-9._/-]*:latest\b' | sort -u || true)
 done < <(git_files '*.sh')
 
 finish "Version-pinning gate"
