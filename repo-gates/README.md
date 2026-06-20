@@ -23,6 +23,7 @@ the repo is production-ready. Nothing else gets to say "done." Start with the
 | `check-pins.sh` | No floating versions (`package.json`, Dockerfiles, compose, shell). |
 | `pins-allow.txt` | Tracked pre-existing pin debt. Drive it to empty. |
 | `go-gate.sh` | Go events-processor: fmt/vet/lint/build/test (CGO-aware; honest SKIP). |
+| `accounting-contract.sh` | Outbound accounting exactly-once contract (`integrations/accounting/`, pure Go). |
 | `connectors-gate.sh` | Redpanda Connect configs: structure + YAML + optional lint. |
 | `compose-gate.sh` | `docker compose config`, hadolint, shellcheck/`bash -n`. |
 | `deploy-check.sh` | Kamal **2.11.0** + Helm chart validation. |

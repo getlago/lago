@@ -3,8 +3,8 @@
 .DEFAULT_GOAL := help
 SHELL := /usr/bin/env bash
 
-.PHONY: help verify verify-strict pins go connectors compose deploy-check \
-        smoke harden review gate tools
+.PHONY: help verify verify-strict pins go accounting connectors compose \
+        deploy-check smoke harden review gate tools
 
 help: ## Show this help
 	@echo "Lago hardening loop - common commands:"
@@ -24,6 +24,9 @@ pins: ## Gate: no floating versions (package.json / images / @latest)
 
 go: ## Gate: Go events-processor (fmt/vet/lint/build/test)
 	@./repo-gates/go-gate.sh || [ $$? -eq 2 ]
+
+accounting: ## Gate: outbound accounting contract (exactly-once)
+	@./repo-gates/accounting-contract.sh || [ $$? -eq 2 ]
 
 connectors: ## Gate: Redpanda Connect connector configs
 	@./repo-gates/connectors-gate.sh || [ $$? -eq 2 ]

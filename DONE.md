@@ -55,13 +55,16 @@ Per the ratchet rule, each integration ships with its own gate the day it's buil
 
 - [ ] **Middleware → Lago (inbound usage):** a new `connectors/<name>.yml` (Redpanda
       Connect). Auto-covered by `connectors-gate.sh`; pinning gate covers its deps.
-- [ ] **Lago → accounting (outbound):** the accounting/ERP target is chosen by a
-      **simple option selection in the Gridiron ERP UI, defaulting to the in-house
-      Gridiron accounting module first**, with other targets (NetSuite, QuickBooks,
-      Xero, SAP, …) as secondary options. One config-driven selector, not a
-      hardcoded connector per vendor. Gate to add when built: a contract/smoke check
-      — "given usage event X, the **selected** accounting target receives entry Y,
-      exactly once."
+- [x] **Lago → accounting (outbound) — contract gate BUILT (gate-first).**
+      The exactly-once contract is implemented and enforced in
+      `integrations/accounting/` (`make accounting`): "given usage event X, the
+      **selected** accounting target receives entry Y, exactly once", proven under
+      concurrency and retry-after-failure. Target selection **defaults to the
+      in-house Gridiron module first**; external ERPs (NetSuite, QuickBooks, Xero,
+      SAP, …) are opt-in via one config-driven selector, not a connector per vendor.
+  - [ ] _Remaining:_ implement `AccountingTarget` for the real ERP + a durable
+        (Postgres/Redis) idempotency store, wire it to the ERP selector UI, and keep
+        `make accounting` green.
 
 ### Ratchet log (add a line every time a bug slips through)
 

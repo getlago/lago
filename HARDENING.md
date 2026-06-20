@@ -53,6 +53,7 @@ This is the Lago deploy repo. The gates are matched to what actually lives here:
 |---|---|
 | `pins`         | No floating versions. Every `package.json` dep, Docker image, and `@latest` install is pinned to an exact version. **(This is the "stop pulling latest" rule you asked for.)** |
 | `go`           | The Go **events-processor** is formatted, vets clean, builds, and its unit tests pass. |
+| `accounting`   | The outbound **accounting** exactly-once contract holds (`integrations/accounting/`) — given event X, the selected target books entry Y once. Pure Go, runs everywhere. |
 | `connectors`   | The Redpanda Connect configs (`connectors/*.yml`) are valid. |
 | `compose`      | Every `docker-compose*.yml` parses, Dockerfiles lint, shell scripts have no syntax errors. |
 | `deploy-check` | **Kamal is exactly 2.11.0**, `config/deploy.yml` is valid, and the **Helm chart** lints + templates. |
@@ -224,6 +225,7 @@ make verify         # run all gates (normal)
 make verify-strict  # run all gates (STRICT = the real verdict; CI uses this)
 make pins           # just the no-floating-versions gate
 make go             # just the Go events-processor gate
+make accounting     # just the outbound accounting exactly-once contract
 make deploy-check   # just the Kamal 2.11.0 + Helm gate
 make smoke          # live: does the API actually answer /health?
 make harden         # let Claude fix until green   (bills Anthropic)
