@@ -345,6 +345,7 @@ func TestProcessEvent(t *testing.T) {
 				ExternalSubscriptionID: "sub_id",
 				Code:                   "api_calls",
 				Timestamp:              1741007009,
+				Properties:             map[string]any{"api_requests": "12.0"},
 				Source:                 "SQS",
 			}
 

@@ -827,6 +827,153 @@ func TestEnrichEvent(t *testing.T) {
 				assert.Equal(t, map[string]string{"country": "US", "type": "debit"}, eventResult.GroupedBy)
 			})
 
+			t.Run("When the billable metric field is missing from properties", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := models.Event{
+					OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              "1741007009.123",
+					Properties:             map[string]any{},
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeUniqueCount,
+					FieldName:       "customer_id",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.False(t, enrichResult.Success())
+				assert.Equal(t, "missing_aggregation_property", enrichResult.ErrorCode())
+				assert.Contains(t, enrichResult.ErrorMessage(), "customer_id")
+				assert.False(t, enrichResult.IsRetryable())
+				assert.False(t, enrichResult.IsCapturable())
+			})
+
+			t.Run("When a numeric aggregation has a non-numeric field value", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := models.Event{
+					OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              "1741007009.123",
+					Properties:             map[string]any{"value": "abc"},
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeMax,
+					FieldName:       "value",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.False(t, enrichResult.Success())
+				assert.Equal(t, "missing_aggregation_property", enrichResult.ErrorCode())
+				assert.Contains(t, enrichResult.ErrorMessage(), "Non-numeric")
+				assert.Contains(t, enrichResult.ErrorMessage(), "value")
+			})
+
+			t.Run("When unique_count aggregation has a non-numeric value", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := uuid.New().String()
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              1741007009.0,
+					Properties:             map[string]any{"customer_id": "cust_abc"},
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  orgID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeUniqueCount,
+					FieldName:       "customer_id",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &orgID,
+					ExternalID:     event.ExternalSubscriptionID,
+					PlanID:         "plan_id",
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+				}
+				testEnv.DataStore.SetSubscription(sub)
+				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{})
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+				assert.Equal(t, "cust_abc", *enrichResult.Value()[0].Value)
+			})
+
+			t.Run("When source is http_ruby the field validation is skipped", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := uuid.New().String()
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              1741007009.0,
+					Properties:             map[string]any{},
+					Source:                 models.HTTP_RUBY,
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  orgID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeSum,
+					FieldName:       "value",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &orgID,
+					ExternalID:     event.ExternalSubscriptionID,
+					PlanID:         "plan_id",
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+				}
+				testEnv.DataStore.SetSubscription(sub)
+				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{})
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+				assert.Equal(t, "<nil>", *enrichResult.Value()[0].Value)
+			})
+
 			t.Run("With a flat filter without charge filter ID and pricing_group_keys and event does not have group properties", func(t *testing.T) {
 				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
 				defer testEnv.Cleanup()
