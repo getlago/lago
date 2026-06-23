@@ -22,9 +22,9 @@ service: lago
 # tag per-deploy via --version, e.g. `kamal deploy --version v1.27.1`).
 image: <YOUR_REGISTRY>/lago-api
 
-# Default tag used when you don't pass --version. Pin it to a known-good release.
-# Override at deploy time:  kamal deploy --version v1.27.1
-version: v1.27.1
+# Pin the release at deploy time (Kamal has no top-level `version:` key):
+#   kamal deploy --version v1.27.1
+# Without --version, Kamal defaults to the current git SHA.
 
 servers:
   # The web/API role. This is the only role exposed through the proxy.

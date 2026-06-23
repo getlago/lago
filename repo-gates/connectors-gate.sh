@@ -78,7 +78,15 @@ for cfg in "${configs[@]}"; do
     fi
     rm -f .lint.log
   elif [[ "${CONNECTORS_DOCKER_LINT:-0}" == "1" ]] && have docker; then
-    if docker run --rm -v "${DIR}:/cfg:ro" "${CONNECT_IMAGE}" lint "/cfg/$(basename "${cfg}")" >.lint.log 2>&1; then
+    # The configs interpolate ${ENV_VARS}; connect lint flags any without a
+    # default as "required". Provide placeholders for those so lint validates the
+    # config STRUCTURE, not the runtime environment.
+    env_args=()
+    while IFS= read -r v; do
+      [[ -z "${v}" ]] && continue
+      env_args+=( -e "${v}=placeholder" )
+    done < <(grep -oE '\$\{[A-Z_][A-Z0-9_]*\}' "${cfg}" | tr -d '${}' | sort -u)
+    if docker run --rm "${env_args[@]}" -v "${DIR}:/cfg:ro" "${CONNECT_IMAGE}" lint "/cfg/$(basename "${cfg}")" >.lint.log 2>&1; then
       pass "${name}: connect lint clean (docker)"
     else
       # distinguish a pull/network problem from a real lint failure

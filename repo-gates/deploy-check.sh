@@ -101,19 +101,27 @@ if [[ -f config/deploy.yml ]]; then
     fail "config/deploy.yml missing keys: ${missing[*]}"
   fi
 
-  # best-effort render
+  # Render check. `kamal config` resolves env.secret names from .kamal/secrets;
+  # supply a throwaway one (placeholders from the example) so it can fully render
+  # without real secrets. This is removed immediately and never committed.
   if [[ -n "${KAMAL_RUNNER}" ]]; then
+    tmp_secrets=0
+    if [[ ! -f .kamal/secrets && -f .kamal/secrets.example ]]; then
+      sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\1=placeholder/' .kamal/secrets.example > .kamal/secrets
+      tmp_secrets=1
+    fi
     if ${KAMAL_RUNNER} config >.kamal.log 2>&1; then
       pass "kamal config renders"
     else
-      if grep -qiE 'secret|password|ENV|destination|no such host|network' .kamal.log; then
-        skip "kamal config needs secrets/registry to fully render (expected locally)"
+      if grep -qiE 'no such host|network|registry|connection refused' .kamal.log; then
+        skip "kamal config needs registry/network to fully render"
       else
         fail "kamal config errored"
         note "$(tail -n 12 .kamal.log)"
       fi
     fi
     rm -f .kamal.log
+    (( tmp_secrets == 1 )) && rm -f .kamal/secrets
   fi
 else
   fail "config/deploy.yml missing"

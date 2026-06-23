@@ -23,11 +23,23 @@ env:
   STRICT: "1"
   # Lint the connector configs for real via the pinned Redpanda Connect image.
   CONNECTORS_DOCKER_LINT: "1"
+  # The events-processor DB test connects to DATABASE_URL (see the postgres
+  # service below), mirroring .github/workflows/events-processor-tests.yml.
+  DATABASE_URL: "postgres://lago:lago@localhost:5432/lago"
 
 jobs:
   gates:
     name: STRICT verify.sh
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: lago
+          POSTGRES_USER: lago
+          POSTGRES_PASSWORD: lago
     steps:
       - name: Checkout
         uses: actions/checkout@v4
