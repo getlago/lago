@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -99,19 +98,6 @@ func (n *NetSuiteTarget) configured() error {
 	return nil
 }
 
-// PostError describes a non-2xx response from NetSuite. Permanent==true means a
-// retry won't help (a 4xx other than 429); the caller can route to a dead-letter
-// queue instead of retrying forever.
-type PostError struct {
-	StatusCode int
-	Permanent  bool
-	Body       string
-}
-
-func (e *PostError) Error() string {
-	return fmt.Sprintf("netsuite: upsert failed with HTTP %d (permanent=%v): %s", e.StatusCode, e.Permanent, e.Body)
-}
-
 // Post upserts the entry into NetSuite by externalId (idempotent). The JSON body
 // is a minimal template — map it to your NetSuite record schema as needed; the
 // idempotency, auth, and transport are production-ready as written.
@@ -144,22 +130,7 @@ func (n *NetSuiteTarget) Post(ctx context.Context, entry AccountingEntry) error 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", n.authHeader(http.MethodPut, endpoint))
-
-	resp, err := n.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("netsuite: request: %w", err)
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
-	}
-	return &PostError{
-		StatusCode: resp.StatusCode,
-		Permanent:  resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests,
-		Body:       string(respBody),
-	}
+	return doJSONRequest("netsuite", n.client, req)
 }
 
 // authHeader builds an OAuth 1.0a Token-Based-Auth header (HMAC-SHA256), the

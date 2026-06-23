@@ -20,15 +20,18 @@ func sampleEvent(txID string) UsageEvent {
 	}
 }
 
-// The selector must default to the in-house Gridiron module.
-func TestSelectTarget_DefaultsToGridiron(t *testing.T) {
-	for _, name := range []string{"", "gridiron"} {
+// The selector must default to the in-house Bigcapital module.
+func TestSelectTarget_DefaultsToBigcapital(t *testing.T) {
+	if DefaultTarget != "bigcapital" {
+		t.Fatalf("DefaultTarget = %q, want bigcapital", DefaultTarget)
+	}
+	for _, name := range []string{"", "bigcapital"} {
 		tgt, err := SelectTarget(name)
 		if err != nil {
 			t.Fatalf("SelectTarget(%q) error: %v", name, err)
 		}
-		if tgt.Name() != DefaultTarget {
-			t.Fatalf("SelectTarget(%q) = %q, want default %q", name, tgt.Name(), DefaultTarget)
+		if tgt.Name() != "bigcapital" {
+			t.Fatalf("SelectTarget(%q) = %q, want bigcapital", name, tgt.Name())
 		}
 	}
 }
@@ -42,7 +45,7 @@ func TestSelectTarget_UnknownErrors(t *testing.T) {
 
 // One usage event books exactly one accounting entry.
 func TestDispatch_PostsExactlyOneEntry(t *testing.T) {
-	g := NewGridironAccounting()
+	g := NewMemoryLedger()
 	d := NewDispatcher(g, NewMemoryStore())
 
 	res, err := d.Dispatch(context.Background(), sampleEvent("txn_1"))
@@ -60,7 +63,7 @@ func TestDispatch_PostsExactlyOneEntry(t *testing.T) {
 // "given usage event X, the target receives entry Y, EXACTLY ONCE" - the same
 // event delivered twice books one entry.
 func TestDispatch_DuplicateEventBooksOnce(t *testing.T) {
-	g := NewGridironAccounting()
+	g := NewMemoryLedger()
 	d := NewDispatcher(g, NewMemoryStore())
 	ev := sampleEvent("txn_dup")
 
@@ -81,7 +84,7 @@ func TestDispatch_DuplicateEventBooksOnce(t *testing.T) {
 
 // Without a transaction id we refuse rather than risk a double-booking.
 func TestDispatch_MissingIdempotencyKey(t *testing.T) {
-	g := NewGridironAccounting()
+	g := NewMemoryLedger()
 	d := NewDispatcher(g, NewMemoryStore())
 
 	_, err := d.Dispatch(context.Background(), sampleEvent("   "))
@@ -95,7 +98,7 @@ func TestDispatch_MissingIdempotencyKey(t *testing.T) {
 
 // Exactly-once must hold even under concurrent redelivery of the same event.
 func TestDispatch_ConcurrentDuplicatesBookOnce(t *testing.T) {
-	g := NewGridironAccounting()
+	g := NewMemoryLedger()
 	d := NewDispatcher(g, NewMemoryStore())
 	ev := sampleEvent("txn_race")
 
@@ -118,7 +121,7 @@ func TestDispatch_ConcurrentDuplicatesBookOnce(t *testing.T) {
 // flakyTarget fails its first failFirst Post calls, then delegates to an
 // idempotent ledger. Models a transient accounting outage followed by retries.
 type flakyTarget struct {
-	inner     *GridironAccounting
+	inner     *MemoryLedger
 	mu        sync.Mutex
 	calls     int
 	failFirst int
@@ -139,7 +142,7 @@ func (f *flakyTarget) Post(ctx context.Context, e AccountingEntry) error {
 
 // A transient failure leaves nothing delivered; the retry books exactly once.
 func TestDispatch_RetryAfterFailureBooksOnce(t *testing.T) {
-	ledger := NewGridironAccounting()
+	ledger := NewMemoryLedger()
 	target := &flakyTarget{inner: ledger, failFirst: 1}
 	d := NewDispatcher(target, NewMemoryStore())
 	ev := sampleEvent("txn_retry")

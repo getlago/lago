@@ -45,7 +45,7 @@ func (f *fakeRedis) Exists(_ context.Context, key string) (bool, error) {
 
 // With a durable RedisStore swapped in for MemoryStore, exactly-once still holds.
 func TestRedisStore_DispatchExactlyOnce(t *testing.T) {
-	ledger := NewGridironAccounting()
+	ledger := NewMemoryLedger()
 	d := NewDispatcher(ledger, NewRedisStore(newFakeRedis(), "", 0))
 	ev := sampleEvent("txn_redis")
 
@@ -63,7 +63,7 @@ func TestRedisStore_DispatchExactlyOnce(t *testing.T) {
 }
 
 func TestRedisStore_ConcurrentExactlyOnce(t *testing.T) {
-	ledger := NewGridironAccounting()
+	ledger := NewMemoryLedger()
 	d := NewDispatcher(ledger, NewRedisStore(newFakeRedis(), "", time.Hour))
 	ev := sampleEvent("txn_redis_race")
 
@@ -85,7 +85,7 @@ func TestRedisStore_ConcurrentExactlyOnce(t *testing.T) {
 
 // If the store can't be reached, we must NOT deliver (unknown state).
 func TestRedisStore_SeenErrorPreventsDelivery(t *testing.T) {
-	ledger := NewGridironAccounting()
+	ledger := NewMemoryLedger()
 	fr := newFakeRedis()
 	fr.failExists = true
 	d := NewDispatcher(ledger, NewRedisStore(fr, "", 0))
@@ -101,7 +101,7 @@ func TestRedisStore_SeenErrorPreventsDelivery(t *testing.T) {
 // If recording fails AFTER a successful delivery, the entry is still booked once
 // and the error is surfaced (a retry is safe because the target is idempotent).
 func TestRedisStore_RecordErrorAfterDeliverySurfaces(t *testing.T) {
-	ledger := NewGridironAccounting()
+	ledger := NewMemoryLedger()
 	fr := newFakeRedis()
 	fr.failSetNX = true
 	d := NewDispatcher(ledger, NewRedisStore(fr, "", 0))

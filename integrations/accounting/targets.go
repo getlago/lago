@@ -8,18 +8,17 @@ import (
 )
 
 // DefaultTarget is selected when no target is specified. Product decision: the
-// outbound accounting selector in the Gridiron ERP defaults to the in-house
-// Gridiron module FIRST; external ERPs (NetSuite, QuickBooks, Xero, SAP, ...)
-// are opt-in secondary targets a user can switch to.
-const DefaultTarget = "gridiron"
+// outbound accounting selector defaults to the in-house Bigcapital module FIRST;
+// QuickBooks, Xero and NetSuite are opt-in alternatives a user can switch to.
+// Each target registers itself from its own file's init().
+const DefaultTarget = "bigcapital"
 
 var (
 	registryMu sync.RWMutex
 	registry   = map[string]func() AccountingTarget{}
 )
 
-// Register makes a target available for selection by name. External ERP adapters
-// call this from their init() once implemented.
+// Register makes a target available for selection by name.
 func Register(name string, factory func() AccountingTarget) {
 	registryMu.Lock()
 	defer registryMu.Unlock()
@@ -27,7 +26,7 @@ func Register(name string, factory func() AccountingTarget) {
 }
 
 // SelectTarget returns the target for name. An empty name selects DefaultTarget
-// (Gridiron). Unknown names error rather than silently falling back, so a typo
+// (Bigcapital). Unknown names error rather than silently falling back, so a typo
 // in the ERP selector can never misroute revenue to the wrong place.
 func SelectTarget(name string) (AccountingTarget, error) {
 	if name == "" {
@@ -43,7 +42,7 @@ func SelectTarget(name string) (AccountingTarget, error) {
 }
 
 // AvailableTargets lists registered target names, sorted. The Gridiron ERP UI
-// can render this as the selector's options (default first).
+// renders these as the selector's options (with DefaultTarget shown first).
 func AvailableTargets() []string {
 	registryMu.RLock()
 	defer registryMu.RUnlock()
@@ -55,44 +54,38 @@ func AvailableTargets() []string {
 	return names
 }
 
-func init() {
-	// The default in-house target is always available.
-	Register(DefaultTarget, func() AccountingTarget { return NewGridironAccounting() })
-	// External ERP adapters register themselves here when built, e.g.:
-	//   Register("netsuite", func() AccountingTarget { return NewNetSuite(cfg) })
-	//   Register("quickbooks", func() AccountingTarget { return NewQuickBooks(cfg) })
-}
-
-// GridironAccounting is the in-house default target. It is idempotent on the
-// entry idempotency key: posting the same key twice books it once. This is a
-// reference in-memory ledger; the real module persists entries to the ERP.
-type GridironAccounting struct {
+// MemoryLedger is an in-memory, idempotent AccountingTarget used as a reference
+// and in tests/dry-runs: it books entries and dedupes by IdempotencyKey so you
+// can assert exactly-once. It is intentionally NOT registered in the selector;
+// production routes to one of the real ERP targets.
+type MemoryLedger struct {
 	mu      sync.Mutex
+	name    string
 	entries map[string]AccountingEntry
 }
 
-// NewGridironAccounting returns an empty ledger.
-func NewGridironAccounting() *GridironAccounting {
-	return &GridironAccounting{entries: make(map[string]AccountingEntry)}
+// NewMemoryLedger returns an empty in-memory ledger.
+func NewMemoryLedger() *MemoryLedger {
+	return &MemoryLedger{name: "memory", entries: make(map[string]AccountingEntry)}
 }
 
 // Name identifies the target.
-func (g *GridironAccounting) Name() string { return DefaultTarget }
+func (m *MemoryLedger) Name() string { return m.name }
 
 // Post books an entry idempotently on its IdempotencyKey.
-func (g *GridironAccounting) Post(_ context.Context, entry AccountingEntry) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if _, exists := g.entries[entry.IdempotencyKey]; exists {
+func (m *MemoryLedger) Post(_ context.Context, entry AccountingEntry) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, exists := m.entries[entry.IdempotencyKey]; exists {
 		return nil // already booked; idempotent no-op
 	}
-	g.entries[entry.IdempotencyKey] = entry
+	m.entries[entry.IdempotencyKey] = entry
 	return nil
 }
 
 // Count returns the number of distinct booked entries (for assertions/metrics).
-func (g *GridironAccounting) Count() int {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return len(g.entries)
+func (m *MemoryLedger) Count() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.entries)
 }

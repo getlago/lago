@@ -55,20 +55,22 @@ Per the ratchet rule, each integration ships with its own gate the day it's buil
 
 - [ ] **Middleware → Lago (inbound usage):** a new `connectors/<name>.yml` (Redpanda
       Connect). Auto-covered by `connectors-gate.sh`; pinning gate covers its deps.
-- [x] **Lago → accounting (outbound) — contract gate BUILT (gate-first).**
-      The exactly-once contract is implemented and enforced in
-      `integrations/accounting/` (`make accounting`): "given usage event X, the
-      **selected** accounting target receives entry Y, exactly once", proven under
-      concurrency and retry-after-failure. Target selection **defaults to the
-      in-house Gridiron module first**; external ERPs (NetSuite, QuickBooks, Xero,
-      SAP, …) are opt-in via one config-driven selector, not a connector per vendor.
-  - [x] _Real target + durable store implemented:_ `netsuite.go` (NetSuite
-        SuiteTalk REST, OAuth1 TBA, idempotent via externalId upsert, registered
-        in the selector) and `redis_store.go` (durable Redis `IdempotencyStore`),
-        both validated offline (httptest + fake Redis) under `-race`. `make
-        accounting` green.
-  - [ ] _Remaining:_ point NetSuite config at the real account, back the store with
-        prod Redis/Postgres, and wire the target choice to the ERP selector UI.
+- [x] **Lago → accounting (outbound) — BUILT (gate-first, all four ERPs).**
+      The exactly-once contract is enforced in `integrations/accounting/`
+      (`make accounting`): "given usage event X, the **selected** accounting target
+      receives entry Y, exactly once", proven under concurrency and
+      retry-after-failure. One config-driven selector, **defaulting to the in-house
+      Bigcapital module first**.
+  - [x] _Four real targets implemented + validated offline (httptest sim) under
+        `-race`, each idempotent via its API's native mechanism:_ **Bigcapital**
+        (default; `Idempotency-Key` + reference), **QuickBooks** (`requestid`),
+        **Xero** (`Idempotency-Key` header), **NetSuite** (externalId upsert,
+        OAuth1 TBA). Shared `httptarget.go` for transport + error classification.
+  - [x] _Durable store:_ `redis_store.go` (Redis `IdempotencyStore`), validated
+        with a fake client; Postgres analog documented.
+  - [ ] _Remaining:_ point each target's `*_BASE_URL`/creds at the real tenant,
+        back the store with prod Redis/Postgres, and wire the target choice to the
+        ERP selector UI (`AvailableTargets()` provides the options).
 
 ### Ratchet log (add a line every time a bug slips through)
 
