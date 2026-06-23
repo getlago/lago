@@ -3,7 +3,7 @@
 .DEFAULT_GOAL := help
 SHELL := /usr/bin/env bash
 
-.PHONY: help verify verify-strict pins go accounting connectors compose \
+.PHONY: help verify verify-strict pins go accounting mcp connectors compose \
         deploy-check smoke harden review gate tools
 
 help: ## Show this help
@@ -27,6 +27,9 @@ go: ## Gate: Go events-processor (fmt/vet/lint/build/test)
 
 accounting: ## Gate: outbound accounting contract (exactly-once)
 	@./repo-gates/accounting-contract.sh || [ $$? -eq 2 ]
+
+mcp: ## Gate: read-only MCP server (agent tools, GET-only)
+	@./repo-gates/mcp-gate.sh || [ $$? -eq 2 ]
 
 connectors: ## Gate: Redpanda Connect connector configs
 	@./repo-gates/connectors-gate.sh || [ $$? -eq 2 ]

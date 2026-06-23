@@ -20,11 +20,12 @@ source "${HERE}/lib.sh"
 STRICT="${STRICT:-0}"
 
 # gate name -> script
-declare -a GATE_ORDER=(pins go accounting connectors compose deploy)
+declare -a GATE_ORDER=(pins go accounting mcp connectors compose deploy)
 declare -A GATE_SCRIPT=(
   [pins]="check-pins.sh"
   [go]="go-gate.sh"
   [accounting]="accounting-contract.sh"
+  [mcp]="mcp-gate.sh"
   [connectors]="connectors-gate.sh"
   [compose]="compose-gate.sh"
   [deploy]="deploy-check.sh"
@@ -33,6 +34,7 @@ declare -A GATE_DESC=(
   [pins]="Version pinning (no floating deps/images)"
   [go]="Go events-processor (fmt/vet/lint/build/test)"
   [accounting]="Accounting outbound contract (exactly-once)"
+  [mcp]="Read-only MCP server (agent tools, GET-only)"
   [connectors]="Redpanda Connect connector configs"
   [compose]="Compose / Dockerfile / shell"
   [deploy]="Kamal 2.11.0 + Helm deploy artifacts"

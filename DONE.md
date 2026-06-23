@@ -71,6 +71,12 @@ Per the ratchet rule, each integration ships with its own gate the day it's buil
   - [ ] _Remaining:_ point each target's `*_BASE_URL`/creds at the real tenant,
         back the store with prod Redis/Postgres, and wire the target choice to the
         ERP selector UI (`AvailableTargets()` provides the options).
+- [x] **Agentic ERP — read-only MCP server BUILT.** `integrations/mcp/`
+      (`make mcp`): a stdlib-only MCP server exposing 6 Lago billing read tools to
+      AI agents over stdio. **Read-only by construction** — a test fails if any
+      tool issues a non-GET request. Validated under `-race`.
+  - [ ] _Remaining (opt-in):_ action-taking tools behind their own contract gates
+        (idempotent, allowlisted) when you want "read + guarded writes".
 
 ### Ratchet log (add a line every time a bug slips through)
 
