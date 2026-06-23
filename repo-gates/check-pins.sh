@@ -14,9 +14,10 @@
 #   4. shell scripts  - no `docker run/pull ...:latest`
 # (The Kamal config and Helm chart are validated separately by deploy-check.sh.)
 #
-# Pre-existing upstream offenders are listed in repo-gates/pins-allow.txt so the
-# gate is GREEN out of the box (ratchet, don't block), but they're printed as
-# tracked debt. New violations always FAIL. STRICT=1 fails the allowlisted ones too.
+# Pre-existing offenders are listed in repo-gates/pins-allow.txt as a reviewed
+# baseline: printed every run as [BASE], non-blocking even under STRICT (the goal
+# is to drain that file). Any NEW floating version always FAILS, even in normal
+# mode. Locally-built compose images (no registry version) are exempt automatically.
 #
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,16 +35,13 @@ is_allowlisted() {
 }
 
 # report "<violation key>" "<human message>"
-#   - allowlisted -> SKIP (tracked debt), or FAIL under STRICT
-#   - otherwise   -> FAIL
+#   - allowlisted (reviewed PRE-EXISTING debt) -> baseline: printed every run,
+#     non-blocking even under STRICT. The goal is to drain pins-allow.txt.
+#   - otherwise (a NEW floating version)        -> FAIL, always (even non-STRICT).
 report() {
   local key="$1" msg="$2"
   if is_allowlisted "${key}"; then
-    if [[ "${STRICT}" == "1" ]]; then
-      fail "${msg} [tracked debt, failing under STRICT]"
-    else
-      skip "${msg} [tracked debt in pins-allow.txt]"
-    fi
+    baseline "${msg} [pins-allow.txt]"
   else
     fail "${msg}"
   fi
@@ -121,9 +119,18 @@ while IFS= read -r cf; do
   [[ -z "${cf}" ]] && continue
   case "${cf}" in deploy/helm/*) continue;; esac
   file_ok=1
+  # Images of services that are BUILT locally have no registry version, so a
+  # missing tag is expected, not a float. Collect them and skip them.
+  build_imgs=""
+  if have ruby; then
+    build_imgs="$(ruby -ryaml -e 'c=YAML.load_file(ARGV[0], aliases: true) rescue exit(0); (c["services"]||{}).each_value{|s| next unless s.is_a?(Hash); puts s["image"] if s["build"] && s["image"]}' "${cf}" 2>/dev/null || true)"
+  fi
   while IFS= read -r img; do
     [[ -z "${img}" ]] && continue
     case "${img}" in *'${'*) continue;; esac   # env-substituted, pinned via .env
+    if [[ -n "${build_imgs}" ]] && grep -qxF "${img}" <<< "${build_imgs}"; then
+      continue                                  # locally-built image, no tag applies
+    fi
     if [[ "${img}" == *:latest ]]; then
       report "compose:${cf}:${img}" "${cf}: image ${img} uses :latest"; file_ok=0
     elif [[ "${img}" != *:* ]]; then

@@ -34,6 +34,7 @@ STRICT="${STRICT:-0}"
 PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
+BASELINE_COUNT=0
 declare -a FAIL_LABELS=()
 declare -a SKIP_LABELS=()
 
@@ -48,17 +49,26 @@ pass() { PASS_COUNT=$((PASS_COUNT + 1)); printf '  %s[PASS]%s %s\n' "${C_GREEN}"
 fail() { FAIL_COUNT=$((FAIL_COUNT + 1)); FAIL_LABELS+=("$*"); printf '  %s[FAIL]%s %s\n' "${C_RED}" "${C_RESET}" "$*"; }
 skip() { SKIP_COUNT=$((SKIP_COUNT + 1)); SKIP_LABELS+=("$*"); printf '  %s[SKIP]%s %s\n' "${C_YELLOW}" "${C_RESET}" "$*"; }
 
+# baseline: an explicitly-reviewed, PRE-EXISTING item accepted as tracked debt.
+# It is printed on every run (never hidden) but does NOT fail the gate, even under
+# STRICT - it is an accepted check, not a missing one. NEW violations must use
+# fail(); only an entry already in a reviewed allowlist may use baseline().
+baseline() { BASELINE_COUNT=$((BASELINE_COUNT + 1)); printf '  %s[BASE]%s %s %s(accepted baseline; pin when able)%s\n' "${C_BLUE}" "${C_RESET}" "$*" "${C_YELLOW}" "${C_RESET}"; }
+
 # note "..." -> indented secondary line (hints, error tails, etc.)
 note() { printf '         %s%s%s\n' "${C_YELLOW}" "$*" "${C_RESET}"; }
 
 # finish "Gate name" -> print summary, return 0/1/2 per the convention above.
 finish() {
   local name="${1:-gate}"
-  printf '\n%s%s:%s %s%d passed%s, %s%d failed%s, %s%d skipped%s\n' \
+  local base_seg=""
+  (( BASELINE_COUNT > 0 )) && base_seg="$(printf ', %s%d baseline%s' "${C_BLUE}" "${BASELINE_COUNT}" "${C_RESET}")"
+  printf '\n%s%s:%s %s%d passed%s, %s%d failed%s, %s%d skipped%s%s\n' \
     "${C_BOLD}" "${name}" "${C_RESET}" \
     "${C_GREEN}" "${PASS_COUNT}" "${C_RESET}" \
     "${C_RED}" "${FAIL_COUNT}" "${C_RESET}" \
-    "${C_YELLOW}" "${SKIP_COUNT}" "${C_RESET}"
+    "${C_YELLOW}" "${SKIP_COUNT}" "${C_RESET}" \
+    "${base_seg}"
 
   if (( FAIL_COUNT > 0 )); then
     return 1

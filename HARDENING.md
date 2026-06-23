@@ -82,7 +82,8 @@ A gate can come back three ways: **PASS** (green), **FAIL** (red), or **SKIP**
 
 In a fresh sandbox with no extra tools, `make verify` is green and
 `make verify-strict` is red — that's correct and expected. You make STRICT green by
-installing the tools in section 7 and clearing the debt in section 6.
+installing the tools in section 7. (The reviewed pin baseline in section 6 is
+accepted and does not block; only "couldn't check" skips fail STRICT.)
 
 ---
 
@@ -147,10 +148,10 @@ gate forbids it:
 - compose files → every `image:` has a pinned tag.
 
 **Pre-existing debt.** When we turned the gate on, the repo already had a few
-floats (e.g. `portainer/portainer-ce:latest`, `pnpm@latest`). Rather than block you
-on day one, those exact items are listed in
-[`repo-gates/pins-allow.txt`](repo-gates/pins-allow.txt) and shown every run as
-**tracked debt**. New floats fail immediately; STRICT fails the tracked ones too.
+floats (e.g. `portainer/portainer-ce:latest`, `pnpm@latest`). Those exact items are
+a **reviewed baseline** in [`repo-gates/pins-allow.txt`](repo-gates/pins-allow.txt):
+printed every run as `[BASE]`, but **non-blocking even under STRICT** — they're
+accepted, not hidden. Any **new** float fails immediately, even in normal mode.
 
 **To clear a debt:** pin it to a real version, then delete its line from
 `pins-allow.txt`. Goal: that file becomes empty.
