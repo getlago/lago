@@ -35,8 +35,8 @@ func TestSelectTarget_DefaultsToGridiron(t *testing.T) {
 
 // An unregistered target errors instead of silently misrouting.
 func TestSelectTarget_UnknownErrors(t *testing.T) {
-	if _, err := SelectTarget("netsuite"); err == nil {
-		t.Fatal(`SelectTarget("netsuite") = nil error, want error for unregistered target`)
+	if _, err := SelectTarget("no-such-erp"); err == nil {
+		t.Fatal(`SelectTarget("no-such-erp") = nil error, want error for unregistered target`)
 	}
 }
 

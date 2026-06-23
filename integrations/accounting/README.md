@@ -34,18 +34,62 @@ d := accounting.NewDispatcher(target, accounting.NewMemoryStore())
 res, err := d.Dispatch(ctx, accounting.UsageEvent{TransactionID: "txn_123", /* ... */})
 ```
 
-## Wiring the real connector later
+## The real connector (NetSuite) — implemented
 
-1. Implement `accounting.AccountingTarget` for the ERP (e.g. NetSuite), keeping
-   `Post` idempotent on `entry.IdempotencyKey`.
-2. `accounting.Register("netsuite", func() AccountingTarget { return NewNetSuite(cfg) })`
-   in its `init()`. It then appears in `AvailableTargets()` for the ERP selector.
-3. Back `IdempotencyStore` with Postgres/Redis instead of `MemoryStore`.
-4. Keep `make accounting` green. Add target-specific cases to `contract_test.go`.
+`netsuite.go` is a working `AccountingTarget` for NetSuite SuiteTalk REST:
+
+- **Idempotent by design** — it upserts by NetSuite `externalId`
+  (`PUT …/record/v1/{type}/eid:{transaction_id}`), so the same key books one
+  record even if delivered twice.
+- **Real auth** — OAuth 1.0a Token-Based-Auth (HMAC-SHA256) built with the stdlib.
+- **Honest errors** — non-2xx returns a `*PostError`; 4xx (except 429) is marked
+  `Permanent` so a caller can dead-letter instead of retrying forever.
+- **Registered** — `SelectTarget("netsuite")` works; it reads `NETSUITE_*` env vars.
+
+It's validated against a simulated SuiteTalk server in `netsuite_test.go` (no live
+account needed): target-level idempotency, the OAuth header + upsert path, and
+error classification. The JSON body is a minimal template — map it to your
+NetSuite record schema; auth/idempotency/transport are production-ready as is.
+
+```bash
+export NETSUITE_ACCOUNT_ID=1234567_SB1 NETSUITE_BASE_URL=https://1234567.suitetalk.api.netsuite.com
+export NETSUITE_CONSUMER_KEY=… NETSUITE_CONSUMER_SECRET=… NETSUITE_TOKEN_ID=… NETSUITE_TOKEN_SECRET=…
+```
+
+## Durable idempotency store (Redis) — implemented
+
+`redis_store.go` is a durable `IdempotencyStore` backed by Redis (`Seen` = EXISTS,
+`Record` = SETNX+TTL). It depends only on a tiny `RedisCmdable` interface, so this
+module stays dependency-free and the gate runs offline; production passes a real
+client. A ~6-line adapter over `github.com/redis/go-redis/v9`:
+
+```go
+type goRedis struct{ c *redis.Client }
+func (g goRedis) SetNX(ctx context.Context, k string, ttl time.Duration) (bool, error) {
+    return g.c.SetNX(ctx, k, "1", ttl).Result()
+}
+func (g goRedis) Exists(ctx context.Context, k string) (bool, error) {
+    n, err := g.c.Exists(ctx, k).Result(); return n > 0, err
+}
+// then: store := accounting.NewRedisStore(goRedis{client}, "lago:acct:idemp:", 30*24*time.Hour)
+//       d := accounting.NewDispatcher(target, store)
+```
+
+A Postgres-backed store implements the same two methods (`Seen` via
+`SELECT EXISTS`, `Record` via `INSERT … ON CONFLICT DO NOTHING`).
+
+## Add another ERP target later
+
+1. Implement `accounting.AccountingTarget` (keep `Post` idempotent on the key).
+2. `accounting.Register("sap", func() AccountingTarget { return NewSAP(cfg) })` in
+   its `init()` — it then appears in `AvailableTargets()` for the ERP selector.
+3. Keep `make accounting` green; add target-specific cases to its test.
 
 | File | Role |
 |---|---|
 | `contract.go` | Event/entry types, `AccountingTarget`/`IdempotencyStore` interfaces, the `Dispatcher` |
 | `targets.go` | Target registry + selection (default = Gridiron); in-house Gridiron target |
+| `netsuite.go` | NetSuite target: OAuth1 TBA + externalId-upsert idempotency |
 | `store.go` | Reference in-memory idempotency store |
-| `contract_test.go` | The exactly-once contract tests (the gate) |
+| `redis_store.go` | Durable Redis-backed idempotency store |
+| `*_test.go` | The exactly-once contract tests (the gate) |

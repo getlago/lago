@@ -62,9 +62,13 @@ Per the ratchet rule, each integration ships with its own gate the day it's buil
       concurrency and retry-after-failure. Target selection **defaults to the
       in-house Gridiron module first**; external ERPs (NetSuite, QuickBooks, Xero,
       SAP, …) are opt-in via one config-driven selector, not a connector per vendor.
-  - [ ] _Remaining:_ implement `AccountingTarget` for the real ERP + a durable
-        (Postgres/Redis) idempotency store, wire it to the ERP selector UI, and keep
-        `make accounting` green.
+  - [x] _Real target + durable store implemented:_ `netsuite.go` (NetSuite
+        SuiteTalk REST, OAuth1 TBA, idempotent via externalId upsert, registered
+        in the selector) and `redis_store.go` (durable Redis `IdempotencyStore`),
+        both validated offline (httptest + fake Redis) under `-race`. `make
+        accounting` green.
+  - [ ] _Remaining:_ point NetSuite config at the real account, back the store with
+        prod Redis/Postgres, and wire the target choice to the ERP selector UI.
 
 ### Ratchet log (add a line every time a bug slips through)
 

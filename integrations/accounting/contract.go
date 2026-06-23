@@ -19,6 +19,7 @@ package accounting
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -75,11 +76,19 @@ type AccountingTarget interface {
 }
 
 // IdempotencyStore remembers which keys have already been delivered so we can
-// skip redundant posts. The in-memory implementation here is the reference; a
-// real deployment backs this with Postgres/Redis.
+// skip redundant posts. MemoryStore is the reference; RedisStore is the durable
+// production implementation (a Postgres-backed store implements the same two
+// methods analogously).
+//
+// The methods take a context and return errors because a durable store can be
+// unreachable, and on an UNKNOWN delivery state we must refuse to deliver rather
+// than risk a double-booking.
 type IdempotencyStore interface {
-	Seen(key string) bool
-	Record(key string)
+	// Seen reports whether key has already been delivered. A non-nil error means
+	// the state is unknown; callers must not deliver.
+	Seen(ctx context.Context, key string) (bool, error)
+	// Record marks key as delivered. Called only after a successful Post.
+	Record(ctx context.Context, key string) error
 }
 
 // DispatchResult reports what Dispatch did with one event.
@@ -110,8 +119,13 @@ func (d *Dispatcher) Dispatch(ctx context.Context, ev UsageEvent) (DispatchResul
 		return res, ErrNoIdempotencyKey
 	}
 
-	// Fast path: already delivered -> no-op (exactly-once).
-	if d.store.Seen(key) {
+	// Fast path: already delivered -> no-op (exactly-once). On an unknown state
+	// (store error) we refuse to deliver so a retry can resolve it.
+	seen, err := d.store.Seen(ctx, key)
+	if err != nil {
+		return res, fmt.Errorf("accounting: idempotency check failed: %w", err)
+	}
+	if seen {
 		res.Deduplicated = true
 		return res, nil
 	}
@@ -123,7 +137,12 @@ func (d *Dispatcher) Dispatch(ctx context.Context, ev UsageEvent) (DispatchResul
 		return res, err
 	}
 
-	d.store.Record(key)
+	if err := d.store.Record(ctx, key); err != nil {
+		// Delivered, but the dedup marker did not persist. Safe: a retry re-Posts
+		// and the idempotent target dedupes. Surface so the caller retries.
+		return res, fmt.Errorf("accounting: delivered but failed to record key (safe to retry): %w", err)
+	}
+
 	res.Posted = true
 	return res, nil
 }
