@@ -232,6 +232,11 @@ services:
     <<: *frontend-image
     container_name: lago-front
     restart: unless-stopped
+    # Human admin dashboard (presents a Lago login page). OPT-IN: the production
+    # stack is HEADLESS by default so there is no human login page. Enable the
+    # dashboard explicitly with `docker compose --profile dashboard up`.
+    profiles:
+      - dashboard
     depends_on:
       api:
         condition: service_healthy
@@ -457,6 +462,10 @@ services:
     image: portainer/portainer-ce:latest
     container_name: lago-portainer
     restart: unless-stopped
+    # Container-management UI (presents its own login at /portainer). OPT-IN so the
+    # default stack has no human login pages. Enable with `--profile portainer`.
+    profiles:
+      - portainer
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - portainer_data:/data

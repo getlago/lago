@@ -2,6 +2,29 @@
 
 This repository contains the necessary files to deploy the Lago project.
 
+## Headless by default (no human login page)
+
+`deploy/docker-compose.production.yml` runs **headless**: it does **not** start the
+Lago `front` dashboard or `portainer`, so there is **no human login page** and no
+auto-login. Your ERP integrates via the REST API (`/api`, API-key auth); the
+billing UI lives in your ERP behind your own login + Cerbos.
+
+Both human UIs are opt-in via Compose profiles if you ever want them:
+
+```bash
+# Headless (default) — API + workers only, no login page:
+docker compose -f deploy/docker-compose.production.yml --profile all up -d
+
+# With the Lago dashboard (adds a login page):
+docker compose -f deploy/docker-compose.production.yml --profile all --profile dashboard up -d
+
+# With Portainer container UI:
+docker compose -f deploy/docker-compose.production.yml --profile all --profile portainer up -d
+```
+
+> Also set `LAGO_SIDEKIQ_WEB=false` to drop the Sidekiq web UI (the remaining
+> human-facing page, served by the API), for a fully headless deployment.
+
 ## Docker Compose Local
 
 To deploy the project locally, you need to have Docker and Docker Compose installed on your machine.

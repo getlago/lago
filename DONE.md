@@ -40,6 +40,9 @@ and a gate for it so it can never escape again.
 - [ ] `.kamal/secrets` exists locally / in your secret store (never committed).
 - [ ] Helm `lago-secrets` Secret documented and created in the target namespace.
 - [ ] Every image tag (Kamal accessories + Helm `values.yaml`) is pinned.
+- [x] **Headless by default:** production compose starts no human login page — the
+      Lago `front` dashboard and `portainer` are opt-in via `--profile dashboard` /
+      `--profile portainer`. (Set `LAGO_SIDEKIQ_WEB=false` to drop the last UI.)
 
 ## Review & sign-off
 
