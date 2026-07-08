@@ -10,6 +10,8 @@ volumes:
   redis_replica_data_dev:
   redpanda_data_dev:
   clickhouse_data_dev:
+  meilisearch_data_dev:
+  maintenant_data_dev:
 
 services:
   traefik:
@@ -465,7 +467,7 @@ services:
       - ./extra/clickhouse/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
     ports:
       - 9000:9000
-      - 8123:8123
+      # - 8123:8123
     healthcheck:
       test:
         [
@@ -480,6 +482,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    container_name: lago_meilisearch_dev
+    restart: unless-stopped
+    hostname: meilisearch
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=${LAGO_MEILISEARCH_API_KEY:-masterKeyChangeMe}
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - meilisearch_data_dev:/meili_data
+    ports:
+      - 7700:7700
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.meilisearch.rule=Host(`meilisearch.lago.dev`)"
+      - "traefik.http.routers.meilisearch.entrypoints=web,websecure"
+      - "traefik.http.routers.meilisearch.tls=true"
+      - "traefik.http.services.meilisearch.loadbalancer.server.port=7700"
 
   pghero:
     image: ankane/pghero:latest
@@ -505,6 +537,26 @@ services:
       - "traefik.http.routers.pghero.entrypoints=web,websecure"
       - "traefik.http.routers.pghero.tls=true"
       - "traefik.http.services.pghero.loadbalancer.server.port=8080"
+
+  maintenant:
+    image: ghcr.io/kolapsis/maintenant:latest
+    container_name: lago_maintenant_dev
+    restart: unless-stopped
+    group_add:
+      - 1001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - maintenant_data_dev:/data
+    environment:
+      MAINTENANT_ADDR: "0.0.0.0:8080"
+      MAINTENANT_DB: "/data/maintenant.db"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.maintenant.rule=Host(`maintenant.lago.dev`)"
+      - "traefik.http.routers.maintenant.entrypoints=web,websecure"
+      - "traefik.http.routers.maintenant.tls=true"
+      - "traefik.http.services.maintenant.loadbalancer.server.port=8080"
 
   redis-replica:
     command: ["sh", "-c", "redis-server --replicaof redis 6379 $${REDIS_PASSWORD:+--requirepass \"$$REDIS_PASSWORD\" --masterauth \"$$REDIS_PASSWORD\"}"]
