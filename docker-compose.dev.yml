@@ -483,7 +483,7 @@ services:
       start_period: 30s
 
   meilisearch:
-    image: getmeili/meilisearch:v1.12
+    image: getmeili/meilisearch:v1.49
     container_name: lago_meilisearch_dev
     restart: unless-stopped
     hostname: meilisearch
