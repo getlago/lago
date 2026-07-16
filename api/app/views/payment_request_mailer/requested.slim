@@ -1,0 +1,43 @@
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+  = I18n.t("email.payment_request.requested.hello", customer_name: @customer.display_name)
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+  = I18n.t("email.payment_request.requested.reminder_overdue_balance", billing_entity_name: @billing_entity.name)
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+  = I18n.t("email.payment_request.requested.total_amount_due", amount: MoneyHelper.format(@payment_request.amount))
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+    = I18n.t("email.payment_request.requested.payment_terms", count: @customer.applicable_net_payment_term)
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+  = I18n.t("email.payment_request.requested.already_paid")
+div style="margin-bottom: 32px;font-style: normal;font-weight: 400;font-size: 16px;line-height: 24px;color: #19212E;"
+  = I18n.t("email.payment_request.requested.thank_you")
+
+div style="padding-top: 32px;font-style: normal;font-weight: 400;font-size: 14px;line-height: 20px;color: #66758F;border-top: 1px solid #d9dee7;"
+  = I18n.t("email.payment_request.requested.remaining_amount")
+div style="margin-bottom: 16px;font-style: normal;font-weight: 700;font-size: 32px;line-height: 40px;color: #19212E;"
+  = MoneyHelper.format(@payment_request.amount)
+
+- if @payment_url
+  table style="margin-bottom: 32px" width="100%" cellspacing="0" cellpadding="0"
+    tr
+      td
+        table cellspacing="0" cellpadding="0"
+          tr
+            td style="border-radius: 12px;" bgcolor="#006CFA"
+              = link_to I18n.t("email.payment_request.requested.pay_amount"), @payment_url, id: "payment_link", style: "padding: 10px 16px;font-size: 16px; color: #ffffff;text-decoration: none;font-weight:bold;display: inline-block;font-weight: 400;font-style: normal;line-height: 24px;"
+
+table style="width: 100%; border-collapse: collapse;"
+  tr
+  tr style="border-bottom: 1px solid #d9dee7;"
+    td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; color: #66758F; white-space: nowrap; padding: 16px 0;"
+      = I18n.t("email.credit_note.created.invoice_number")
+    td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #66758F; white-space: nowrap; padding: 16px 0;"
+      = I18n.t("invoice.total_due_amount")
+  - @invoices.each do |invoice|
+    tr style="border-bottom: 1px solid #d9dee7;"
+      td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; padding-right: 16px; white-space: nowrap; padding: 16px 0;"
+        - if @pdfs_enabled
+          = link_to invoice.number, invoice.file_url, {style: "text-decoration: none; color: #006cfa"}
+        - else
+          = invoice.number
+      td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212e; white-space: nowrap; padding: 16px 0;"
+        = MoneyHelper.format(invoice.total_due_amount)

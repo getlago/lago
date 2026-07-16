@@ -1,0 +1,29 @@
+---
+de:
+  credit_note:
+    amount: Betrag (ohne Steuern)
+    coupon_adjustment: Coupons
+    credit_from: Von
+    credit_note_number: Gutschriftnummer
+    credit_to: Gutschrift für
+    credited_notice: Gutschrift auf Kundenguthaben am %{issuing_date}
+    credited_on_customer_balance: Auf Kundenguthaben gutgeschrieben
+    document_name: Gutschrift
+    invoice_number: Rechnungsnummer
+    issue_date: Ausgabedatum
+    issued_notice: Ausgestellt am %{issuing_date}
+    item: Artikel
+    offset_invoice: Verrechnung auf Rechnung %{invoice_number}
+    offset_invoice_notice: Rechnung %{invoice_number} am %{issuing_date} ausgeglichen
+    powered_by: Bereitgestellt von
+    prepaid_credits_for_wallet: Prepaid-Guthaben - %{wallet_name}
+    purchase_order_number: Bestellnummer
+    refunded: Erstattet
+    refunded_notice: Erstattung am %{issuing_date}
+    self_billed:
+      footer: Diese Gutschriftrechnung wurde vom Kunden im Namen des Partners mit dessen Zustimmung erstellt. Der Partner hat zugestimmt, keine eigene Rechnung für diese Transaktion auszustellen.
+    sub_total_without_tax: Zwischensumme (ohne Steuern)
+    subscription: Abonnement
+    tax: "%{name} (%{rate}% on %{amount})"
+    tax_rate: Tax rate
+    total: Insgesamt

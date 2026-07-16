@@ -1,0 +1,15 @@
+---
+de:
+  quote_version:
+    mention_variables:
+      payment_terms: Net %{count}
+      term_duration:
+        days:
+          one: ein Tag
+          other: "%{count} Tage"
+        months:
+          one: ein Monat
+          other: "%{count} Monate"
+        years:
+          one: ein Jahr
+          other: "%{count} Jahre"

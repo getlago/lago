@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe Types::IntegrationCollectionMappings::CurrencyMappingItemInput do
+  subject { described_class }
+
+  it do
+    expect(subject).to accept_argument(:currency_code).of_type("CurrencyEnum!")
+    expect(subject).to accept_argument(:currency_external_code).of_type("String!")
+  end
+end

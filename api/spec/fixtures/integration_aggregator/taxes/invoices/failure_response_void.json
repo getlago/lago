@@ -1,0 +1,11 @@
+{
+  "succeededInvoices": [],
+  "failedInvoices": [
+    {
+      "id": "invoice_id",
+      "validation_errors": {
+        "type": "transactionFrozenForFiling"
+      }
+    }
+  ]
+}

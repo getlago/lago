@@ -1,0 +1,52 @@
+name: "Internal Build"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      sidekiq_pro:
+        type: boolean
+        default: true
+        description: Enable Sidekiq Pro
+permissions: {}
+jobs:
+  build-api-image:
+    runs-on: ubuntu-latest
+    name: Build API Image
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Add version into docker image
+        run: echo ${{ github.sha }} > ./LAGO_VERSION
+
+      - name: Docker tag
+        id: docker_tag
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lago-api-production
+          IMAGE_TAG: ${{ github.sha }}
+        run: echo "tag=$(echo $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG)" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.docker_tag.outputs.tag }}
+          build-args: |
+            BUNDLE_WITH=${{ (github.event_name == 'push' || github.event.inputs.sidekiq_pro == 'true') && 'sidekiq-pro' || '' }}
+          secrets: |
+            "BUNDLE_GEMS__CONTRIBSYS__COM=${{ secrets.BUNDLE_GEMS__CONTRIBSYS__COM }}"

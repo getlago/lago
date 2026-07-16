@@ -1,0 +1,10 @@
+---
+fr:
+  payment_receipt:
+    document_name: Reçu de paiement
+    download_invoice: Télécharger la facture
+    download_receipt: Télécharger le reçu de paiement
+    number: Numéro de reçu
+    paid_on: 'Payé le %{date} (Reste à payer: %{total_due_amount})'
+    payment_date: Payé le
+    payment_method: Mode de paiement

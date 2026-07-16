@@ -1,0 +1,49 @@
+table.invoice-resume-table width="100%"
+  tr
+    td.body-2 = I18n.t('invoice.item')
+    td.body-2 = I18n.t('invoice.units')
+    td.body-2 = I18n.t('invoice.unit_price')
+    td.body-2 = I18n.t('invoice.tax_rate')
+    td.body-2 = I18n.t('invoice.amount')
+  - if one_off?
+    - fees.ordered_by_period.each do |fee|
+      tr
+        td
+          .body-1 = fee.invoice_name
+          .body-3 = fee.description
+          - if fee.properties["from_datetime"] && fee.properties["to_datetime"]
+            .body-3 #{I18n.t('invoice.from_to_date', from_date: I18n.l(fee.properties["from_datetime"]&.to_date, format: :default), to_date: I18n.l(fee.properties["to_datetime"]&.to_date, format: :default))}
+        td.body-2 = RoundingHelper.round_decimal_part(fee.units)
+        td.body-2 = MoneyHelper.format(fee.unit_amount)
+        td.body-2 == TaxHelper.applied_taxes(fee)
+        td.body-2 = FeeDisplayHelper.format_amount(fee)
+
+table.total-table width="100%"
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_without_tax')
+    td.body-2 = MoneyHelper.format(sub_total_excluding_taxes_amount)
+  - if applied_taxes.present?
+    - applied_taxes.order(tax_rate: :desc).each do |applied_tax|
+      tr
+        - if applied_tax.applied_on_whole_invoice?
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name_only.' + applied_tax.tax_code)
+          td.body-2
+        - else
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name', name: applied_tax.tax_name, rate: applied_tax.tax_rate, amount: MoneyHelper.format(applied_tax.taxable_amount))
+          td.body-2 = MoneyHelper.format(applied_tax.amount)
+  - else
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.tax_name_with_details', name: 'Tax', rate: 0)
+      td.body-2 = MoneyHelper.format(0.to_money(currency))
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_with_tax')
+    td.body-2 = MoneyHelper.format(sub_total_including_taxes_amount)
+  tr
+    td.body-2
+    td.body-1 = I18n.t('invoice.total')
+    td.body-1 = MoneyHelper.format(total_amount)

@@ -1,0 +1,11 @@
+.invoice-resume.mb-24.overflow-auto
+  table.invoice-resume-table width="100%"
+    tr
+      td.body-2 = I18n.t('invoice.invoice_number')
+      td.body-2 = I18n.t('invoice.amount')
+    - payment.payable.invoices.each do |invoice|
+      tr
+        td.body-1
+          a style="text-decoration: none" target="_blank" href=invoice.file_url
+            = invoice.number
+        td.body-2 = MoneyHelper.format(invoice.total_amount)

@@ -1,0 +1,119 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`CenteredPage PageSectionTitle GIVEN a PageSectionTitle with a JSX description WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-2"
+    data-test="page-section-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+      data-test="subhead1"
+    >
+      My Section
+    </div>
+    <span
+      data-test="custom-jsx-desc"
+    >
+      Custom JSX
+    </span>
+  </div>
+</div>
+`;
+
+exports[`CenteredPage PageSectionTitle GIVEN a PageSectionTitle with a string description WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-2"
+    data-test="page-section-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+      data-test="subhead1"
+    >
+      My Section
+    </div>
+    <div
+      class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+      data-test="page-section-title-description"
+    >
+      Some description text
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CenteredPage PageSectionTitle GIVEN a PageSectionTitle with only a title WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-2"
+    data-test="page-section-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+      data-test="subhead1"
+    >
+      My Section
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CenteredPage SubsectionTitle GIVEN a SubsectionTitle with a JSX description WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+    data-test="subsection-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      My Subsection
+    </div>
+    <div
+      data-test="custom-subsection-desc"
+    >
+      Custom element
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CenteredPage SubsectionTitle GIVEN a SubsectionTitle with a string description WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+    data-test="subsection-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      My Subsection
+    </div>
+    <div
+      class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+      data-test="subsection-title-description"
+    >
+      Subsection description
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CenteredPage SubsectionTitle GIVEN a SubsectionTitle with only a title WHEN it is rendered THEN should match snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+    data-test="subsection-title"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      My Subsection
+    </div>
+  </div>
+</div>
+`;

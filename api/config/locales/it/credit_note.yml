@@ -1,0 +1,29 @@
+---
+it:
+  credit_note:
+    amount: Importo (escl. tasse)
+    coupon_adjustment: Correzione coupon
+    credit_from: Da
+    credit_note_number: Numero Nota di Credito
+    credit_to: Credito a
+    credited_notice: Accreditato sul saldo cliente il %{issuing_date}
+    credited_on_customer_balance: Accreditato sul saldo cliente
+    document_name: Nota di Credito
+    invoice_number: Numero Fattura
+    issue_date: Data Emissione
+    issued_notice: Emessa il %{issuing_date}
+    item: Articolo
+    offset_invoice: Compensazione sulla fattura %{invoice_number}
+    offset_invoice_notice: Fattura %{invoice_number} compensata il %{issuing_date}
+    powered_by: Elaborato da
+    prepaid_credits_for_wallet: Crediti prepagati - %{wallet_name}
+    purchase_order_number: Numero d'ordine d'acquisto
+    refunded: Rimborsato
+    refunded_notice: Rimborsato il %{issuing_date}
+    self_billed:
+      footer: Questa fattura di autofatturazione è stata emessa dal cliente per conto del partner, con il suo consenso. Il partner ha accettato di non emettere una propria fattura per questa transazione.
+    sub_total_without_tax: Subtotale (escl. tasse)
+    subscription: Abbonamento
+    tax: "%{name} (%{rate}% su %{amount})"
+    tax_rate: Tasso fiscale
+    total: Totale

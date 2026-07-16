@@ -1,0 +1,22 @@
+- if amount_details['free_units'].to_f.positive?
+  / Free units for the first
+  tr.details
+    td.body-2 = I18n.t('invoice.package.free_units_for_the_first', count: amount_details['free_units'])
+    td.body-2 = amount_details['free_units']
+    td.body-2 = MoneyHelper.format(0.to_money(amount_currency))
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = MoneyHelper.format(0.to_money(amount_currency))
+/ Fee per package
+tr.details
+  td.body-2 = I18n.t('invoice.package.fee_per_package')
+  td.body-2 = amount_details['paid_units']
+  td.body-2 = I18n.t('invoice.package.fee_per_package_unit_price', amount: FeeDisplayHelper.format_with_precision(self, amount_details['per_package_unit_amount']), package_size: amount_details['per_package_size'])
+  td.body-2 == TaxHelper.applied_taxes(self)
+  td.body-2 = FeeDisplayHelper.format_amount(self)
+/ Sub total
+tr.details.subtotal
+  td.body-2 = I18n.t('invoice.sub_total')
+  td.body-2
+  td.body-2
+  td.body-2
+  td.body-2 = FeeDisplayHelper.format_amount(self)

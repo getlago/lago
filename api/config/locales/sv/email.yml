@@ -1,0 +1,44 @@
+---
+sv:
+  email:
+    credit_note:
+      created:
+        credit_note_from: Kreditfaktura från %{billing_entity_name}
+        credit_note_number: Kreditfakturanummer
+        credited_notice: Krediterad till kundens förbetalda kontobalans den %{date}
+        download: Ladda ner kreditfakturan för ytterligare information
+        invoice_number: Fakturanummer
+        issue_date: Fakturadatum
+        issued_notice: Utfärdad den %{date}
+        offset_invoice_notice: Faktura %{invoice_number} kvittad den %{date}
+        refunded_notice: Återbetald den %{date}
+        subject: 'Din kreditfaktura från %{billing_entity_name} #%{credit_note_number}'
+    invoice:
+      finalized:
+        download: Ladda ner fakturan för ytterligare information
+        due_date: Förfaller %{date}
+        invoice_from: Faktura från %{billing_entity_name}
+        invoice_number: Fakturanummer
+        issue_date: Fakturadatum
+        issued_on: utfärdad den %{date}
+        subject: 'Din faktura från %{billing_entity_name} #%{invoice_number}'
+    payment_receipt:
+      created:
+        payment_receipt_from: Betalningskvitto från %{billing_entity_name}
+        subject: 'Ditt betalningskvitto från %{billing_entity_name} #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: Om du redan har gjort betalningen, vänligen bortse från detta mejl.
+        hello: Hej %{customer_name},
+        pay_amount: Betala saldot
+        payment_terms:
+          one: Våra avtalsenliga betalningsvillkor är %{count} dag.
+          other: Våra avtalsenliga betalningsvillkor är %{count} dagar.
+          zero: Våra avtalsenliga betalningsvillkor kräver betalning vid fakturautställning.
+        remaining_amount: Återstående belopp att betala
+        reminder_overdue_balance: Detta är en påminnelse från ekonomiavdelningen på %{billing_entity_name} om att vissa fakturor är förfallna.
+        subject: Din förfallna saldo från %{billing_entity_name}
+        thank_you: Tack.
+        total_amount_due: Det totala förfallna beloppet är %{amount}.
+    powered_by_lago: Powered by
+    questions: Frågor? Kontakta oss på

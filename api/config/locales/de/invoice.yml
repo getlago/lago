@@ -1,0 +1,140 @@
+---
+de:
+  invoice:
+    account_holder_name: Kontoinhaber
+    account_number: Kontonummer
+    account_type: Kontotyp
+    all_subscriptions: Alle Abonnements
+    all_usage_based_fees: Alle nutzungsabhängigen Gebühren
+    already_paid: Bereits bezahlt
+    amount: Betrag
+    amount_with_tax: Betrag (inkl. Steuern)
+    amount_without_tax: Betrag (ohne Steuern)
+    bank_code: Bankleitzahl
+    bank_name: Bankname
+    bank_transfer_info: Banküberweisungen können mehrere Werktage zur Bearbeitung benötigen. Um per Banküberweisung zu bezahlen, überweisen Sie den Betrag unter Verwendung der folgenden Bankdaten.
+    bic: BIC
+    bill_from: Von
+    bill_to: An
+    branch_code: Filialnummer
+    branch_name: Filialname
+    breakdown: Aufschlüsselung
+    breakdown_for_days: "%{breakdown_duration} für %{breakdown_total_duration} Tage"
+    breakdown_of: Aufschlüsselung für %{fee_filter_display_name}
+    clabe: CLABE
+    conversion_rate: Umrechnungskurs
+    country: Land
+    coupons: Coupons
+    credit_notes: Gutschriften
+    date_from: Vom
+    date_to: Bis
+    details: "%{resource} Details"
+    document_name: Rechnung
+    document_tax_name: Steuerrechnung
+    due_date: Fälligkeit %{date}
+    e_invoicing:
+      credit_card: Kreditkartenzahlung
+      credit_card_information: Kreditkartenzahlung erhalten am %{date}
+      discount_reason: Rabatt %{tax_rate} Anteil
+      payment_information: "%{payment_label} von %{currency} %{amount} angewendet"
+      standard_payment: Standardzahlung
+    fee_prorated: Die Gebühr wird anteilig für den Zeitraum berechnet; der angezeigte Stückpreis ist ein Durchschnitt
+    fees_from_to_date: Gebühren vom %{from_date} bis %{to_date}
+    free_credits: Kostenloses Guthaben
+    from_to_date: Vom %{from_date} bis %{to_date}
+    graduated:
+      fee_per_unit_for_the_first: Gebühr pro Einheit für die ersten %{to}
+      fee_per_unit_for_the_last: Gebühr pro Einheit für %{from} und höher
+      fee_per_unit_for_the_next: Gebühr pro Einheit für die nächsten %{from} bis %{to}
+      flat_fee_for_the_first: Pauschalgebühr für die ersten %{to}
+      flat_fee_for_the_last: Pauschalgebühr für %{from} und höher
+      flat_fee_for_the_next: Pauschalgebühr für die nächsten %{from} bis %{to}
+    half_year: Halbjahr
+    iban: IBAN
+    invoice_number: Rechnungsnummer
+    issue_date: Ausgabedatum
+    item: Artikel
+    list_of_charges: Liste der Gebühren vom %{from} bis %{to}
+    month: monat
+    monthly: Monatlich
+    notice_full: Unabhängig davon, wann ein Ereignis empfangen wird, wird die Einheit nicht anteilig berechnet, wir berechnen den vollen Preis.
+    notice_prorated: Wenn eine Einheit während des Abrechnungszeitraums hinzugefügt oder entfernt wird, berechnen wir den anteiligen Preis basierend auf dem Verhältnis der verbleibenden oder genutzten Tage zur Gesamtzahl der Tage im Plan. Zum Beispiel, wenn noch 15 Tage im Plan verbleiben, multiplizieren wir den Preis mit 15/%{days_in_month}, und wenn eine Einheit für 10 Tage genutzt wurde, multiplizieren wir den Preis mit 10/%{days_in_month}.
+    package:
+      fee_per_package: Gebühr pro Paket
+      fee_per_package_unit_price: "%{amount} pro %{package_size}"
+      free_units_for_the_first: Gebühr pro Einheit für die ersten %{count}
+    paid_invoice: Bezahlte Rechnung
+    paid_tax_invoice: Bezahlte Steuerrechnung
+    pay_with_bank_transfer: Zahlung per Banküberweisung
+    payment_term: Zahlungsfrist
+    payment_term_days: "%{net_payment_term} Tage"
+    percentage:
+      adjustment_per_transaction: Anpassung für Min/Max pro Transaktion
+      fee_per_transaction: Feste Gebühr pro Transaktion
+      free_units_per_transaction:
+        one: Freie Einheiten für 1 Transaktion
+        other: Freie Einheiten für %{count} Transaktionen
+      percentage_rate_on_amount: Satz auf den Betrag
+    powered_by: Bereitgestellt von
+    prepaid_credit_invoice: Anzahlungsrechnung
+    prepaid_credits: Prepaid-Guthaben
+    prepaid_credits_with_value: Prepaid-Guthaben - %{wallet_name}
+    progressive_billing_credit: Nutzung bereits abgerechnet
+    purchase_order_number: Bestellnummer
+    quarter: quartal
+    quarterly: Vierteljährlich
+    reached_usage_threshold: Diese progressive Rechnung wird erstellt, da Ihre kumulierte Nutzung %{usage_amount} erreicht hat und den Schwellenwert von %{threshold_amount} überschritten hat.
+    routing_number: Routing-Nummer
+    see_breakdown: Siehe Aufschlüsselung für Gesamtübersicht
+    self_billed:
+      document_name: Gutschriftrechnung
+      footer: Diese Gutschriftrechnung wurde vom Kunden im Namen des Partners mit dessen Zustimmung erstellt. Der Partner hat zugestimmt, keine eigene Rechnung für diese Transaktion auszustellen.
+    semiannual: Halbjährlich
+    sort_code: Sortiercode
+    sub_total: Zwischensumme
+    sub_total_with_tax: Zwischensumme (inkl. Steuern)
+    sub_total_without_tax: Zwischensumme (ohne Steuern)
+    subscription: Abonnement
+    subscription_interval: "%{plan_interval}es Abonnement - %{plan_name}"
+    swift_code: SWIFT-Code
+    tax: Steuern
+    tax_identification_number: 'Steuer ID: %{tax_identification_number}'
+    tax_name: "%{name} (%{rate}% on %{amount})"
+    tax_name_only:
+      customer_exempt: Der Kunde ist von der Umsatzsteuer befreit
+      juris_has_no_tax: Keine Steuer
+      juris_not_taxed: Keine Steuer
+      not_collecting: Keine Steuer
+      reverse_charge: Reverse-Charge-Verfahren - Steuerschuldnerschaft auf den Kunden übertragen
+      transaction_exempt: Der Kunde ist von der Umsatzsteuer befreit
+      unknown_taxation: Unbekannt
+    tax_name_with_details: "%{name} (%{rate}%)"
+    tax_rate: Steuersatz
+    taxes:
+      fr_tax_exempt: Kunde ist gemäß Artikel 259-1 des französischen Allgemeinen Steuergesetzbuchs von der Steuer befreit.
+      reverse_charge: Steuerschuld auf Kunden übertragen.
+      tax_exempt: Kunde ist von der Steuer befreit.
+    total: Gesamt
+    total_credits: Gesamtguthaben
+    total_credits_with_value: 'Gesamtguthaben: %{credit_amount} Credits'
+    total_due: Insgesamt fällig
+    total_due_amount: Betrag fällig
+    total_events: 'Ereignisse insgesamt: %{count}'
+    total_paid_amount: Betrag bezahlt
+    total_unit: 'Gesamte Einheiten: %{units}'
+    total_unit_interval: 'Gesamte Einheiten: %{events_count} Ereignisse für %{units}'
+    true_up_details: Mindestausgabe von %{min_amount} anteilig an den Nutzungstagen
+    true_up_metric: "%{metric} - Kosten für die Anpassung"
+    unit: Einheit
+    unit_price: Stückpreis
+    units: Einheiten
+    units_prorated_per_period: Einheiten anteilig pro Sekunde pro %{period}
+    usage_based_fees: Nutzungsabhängige Gebühren
+    usage_breakdown_by: Nutzungsaufschlüsselung nach %{keys}
+    volume:
+      fee_per_unit: Gebühr pro Einheit
+      flat_fee_for_all_units: Pauschalgebühr für alle Einheiten
+    week: woche
+    weekly: Wöchentlich
+    year: jahr
+    yearly: Jährlich

@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "sourceMap": false,
+    "types": ["cypress"]
+  },
+  "exclude": ["node_modules"]
+}

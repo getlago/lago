@@ -1,0 +1,9 @@
+---
+pt-BR:
+  activerecord:
+    errors:
+      models:
+        webhook_endpoint:
+          attributes:
+            base:
+              exceeded_limit: Número máximo de endpoints de webhook foi atingido

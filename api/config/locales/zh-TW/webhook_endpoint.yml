@@ -1,0 +1,9 @@
+---
+zh-TW:
+  activerecord:
+    errors:
+      models:
+        webhook_endpoint:
+          attributes:
+            base:
+              exceeded_limit: 已達到 Webhook 端點的最大數量限制

@@ -1,0 +1,139 @@
+---
+zh-TW:
+  invoice:
+    account_holder_name: 帳戶持有人姓名
+    account_number: 帳號
+    account_type: 帳戶類型
+    all_subscriptions: 所有訂閱
+    all_usage_based_fees: 所有依使用量計費的費用
+    already_paid: 已付款
+    amount: 金額
+    amount_with_tax: 金額（含稅）
+    amount_without_tax: 金額（未稅）
+    bank_code: 銀行代碼
+    bank_name: 銀行名稱
+    bank_transfer_info: 銀行轉帳可能需要數個工作天處理。若要以銀行轉帳付款，請使用以下銀行資訊進行轉帳。
+    bic: BIC
+    bill_from: 來自
+    bill_to: 帳單開立給
+    branch_code: 分行代碼
+    branch_name: 分行名稱
+    breakdown: 明細
+    breakdown_for_days: 已使用 %{breakdown_duration} 天（共 %{breakdown_total_duration} 天）
+    breakdown_of: "%{fee_filter_display_name} 明細"
+    charges_paid_in_advance: 預先支付的費用
+    clabe: CLABE
+    conversion_rate: 轉換匯率
+    country: 國家
+    coupons: 優惠券
+    credit_notes: 折讓單
+    date_from: 自
+    date_to: 至
+    details: "%{resource} 詳細資訊"
+    document_name: 發票
+    document_tax_name: 稅務發票
+    due_date: 繳款期限 %{date}
+    e_invoicing:
+      credit_card: 信用卡付款
+      credit_card_information: 已於 %{date} 收到信用卡付款
+      discount_reason: 折扣 %{tax_rate} 部分
+      payment_information: 已套用 %{currency} %{amount} 的%{payment_label}
+      standard_payment: 標準付款
+    fee_prorated: 費用依期間按比例計算，顯示的單價為平均值
+    fees_from_to_date: 費用期間：%{from_date} 至 %{to_date}
+    from_to_date: "%{from_date} 至 %{to_date}"
+    graduated:
+      fee_per_unit_for_the_first: 前 %{to} 單位的每單位費用
+      fee_per_unit_for_the_last: "%{from} 以上的每單位費用"
+      fee_per_unit_for_the_next: 接下來 %{from} 至 %{to} 的每單位費用
+      flat_fee_for_the_first: 前 %{to} 的固定費用
+      flat_fee_for_the_last: "%{from} 以上的固定費用"
+      flat_fee_for_the_next: 接下來 %{from} 至 %{to} 的固定費用
+    half_year: 半年
+    iban: IBAN
+    invoice_number: 發票號碼
+    issue_date: 開立日期
+    item: 項目
+    list_of_charges: "%{from} 至 %{to} 使用的費用清單"
+    month: 月
+    monthly: 每月
+    notice_full: 無論事件於何時接收，單位皆不按比例計費，將收取全額費用。
+    notice_prorated: 若在每月方案期間新增或移除單位，我們將依剩餘或已使用天數占方案總天數的比例計算按比例費用。例如，在 %{days_in_month} 天的期間內若剩餘 15 天，將收取期間價格的 15/%{days_in_month}。若某單位使用了 10 天，則收取期間價格的 10/%{days_in_month}。
+    package:
+      fee_per_package: 每套件費用
+      fee_per_package_unit_price: 每 %{package_size} %{amount}
+      free_units_for_the_first: 前 %{count} 的免費單位
+    paid_invoice: 已付款發票
+    paid_tax_invoice: 已付款稅務發票
+    pay_with_bank_transfer: 使用銀行轉帳付款
+    payment_term: 付款條件
+    payment_term_days: "%{net_payment_term} 天"
+    percentage:
+      adjustment_per_transaction: 每筆交易的最低／最高調整
+      fee_per_transaction: 每筆交易的固定費用
+      free_units_per_transaction:
+        one: 1 筆交易的免費單位
+        other: "%{count} 筆交易的免費單位"
+      percentage_rate_on_amount: 金額的費率
+    powered_by: 技術提供
+    prepaid_credit_invoice: 預收發票
+    prepaid_credits: 預付點數
+    prepaid_credits_with_value: 預付點數 - %{wallet_name}
+    progressive_billing_credit: 已計費的使用量
+    purchase_order_number: 採購訂單編號
+    quarter: 季
+    quarterly: 每季
+    reached_usage_threshold: 此累進計費因您的累積使用量已達到 %{usage_amount}，超過 %{threshold_amount} 的門檻而產生。
+    routing_number: 銀行路由號碼
+    see_breakdown: 查看總單位明細
+    self_billed:
+      document_name: 自行開立發票
+      footer: 本自行開立發票係由客戶在合作夥伴同意下，代表合作夥伴開立。合作夥伴已同意不再為此交易自行開立發票。
+    semiannual: 每半年
+    sort_code: 排序代碼
+    sub_total: 小計
+    sub_total_with_tax: 小計（含稅）
+    sub_total_without_tax: 小計（未稅）
+    subscription: 訂閱
+    subscription_interval: "%{plan_interval} 訂閱 - %{plan_name}"
+    swift_code: SWIFT 代碼
+    tax: 稅金
+    tax_identification_number: 統一編號：%{tax_identification_number}
+    tax_name: "%{name}（%{amount} 的 %{rate}%）"
+    tax_name_only:
+      customer_exempt: 客戶免稅
+      juris_has_no_tax: 無稅
+      juris_not_taxed: 無稅
+      not_collecting: 無稅
+      reverse_charge: 反向課稅 - 稅負轉由客戶承擔
+      transaction_exempt: 客戶免稅
+      unknown_taxation: 未知
+    tax_name_with_details: "%{name}（%{rate}%）"
+    tax_rate: 稅率
+    taxes:
+      fr_tax_exempt: 依據法國稅法總則第 259-1 條，客戶免稅。
+      reverse_charge: 反向課稅 - 稅負轉由客戶承擔。
+      tax_exempt: 客戶免稅。
+    total: 總計
+    total_credits: 點數總計
+    total_credits_with_value: 點數總計：%{credit_amount} 點
+    total_due: 應付總額
+    total_due_amount: 應付金額
+    total_events: 事件總數：%{count}
+    total_paid_amount: 已付金額
+    total_unit: 單位總數：%{units}
+    total_unit_interval: 單位總數：%{events_count} 個事件，共 %{units}
+    true_up_details: 最低消費 %{min_amount}，依使用天數按比例計算
+    true_up_metric: "%{metric} - 補差額"
+    unit: 單位
+    unit_price: 單價
+    units: 單位
+    units_prorated_per_period: 每 %{period} 每秒按比例計算的單位
+    usage_based_fees: 依使用量計費的費用
+    volume:
+      fee_per_unit: 每單位費用
+      flat_fee_for_all_units: 所有單位的固定費用
+    week: 週
+    weekly: 每週
+    year: 年
+    yearly: 每年

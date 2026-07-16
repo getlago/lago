@@ -1,0 +1,12 @@
+= Addressing::DefaultFormatter.new.format( \
+  Addressing::Address.new( \
+    address_line1: customer.address_line1 || "",
+    address_line2: customer.address_line2 || "",
+    locality: customer.city || "",
+    postal_code: customer.zipcode || "",
+    administrative_area: customer.state || "",
+    country_code: customer.country || "",
+    locale: customer.document_locale \
+  ),
+  { locale: customer.document_locale || customer.billing_entity.document_locale, html_tag: "div", html_attributes: { class: "body-2" } } \
+).html_safe

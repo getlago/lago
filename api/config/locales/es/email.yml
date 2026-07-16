@@ -1,0 +1,44 @@
+---
+es:
+  email:
+    credit_note:
+      created:
+        credit_note_from: Nota de crédito de %{billing_entity_name}
+        credit_note_number: Número de nota de crédito
+        credited_notice: Acreditado en el saldo del cliente el %{date}
+        download: Descargar nota de crédito para más detalles
+        invoice_number: Número de factura
+        issue_date: Fecha de emisión
+        issued_notice: Emitida el %{date}
+        offset_invoice_notice: Factura %{invoice_number} compensada el %{date}
+        refunded_notice: Reembolso hecho el %{date}
+        subject: 'Tu nota de crédito de %{billing_entity_name} #%{credit_note_number}'
+    invoice:
+      finalized:
+        download: Descargar factura para más detalles
+        due_date: Vence el %{date}
+        invoice_from: Factura de %{billing_entity_name}
+        invoice_number: Número de factura
+        issue_date: Fecha de emisión
+        issued_on: emitida el %{date}
+        subject: 'Tu factura de %{billing_entity_name} #%{invoice_number}'
+    payment_receipt:
+      created:
+        payment_receipt_from: Recibo de pago de %{billing_entity_name}
+        subject: 'Tu recibo de pago de %{billing_entity_name} #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: Si ya ha realizado el pago, por favor ignore este correo electrónico.
+        hello: Hola %{customer_name},
+        pay_amount: Pagar el saldo
+        payment_terms:
+          one: Nuestros términos de pago acordados contractualmente son %{count} día.
+          other: Nuestros términos de pago acordados contractualmente son %{count} días.
+          zero: Nuestros términos de pago acordados contractualmente requieren el pago al generar la factura.
+        remaining_amount: Monto restante a pagar
+        reminder_overdue_balance: Este es un recordatorio del equipo financiero de %{billing_entity_name} de que algunas facturas están vencidas.
+        subject: Su saldo vencido de %{billing_entity_name}
+        thank_you: Gracias.
+        total_amount_due: El monto total adeudado es de %{amount}.
+    powered_by_lago: Powered by
+    questions: "¿Preguntas? Contáctanos en"

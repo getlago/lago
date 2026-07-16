@@ -1,0 +1,57 @@
+{
+  "id": "evt_1RWGXCQ8iJWBZFaMVlV0UVdh",
+  "object": "event",
+  "api_version": "2025-04-30.basil",
+  "created": 1749040510,
+  "data": {
+    "object": {
+      "id": "cus_SR8o2vcGRkVb6v",
+      "object": "customer",
+      "address": {
+        "city": null,
+        "country": "FR",
+        "line1": null,
+        "line2": null,
+        "postal_code": null,
+        "state": null
+      },
+      "balance": 0,
+      "created": 1749040499,
+      "currency": null,
+      "default_source": null,
+      "delinquent": false,
+      "description": null,
+      "discount": null,
+      "email": null,
+      "invoice_prefix": "23RAT06I",
+      "invoice_settings": {
+        "custom_fields": null,
+        "default_payment_method": null,
+        "footer": null,
+        "rendering_options": null
+      },
+      "livemode": false,
+      "metadata": {
+        "lago_customer_id": "2c0f0f00-c378-4915-8ea4-c26304e1968a",
+        "customer_id": "cust_2025-06-04T12:34:59Z--d2ac6d"
+      },
+      "name": "Integration Test UPDATED 2025-06-04T12:35:09Z",
+      "next_invoice_sequence": 1,
+      "phone": null,
+      "preferred_locales": [],
+      "shipping": null,
+      "tax_exempt": "none",
+      "test_clock": null
+    },
+    "previous_attributes": {
+      "name": "Integration Test 2025-06-04T12:34:59Z"
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_vsEORJTarL1PZe",
+    "idempotency_key": "c604ba99-16e2-41ca-a585-0a334e666b39"
+  },
+  "type": "customer.updated"
+}

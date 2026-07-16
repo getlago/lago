@@ -1,0 +1,46 @@
+{
+  "id": "evt_3RWYCFQ8iJWBZFaM1z10b8SX",
+  "object": "event",
+  "api_version": "2025-04-30.basil",
+  "created": 1749108405,
+  "data": {
+    "object": {
+      "id": "re_3RWYCFQ8iJWBZFaM191ZqGD9",
+      "object": "refund",
+      "amount": 100,
+      "balance_transaction": "txn_3RWYCFQ8iJWBZFaM1sKiDOf8",
+      "charge": "ch_3RWYCFQ8iJWBZFaM1R8YF07I",
+      "created": 1749108404,
+      "currency": "usd",
+      "destination_details": {
+        "card": {
+          "reference_status": "pending",
+          "reference_type": "acquirer_reference_number",
+          "type": "refund"
+        },
+        "type": "card"
+      },
+      "metadata": {
+        "order_id": "6735"
+      },
+      "payment_intent": "pi_3RWYCFQ8iJWBZFaM1p1gEVdI",
+      "reason": null,
+      "receipt_number": null,
+      "source_transfer_reversal": null,
+      "status": "succeeded",
+      "transfer_reversal": null
+    },
+    "previous_attributes": {
+      "metadata": {
+        "order_id": null
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_jxok5iOQTsD18s",
+    "idempotency_key": "7ccefd8c-132e-4246-94a4-53e9c923632e"
+  },
+  "type": "charge.refund.updated"
+}

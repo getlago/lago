@@ -1,0 +1,14 @@
+{
+  "succeededPayment": [
+      {
+          "id": "e68f6095-f8d2-4d7a-ac05-7bb919d0330e",
+          "status": "AUTHORISED",
+          "invoice_id": "318ac709-3c26-46fe-b636-7b28031d638f",
+          "credit_note_id": null,
+          "account_code": "6040",
+          "date": "2023-12-20T00:00:00.000Z",
+          "amount_cents": 16700
+      }
+  ],
+  "failedPayments": []
+}

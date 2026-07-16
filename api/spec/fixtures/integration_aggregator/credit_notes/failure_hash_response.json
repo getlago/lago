@@ -1,0 +1,42 @@
+{
+  "succeededCreditNotes": [],
+  "failedCreditNotes": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "type": "ACCREC",
+      "external_contact_id": "b20f8b1e-b934-464d-9bf6-b82551b7f352",
+      "status": "AUTHORISED",
+      "issuing_date": "2024-12-19T00:00:00.000Z",
+      "payment_due_date": "2024-01-23T00:00:00.000Z",
+      "number": "INV-0071299",
+      "currency": "USD",
+      "purchase_order": null,
+      "fees": [
+        {
+          "description": "Test item3",
+          "units": 10,
+          "precise_unit_amount": 15,
+          "account_code": "4000",
+          "amount_cents": 15000,
+          "taxes_amount_cents": 1800
+        },
+        {
+          "description": "Test item3",
+          "units": 1,
+          "precise_unit_amount": -1,
+          "account_code": "4000",
+          "amount_cents": -100,
+          "taxes_amount_cents": null
+        }
+      ],
+      "validation_errors": [
+        {
+          "Message": "To update fields on a paid invoice line item, you must supply a LineItemID"
+        },
+        {
+          "Message": "The status AUTHORISED cannot be applied to the invoice because it has payments or credit notes allocated to it."
+        }
+      ]
+    }
+  ]
+}

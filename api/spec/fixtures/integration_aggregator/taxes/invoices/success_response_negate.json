@@ -1,0 +1,9 @@
+{
+  "succeededInvoices": [
+    {
+      "id": "f9cde4d6-3b79-4c44-89b5-d5a91e430054",
+      "voided_id": "f9cde4d6-3b79-4c44-89b5-d5a91e430054_voided"
+    }
+  ],
+  "failedInvoices": []
+}

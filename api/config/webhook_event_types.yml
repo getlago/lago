@@ -1,0 +1,325 @@
+alert_triggered:
+  name: alert.triggered
+  description: One or more thresholds defined in the alert were crossed
+  category: Alerts
+  deprecated: false
+billable_metric_created:
+  name: billable_metric.created
+  description: A new billable metric has been created
+  category: Billable Metrics
+  deprecated: false
+billable_metric_updated:
+  name: billable_metric.updated
+  description: A billable metric has been updated
+  category: Billable Metrics
+  deprecated: false
+billable_metric_deleted:
+  name: billable_metric.deleted
+  description: A billable metric has been deleted
+  category: Billable Metrics
+  deprecated: false
+customer_created:
+  name: customer.created
+  description: A new customer has been created
+  category: Customers
+  deprecated: false
+customer_updated:
+  name: customer.updated
+  description: A customer has been updated
+  category: Customers
+  deprecated: false
+customer_accounting_provider_created:
+  name: customer.accounting_provider_created
+  description: A customer was created on an accouting integration
+  category: Customers
+  deprecated: false
+customer_accounting_provider_error:
+  name: customer.accounting_provider_error
+  description: An error was encountered while syncing a customer to an accounting provider
+  category: Customers
+  deprecated: false
+customer_crm_provider_created:
+  name: customer.crm_provider_created
+  description: A customer has been created in the CRM provider
+  category: Customers
+  deprecated: false
+customer_crm_provider_error:
+  name: customer.crm_provider_error
+  description: An error was encountered while syncing a customer to a CRM provider
+  category: Customers
+  deprecated: false
+customer_payment_provider_created:
+  name: customer.payment_provider_created
+  description: A customer has been created on a payment provider
+  category: Customers
+  deprecated: false
+customer_payment_provider_error:
+  name: customer.payment_provider_error
+  description: An error was encountered while syncing a customer to a payment provider
+  category: Customers
+  deprecated: false
+customer_checkout_url_generated:
+  name: customer.checkout_url_generated
+  description: A checkout URL was generated for a customer
+  category: Customers
+  deprecated: false
+customer_tax_provider_error:
+  name: customer.tax_provider_error
+  description: An error was encountered while fetching taxes for a customer on a tax provider
+  category: Customers
+  deprecated: false
+customer_vies_check:
+  name: customer.vies_check
+  description: VIES VAT number has been checked for a customer
+  category: Customers
+  deprecated: false
+credit_note_created:
+  name: credit_note.created
+  description: A new credit note has been created
+  category: Credit Notes
+  deprecated: false
+credit_note_generated:
+  name: credit_note.generated
+  description: A new credit note PDF has been generated
+  category: Credit Notes
+  deprecated: false
+credit_note_provider_refund_failure:
+  name: credit_note.provider_refund_failure
+  description: The refund of a credit note has failed on a payment provider
+  category: Credit Notes
+  deprecated: false
+dunning_campaign_finished:
+  name: dunning_campaign.finished
+  description: The dunning campaign has been completed for a customer
+  category: Dunning Campaigns
+  deprecated: false
+event_error:
+  name: event.error
+  description: An error has been detected on an event
+  category: Event Ingestion
+  deprecated: true
+events_errors:
+  name: events.errors
+  description: Errors were encountered while post-processing some events
+  category: Event Ingestion
+  deprecated: false
+feature_created:
+  name: feature.created
+  description: A new feature has been created
+  category: Features
+  deprecated: false
+feature_updated:
+  name: feature.updated
+  description: A feature has been updated
+  category: Features
+  deprecated: false
+feature_deleted:
+  name: feature.deleted
+  description: A feature has been deleted
+  category: Features
+  deprecated: false
+fee_created:
+  name: fee.created
+  description: A pay in advance fee has been created
+  category: Subscriptions and Fees
+  deprecated: false
+fee_tax_provider_error:
+  name: fee.tax_provider_error
+  description: An error was encountered while fetching taxes for a fee on a tax provider
+  category: Subscriptions and Fees
+  deprecated: false
+invoice_created:
+  name: invoice.created
+  description: A new invoice has been emitted
+  category: Invoices
+  deprecated: false
+invoice_one_off_created:
+  name: invoice.one_off_created
+  description: A new one off invoice has been emitted
+  category: Invoices
+  deprecated: false
+invoice_paid_credit_added:
+  name: invoice.paid_credit_added
+  description: A new prepaid credit invoice has been emitted
+  category: Invoices
+  deprecated: false
+invoice_generated:
+  name: invoice.generated
+  description: A new invoice PDF has been generated
+  category: Invoices
+  deprecated: false
+invoice_drafted:
+  name: invoice.drafted
+  description: A new draft invoice has been emitted
+  category: Invoices
+  deprecated: false
+invoice_ready_to_finalize:
+  name: invoice.ready_to_finalize
+  description: A draft invoice is ready to be finalized (taxes are resolved)
+  category: Invoices
+  deprecated: false
+invoice_voided:
+  name: invoice.voided
+  description: An invoice has been voided
+  category: Invoices
+  deprecated: false
+invoice_payment_dispute_lost:
+  name: invoice.payment_dispute_lost
+  description: A payment dispute has been lost for an invoice payment
+  category: Invoices
+  deprecated: false
+invoice_payment_status_updated:
+  name: invoice.payment_status_updated
+  description: The payment status of an invoice has been updated
+  category: Invoices
+  deprecated: false
+invoice_payment_overdue:
+  name: invoice.payment_overdue
+  description: An invoice payment is overdue
+  category: Invoices
+  deprecated: false
+invoice_payment_failure:
+  name: invoice.payment_failure
+  description: A payment attempt for an invoice has failed on a payment provider
+  category: Invoices
+  deprecated: false
+invoice_resynced:
+  name: invoice.resynced
+  description: An invoice has been resynced with salesforce
+  category: Invoices
+  deprecated: false
+integration_provider_error:
+  name: integration.provider_error
+  description: An error was encountered while processing data on an integration
+  category: Integrations
+  deprecated: false
+payment_succeeded:
+  name: payment.succeeded
+  description: A payment has been successfully processed by the payment provider
+  category: Payments
+  deprecated: false
+payment_requires_action:
+  name: payment.requires_action
+  description: An action is required to process a payment
+  category: Payments
+  deprecated: false
+payment_provider_error:
+  name: payment_provider.error
+  description: An error was raised by a payment provider
+  category: Payments
+  deprecated: false
+payment_receipt_created:
+  name: payment_receipt.created
+  description: A new payment receipt has been created
+  category: Payment Receipts
+  deprecated: false
+payment_receipt_generated:
+  name: payment_receipt.generated
+  description: A new payment receipt PDF has been generated
+  category: Payment Receipts
+  deprecated: false
+payment_request_created:
+  name: payment_request.created
+  description: A new payment request has been created
+  category: Payments
+  deprecated: false
+payment_request_payment_failure:
+  name: payment_request.payment_failure
+  description: A payment attempt for a payment request has failed on a payment provider
+  category: Payments
+  deprecated: false
+payment_request_payment_status_updated:
+  name: payment_request.payment_status_updated
+  description: The payment status of a payment request has been updated
+  category: Payments
+  deprecated: false
+plan_created:
+  name: plan.created
+  description: A new plan has been created
+  category: Plans
+  deprecated: false
+plan_updated:
+  name: plan.updated
+  description: A plan has been updated
+  category: Plans
+  deprecated: false
+plan_deleted:
+  name: plan.deleted
+  description: A plan has been deleted
+  category: Plans
+  deprecated: false
+subscription_canceled:
+  name: subscription.canceled
+  description: A subscription has been canceled
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_incomplete:
+  name: subscription.incomplete
+  description: A subscription is awaiting activation rule resolution before becoming active
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_terminated:
+  name: subscription.terminated
+  description: A subscription has been terminated
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_started:
+  name: subscription.started
+  description: An subscription has started
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_updated:
+  name: subscription.updated
+  description: A subscription has been updated
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_termination_alert:
+  name: subscription.termination_alert
+  description: A subscription will be terminated in the future
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_trial_ended:
+  name: subscription.trial_ended
+  description: A subscription trial period has ended
+  category: Subscriptions and Fees
+  deprecated: false
+subscription_usage_threshold_reached:
+  name: subscription.usage_threshold_reached
+  description: A usage threshold has been reached by a subscription
+  category: Subscriptions and Fees
+  deprecated: false
+wallet_created:
+  name: wallet.created
+  description: A new wallet has been created
+  category: Wallets and Credits
+  deprecated: false
+wallet_depleted_ongoing_balance:
+  name: wallet.depleted_ongoing_balance
+  description: The balance of a wallet has been depleted
+  category: Wallets and Credits
+  deprecated: false
+wallet_terminated:
+  name: wallet.terminated
+  description: A wallet has been terminated
+  category: Wallets and Credits
+  deprecated: false
+wallet_updated:
+  name: wallet.updated
+  description: A wallet has been updated
+  category: Wallets and Credits
+  deprecated: false
+wallet_transaction_created:
+  name: wallet_transaction.created
+  description: A new wallet transaction has been created
+  category: Wallets and Credits
+  deprecated: false
+wallet_transaction_updated:
+  name: wallet_transaction.updated
+  description: A wallet transaction has been updated
+  category: Wallets and Credits
+  deprecated: false
+wallet_transaction_payment_failure:
+  name: wallet_transaction.payment_failure
+  description: A payment attempt for a wallet transaction has failed on a payment provider
+  category: Wallets and Credits
+  deprecated: false

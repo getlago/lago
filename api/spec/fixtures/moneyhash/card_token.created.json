@@ -1,0 +1,42 @@
+{
+  "type": "card_token.created",
+  "data": {
+    "intent_id": "Z0e5lo9",
+    "card_token": {
+      "id": "419cb5f7-20fc-4571-a64d-4a64f0a0412f",
+      "hashid": "gMRXKaZ",
+      "brand": "Visa",
+      "card_holder_name": "Kevin Smith",
+      "bin": "111100",
+      "last_4": "0000",
+      "issuer": "test",
+      "expiry_month": "02",
+      "expiry_year": "26",
+      "country": null,
+      "type": null,
+      "custom_fields": {
+        "lago_mit": false,
+        "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+        "lago_mh_service": "Invoices::Payments::MoneyhashService",
+        "lago_payable_id": "23fd1f3c-922c-4928-b40b-c8a31e4d6664",
+        "lago_customer_id": "53c14b65-3406-4b1b-9d49-77fb389ee92e",
+        "lago_payable_type": "Invoice",
+        "lago_organization_id": "1f6edf98-9eb4-4baf-8c64-7c6be9d0b414",
+        "lago_subscription_external_id": "69f64026-69eb-4836-b1bd-9323d9f7d892"
+      },
+      "provider_token_data": [
+        {
+          "last_4": "0000",
+          "service_provider_id": "gQJnWwZ",
+          "pay_in_method": "gqYGvEg",
+          "provider_specific_data": {
+            "token_id": "test_token"
+          }
+        }
+      ],
+      "requires_cvv": true,
+      "fingerprint": "d795b7befe90eaf9d91a9d563f446487c69f06c3a35374289a385d40709a82f0b14ebe7c24139e19aaca6f3661ec1a3715d92e51a5b099880acb66b39a621dc5",
+      "vault_region": "default"
+    }
+  }
+}

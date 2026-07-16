@@ -1,0 +1,78 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`form constants snapshot tests ALL_CHARGE_MODELS matches snapshot 1`] = `
+{
+  "Custom": "custom",
+  "Dynamic": "dynamic",
+  "Graduated": "graduated",
+  "GraduatedPercentage": "graduated_percentage",
+  "Package": "package",
+  "Percentage": "percentage",
+  "Standard": "standard",
+  "Volume": "volume",
+}
+`;
+
+exports[`form constants snapshot tests translation mappings match snapshot 1`] = `
+{
+  "appliedTaxEnumedTaxCodeTranslationKey": {
+    "customer_exempt": "text_1724857130376douaqt98pna",
+    "juris_has_no_tax": "text_1724857130376u3cph3amxmh",
+    "juris_not_taxed": "text_1724857130376u3cph3amxmh",
+    "not_collecting": "text_1724857130376u3cph3amxmh",
+    "reverse_charge": "text_1724857130376w85w86kutdb",
+    "transaction_exempt": "text_1724857130376douaqt98pna",
+    "unknown_taxation": "text_17250100329108guatmyl9tj",
+  },
+  "chargeModelLookupTranslation": {
+    "custom": "text_6641dd21c0cffd005b5e2a8b",
+    "dynamic": "text_1727770512968tj58xr3h64p",
+    "graduated": "text_65201b8216455901fe273e11",
+    "graduated_percentage": "text_65201b8216455901fe273e32",
+    "package": "text_65201b8216455901fe273de5",
+    "percentage": "text_65201b8216455901fe273df8",
+    "standard": "text_65201b8216455901fe273dd6",
+    "volume": "text_65201b8216455901fe273e4f",
+  },
+  "getChargeModelHelpTextTranslationKey": {
+    "custom": "text_663dea5702b60301d8d064fe",
+    "dynamic": "text_1727711757973zhs7w84v44t",
+    "graduated": "text_62793bbb599f1c01522e91a1",
+    "graduated_percentage": "text_64de472463e2da6b31737db8",
+    "package": "text_6282085b4f283b010265586c",
+    "percentage": "text_62ff5d01a306e274d4ffcc06",
+    "standard": "text_624d9adba93343010cd14ca7",
+    "volume": "text_6304e74aab6dbc18d615f38a",
+  },
+  "getCouponFrequencyTranslationKey": {
+    "forever": "text_63c83a3476e46bc6ab9d85d6",
+    "once": "text_632d68358f1fedc68eed3ea3",
+    "recurring": "text_632d68358f1fedc68eed3e64",
+  },
+  "getCouponTypeTranslationKey": {
+    "fixed_amount": "text_632d68358f1fedc68eed3e60",
+    "percentage": "text_632d68358f1fedc68eed3e66",
+  },
+  "getHubspotTargetedObjectTranslationKey": {
+    "companies": "text_1727190044775zgd0l3fpwdj",
+    "contacts": "text_1727190044775keiwznwv16s",
+  },
+  "getIntervalTranslationKey": {
+    "monthly": "text_624453d52e945301380e49aa",
+    "quarterly": "text_64d6357b00dea100ad1cb9e9",
+    "semiannual": "text_1756372772688xutwcgyvjhw",
+    "weekly": "text_62b32ec6b0434070791c2d4c",
+    "yearly": "text_624453d52e945301380e49ac",
+  },
+  "getPrivilegeValueTypeTranslationKey": {
+    "boolean": "text_1752846323920oit5ijknakw",
+    "integer": "text_1752846323920cemx0vj1r16",
+    "select": "text_1752846323920ry5qxxvzrg7",
+    "string": "text_1752846323920ueyo3sru7na",
+  },
+  "getTargetedObjectTranslationKey": {
+    "companies": "text_1727281892403pmg1yza7x1e",
+    "contacts": "text_1729003289241opvevwwhr7n",
+  },
+}
+`;

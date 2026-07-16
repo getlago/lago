@@ -1,0 +1,24 @@
+{
+  "events": [
+    {
+      "id": "EVTEST7YZZGP7F",
+      "created_at": "2026-02-03T10:53:48.287Z",
+      "resource_type": "mandates",
+      "action": "cancelled",
+      "links": {
+        "mandate": "index_ID_123"
+      },
+      "details": {
+        "origin": "api",
+        "cause": "mandate_cancelled",
+        "description": "The mandate was cancelled via an API call or the GoCardless dashboard."
+      },
+      "metadata": {},
+      "resource_metadata": {},
+      "organisation_id": "OR000052Y8M2N5"
+    }
+  ],
+  "meta": {
+    "webhook_id": "WB01KGHJ65WA3BD5MQF703D3FDBQ"
+  }
+}

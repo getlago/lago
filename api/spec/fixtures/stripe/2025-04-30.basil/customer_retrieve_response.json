@@ -1,0 +1,39 @@
+{
+  "id": "cus_SR8o2vcGRkVb6v",
+  "object": "customer",
+  "address": {
+    "city": null,
+    "country": "FR",
+    "line1": null,
+    "line2": null,
+    "postal_code": null,
+    "state": null
+  },
+  "balance": 0,
+  "created": 1749040499,
+  "currency": null,
+  "default_source": null,
+  "delinquent": false,
+  "description": null,
+  "discount": null,
+  "email": null,
+  "invoice_prefix": "23RAT06I",
+  "invoice_settings": {
+    "custom_fields": null,
+    "default_payment_method": null,
+    "footer": null,
+    "rendering_options": null
+  },
+  "livemode": false,
+  "metadata": {
+    "customer_id": "cust_2025-06-04T12:34:59Z--d2ac6d",
+    "lago_customer_id": "2c0f0f00-c378-4915-8ea4-c26304e1968a"
+  },
+  "name": "Integration Test UPDATED 2025-06-04T12:35:09Z",
+  "next_invoice_sequence": 1,
+  "phone": null,
+  "preferred_locales": [],
+  "shipping": null,
+  "tax_exempt": "none",
+  "test_clock": null
+}

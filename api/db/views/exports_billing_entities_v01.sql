@@ -1,0 +1,21 @@
+SELECT
+    organization_id,
+    id AS lago_id,
+    code,
+    name,
+    legal_name,
+    legal_number,
+    email,
+    address_line1,
+    address_line2,
+    city,
+    zipcode,
+    state,
+    country,
+    vat_rate,
+    timezone,
+    created_at,
+    updated_at,
+    archived_at,
+    deleted_at
+FROM billing_entities AS be;

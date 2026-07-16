@@ -1,0 +1,50 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Tooltip Snapshot Tests matches snapshot with ReactNode title 1`] = `
+<div
+  class=MuiTooltip-tooltip MuiTooltip-tooltipPlacementBottom css-hash-MuiTooltip-tooltip
+  style="opacity: 1; transform: scale(1, 1); max-width: 320px; transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 133ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+>
+  <div>
+    <strong>
+      Custom Title
+    </strong>
+  </div>
+</div>
+`;
+
+exports[`Tooltip Snapshot Tests matches snapshot with custom className 1`] = `
+<div
+  class=MuiTooltip-tooltip MuiTooltip-tooltipPlacementBottom css-hash-MuiTooltip-tooltip
+  style="opacity: 1; transform: scale(1, 1); max-width: 320px; transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 133ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+>
+  Test tooltip
+</div>
+`;
+
+exports[`Tooltip Snapshot Tests matches snapshot with custom maxWidth 1`] = `
+<div
+  class=MuiTooltip-tooltip MuiTooltip-tooltipPlacementBottom css-hash-MuiTooltip-tooltip
+  style="opacity: 1; transform: scale(1, 1); max-width: 600px; transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 133ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+>
+  Test tooltip
+</div>
+`;
+
+exports[`Tooltip Snapshot Tests matches snapshot with default props 1`] = `
+<div
+  class=MuiTooltip-tooltip MuiTooltip-tooltipPlacementBottom css-hash-MuiTooltip-tooltip
+  style="opacity: 1; transform: scale(1, 1); max-width: 320px; transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 133ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+>
+  Test tooltip
+</div>
+`;
+
+exports[`Tooltip Snapshot Tests matches snapshot with different placement 1`] = `
+<div
+  class=MuiTooltip-tooltip MuiTooltip-tooltipPlacementLeft css-hash-MuiTooltip-tooltip
+  style="opacity: 1; transform: scale(1, 1); max-width: 320px; transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 133ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+>
+  Test tooltip
+</div>
+`;

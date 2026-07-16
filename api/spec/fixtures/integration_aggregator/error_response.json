@@ -1,0 +1,6 @@
+{
+  "type": "action_script_runtime_error",
+  "payload": {
+    "message": "submitFields: Missing a required argument: type"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "123456789123",
+  "properties": {
+      "hs_createdate": "2024-10-22T08:37:45.758Z",
+      "hs_lastmodifieddate": "2024-10-22T08:37:45.758Z",
+      "hs_object_id": "123456789123",
+      "hs_object_source": "INTEGRATION",
+      "hs_object_source_id": "3652947",
+      "hs_object_source_label": "INTEGRATION",
+      "lago_billing_time": "calendar",
+      "lago_external_subscription_id": "12345678-1234-1234-5678-7d76f44d5edc",
+      "lago_subscription_at": "2024-01-01",
+      "lago_subscription_created_at": "2024-01-01",
+      "lago_subscription_ending_at": "2025-01-01",
+      "lago_subscription_id": "12345678-1234-1234-5678-7d76f44d5edc",
+      "lago_subscription_name": "Sub001",
+      "lago_subscription_plan_code": "premium",
+      "lago_subscription_started_at": "2024-01-01",
+      "lago_subscription_status": "active",
+      "lago_subscription_terminated_at": null,
+      "lago_subscription_trial_ended_at": null
+  },
+  "createdAt": "2024-10-22T08:37:45.758Z",
+  "updatedAt": "2024-10-22T08:37:45.758Z",
+  "archived": false
+}

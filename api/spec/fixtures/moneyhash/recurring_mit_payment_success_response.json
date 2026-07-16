@@ -1,0 +1,426 @@
+{
+  "status": {
+    "code": 200,
+    "message": "success",
+    "errors": []
+  },
+  "data": {
+    "embed_url": "https://stg-embed.moneyhash.io/embed/payment/ZdBEBXL",
+    "id": "ZdBEBXL",
+    "status": "PROCESSED",
+    "amount": 10.0,
+    "amount_currency": "USD",
+    "type": "Payin",
+    "account": "lgaxEBL",
+    "custom_fields": {
+      "lago_customer_id": "a7a7deae-ca21-4c9b-bd3e-18f31bb358f8",
+      "lago_external_customer_id": "test_lago10",
+      "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+      "lago_mit": true,
+      "lago_payable_id": "962256eb-dc4b-4339-b8b1-b4b888ab984a",
+      "lago_payable_type": "Invoice",
+      "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+      "lago_provider_customer_id": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+      "lago_subscription_external_id": "81c781e8-6361-4cf2-8c66-bdfde9fe842f"
+    },
+    "billing_data": {
+      "first_name": "Ahmed",
+      "last_name": "Shahwan",
+      "email": "a.shahwan@moneyhash.io",
+      "phone_number": "+201087654321"
+    },
+    "transaction_provider_fields": {
+      "checkoutdotcom_payment_id": null,
+      "checkoutdotcom_payment_auth_code": null,
+      "checkoutdotcom_increase_auth_code": null,
+      "checkoutdotcom_increase_auth_action_id": null,
+      "checkoutdotcom_acquirer_reference_number": null,
+      "checkoutdotcom_processing_object": null,
+      "checkoutdotcom_operation_fields": {}
+    },
+    "active_transaction": {
+      "id": "d7156e7f-ef0b-4fa2-a862-cb1c1f758a5c",
+      "custom_fields": {
+        "lago_customer_id": "a7a7deae-ca21-4c9b-bd3e-18f31bb358f8",
+        "lago_external_customer_id": "test_lago10",
+        "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+        "lago_mit": true,
+        "lago_payable_id": "962256eb-dc4b-4339-b8b1-b4b888ab984a",
+        "lago_payable_type": "Invoice",
+        "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+        "lago_provider_customer_id": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+        "lago_subscription_external_id": "81c781e8-6361-4cf2-8c66-bdfde9fe842f"
+      },
+      "created": "2025-03-12T08:56:40.181596Z",
+      "status": "SUCCESSFUL",
+      "amount": 10.0,
+      "amount_currency": "USD",
+      "billing_data": {
+        "name": "Ahmed Shahwan",
+        "first_name": "Ahmed",
+        "last_name": "Shahwan",
+        "email": "a.shahwan@moneyhash.io",
+        "phone_number": "+201087654321",
+        "address": null,
+        "address1": null,
+        "apartment": null,
+        "floor": null,
+        "building": null,
+        "street": null,
+        "city": null,
+        "state": null,
+        "country": null,
+        "postal_code": null,
+        "mobile_wallet_number": null
+      },
+      "external_action_message": [],
+      "payment_method": "CARD",
+      "payment_method_name": "Card",
+      "custom_form_answers": null,
+      "custom_message": "",
+      "account": "lgaxEBL",
+      "provider_transaction_fields": {
+        "checkoutdotcom_payment_id": null,
+        "checkoutdotcom_payment_auth_code": null,
+        "checkoutdotcom_increase_auth_code": null,
+        "checkoutdotcom_increase_auth_action_id": null,
+        "checkoutdotcom_acquirer_reference_number": null,
+        "checkoutdotcom_processing_object": null,
+        "checkoutdotcom_operation_fields": {}
+      },
+      "provider_signature_match": false,
+      "service_provider": "gQJnWwZ",
+      "method": {
+        "id": "gqYGvEg",
+        "display_name": "CheckoutDotCom - Card",
+        "service_provider": {
+          "id": "gQJnWwZ",
+          "display_name": "Checkout.com"
+        }
+      },
+      "operations": [
+        {
+          "id": "gMK40Q9",
+          "type": "purchase",
+          "status": "successful",
+          "amount": {
+            "value": 10,
+            "currency": "USD"
+          },
+          "latest_status": {
+            "id": "Z1m4xrZ",
+            "value": "successful",
+            "code": "6000",
+            "provider_error_code": null,
+            "provider_error_message": null,
+            "message": "Successful",
+            "localized_message": "Successful"
+          },
+          "statuses": [
+            {
+              "id": "LPoNjr9",
+              "value": "pending",
+              "code": "8000",
+              "provider_error_code": null,
+              "provider_error_message": null,
+              "message": "Pending",
+              "localized_message": "Pending",
+              "created": "2025-03-12 08:56:40.223232+00:00"
+            },
+            {
+              "id": "Z1m4xrZ",
+              "value": "successful",
+              "code": "6000",
+              "provider_error_code": null,
+              "provider_error_message": null,
+              "message": "Successful",
+              "localized_message": "Successful",
+              "created": "2025-03-12 08:56:40.342989+00:00"
+            }
+          ],
+          "refund_type": null,
+          "custom_fields": null,
+          "extra": {},
+          "rrn": null,
+          "arn": null,
+          "authorization_code": null
+        }
+      ],
+      "fraud_decision": null,
+      "device_check": null,
+      "paying_card_token": {
+        "id": "41fbf0e5-c8d8-4ca8-9b11-c0afdf631af7",
+        "hashid": "ZGxOdA9",
+        "brand": "Visa",
+        "card_holder_name": "Kevin Smith",
+        "bin": "111100",
+        "last_4": "0000",
+        "issuer": "test",
+        "expiry_month": "02",
+        "expiry_year": "26",
+        "country": null,
+        "type": null,
+        "custom_fields": {
+          "lago_customer_id": "a7a7deae-ca21-4c9b-bd3e-18f31bb358f8",
+          "lago_external_customer_id": "test_lago10",
+          "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+          "lago_mit": true,
+          "lago_payable_id": "962256eb-dc4b-4339-b8b1-b4b888ab984a",
+          "lago_payable_type": "Invoice",
+          "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+          "lago_provider_customer_id": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+          "lago_subscription_external_id": "81c781e8-6361-4cf2-8c66-bdfde9fe842f"
+        },
+        "provider_token_data": [
+          {
+            "last_4": "0000",
+            "service_provider_id": "gQJnWwZ",
+            "pay_in_method": "gqYGvEg",
+            "provider_specific_data": {
+              "token_id": "test_token"
+            }
+          }
+        ],
+        "requires_cvv": true,
+        "fingerprint": "d795b7befe90eaf9d91a9d563f446487c69f06c3a35374289a385d40709a82f0b14ebe7c24139e19aaca6f3661ec1a3715d92e51a5b099880acb66b39a621dc5",
+        "vault_region": "default"
+      },
+      "authorization_code": null,
+      "payment_method_details": {
+        "type": "CARD",
+        "data": null,
+        "provider_data": null
+      },
+      "merchant_reference": null,
+      "provider_unique_reference": {
+        "key": "checkoutdotcom_payment_id",
+        "value": null
+      },
+      "authentication_data": null,
+      "trx_rrn": null,
+      "full_capture": true,
+      "ip": {
+        "ip": {
+          "ip_address": null,
+          "country": {
+            "iso_code": null,
+            "name": null
+          }
+        }
+      }
+    },
+    "transactions_history": [
+      {
+        "id": "d7156e7f-ef0b-4fa2-a862-cb1c1f758a5c",
+        "custom_fields": {
+          "lago_mit": true,
+          "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+          "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+          "lago_payable_id": "962256eb-dc4b-4339-b8b1-b4b888ab984a",
+          "lago_customer_id": "a7a7deae-ca21-4c9b-bd3e-18f31bb358f8",
+          "lago_payable_type": "Invoice",
+          "lago_external_customer_id": "test_lago10",
+          "lago_provider_customer_id": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+          "lago_subscription_external_id": "81c781e8-6361-4cf2-8c66-bdfde9fe842f"
+        },
+        "created": "2025-03-12T08:56:40.181596Z",
+        "status": "SUCCESSFUL",
+        "amount": 10.0,
+        "amount_currency": "USD",
+        "billing_data": {
+          "name": "Ahmed Shahwan",
+          "first_name": "Ahmed",
+          "last_name": "Shahwan",
+          "email": "a.shahwan@moneyhash.io",
+          "phone_number": "+201087654321",
+          "address": null,
+          "address1": null,
+          "apartment": null,
+          "floor": null,
+          "building": null,
+          "street": null,
+          "city": null,
+          "state": null,
+          "country": null,
+          "postal_code": null,
+          "mobile_wallet_number": null
+        },
+        "external_action_message": [],
+        "payment_method": "CARD",
+        "payment_method_name": "Card",
+        "custom_form_answers": null,
+        "custom_message": "",
+        "account": "lgaxEBL",
+        "provider_transaction_fields": {
+          "checkoutdotcom_payment_id": null,
+          "checkoutdotcom_payment_auth_code": null,
+          "checkoutdotcom_increase_auth_code": null,
+          "checkoutdotcom_increase_auth_action_id": null,
+          "checkoutdotcom_acquirer_reference_number": null,
+          "checkoutdotcom_processing_object": null,
+          "checkoutdotcom_operation_fields": {}
+        },
+        "provider_signature_match": false,
+        "service_provider": "gQJnWwZ",
+        "method": {
+          "id": "gqYGvEg",
+          "display_name": "CheckoutDotCom - Card",
+          "service_provider": {
+            "id": "gQJnWwZ",
+            "display_name": "Checkout.com"
+          }
+        },
+        "operations": [
+          {
+            "id": "gMK40Q9",
+            "type": "purchase",
+            "status": "successful",
+            "amount": {
+              "value": 10,
+              "currency": "USD"
+            },
+            "latest_status": {
+              "id": "Z1m4xrZ",
+              "value": "successful",
+              "code": "6000",
+              "provider_error_code": null,
+              "provider_error_message": null,
+              "message": "Successful",
+              "localized_message": "Successful"
+            },
+            "statuses": [
+              {
+                "id": "LPoNjr9",
+                "value": "pending",
+                "code": "8000",
+                "provider_error_code": null,
+                "provider_error_message": null,
+                "message": "Pending",
+                "localized_message": "Pending",
+                "created": "2025-03-12 08:56:40.223232+00:00"
+              },
+              {
+                "id": "Z1m4xrZ",
+                "value": "successful",
+                "code": "6000",
+                "provider_error_code": null,
+                "provider_error_message": null,
+                "message": "Successful",
+                "localized_message": "Successful",
+                "created": "2025-03-12 08:56:40.342989+00:00"
+              }
+            ],
+            "refund_type": null,
+            "custom_fields": null,
+            "extra": {},
+            "rrn": null,
+            "arn": null,
+            "authorization_code": null
+          }
+        ],
+        "fraud_decision": null,
+        "device_check": null,
+        "paying_card_token": {
+          "id": "41fbf0e5-c8d8-4ca8-9b11-c0afdf631af7",
+          "hashid": "ZGxOdA9",
+          "brand": "Visa",
+          "card_holder_name": "Kevin Smith",
+          "bin": "111100",
+          "last_4": "0000",
+          "issuer": "test",
+          "expiry_month": "02",
+          "expiry_year": "26",
+          "country": null,
+          "type": null,
+          "custom_fields": {
+            "lago_customer_id": "a7a7deae-ca21-4c9b-bd3e-18f31bb358f8",
+            "lago_external_customer_id": "test_lago10",
+            "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+            "lago_mit": true,
+            "lago_payable_id": "962256eb-dc4b-4339-b8b1-b4b888ab984a",
+            "lago_payable_type": "Invoice",
+            "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+            "lago_provider_customer_id": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+            "lago_subscription_external_id": "81c781e8-6361-4cf2-8c66-bdfde9fe842f"
+          },
+          "provider_token_data": [
+            {
+              "last_4": "0000",
+              "service_provider_id": "gQJnWwZ",
+              "pay_in_method": "gqYGvEg",
+              "provider_specific_data": {
+                "token_id": "test_token"
+              }
+            }
+          ],
+          "requires_cvv": true,
+          "fingerprint": "d795b7befe90eaf9d91a9d563f446487c69f06c3a35374289a385d40709a82f0b14ebe7c24139e19aaca6f3661ec1a3715d92e51a5b099880acb66b39a621dc5",
+          "vault_region": "default"
+        },
+        "authorization_code": null,
+        "payment_method_details": {
+          "type": "CARD",
+          "data": null,
+          "provider_data": null
+        },
+        "merchant_reference": null,
+        "provider_unique_reference": {
+          "key": "checkoutdotcom_payment_id",
+          "value": null
+        },
+        "authentication_data": null,
+        "trx_rrn": null,
+        "full_capture": true,
+        "ip": {
+          "ip": {
+            "ip_address": null,
+            "country": {
+              "iso_code": null,
+              "name": null
+            }
+          }
+        }
+      }
+    ],
+    "flow": "xgXlXgX",
+    "flow_data": {
+      "id": "xgXlXgX",
+      "version": 1,
+      "sequence": {
+        "id": 29319,
+        "alias": "RrPGuUx-Untitled Trigger",
+        "last_action": {
+          "id": 49432,
+          "alias": "vAZSwgB-Payment Provider"
+        }
+      }
+    },
+    "is_live": false,
+    "created": "today",
+    "template": null,
+    "merchant_reference": null,
+    "customer": "f8be4051-d93e-4307-a1d3-b9d59c01a7c5",
+    "state": "INTENT_PROCESSED",
+    "state_details": "{\"transaction\": {\"id\": \"d7156e7f-ef0b-4fa2-a862-cb1c1f758a5c\", \"custom_fields\": {\"lago_customer_id\": \"a7a7deae-ca21-4c9b-bd3e-18f31bb358f8\", \"lago_external_customer_id\": \"test_lago10\", \"lago_mh_service\": \"PaymentProviders::Moneyhash::Payments::CreateService\", \"lago_mit\": true, \"lago_payable_id\": \"962256eb-dc4b-4339-b8b1-b4b888ab984a\", \"lago_payable_type\": \"Invoice\", \"lago_plan_id\": \"de95fd5d-3349-4439-a5d0-18b42b8551d1\", \"lago_provider_customer_id\": \"f8be4051-d93e-4307-a1d3-b9d59c01a7c5\", \"lago_subscription_external_id\": \"81c781e8-6361-4cf2-8c66-bdfde9fe842f\"}, \"created\": \"2025-03-12T08:56:40.181596Z\", \"status\": \"SUCCESSFUL\", \"amount\": 10.0, \"amount_currency\": \"USD\", \"billing_data\": {\"name\": \"Ahmed Shahwan\", \"first_name\": \"Ahmed\", \"last_name\": \"Shahwan\", \"email\": \"a.shahwan@moneyhash.io\", \"phone_number\": \"+201087654321\", \"address\": null, \"address1\": null, \"apartment\": null, \"floor\": null, \"building\": null, \"street\": null, \"city\": null, \"state\": null, \"country\": null, \"postal_code\": null, \"mobile_wallet_number\": null}, \"external_action_message\": [], \"payment_method\": \"CARD\", \"payment_method_name\": \"Card\", \"custom_form_answers\": null, \"custom_message\": \"\", \"account\": \"lgaxEBL\", \"provider_transaction_fields\": {\"checkoutdotcom_payment_id\": null, \"checkoutdotcom_payment_auth_code\": null, \"checkoutdotcom_increase_auth_code\": null, \"checkoutdotcom_increase_auth_action_id\": null, \"checkoutdotcom_acquirer_reference_number\": null, \"checkoutdotcom_processing_object\": null, \"checkoutdotcom_operation_fields\": {}}, \"provider_signature_match\": false, \"service_provider\": \"gQJnWwZ\", \"method\": {\"id\": \"gqYGvEg\", \"display_name\": \"CheckoutDotCom - Card\", \"service_provider\": {\"id\": \"gQJnWwZ\", \"display_name\": \"Checkout.com\"}}, \"operations\": [{\"id\": \"gMK40Q9\", \"type\": \"purchase\", \"status\": \"successful\", \"amount\": {\"value\": 10, \"currency\": \"USD\"}, \"latest_status\": {\"id\": \"Z1m4xrZ\", \"value\": \"successful\", \"code\": \"6000\", \"provider_error_code\": null, \"provider_error_message\": null, \"message\": \"Successful\", \"localized_message\": \"Successful\"}, \"statuses\": [{\"id\": \"LPoNjr9\", \"value\": \"pending\", \"code\": \"8000\", \"provider_error_code\": null, \"provider_error_message\": null, \"message\": \"Pending\", \"localized_message\": \"Pending\", \"created\": \"2025-03-12 08:56:40.223232+00:00\"}, {\"id\": \"Z1m4xrZ\", \"value\": \"successful\", \"code\": \"6000\", \"provider_error_code\": null, \"provider_error_message\": null, \"message\": \"Successful\", \"localized_message\": \"Successful\", \"created\": \"2025-03-12 08:56:40.342989+00:00\"}], \"refund_type\": null, \"custom_fields\": null, \"extra\": {}, \"rrn\": null, \"arn\": null, \"authorization_code\": null}], \"fraud_decision\": null, \"device_check\": null, \"paying_card_token\": {\"id\": \"41fbf0e5-c8d8-4ca8-9b11-c0afdf631af7\", \"hashid\": \"ZGxOdA9\", \"brand\": \"Visa\", \"card_holder_name\": \"Kevin Smith\", \"bin\": \"111100\", \"last_4\": \"0000\", \"issuer\": \"test\", \"expiry_month\": \"02\", \"expiry_year\": \"26\", \"country\": null, \"type\": null, \"custom_fields\": {\"lago_customer_id\": \"a7a7deae-ca21-4c9b-bd3e-18f31bb358f8\", \"lago_external_customer_id\": \"test_lago10\", \"lago_mh_service\": \"PaymentProviders::Moneyhash::Payments::CreateService\", \"lago_mit\": true, \"lago_payable_id\": \"962256eb-dc4b-4339-b8b1-b4b888ab984a\", \"lago_payable_type\": \"Invoice\", \"lago_plan_id\": \"de95fd5d-3349-4439-a5d0-18b42b8551d1\", \"lago_provider_customer_id\": \"f8be4051-d93e-4307-a1d3-b9d59c01a7c5\", \"lago_subscription_external_id\": \"81c781e8-6361-4cf2-8c66-bdfde9fe842f\"}, \"provider_token_data\": [{\"last_4\": \"0000\", \"service_provider_id\": \"gQJnWwZ\", \"pay_in_method\": \"gqYGvEg\", \"provider_specific_data\": {\"token_id\": \"test_token\"}}], \"requires_cvv\": true, \"fingerprint\": \"d795b7befe90eaf9d91a9d563f446487c69f06c3a35374289a385d40709a82f0b14ebe7c24139e19aaca6f3661ec1a3715d92e51a5b099880acb66b39a621dc5\", \"vault_region\": \"default\"}, \"authorization_code\": null, \"payment_method_details\": {\"type\": \"CARD\", \"data\": null, \"provider_data\": null}, \"merchant_reference\": null, \"provider_unique_reference\": {\"key\": \"checkoutdotcom_payment_id\", \"value\": null}, \"authentication_data\": null, \"trx_rrn\": null, \"full_capture\": true, \"ip\": {\"ip\": {\"ip_address\": null, \"country\": {\"iso_code\": null, \"name\": null}}}, \"localized_status\": \"SUCCESSFUL\", \"trx_status\": \"purchase.successful\", \"type\": \"payin\"}, \"product_items_data\": null, \"shipping_data\": null, \"amount\": \"10.00USD\"}",
+    "customer_last_used_payment_method": "CARD",
+    "last_used_method": {
+      "type": "saved_card",
+      "id": "ZGxOdA9"
+    },
+    "payment_status": {
+      "status": "CAPTURED",
+      "balances": {
+        "total_authorized": "10.00",
+        "total_voided": "0.00",
+        "available_to_void": "0.00",
+        "total_captured": "10.00",
+        "available_to_capture": "0.00",
+        "total_refunded": "0.00",
+        "available_to_refund": "10.00"
+      }
+    }
+  },
+  "count": 1,
+  "next": null,
+  "previous": null
+}

@@ -1,0 +1,17 @@
+{
+  "succeededPayment": [],
+  "failedPayments": [
+      {
+          "invoice_id": "99a63b5e-1d77-4c3b-b05f-d5fa33599593",
+          "credit_note_id": null,
+          "account_code": "4000",
+          "date": "2023-12-20T00:00:00.000Z",
+          "amount_cents": 16700,
+          "validation_errors": [
+              {
+                  "Message": "Invoice could not be found"
+              }
+          ]
+      }
+  ]
+}

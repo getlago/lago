@@ -1,0 +1,182 @@
+inherit_mode:
+  merge:
+    - Exclude
+
+plugins:
+  - rubocop-rails
+  - rubocop-graphql
+  - rubocop-factory_bot
+  - rubocop-performance
+  - rubocop-thread_safety
+  - rubocop-rspec
+  - rubocop-rspec_rails
+
+require:
+  - standard
+  - ./dev/cops/service_call_cop.rb
+  - ./dev/cops/discard_all_cop.rb
+  - ./dev/cops/no_drop_column_or_table_cop.rb
+  - ./dev/cops/lago_premium_around_cop.rb
+  - ./dev/cops/active_job_perform_all_later_cop.rb
+  - ./dev/cops/stub_perform_all_later_cop.rb
+
+inherit_gem:
+  standard: config/base.yml
+
+AllCops:
+  NewCops: disable
+  DisplayStyleGuide: true
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "db/*_schema.rb"
+    - "storage/**/*"
+    - "tmp/**/*"
+    - "coverage/**/*"
+    - "log/**/*"
+
+Lago/LagoPremiumAround:
+  Include:
+    - "spec/**/*.rb"
+
+Lago/NoDropColumnOrTable:
+  Include:
+    - "db/migrate/**/*.rb"
+  Exclude:
+    - "db/migrate/20250218165958_drop_invoice_error_table.rb"
+    - "db/migrate/20250227091909_remove_is_default_from_billing_entity.rb"
+    - "db/migrate/20250526133654_drop_clickhouse_aggregation_from_organizations.rb"
+    - "db/migrate/20250528133222_drop_invoice_custom_section_selections.rb"
+    - "db/migrate/20250912081524_change_wallet_min_max_to_big_int.rb"
+    - "db/migrate/20251007103421_drop_customer_snapshots.rb"
+    - "db/migrate/20251020090137_remove_event_id_from_cached_aggregation.rb"
+    - "db/migrate/20251221174251_create_roles.rb"
+    - "db/migrate/20251221174733_create_membership_roles.rb"
+    - "db/migrate/20251221174938_add_roles_to_invites.rb"
+    - "db/migrate/20260109110146_create_enriched_events.rb"
+    - "db/migrate/20260116121015_remove_role_from_memberships.rb"
+    - "db/migrate/20260116121019_remove_role_from_invites.rb"
+    - "db/migrate/20260119162712_drop_subscription_fixed_charge_units_overrides.rb"
+    - "db/migrate/20260129145352_drop_properties_from_enriched_events.rb"
+    - "db/migrate/20260409151451_create_enriched_store_migrations.rb"
+    - "db/migrate/20260409161142_create_enriched_store_subscription_migrations.rb"
+
+# TODO: Fix these services
+Lago/ServiceCall:
+  Exclude:
+    - "app/services/integration_mappings/create_service.rb"
+    - "app/services/integrations/anrok/create_service.rb"
+    - "app/services/integrations/okta/create_service.rb"
+    - "app/services/integrations/xero/create_service.rb"
+    - "app/services/invites/accept_service.rb"
+    - "app/services/invoices/finalize_batch_service.rb"
+    - "app/services/invoices/payments/retry_batch_service.rb"
+    - "app/services/invoices/retry_batch_service.rb"
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  SafeAutoCorrect: true
+
+Performance/CaseWhenSplat:
+  Enabled: true
+
+Rails/ApplicationJob:
+  Exclude:
+    - "spec/support/jobs/**/*"
+
+# strong_migration does not work with bulk changes
+Rails/BulkChangeTable:
+  Enabled: false
+
+Rails/InverseOf:
+  Description: "Checks for associations where the inverse cannot be determined automatically."
+  Enabled: false
+
+Rails/HttpStatus:
+  Description: "Enforces use of symbolic or numeric value to describe HTTP status."
+  Enabled: false
+
+Rails/HasManyOrHasOneDependent:
+  Description: 'Forces a "dependent" options for has_one and has_many rails relations.'
+  Enabled: false
+
+Rails/TransactionExitStatement:
+  Enabled: true
+
+RSpec/ExampleLength:
+  Description: "Checks for long examples."
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Description: "Checks if examples contain too many expect calls."
+  Enabled: false
+
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false
+
+RSpec/NamedSubject:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/scenarios/**/*"
+
+# RSpec rules below are enabled by default in rubocop-rspec 3.X but we disabled to ease migration.
+RSpec/IndexedLet:
+  Enabled: false
+
+RSpec/MatchArray:
+  Enabled: false
+
+RSpec/MetadataStyle:
+  Enabled: false
+
+RSpec/NoExpectationExample:
+  Enabled: false
+
+RSpec/ReceiveMessages:
+  Enabled: false
+
+RSpec/VerifiedDoubleReference:
+  Enabled: false
+
+RSpec/BeEq:
+  Enabled: false
+
+RSpec/BeNil:
+  Enabled: false
+
+# GraphQL
+
+GraphQL/ArgumentDescription:
+  Enabled: false
+
+GraphQL/FieldDescription:
+  Enabled: false
+
+GraphQL/ObjectDescription:
+  Enabled: false
+
+GraphQL/ExtractType:
+  Enabled: false
+
+GraphQL/ExtractInputType:
+  Exclude:
+    - "app/graphql/mutations/applied_coupons/create.rb"
+    - "app/graphql/mutations/credit_notes/create.rb"
+    - "app/graphql/mutations/invites/accept.rb"
+    - "app/graphql/mutations/plans/create.rb"
+    - "app/graphql/mutations/plans/update.rb"
+    - "app/graphql/mutations/register_user.rb"
+    - "app/graphql/mutations/wallet_transactions/create.rb"
+
+ThreadSafety/NewThread:
+  Exclude:
+    - "spec/**/*"
+
+ThreadSafety/DirChdir:
+  Exclude:
+    - "spec/**/*"

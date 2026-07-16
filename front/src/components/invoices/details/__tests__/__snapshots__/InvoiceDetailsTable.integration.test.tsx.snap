@@ -1,0 +1,976 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`InvoiceDetailsTable - Integration Tests Snapshot Tests should match snapshot for empty invoice 1`] = `<div />`;
+
+exports[`InvoiceDetailsTable - Integration Tests Snapshot Tests should match snapshot for invoice with 1 subscription 1`] = `
+<div>
+  <section
+    class="[&_table]:w-full [&_table]:table-fixed [&_table]:border-collapse [&_table>thead>tr>th]:sticky [&_table>thead>tr>th]:top-[theme("spacing.nav")] [&_table>thead>tr>th]:z-10 [&_table>thead>tr>th]:bg-white [&_table>thead>tr>th]:pb-3 [&_table>thead>tr>th]:pt-8 [&_table>thead>tr>th]:shadow-b [&_table>thead>tr>th:not(:first-child)]:line-break-anywhere [&_table>thead>tr>th:not(:last-child)]:pr-3 [&_table>thead>tr>th:nth-child(1)]:text-left [&_table>thead>tr>th]:overflow-hidden [&_table>thead>tr>th]:text-right [&_table>tbody>tr>td:not(:first-child)]:line-break-anywhere [&_table>tbody>tr>td:not(:last-child)]:pr-3 [&_table>tbody>tr>td:nth-child(1)]:text-left [&_table>tbody>tr>td]:min-h-11 [&_table>tbody>tr>td]:overflow-hidden [&_table>tbody>tr>td]:py-3 [&_table>tbody>tr>td]:text-right [&_table>tbody>tr>td]:align-top [&_table>tbody>tr>td]:shadow-b [&_table>tbody>tr.has-details>td]:min-h-6 [&_table>tbody>tr.has-details>td]:pb-1 [&_table>tbody>tr.has-details>td]:pl-0 [&_table>tbody>tr.has-details>td]:pr-3 [&_table>tbody>tr.has-details>td]:pt-3 [&_table>tbody>tr.has-details>td]:shadow-none [&_table>tbody>tr.details-line>td:last-child]:pr-0 [&_table>tbody>tr.details-line>td]:min-h-6 [&_table>tbody>tr.details-line>td]:py-1 [&_table>tbody>tr.details-line>td]:pl-4 [&_table>tbody>tr.details-line>td]:pr-3 [&_table>tbody>tr.details-line>td]:align-top [&_table>tbody>tr.details-line>td]:shadow-none [&_table>tbody>tr.subtotal>td:last-child]:pr-0 [&_table>tbody>tr.subtotal>td]:pb-3 [&_table>tbody>tr.subtotal>td]:pl-4 [&_table>tbody>tr.subtotal>td]:pr-3 [&_table>tbody>tr.subtotal>td]:pt-1 [&_table>tbody>tr.subtotal>td]:shadow-b [&_table>tbody>tr.line-collapse>td]:!p-0 [&_table>tbody>tr.line-collapse>td_.collapse-header]:block [&_table>tbody>tr.line-collapse>td_.collapse-header]:w-full [&_table>tbody>tr.line-collapse>td_.collapse-header]:py-3 [&_table>tbody>tr.line-collapse>td_.collapse-header]:shadow-b [&_table>tfoot>tr>td]:px-0 [&_table>tfoot>tr>td]:py-3 [&_table>tfoot>tr>td]:text-right [&_table>tfoot>tr>td:nth-child(2)]:text-left [&_table>tfoot>tr>td:nth-child(2)]:shadow-b [&_table>tfoot>tr>td:nth-child(3)]:shadow-b [&_table>tfoot>tr>td:nth-child(3)]:line-break-anywhere [&_table>tfoot>tr>td:nth-child(1)]:w-[50%] [&_table>tfoot>tr>td:nth-child(2)]:w-[35%] [&_table>tfoot>tr>td:nth-child(3)]:w-[15%] [&_table>thead>tr>th:nth-child(1)]:w-[50%] [&_table>thead>tr>th:nth-child(2)]:w-[20%] [&_table>thead>tr>th:nth-child(3)]:w-[10%] [&_table>thead>tr>th:nth-child(4)]:w-[20%] [&_table>thead>tr>th:nth-child(5)]:w-6 [&_table>thead>tr>th:nth-child(5)]:overflow-visible [&_table>tbody>tr>td:nth-child(1)]:w-[50%] [&_table>tbody>tr>td:nth-child(2)]:w-[20%] [&_table>tbody>tr>td:nth-child(3)]:w-[10%] [&_table>tbody>tr>td:nth-child(4)]:w-[20%] [&_table>tbody>tr>td:nth-child(5)]:w-6 [&_table>tbody>tr>td:nth-child(5)]:overflow-visible [&_table>tbody>tr>td:last-child]:size-6 [&_table>tbody>tr>td:last-child]:overflow-visible [&_table>tbody>tr>td:last-child]:pr-0 [&_table>tbody>tr>td:last-child]:pt-[10px] [&_table>tbody>tr>td:nth-last-child(2)]:!pr-3"
+  >
+    <div
+      class="[&>table:not(:nth-last-child(2))]:mb-8"
+    >
+      <table
+        data-test="invoice-details-subscription-table"
+      >
+        <thead
+          class=""
+        >
+          <tr>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Main Subscription
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Units
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Tax
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Amount
+              </div>
+            </th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="5"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Fees from Dec 31, 2023 to Jan 31, 2024
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-1"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Monthly subscription fee - Premium Plan
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $50.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-2"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  API Calls
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                100
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $50.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <tfoot>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Subtotal (excl. tax)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-subtotal-excl-tax-value"
+              >
+                $100.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Tax (0%)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Subtotal (incl. tax)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-subtotal-incl-tax-value"
+              >
+                $110.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Total
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-value"
+              >
+                $110.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Amount settled
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-paid-value"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Amount due
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-due-value"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+</div>
+`;
+
+exports[`InvoiceDetailsTable - Integration Tests Snapshot Tests should match snapshot for invoice with 2 subscriptions 1`] = `
+<div>
+  <section
+    class="[&_table]:w-full [&_table]:table-fixed [&_table]:border-collapse [&_table>thead>tr>th]:sticky [&_table>thead>tr>th]:top-[theme("spacing.nav")] [&_table>thead>tr>th]:z-10 [&_table>thead>tr>th]:bg-white [&_table>thead>tr>th]:pb-3 [&_table>thead>tr>th]:pt-8 [&_table>thead>tr>th]:shadow-b [&_table>thead>tr>th:not(:first-child)]:line-break-anywhere [&_table>thead>tr>th:not(:last-child)]:pr-3 [&_table>thead>tr>th:nth-child(1)]:text-left [&_table>thead>tr>th]:overflow-hidden [&_table>thead>tr>th]:text-right [&_table>tbody>tr>td:not(:first-child)]:line-break-anywhere [&_table>tbody>tr>td:not(:last-child)]:pr-3 [&_table>tbody>tr>td:nth-child(1)]:text-left [&_table>tbody>tr>td]:min-h-11 [&_table>tbody>tr>td]:overflow-hidden [&_table>tbody>tr>td]:py-3 [&_table>tbody>tr>td]:text-right [&_table>tbody>tr>td]:align-top [&_table>tbody>tr>td]:shadow-b [&_table>tbody>tr.has-details>td]:min-h-6 [&_table>tbody>tr.has-details>td]:pb-1 [&_table>tbody>tr.has-details>td]:pl-0 [&_table>tbody>tr.has-details>td]:pr-3 [&_table>tbody>tr.has-details>td]:pt-3 [&_table>tbody>tr.has-details>td]:shadow-none [&_table>tbody>tr.details-line>td:last-child]:pr-0 [&_table>tbody>tr.details-line>td]:min-h-6 [&_table>tbody>tr.details-line>td]:py-1 [&_table>tbody>tr.details-line>td]:pl-4 [&_table>tbody>tr.details-line>td]:pr-3 [&_table>tbody>tr.details-line>td]:align-top [&_table>tbody>tr.details-line>td]:shadow-none [&_table>tbody>tr.subtotal>td:last-child]:pr-0 [&_table>tbody>tr.subtotal>td]:pb-3 [&_table>tbody>tr.subtotal>td]:pl-4 [&_table>tbody>tr.subtotal>td]:pr-3 [&_table>tbody>tr.subtotal>td]:pt-1 [&_table>tbody>tr.subtotal>td]:shadow-b [&_table>tbody>tr.line-collapse>td]:!p-0 [&_table>tbody>tr.line-collapse>td_.collapse-header]:block [&_table>tbody>tr.line-collapse>td_.collapse-header]:w-full [&_table>tbody>tr.line-collapse>td_.collapse-header]:py-3 [&_table>tbody>tr.line-collapse>td_.collapse-header]:shadow-b [&_table>tfoot>tr>td]:px-0 [&_table>tfoot>tr>td]:py-3 [&_table>tfoot>tr>td]:text-right [&_table>tfoot>tr>td:nth-child(2)]:text-left [&_table>tfoot>tr>td:nth-child(2)]:shadow-b [&_table>tfoot>tr>td:nth-child(3)]:shadow-b [&_table>tfoot>tr>td:nth-child(3)]:line-break-anywhere [&_table>tfoot>tr>td:nth-child(1)]:w-[50%] [&_table>tfoot>tr>td:nth-child(2)]:w-[35%] [&_table>tfoot>tr>td:nth-child(3)]:w-[15%] [&_table>thead>tr>th:nth-child(1)]:w-[50%] [&_table>thead>tr>th:nth-child(2)]:w-[20%] [&_table>thead>tr>th:nth-child(3)]:w-[10%] [&_table>thead>tr>th:nth-child(4)]:w-[20%] [&_table>thead>tr>th:nth-child(5)]:w-6 [&_table>thead>tr>th:nth-child(5)]:overflow-visible [&_table>tbody>tr>td:nth-child(1)]:w-[50%] [&_table>tbody>tr>td:nth-child(2)]:w-[20%] [&_table>tbody>tr>td:nth-child(3)]:w-[10%] [&_table>tbody>tr>td:nth-child(4)]:w-[20%] [&_table>tbody>tr>td:nth-child(5)]:w-6 [&_table>tbody>tr>td:nth-child(5)]:overflow-visible [&_table>tbody>tr>td:last-child]:size-6 [&_table>tbody>tr>td:last-child]:overflow-visible [&_table>tbody>tr>td:last-child]:pr-0 [&_table>tbody>tr>td:last-child]:pt-[10px] [&_table>tbody>tr>td:nth-last-child(2)]:!pr-3"
+  >
+    <div
+      class="[&>table:not(:nth-last-child(2))]:mb-8"
+    >
+      <table
+        data-test="invoice-details-subscription-table"
+      >
+        <thead
+          class=""
+        >
+          <tr>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Monthly Subscription
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Units
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Tax
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Amount
+              </div>
+            </th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="5"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Fees from Dec 31, 2023 to Jan 31, 2024
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-1"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Monthly subscription fee - Premium Plan
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $50.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-2"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  API Calls
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $50.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table
+        data-test="invoice-details-subscription-table"
+      >
+        <thead
+          class=""
+        >
+          <tr>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Yearly Subscription
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Units
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Tax
+              </div>
+            </th>
+            <th>
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Amount
+              </div>
+            </th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="5"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="captionHl"
+              >
+                Fees from Dec 31, 2023 to Dec 31, 2024
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-3"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Yearly subscription fee - Enterprise Plan
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $70.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr
+            class="cursor-pointer hover:bg-grey-100"
+            data-test="fee-row-fee-4"
+          >
+            <td
+              colspan="1"
+            >
+              <div
+                class=MuiStack-root css-hash-MuiStack-root
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Storage
+                </div>
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                0%
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $30.00
+              </div>
+            </td>
+            <td
+              data-test="fee-actions-cell"
+            >
+              <div
+                class=""
+              >
+                <div
+                  class="right-12 top-4 z-10 md:right-4 static"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      aria-label="View fee details"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="fee-actions-button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="dots-horizontal/medium"
+                          fill="currentColor"
+                          title="dots-horizontal/medium"
+                          viewBox="0 0 16 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M2 10C2.39556 10 2.78224 9.8827 3.11114 9.66294C3.44004 9.44318 3.69638 9.13082 3.84776 8.76537C3.99913 8.39992 4.03874 7.99778 3.96157 7.60982C3.8844 7.22186 3.69392 6.86549 3.41421 6.58579C3.13451 6.30608 2.77814 6.1156 2.39018 6.03843C2.00222 5.96126 1.60009 6.00087 1.23463 6.15224C0.869181 6.30362 0.556824 6.55996 0.337061 6.88886C0.117298 7.21776 0 7.60444 0 8C0 8.53043 0.210714 9.03914 0.585786 9.41421C0.960859 9.78929 1.46957 10 2 10ZM8 10C8.39556 10 8.78224 9.8827 9.11114 9.66294C9.44004 9.44318 9.69638 9.13082 9.84776 8.76537C9.99913 8.39992 10.0387 7.99778 9.96157 7.60982C9.8844 7.22186 9.69392 6.86549 9.41421 6.58579C9.13451 6.30608 8.77814 6.1156 8.39018 6.03843C8.00222 5.96126 7.60009 6.00087 7.23463 6.15224C6.86918 6.30362 6.55682 6.55996 6.33706 6.88886C6.1173 7.21776 6 7.60444 6 8C6 8.53043 6.21071 9.03914 6.58579 9.41421C6.96086 9.78929 7.46957 10 8 10ZM14 10C14.3956 10 14.7822 9.8827 15.1111 9.66294C15.44 9.44318 15.6964 9.13082 15.8478 8.76537C15.9991 8.39992 16.0387 7.99778 15.9616 7.60982C15.8844 7.22186 15.6939 6.86549 15.4142 6.58579C15.1345 6.30608 14.7781 6.1156 14.3902 6.03843C14.0022 5.96126 13.6001 6.00087 13.2346 6.15224C12.8692 6.30362 12.5568 6.55996 12.3371 6.88886C12.1173 7.21776 12 7.60444 12 8C12 8.53043 12.2107 9.03914 12.5858 9.41421C12.9609 9.78929 13.4696 10 14 10Z"
+                            fill-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <tfoot>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Subtotal (excl. tax)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-subtotal-excl-tax-value"
+              >
+                $200.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Tax (0%)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="body"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Subtotal (incl. tax)
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-subtotal-incl-tax-value"
+              >
+                $220.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Total
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-value"
+              >
+                $220.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Amount settled
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-paid-value"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td />
+            <td
+              colspan="2"
+            >
+              <div
+                class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                data-test="bodyHl"
+              >
+                Amount due
+              </div>
+            </td>
+            <td>
+              <div
+                class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+                data-test="invoice-details-table-footer-total-due-value"
+              >
+                $0.00
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+</div>
+`;

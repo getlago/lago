@@ -1,0 +1,10 @@
+---
+nb:
+  payment_receipt:
+    document_name: Kvittering
+    download_invoice: Last ned faktura
+    download_receipt: Last ned kvittering
+    number: Kvitteringsnummer
+    paid_on: 'Betalt den %{date} (Gjenstående å betale: %{total_due_amount})'
+    payment_date: Betalt den
+    payment_method: Betalingsmetode

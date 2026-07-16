@@ -1,0 +1,140 @@
+---
+nb:
+  invoice:
+    account_holder_name: Kontoinnehaver
+    account_number: Kontonummer
+    account_type: Kontotype
+    all_subscriptions: Alle Abonnement
+    all_usage_based_fees: Alle bruksbaserte kostnader
+    already_paid: Allerede betalt
+    amount: Beløp
+    amount_with_tax: Beløp (inkl. MVA)
+    amount_without_tax: Beløp (ekskl. MVA)
+    bank_code: Bankkode
+    bank_name: Banknavn
+    bank_transfer_info: Bankoverføringer kan ta flere virkedager å behandle. For å betale med bankoverføring, overfør midler ved å bruke følgende bankinformasjon.
+    bic: BIC
+    bill_from: Fra
+    bill_to: Til
+    branch_code: Filialkode
+    branch_name: Filialnavn
+    breakdown: Oversikt
+    breakdown_for_days: "%{breakdown_duration} av %{breakdown_total_duration} dager"
+    breakdown_of: Fordeling av %{fee_filter_display_name}
+    clabe: CLABE
+    conversion_rate: Valutakurs
+    country: Land
+    coupons: Kuponger
+    credit_notes: Kreditnotaer
+    date_from: Fra
+    date_to: til
+    details: "%{resource} detaljer"
+    document_name: Faktura
+    document_tax_name: Skattefaktura
+    due_date: Forfallsdato %{date}
+    e_invoicing:
+      credit_card: Kredittkortbetaling
+      credit_card_information: Kredittkortbetaling mottatt %{date}
+      discount_reason: Rabatt %{tax_rate} andel
+      payment_information: "%{payment_label} på %{currency} %{amount} brukt"
+      standard_payment: Standardbetaling
+    fee_prorated: Avgiften beregnes forholdsmessig for perioden; den viste enhetsprisen er et gjennomsnitt
+    fees_from_to_date: Gebyrer fra %{from_date} til %{to_date}
+    free_credits: Gratis kreditter
+    from_to_date: Fra %{from_date} til %{to_date}
+    graduated:
+      fee_per_unit_for_the_first: Avgift per enhet for de første %{to}
+      fee_per_unit_for_the_last: Avgift per enhet for %{from} og mer
+      fee_per_unit_for_the_next: Avgift per enhet for de neste %{from} til %{to}
+      flat_fee_for_the_first: Fast avgift for de første %{to}
+      flat_fee_for_the_last: Fast avgift for %{from} og mer
+      flat_fee_for_the_next: Fast avgift for de neste %{from} til %{to}
+    half_year: halvår
+    iban: IBAN
+    invoice_number: Fakturanummer
+    issue_date: Dato
+    item: Vare
+    list_of_charges: Oversikt over kostnader fra %{from} til %{to}
+    month: måned
+    monthly: Månedlig
+    notice_full: Uavhengig av når en hendelse mottas, blir enheten ikke forholdsmessig priset, vi belaster full pris.
+    notice_prorated: Hvis en enhet legges til eller fjernes i løpet av faktureringsperioden, beregner vi den proporsjonale prisen basert på forholdet mellom gjenværende eller brukte dager og det totale antallet dager i planen. For eksempel, hvis det er 15 dager igjen i planen, multipliserer vi prisen med 15/%{days_in_month}, og hvis en enhet ble brukt i 10 dager, multipliserer vi prisen med 10/%{days_in_month}.
+    package:
+      fee_per_package: Gebyr per pakke
+      fee_per_package_unit_price: "%{amount} per %{package_size}"
+      free_units_for_the_first: Gratis enheter for de første %{count}
+    paid_invoice: Betalt faktura
+    paid_tax_invoice: Betalt skattefaktura
+    pay_with_bank_transfer: Betal med bankoverføring
+    payment_term: Betalingsperiode
+    payment_term_days: "%{net_payment_term} dager"
+    percentage:
+      adjustment_per_transaction: Justering for min/maks per transaksjon
+      fee_per_transaction: Fast avgift per transaksjon
+      free_units_per_transaction:
+        one: Gratis enheter for 1 transaksjon
+        other: Gratis enheter for %{count} transaksjoner
+      percentage_rate_on_amount: Satsen på beløpet
+    powered_by: Fakturering drevet av
+    prepaid_credit_invoice: Forskuddsfaktura
+    prepaid_credits: Forskuddsbetalte kreditter
+    prepaid_credits_with_value: Forhåndsbetalte kreditter - %{wallet_name}
+    progressive_billing_credit: Bruk allerede fakturert
+    purchase_order_number: Bestillingsnummer
+    quarter: kvartal
+    quarterly: Kvartalsvis
+    reached_usage_threshold: Denne progressive faktureringen er generert fordi din akkumulerte bruk har nådd %{usage_amount}, og overskredet terskelen på %{threshold_amount}.
+    routing_number: Routing-nummer
+    see_breakdown: Se oversikt for antall enheter
+    self_billed:
+      document_name: Egenfakturering
+      footer: Denne egenfakturaen ble utstedt av kunden på vegne av partneren, med deres samtykke. Partneren har gått med på å ikke utstede sin egen faktura for denne transaksjonen.
+    semiannual: Halvårlig
+    sort_code: Sorteringskode
+    sub_total: Sub total
+    sub_total_with_tax: Sub total (inkl. MVA)
+    sub_total_without_tax: Sub total (ekskl. MVA)
+    subscription: Abonnement
+    subscription_interval: "%{plan_interval} abonnement - %{plan_name}"
+    swift_code: SWIFT-kode
+    tax: Merverdiavgift
+    tax_identification_number: 'Skatte-ID: %{tax_identification_number}'
+    tax_name: "%{name} (%{rate}% on %{amount})"
+    tax_name_only:
+      customer_exempt: Kunden er fritatt for avgift
+      juris_has_no_tax: Ingen skatt
+      juris_not_taxed: Ingen skatt
+      not_collecting: Ingen skatt
+      reverse_charge: Omvendt avgiftsplikt - Skatteplikt overført til kunden
+      transaction_exempt: Kunden er fritatt for avgift
+      unknown_taxation: Ukjent
+    tax_name_with_details: "%{name} (%{rate}%)"
+    tax_rate: Skattesats
+    taxes:
+      fr_tax_exempt: Kunden er skattefri i henhold til artikkel 259-1 i den franske skatteforvaltningsloven.
+      reverse_charge: Skatteansvar overført til kunden.
+      tax_exempt: Kunden er skattefri.
+    total: Totalt
+    total_credits: Antall kreditter
+    total_credits_with_value: 'Antall kreditter: %{credit_amount} kreditter'
+    total_due: Å betale
+    total_due_amount: Skyldig beløp
+    total_events: 'Totalt antall hendelser: %{count}'
+    total_paid_amount: Betalt beløp
+    total_unit: 'Antall enheter: %{units}'
+    total_unit_interval: 'Antall enheter: %{events_count} hendelser for %{units}'
+    true_up_details: Minimumsutgift på %{min_amount} beregnet etter antall brukte dager
+    true_up_metric: "%{metric} - Tilpasningskostnader"
+    unit: Enhet
+    unit_price: Enhetspris
+    units: Enheter
+    units_prorated_per_period: Enheter proratert per sekund per %{period}
+    usage_based_fees: Bruksbaserte kostnader
+    usage_breakdown_by: Bruksoversikt etter %{keys}
+    volume:
+      fee_per_unit: Gebyr per enhet
+      flat_fee_for_all_units: Fast avgift for alle enheter
+    week: uke
+    weekly: Ukentlig
+    year: år
+    yearly: Årlig

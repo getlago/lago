@@ -1,0 +1,108 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "pm_1R2EmOQ8iJWBZFaMKJHOwcvP",
+      "object": "payment_method",
+      "allow_redisplay": "always",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": null,
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": null,
+        "name": null,
+        "phone": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": null,
+          "cvc_check": "pass"
+        },
+        "country": "US",
+        "display_brand": "visa",
+        "exp_month": 12,
+        "exp_year": 2028,
+        "fingerprint": "pmIfA8TCefcd72yD",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "0341",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1741883924,
+      "customer": "cus_Rw5Qso78STEap3",
+      "livemode": false,
+      "metadata": {},
+      "radar_options": {},
+      "type": "card"
+    },
+    {
+      "id": "pm_1R2DFsQ8iJWBZFaMw3LLbR0r",
+      "object": "payment_method",
+      "allow_redisplay": "always",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": "FR",
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": "awdawd@desf.com",
+        "name": "Testing Stripe",
+        "phone": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": null,
+          "cvc_check": "pass"
+        },
+        "country": "US",
+        "display_brand": "visa",
+        "exp_month": 12,
+        "exp_year": 2028,
+        "fingerprint": "8TOiB4cGytYxCweY",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "4242",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1741878064,
+      "customer": "cus_Rw5Qso78STEap3",
+      "livemode": false,
+      "metadata": {},
+      "type": "card"
+    }
+  ],
+  "has_more": false,
+  "url": "/v1/customers/cus_Rw5Qso78STEap3/payment_methods"
+}

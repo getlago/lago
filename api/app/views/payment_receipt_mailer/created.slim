@@ -1,0 +1,55 @@
+table cellpadding="0" cellspacing="0" style="margin: auto; padding-bottom: 24px"
+  tr
+    td style="color: #66758f; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: center;"
+      = I18n.t('email.payment_receipt.created.payment_receipt_from', billing_entity_name: @billing_entity.name)
+  tr
+    td style="margin-bottom: 16px;font-style: normal;font-weight: 700;font-size: 32px;line-height: 40px;color: #19212E; text-align: center;"
+      = MoneyHelper.format(@payment_receipt.payment.amount)
+  tr
+    td style="color: #66758f; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: center;"
+      = I18n.t('payment_receipt.paid_on',
+          date: I18n.l(@payment_receipt.payment.created_at.to_date, format: :default),
+          total_due_amount: MoneyHelper.format(@total_due_amount))
+
+
+table style="width: 100%; border-collapse: collapse; border-top: 1px solid #d9dee7;"
+  tr
+    td style="color: #66758f; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; padding-right: 16px; white-space: nowrap; padding: 24px 0 4px;"
+      = I18n.t("payment_receipt.number")
+    td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212e; white-space: nowrap; padding: 24px 0 4px;"
+      = @payment_receipt.number
+  tr
+    td style="color: #66758f; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; padding-right: 16px; white-space: nowrap; padding: 4px 0;"
+      = I18n.t("payment_receipt.payment_date")
+    td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212e; white-space: nowrap; padding: 4px 0;"
+      = I18n.l(@payment_receipt.payment.created_at.to_date, format: :default)
+  tr
+    td style="color: #66758f; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; padding-right: 16px; white-space: nowrap; padding: 4px 0;"
+      = I18n.t("invoice.total_paid_amount")
+    td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212e; white-space: nowrap; padding: 4px 0;"
+      = MoneyHelper.format(@payment_receipt.payment.amount)
+
+table style="width: 100%; border-collapse: collapse; border-bottom: 1px solid #d9dee7; margin-top: 32px;"
+  tr
+    td style="font-size: 14px; font-weight: bold; line-height: 20px; letter-spacing: 0em; text-align: left; color: #19212E; white-space: nowrap; padding: 0;"
+      = I18n.t("email.invoice.finalized.invoice_number")
+    td style="font-size: 14px; font-weight: bold; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212E; white-space: nowrap; padding: 0;"
+      = I18n.t("invoice.total")
+  - @invoices.each do |invoice|
+    tr style="border-bottom: 1px solid #d9dee7;"
+      td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: left; padding-right: 16px; white-space: nowrap; padding: 8px 0;"
+        = link_to invoice.number, invoice.file_url, {style: "text-decoration: none; color: #006cfa"}
+      td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: right; color: #19212e; white-space: nowrap; padding: 8px 0;"
+        = MoneyHelper.format(invoice.total_amount)
+
+table cellpadding="0" cellspacing="0" style="width: 100%; padding: 24px 0; border-bottom: 1px solid #d9dee7;"
+  tr
+    td
+      table cellpadding="0" cellspacing="0" style="margin: auto"
+        tr
+          td style="padding-right: 8px;"
+            svg height="16px" width="16px" fill="#006CFA" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="padding-top: 4px"
+              path d="M12.705 10.27C12.5176 10.0838 12.2642 9.97921 12 9.97921C11.7358 9.97921 11.4824 10.0838 11.295 10.27L8.99999 12.75V1C8.99999 0.734784 8.89463 0.48043 8.7071 0.292893C8.51956 0.105357 8.26521 0 7.99999 0C7.73477 0 7.48042 0.105357 7.29288 0.292893C7.10535 0.48043 6.99999 0.734784 6.99999 1V12.755L4.70499 10.255C4.51763 10.0688 4.26417 9.96421 3.99999 9.96421C3.7358 9.96421 3.48235 10.0688 3.29499 10.255C3.19898 10.3482 3.12265 10.4597 3.07053 10.583C3.0184 10.7062 2.99155 10.8387 2.99155 10.9725C2.99155 11.1063 3.0184 11.2388 3.07053 11.362C3.12265 11.4853 3.19898 11.5968 3.29499 11.69L6.93999 15.54C7.22124 15.8209 7.60249 15.9787 7.99999 15.9787C8.39749 15.9787 8.77874 15.8209 9.05999 15.54L12.705 11.69C12.7987 11.597 12.8731 11.4864 12.9239 11.3646C12.9746 11.2427 13.0008 11.112 13.0008 10.98C13.0008 10.848 12.9746 10.7173 12.9239 10.5954C12.8731 10.4736 12.7987 10.363 12.705 10.27Z"
+          td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; color: #19212e;"
+            a style="text-decoration: none" target="_blank" href=@payment_receipt.file_url
+              = I18n.t('payment_receipt.download_receipt')

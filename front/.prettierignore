@@ -1,0 +1,13 @@
+node_modules
+dist
+.github
+generated
+globals.d.ts
+ci
+cypress/downloads
+cypress/screenshots
+build
+coverage
+.eslintcache
+.prettiercache
+TestResults/

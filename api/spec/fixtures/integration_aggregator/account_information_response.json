@@ -1,0 +1,11 @@
+{
+  "id": "1234567890",
+  "type": "STANDARD",
+  "timeZone": "US/Eastern",
+  "companyCurrency": "USD",
+  "additionalCurrencies": [],
+  "utcOffset": "-04:00",
+  "utcOffsetMilliseconds": -14400000,
+  "uiDomain": "app.hubspot.com",
+  "dataHostingLocation": "na1"
+}

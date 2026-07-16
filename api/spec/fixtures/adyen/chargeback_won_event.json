@@ -1,0 +1,30 @@
+{
+  "live":"true",
+  "notificationItems":[
+     {
+        "NotificationRequestItem":{
+           "additionalData":{
+              "chargebackReasonCode":"10.4",
+              "modificationMerchantReferences":"",
+              "chargebackSchemeCode":"visa",
+              "defensePeriodEndsAt":"2021-05-24T22:09:50+02:00",
+              "defendable" : "true",
+              "disputeStatus" : "Won"
+           },
+           "amount":{
+              "currency":"EUR",
+              "value":1000
+           },
+           "eventCode":"CHARGEBACK",
+           "eventDate":"2021-05-06T22:09:50+02:00",
+           "merchantAccountCode":"YOUR_MERCHANT_ACCOUNT",
+           "merchantReference":"YOUR_REFERENCE",
+           "originalReference":"9913333333333333",
+           "paymentMethod":"visa",
+           "pspReference":"9915555555555555",
+           "reason":"Other Fraud-Card Absent Environment",
+           "success":"true"
+        }
+     }
+  ]
+}

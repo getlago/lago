@@ -1,0 +1,207 @@
+{
+  "id": "evt_3R3dvoQ8iJWBZFaM0Wh4E44o",
+  "object": "event",
+  "api_version": "2020-08-27",
+  "created": 1742218937,
+  "data": {
+    "object": {
+      "id": "pi_3R3dvoQ8iJWBZFaM0uu1G1rx",
+      "object": "payment_intent",
+      "amount": 3897,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 3897,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic",
+      "charges": {
+        "object": "list",
+        "data": [
+          {
+            "id": "ch_3R3dvoQ8iJWBZFaM0NhAbztB",
+            "object": "charge",
+            "amount": 3897,
+            "amount_captured": 3897,
+            "amount_refunded": 0,
+            "application": null,
+            "application_fee": null,
+            "application_fee_amount": null,
+            "balance_transaction": "txn_3R3dvoQ8iJWBZFaM0vIgoQgO",
+            "billing_details": {
+              "address": {
+                "city": null,
+                "country": "FR",
+                "line1": null,
+                "line2": null,
+                "postal_code": null,
+                "state": null
+              },
+              "email": "awdawd@desf.com",
+              "name": "Testing Stripe",
+              "phone": null
+            },
+            "calculated_statement_descriptor": "JULIEN",
+            "captured": true,
+            "created": 1742218936,
+            "currency": "usd",
+            "customer": "cus_Rw5Qso78STEap3",
+            "description": "Hooli - Invoice HOO-CAAB-028-004",
+            "destination": null,
+            "dispute": null,
+            "disputed": false,
+            "failure_balance_transaction": null,
+            "failure_code": null,
+            "failure_message": null,
+            "fraud_details": {},
+            "invoice": null,
+            "livemode": false,
+            "metadata": {
+              "invoice_type": "one_off",
+              "lago_customer_id": "e4674f68-a7ba-4ce8-95e9-981f346b49d7",
+              "invoice_issuing_date": "2025-03-17",
+              "lago_invoice_id": "5ccdc601-18a5-4f22-a8e7-a53ca18e1f00"
+            },
+            "on_behalf_of": null,
+            "order": null,
+            "outcome": {
+              "advice_code": null,
+              "network_advice_code": null,
+              "network_decline_code": null,
+              "network_status": "approved_by_network",
+              "reason": null,
+              "risk_level": "normal",
+              "risk_score": 49,
+              "seller_message": "Payment complete.",
+              "type": "authorized"
+            },
+            "paid": true,
+            "payment_intent": "pi_3R3dvoQ8iJWBZFaM0uu1G1rx",
+            "payment_method": "pm_1R2DFsQ8iJWBZFaMw3LLbR0r",
+            "payment_method_details": {
+              "card": {
+                "amount_authorized": 3897,
+                "authorization_code": null,
+                "brand": "visa",
+                "checks": {
+                  "address_line1_check": null,
+                  "address_postal_code_check": null,
+                  "cvc_check": null
+                },
+                "country": "US",
+                "exp_month": 12,
+                "exp_year": 2028,
+                "extended_authorization": {
+                  "status": "disabled"
+                },
+                "fingerprint": "8TOiB4cGytYxCweY",
+                "funding": "credit",
+                "incremental_authorization": {
+                  "status": "unavailable"
+                },
+                "installments": null,
+                "last4": "4242",
+                "mandate": null,
+                "multicapture": {
+                  "status": "unavailable"
+                },
+                "network": "visa",
+                "network_token": {
+                  "used": false
+                },
+                "network_transaction_id": "568479105665299",
+                "overcapture": {
+                  "maximum_amount_capturable": 3897,
+                  "status": "unavailable"
+                },
+                "regulated_status": "unregulated",
+                "three_d_secure": null,
+                "wallet": null
+              },
+              "type": "card"
+            },
+            "radar_options": {},
+            "receipt_email": null,
+            "receipt_number": null,
+            "receipt_url": "https://pay.stripe.com/receipts/payment/CAcaFwoVYWNjdF8xUXNPODZROGlKV0JaRmFNKLnN4L4GMgZG_ZU7Occ6LBa2vkaCb0vmYUzyS_hCt6KVClQQn57DEam-9o5grpM2ZtQsdc7xMPJsKpwG",
+            "refunded": false,
+            "refunds": {
+              "object": "list",
+              "data": [],
+              "has_more": false,
+              "total_count": 0,
+              "url": "/v1/charges/ch_3R3dvoQ8iJWBZFaM0NhAbztB/refunds"
+            },
+            "review": null,
+            "shipping": null,
+            "source": null,
+            "source_transfer": null,
+            "statement_descriptor": null,
+            "statement_descriptor_suffix": null,
+            "status": "succeeded",
+            "transfer_data": null,
+            "transfer_group": null
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/charges?payment_intent=pi_3R3dvoQ8iJWBZFaM0uu1G1rx"
+      },
+      "client_secret": "pi_3R3dvoQ8iJWBZFaM0uu1G1rx_secret_qADOJoHblKMdHbpS73aZEncpt",
+      "confirmation_method": "automatic",
+      "created": 1742218936,
+      "currency": "usd",
+      "customer": "cus_Rw5Qso78STEap3",
+      "description": "Hooli - Invoice HOO-CAAB-028-004",
+      "invoice": null,
+      "last_payment_error": null,
+      "latest_charge": "ch_3R3dvoQ8iJWBZFaM0NhAbztB",
+      "livemode": false,
+      "metadata": {
+        "invoice_type": "one_off",
+        "lago_customer_id": "e4674f68-a7ba-4ce8-95e9-981f346b49d7",
+        "invoice_issuing_date": "2025-03-17",
+        "lago_invoice_id": "5ccdc601-18a5-4f22-a8e7-a53ca18e1f00"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": "pm_1R2DFsQ8iJWBZFaMw3LLbR0r",
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        },
+        "crypto": {}
+      },
+      "payment_method_types": [
+        "card",
+        "crypto"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "succeeded",
+      "transfer_data": null,
+      "transfer_group": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 3,
+  "request": {
+    "id": "req_O6QX7CMLkdywUG",
+    "idempotency_key": "payment-086e04f0-7459-41d2-ab66-8795f2c0ff9e"
+  },
+  "type": "payment_intent.succeeded"
+}

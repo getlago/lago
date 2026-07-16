@@ -1,0 +1,83 @@
+.markdown {
+  @apply text-sm leading-6 text-grey-700;
+}
+
+.markdown h1 {
+  @apply my-3 text-2xl font-bold leading-normal;
+}
+
+.markdown h2 {
+  @apply my-3 text-xl font-bold leading-normal;
+}
+
+.markdown h3 {
+  @apply my-3 text-lg font-bold leading-normal;
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  @apply my-2 text-base font-bold;
+}
+
+.markdown hr {
+  @apply my-6 border-grey-300;
+}
+
+.markdown em,
+.markdown strong {
+  @apply font-semibold;
+}
+
+.markdown ul,
+.markdown ol {
+  @apply my-4 ml-4 pl-4;
+}
+
+.markdown li {
+  @apply mb-1 list-[inherit];
+}
+
+.markdown ul {
+  @apply list-disc;
+}
+
+.markdown ul > li > ul {
+  @apply list-[circle];
+}
+
+.markdown ul > li > ul > li > ul {
+  @apply list-[revert];
+}
+
+.markdown ol {
+  @apply list-decimal;
+}
+
+.markdown ol > li > ol {
+  @apply list-[lower-alpha];
+}
+
+.markdown ol > li > ol > li > ol {
+  @apply list-[lower-roman];
+}
+
+.markdown code {
+  @apply rounded-md bg-grey-100 px-1 py-0.5 font-code text-red-500;
+}
+
+.markdown blockquote {
+  @apply my-2 border-l-4 border-grey-300 pl-4 text-grey-600;
+}
+
+.markdown table {
+  @apply w-full;
+}
+
+.markdown table th {
+  @apply border border-grey-300 bg-grey-100 px-2 py-1;
+}
+
+.markdown table td {
+  @apply border border-grey-300 px-2 py-1;
+}

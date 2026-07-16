@@ -1,0 +1,5 @@
+- unless organization.remove_branding_watermark_enabled?
+  .powered-by
+    span.body-2
+      | #{I18n.t('credit_note.powered_by')} &nbsp;
+    img src="#{::SlimHelper::PDF_LOGO_FILENAME}" alt="Lago Logo"

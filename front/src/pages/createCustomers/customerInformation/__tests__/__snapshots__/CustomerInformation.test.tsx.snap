@@ -1,0 +1,1803 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`CustomerInformation Integration Tests WHEN rendering the component THEN should render a matching snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-6"
+  >
+    <div
+      class="flex flex-col gap-2"
+    >
+      <div
+        class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+        data-test="subhead1"
+      >
+        Customer information
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="caption"
+      >
+        Define the customer information to easily identify it.
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="billingEntityCode"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Affiliated entity
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id=:r-mui-id:
+              name="billingEntityCode"
+              placeholder="Search or select an entity"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer external ID (required)
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-focused MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="externalId"
+            name="externalId"
+            placeholder="Type an external ID"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="customerType"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Customer type
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id=:r-mui-id:
+              name="customerType"
+              placeholder="Search or select a customer type"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="name"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer name
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="name"
+            name="name"
+            placeholder="Type a name"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex gap-6"
+    >
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="firstname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              First name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="firstname"
+              name="firstname"
+              placeholder="Type a first name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="lastname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Last name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="lastname"
+              name="lastname"
+              placeholder="Type a last name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="timezone"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Timezone
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              disabled=""
+              id=:r-mui-id:
+              name="timezone"
+              placeholder="Search or select a timezone"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+          data-test="text-field-helpertext"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            <span>
+              Customer events will be based on this timezone. If empty, events will be based on UTC, UTC +00:00 
+              <a
+                href="/settings/billing-entity/general"
+              >
+                set on the organization level
+              </a>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalSalesforceId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            External Salesforce Id
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="externalSalesforceId"
+            name="externalSalesforceId"
+            placeholder="Type an external Salesforce Id"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="text-field-helpertext"
+      >
+        Enter an existing Salesforce Account ID to link this customer with a Salesforce Account
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CustomerInformation Integration Tests WHEN rendering the component THEN should render with customer data 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-6"
+  >
+    <div
+      class="flex flex-col gap-2"
+    >
+      <div
+        class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+        data-test="subhead1"
+      >
+        Customer information
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="caption"
+      >
+        Define the customer information to easily identify it.
+      </div>
+    </div>
+    <div
+      aria-owns=:r-mui-id:-listbox
+      class=MuiAutocomplete-root Mui-expanded Mui-focused MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="billingEntityCode"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Affiliated entity
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth Mui-focused MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-controls=:r-mui-id:-listbox
+              aria-expanded="true"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id=:r-mui-id:
+              name="billingEntityCode"
+              placeholder="Search or select an entity"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer external ID (required)
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="externalId"
+            name="externalId"
+            placeholder="Type an external ID"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="customerType"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Customer type
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id=:r-mui-id:
+              name="customerType"
+              placeholder="Search or select a customer type"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="name"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer name
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="name"
+            name="name"
+            placeholder="Type a name"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex gap-6"
+    >
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="firstname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              First name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="firstname"
+              name="firstname"
+              placeholder="Type a first name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="lastname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Last name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="lastname"
+              name="lastname"
+              placeholder="Type a last name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="timezone"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Timezone
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              disabled=""
+              id=:r-mui-id:
+              name="timezone"
+              placeholder="Search or select a timezone"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+          data-test="text-field-helpertext"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            <span>
+              Customer events will be based on this timezone. If empty, events will be based on UTC, UTC +00:00 
+              <a
+                href="/settings/billing-entity/TBE/general"
+              >
+                set on the organization level
+              </a>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalSalesforceId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            External Salesforce Id
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="externalSalesforceId"
+            name="externalSalesforceId"
+            placeholder="Type an external Salesforce Id"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="text-field-helpertext"
+      >
+        Enter an existing Salesforce Account ID to link this customer with a Salesforce Account
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CustomerInformation Integration Tests WHEN rendering the component THEN should render with edition mode 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-6"
+  >
+    <div
+      class="flex flex-col gap-2"
+    >
+      <div
+        class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+        data-test="subhead1"
+      >
+        Customer information
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="caption"
+      >
+        Define the customer information to easily identify it.
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="billingEntityCode"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Affiliated entity
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              disabled=""
+              id=:r-mui-id:
+              name="billingEntityCode"
+              placeholder="Search or select an entity"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer external ID (required)
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            disabled=""
+            id="externalId"
+            name="externalId"
+            placeholder="Type an external ID"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="customerType"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Customer type
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id=:r-mui-id:
+              name="customerType"
+              placeholder="Search or select a customer type"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                tabindex="0"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="name"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            Customer name
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="name"
+            name="name"
+            placeholder="Type a name"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex gap-6"
+    >
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="firstname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              First name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="firstname"
+              name="firstname"
+              placeholder="Type a first name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex flex-col gap-1 w-full"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="lastname"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Last name
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-invalid="false"
+              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              id="lastname"
+              name="lastname"
+              placeholder="Type a last name"
+              type="text"
+              value=""
+            />
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+    >
+      <div
+        class="flex flex-col gap-1 group/combobox-input"
+      >
+        <div
+          class="flex items-center gap-1"
+        >
+          <label
+            class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+            data-test="captionHl"
+            for="timezone"
+          >
+            <span
+              class="flex flex-row gap-1"
+            >
+              Timezone
+            </span>
+          </label>
+        </div>
+        <div
+          class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+        >
+          <div
+            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+          >
+            <input
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-invalid="false"
+              autocapitalize="none"
+              autocomplete="off"
+              class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+              disabled=""
+              id=:r-mui-id:
+              name="timezone"
+              placeholder="Search or select a timezone"
+              role="combobox"
+              spellcheck="false"
+              type="text"
+              value=""
+            />
+            <div
+              class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="close-circle-filled/medium"
+                  fill="currentColor"
+                  title="close-circle-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                  />
+                </svg>
+              </button>
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="button"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-up-down/medium"
+                  fill="currentColor"
+                  title="chevron-up-down/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <fieldset
+              aria-hidden="true"
+              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+            >
+              <legend
+                class=css-hash-MuiNotchedOutlined-root
+              >
+                <span
+                  class="notranslate"
+                >
+                  ​
+                </span>
+              </legend>
+            </fieldset>
+          </div>
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+          data-test="text-field-helpertext"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            <span>
+              Customer events will be based on this timezone. If empty, events will be based on UTC, UTC +00:00 
+              <a
+                href="/settings/billing-entity/general"
+              >
+                set on the organization level
+              </a>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-1"
+    >
+      <div
+        class="flex items-center gap-1"
+      >
+        <label
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+          for="externalSalesforceId"
+        >
+          <span
+            class="flex flex-row gap-1"
+          >
+            External Salesforce Id
+          </span>
+        </label>
+      </div>
+      <div
+        class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+      >
+        <div
+          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+        >
+          <input
+            aria-invalid="false"
+            class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+            id="externalSalesforceId"
+            name="externalSalesforceId"
+            placeholder="Type an external Salesforce Id"
+            type="text"
+            value=""
+          />
+          <fieldset
+            aria-hidden="true"
+            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+          >
+            <legend
+              class=css-hash-MuiNotchedOutlined-root
+            >
+              <span
+                class="notranslate"
+              >
+                ​
+              </span>
+            </legend>
+          </fieldset>
+        </div>
+      </div>
+      <div
+        class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+        data-test="text-field-helpertext"
+      >
+        Enter an existing Salesforce Account ID to link this customer with a Salesforce Account
+      </div>
+    </div>
+  </div>
+</div>
+`;

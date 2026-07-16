@@ -1,0 +1,619 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MetadataForm snapshots matches snapshot with disabled add button at max count 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-y-6"
+  >
+    <div
+      class="flex flex-col gap-y-1"
+    >
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+        >
+          Key
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+          data-test="captionHl"
+        >
+          Value
+        </div>
+      </div>
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.0.key"
+                name="metadata.0.key"
+                placeholder="Enter a key"
+                type="text"
+                value="key0"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.0.value"
+                name="metadata.0.value"
+                placeholder="Enter a value"
+                type="text"
+                value="value0"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-2 flex"
+        >
+          <div
+            aria-label="Remove metadata"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-y-1"
+    >
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.1.key"
+                name="metadata.1.key"
+                placeholder="Enter a key"
+                type="text"
+                value="key1"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.1.value"
+                name="metadata.1.value"
+                placeholder="Enter a value"
+                type="text"
+                value="value1"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-2 flex"
+        >
+          <div
+            aria-label="Remove metadata"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-y-1"
+    >
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.2.key"
+                name="metadata.2.key"
+                placeholder="Enter a key"
+                type="text"
+                value="key2"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.2.value"
+                name="metadata.2.value"
+                placeholder="Enter a value"
+                type="text"
+                value="value2"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-2 flex"
+        >
+          <div
+            aria-label="Remove metadata"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-y-1"
+    >
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.3.key"
+                name="metadata.3.key"
+                placeholder="Enter a key"
+                type="text"
+                value="key3"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.3.value"
+                name="metadata.3.value"
+                placeholder="Enter a value"
+                type="text"
+                value="value3"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-2 flex"
+        >
+          <div
+            aria-label="Remove metadata"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-col gap-y-1"
+    >
+      <div
+        class="grid grid-cols-[200px_1fr_24px] gap-x-3 "
+      >
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.4.key"
+                name="metadata.4.key"
+                placeholder="Enter a key"
+                type="text"
+                value="key4"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-1"
+        >
+          <div
+            class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+          >
+            <div
+              class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+            >
+              <input
+                aria-invalid="false"
+                class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                id="metadata.4.value"
+                name="metadata.4.value"
+                placeholder="Enter a value"
+                type="text"
+                value="value4"
+              />
+              <fieldset
+                aria-hidden="true"
+                class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+              >
+                <legend
+                  class=css-hash-MuiNotchedOutlined-root
+                >
+                  <span
+                    class="notranslate"
+                  >
+                    ​
+                  </span>
+                </legend>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+        <div
+          class="mt-2 flex"
+        >
+          <div
+            aria-label="Remove metadata"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation Mui-disabled MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-inline min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="add-metadata-button"
+      disabled=""
+      tabindex="-1"
+      type="button"
+    >
+      <span
+        class=MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium css-hash-MuiButton-startIcon
+      >
+        <svg
+          class="text-inherit size-4 min-w-4"
+          data-test="plus/medium"
+          fill="currentColor"
+          title="plus/medium"
+          viewBox="0 0 16 16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M7 9H1C0.734784 9 0.48043 8.89464 0.292893 8.70711C0.105357 8.51957 0 8.26522 0 8C0 7.73478 0.105357 7.48043 0.292893 7.29289C0.48043 7.10536 0.734784 7 1 7H7V1C7 0.734784 7.10536 0.48043 7.29289 0.292893C7.48043 0.105357 7.73478 0 8 0C8.26522 0 8.51957 0.105357 8.70711 0.292893C8.89464 0.48043 9 0.734784 9 1V7H15C15.2652 7 15.5196 7.10536 15.7071 7.29289C15.8946 7.48043 16 7.73478 16 8C16 8.26522 15.8946 8.51957 15.7071 8.70711C15.5196 8.89464 15.2652 9 15 9H9V15C9 15.2652 8.89464 15.5196 8.70711 15.7071C8.51957 15.8946 8.26522 16 8 16C7.73478 16 7.48043 15.8946 7.29289 15.7071C7.10536 15.5196 7 15.2652 7 15V9Z"
+          />
+        </svg>
+      </span>
+      Add new field
+    </button>
+  </div>
+</div>
+`;
+
+exports[`MetadataForm snapshots matches snapshot with empty metadata 1`] = `
+<div>
+  <div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-inline min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="add-metadata-button"
+      tabindex="0"
+      type="button"
+    >
+      <span
+        class=MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium css-hash-MuiButton-startIcon
+      >
+        <svg
+          class="text-inherit size-4 min-w-4"
+          data-test="plus/medium"
+          fill="currentColor"
+          title="plus/medium"
+          viewBox="0 0 16 16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M7 9H1C0.734784 9 0.48043 8.89464 0.292893 8.70711C0.105357 8.51957 0 8.26522 0 8C0 7.73478 0.105357 7.48043 0.292893 7.29289C0.48043 7.10536 0.734784 7 1 7H7V1C7 0.734784 7.10536 0.48043 7.29289 0.292893C7.48043 0.105357 7.73478 0 8 0C8.26522 0 8.51957 0.105357 8.70711 0.292893C8.89464 0.48043 9 0.734784 9 1V7H15C15.2652 7 15.5196 7.10536 15.7071 7.29289C15.8946 7.48043 16 7.73478 16 8C16 8.26522 15.8946 8.51957 15.7071 8.70711C15.5196 8.89464 15.2652 9 15 9H9V15C9 15.2652 8.89464 15.5196 8.70711 15.7071C8.51957 15.8946 8.26522 16 8 16C7.73478 16 7.48043 15.8946 7.29289 15.7071C7.10536 15.5196 7 15.2652 7 15V9Z"
+          />
+        </svg>
+      </span>
+      Add new field
+    </button>
+  </div>
+</div>
+`;

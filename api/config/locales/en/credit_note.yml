@@ -1,0 +1,29 @@
+---
+en:
+  credit_note:
+    amount: Amount (excl. tax)
+    coupon_adjustment: Coupons
+    credit_from: From
+    credit_note_number: Credit note number
+    credit_to: Credit to
+    credited_notice: Credited on customer balance on %{issuing_date}
+    credited_on_customer_balance: Credited on customer balance
+    document_name: Credit note
+    invoice_number: Invoice number
+    issue_date: Issue date
+    issued_notice: Issued on %{issuing_date}
+    item: Item
+    offset_invoice: Offset on invoice %{invoice_number}
+    offset_invoice_notice: Offset invoice %{invoice_number} on %{issuing_date}
+    powered_by: Powered by
+    prepaid_credits_for_wallet: Prepaid credits - %{wallet_name}
+    purchase_order_number: Purchase order number
+    refunded: Refunded
+    refunded_notice: Refunded on %{issuing_date}
+    self_billed:
+      footer: This credit note on a self-billing invoice was issued by the client on behalf of the partner, with their consent. The partner has agreed not to issue their own credit note for this transaction.
+    sub_total_without_tax: Sub total (excl. tax)
+    subscription: Subscription
+    tax: "%{name} (%{rate}% on %{amount})"
+    tax_rate: Tax rate
+    total: Total

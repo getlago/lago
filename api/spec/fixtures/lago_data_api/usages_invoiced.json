@@ -1,0 +1,34 @@
+[
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-01-01",
+      "end_of_period_dt": "2024-01-31",
+      "billable_metric_code": "account_members",
+      "amount_currency": "EUR",
+      "amount_cents": 26600
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-01-01",
+      "end_of_period_dt": "2024-01-31",
+      "billable_metric_code": "accounts",
+      "amount_currency": "EUR",
+      "amount_cents": 145950
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-01-01",
+      "end_of_period_dt": "2024-01-31",
+      "billable_metric_code": "applepay_cards_enrolled",
+      "amount_currency": "EUR",
+      "amount_cents": 20175
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-01-01",
+      "end_of_period_dt": "2024-01-31",
+      "billable_metric_code": "business_account_opening",
+      "amount_currency": "EUR",
+      "amount_cents": 2521800
+  }
+]

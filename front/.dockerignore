@@ -1,0 +1,45 @@
+# Node modules
+node_modules
+**/node_modules
+
+# Workspace build outputs
+dist
+**/dist
+
+# pnpm local store
+.pnpm-store
+
+# Local dev config
+.vscode
+.cursor
+.env.template
+.github
+.husky
+
+# Test & mock
+__mocks__
+cypress
+coverage
+
+# Git and CI-related
+.git
+.gitignore
+.github
+
+# Caches
+.eslintcache
+
+# OS junk
+.DS_Store
+**/.DS_Store
+
+# Documentation
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+
+# Logs
+*.log
+
+Dockerfile
+Dockerfile.dev

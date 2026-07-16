@@ -1,0 +1,138 @@
+---
+sv:
+  invoice:
+    account_holder_name: Kontoinnehavarens namn
+    account_number: Kontonummer
+    account_type: Kontotyp
+    all_subscriptions: Alla prenumerationer
+    all_usage_based_fees: Alla avgifter baserade på användning
+    already_paid: Redan betalt
+    amount: Belopp (exkl. moms)
+    amount_with_tax: Belopp (inkl. moms)
+    amount_without_tax: Belopp (exkl. moms)
+    bank_code: Bankkod
+    bank_name: Banknamn
+    bank_transfer_info: Banköverföringar kan ta flera arbetsdagar att behandla. För att betala med banköverföring, överför medel med följande bankinformation.
+    bic: BIC
+    bill_from: Avsändare
+    bill_to: Mottagare
+    branch_code: Filialkod
+    branch_name: Filialnamn
+    breakdown: Specifikation
+    breakdown_for_days: Använt %{breakdown_duration} av %{breakdown_total_duration} dagar
+    breakdown_of: Specifikation för %{fee_filter_display_name}
+    clabe: CLABE
+    conversion_rate: Växelkurs
+    country: Land
+    credit_notes: Kreditfakturor
+    date_from: Avser period
+    date_to: till och med
+    details: "%{resource} specifikation”"
+    document_name: Faktura
+    document_tax_name: Skattefaktura
+    due_date: Förfaller %{date}
+    e_invoicing:
+      credit_card: Kreditkortsbetalning
+      credit_card_information: Kreditkortsbetalning mottagen %{date}
+      discount_reason: Rabatt %{tax_rate} andel
+      payment_information: "%{payment_label} på %{currency} %{amount} tillämpad"
+      standard_payment: Standardbetaling
+    fee_prorated: Avgiften är proraterad för perioden; det visade enhetspriset är ett genomsnitt
+    fees_from_to_date: Avgifter från %{from_date} till %{to_date}
+    free_credits: Gratis krediter
+    from_to_date: Från %{from_date} till %{to_date}
+    graduated:
+      fee_per_unit_for_the_first: Avgift per enhet för de första %{to}
+      fee_per_unit_for_the_last: Avgift per enhet för %{from} och högre
+      fee_per_unit_for_the_next: Avgift per enhet för de nästa %{from} till %{to}
+      flat_fee_for_the_first: Fast avgift för de första %{to}
+      flat_fee_for_the_last: Fast avgift för %{from} och högre
+      flat_fee_for_the_next: Fast avgift för de nästa %{from} till %{to}
+    half_year: halvår
+    iban: IBAN
+    invoice_number: Fakturanummer
+    issue_date: Fakturadatum
+    item: Artikel
+    list_of_charges: Lista över avgifter från %{from} till %{to}
+    month: månad
+    monthly: Månadsvis
+    notice_full: Oavsett när en händelse tas emot är enheten inte proportionell, fullt pris debiteras fullt pris.
+    notice_prorated: Skulle en produkt läggas till eller tas bort under månadsperioden beräknar vi det justerade priset baserat på förhållandet mellan kvarvarande eller använda dagar till det totala antalet dagar i perioden. Skulle det till exempel vara 15 dagar kvar i perioden, multipliceras priset med 15/%{days_in_month}, om en produkt nyttjas i 10 dagar, multipliceras priset med 10/%{days_in_month}.
+    package:
+      fee_per_package: Avgift per paket
+      fee_per_package_unit_price: "%{amount} per %{package_size}"
+      free_units_for_the_first: Gratis enheter för de första %{count}
+    paid_invoice: Betald faktura
+    paid_tax_invoice: Betald skattefaktura
+    pay_with_bank_transfer: Betala med banköverföring
+    payment_term: Betalningsvillkor
+    payment_term_days: "%{net_payment_term} dagar"
+    percentage:
+      adjustment_per_transaction: Justering för min/max per transaktion
+      fee_per_transaction: Fast avgift per transaktion
+      free_units_per_transaction:
+        one: Gratis enheter för 1 transaktion
+        other: Gratis enheter för %{count} transaktioner
+      percentage_rate_on_amount: Satsen på beloppet
+    powered_by: Genererad av
+    prepaid_credit_invoice: Förskottsfaktura
+    prepaid_credits: Förbetald kontobalans
+    prepaid_credits_with_value: Förbetald kontobalans - %{wallet_name}
+    progressive_billing_credit: Redan fakturerad användning
+    purchase_order_number: Inköpsordernummer
+    quarter: kvartal
+    quarterly: Kvartalsvis
+    reached_usage_threshold: Denna progressiva fakturering skapas eftersom din ackumulerade användning har nått %{usage_amount} och överstiger %{threshold_amount} tröskeln.
+    routing_number: Routingnummer
+    see_breakdown: Se uppdelning nedan
+    self_billed:
+      document_name: Självfakturering
+      footer: Denna självfaktura har utfärdats av kunden för partnerns räkning, med deras samtycke. Partnern har gått med på att inte utfärda en egen faktura för denna transaktion.
+    semiannual: Halvårsvis
+    sort_code: Sorteringskod
+    sub_total: Delsumma
+    sub_total_with_tax: Delsumma (inkl. moms)
+    sub_total_without_tax: Delsumma (exkl. moms)
+    subscription: Prenumeration
+    subscription_interval: "%{plan_interval} prenumeration - %{plan_name}"
+    swift_code: SWIFT-kod
+    tax: Skatt
+    tax_identification_number: 'Skatte ID: %{tax_identification_number}'
+    tax_name: "%{name} (%{rate}% på %{amount})"
+    tax_name_only:
+      customer_exempt: Kunden är befriad från moms
+      juris_has_no_tax: Ingen skatt
+      juris_not_taxed: Ingen skatt
+      not_collecting: Ingen skatt
+      reverse_charge: Omvänd skattskyldighet - Skatteskyldighet överförd till kunden
+      transaction_exempt: Kunden är befriad från moms
+      unknown_taxation: Okänd
+    tax_name_with_details: "%{name} (%{rate}%)"
+    tax_rate: Momssats
+    taxes:
+      fr_tax_exempt: Kunden är skattebefriad enligt artikel 259-1 i den franska skatteförvaltningskoden.
+      reverse_charge: Skattskyldighet överförd till kunden.
+      tax_exempt: Kunden är skattebefriad.
+    total: Totalt
+    total_credits_with_value: 'Totalt antal krediter med värde: %{credit_amount} krediter'
+    total_due: Att betala
+    total_due_amount: Förfallobelopp
+    total_events: 'Totala händelser: %{count}'
+    total_paid_amount: Betalt belopp
+    total_unit: 'Totalt antal enheter: %{units}'
+    total_unit_interval: 'Totalt antal enheter: %{events_count} händelse(r) för %{units}'
+    true_up_details: Minsta utgift på %{min_amount} fördelat på användningsdagar
+    true_up_metric: "%{metric} • Justering"
+    unit: Antal
+    unit_price: Styckpris
+    units: Enheter
+    units_prorated_per_period: Proportionella enheter per sekund per %{period}
+    usage_based_fees: Avgifter baserade på användning
+    usage_breakdown_by: Användningsfördelning per %{keys}
+    volume:
+      fee_per_unit: Avgift per enhet
+      flat_fee_for_all_units: Fast avgift för alla enheter
+    week: vecka
+    weekly: Veckovis
+    year: år
+    yearly: Årsvis

@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`HelperText Integration Tests WHEN rendering the component THEN should render a matching snapshot 1`] = `
+<div>
+  <div
+    class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+    data-test="caption"
+  >
+    <span>
+      Customer events will be based on this timezone. If empty, events will be based on UTC, UTC ±0:00 
+      <a
+        href="/settings/billing-entity/TEST_CODE/general"
+      >
+        set on the organization level
+      </a>
+    </span>
+  </div>
+</div>
+`;

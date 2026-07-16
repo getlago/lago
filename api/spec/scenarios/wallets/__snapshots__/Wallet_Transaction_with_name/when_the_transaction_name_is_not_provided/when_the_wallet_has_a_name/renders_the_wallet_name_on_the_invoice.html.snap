@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div class="wrapper">
+      <div class="mb-24">
+        <h1 class="invoice-title">Advance invoice</h1>
+      </div>
+      <div class="mb-24 overflow-auto">
+        <div class="invoice-information-column">
+          <table class="invoice-information-table">
+            <tr>
+              <td class="body-1">Invoice Number</td>
+              <td class="body-2">ACM-8924-001-001</td>
+            </tr>
+            <tr>
+              <td class="body-1">Issue Date</td>
+              <td class="body-2">Jan 02, 2025</td>
+            </tr>
+            <tr>
+              <td class="body-1">Payment term</td>
+              <td class="body-2">0 days</td>
+            </tr>
+          </table>
+        </div>
+        <div class="invoice-information-column">
+          <table class="invoice-information-table"></table>
+        </div>
+      </div>
+      <div class="mb-24 overflow-auto">
+        <div class="billing-information-column">
+          <div class="body-1">From</div>
+          <div class="body-2">ACME Corporation</div>
+          <div class="body-2">123 Business St</div>
+          <div class="body-2">Suite 100</div>
+          <div class="body-2">
+            <span>94105</span>
+            <span>, &nbsp;</span>
+            <span>San Francisco</span>
+          </div>
+          <div class="body-2">CA</div>
+          <div class="body-2">United States</div>
+          <div class="body-2">billing@acme.com</div>
+        </div>
+        <div class="billing-information-column">
+          <div class="body-1">Bill to</div>
+          <div class="body-2">Doe Corp - John Doe</div>
+          <div class="body-2">1234567890</div>
+          <div class="body-2">
+            <span class="address-line1">456 Customer Ave</span>
+            <br>
+            <span class="address-line2">Apt 202</span>
+            <br>
+            <span class="locality">New York</span>
+            , <span class="administrative-area">NY</span>
+            <span class="postal-code">10001</span>
+            <br>
+            <span class="country">United States</span>
+          </div>
+          <div class="body-2">john.doe@example.com</div>
+        </div>
+      </div>
+      <div class="mb-24">
+        <h2 class="title-2 mb-4">€100.00</h2>
+        <div class="body-1">Due Jan 02, 2025</div>
+      </div>
+      <div class="invoice-resume mb-24 overflow-auto">
+        <table class="invoice-resume-table" width="100%">
+          <tr>
+            <td class="body-2">Item</td>
+            <td class="body-2">Units</td>
+            <td class="body-2">Unit price</td>
+            <td class="body-2">Amount</td>
+          </tr>
+          <tr>
+            <td class="body-1">Prepaid credits - My wallet</td>
+            <td class="body-2">100.0</td>
+            <td class="body-2">1.0</td>
+            <td class="body-2">€100.00</td>
+          </tr>
+        </table>
+        <table class="total-table" width="100%">
+          <tr>
+            <td class="body-2"></td>
+            <td class="body-1">Total</td>
+            <td class="body-1">€100.00</td>
+          </tr>
+        </table>
+      </div>
+      <p class="body-3 mb-24"></p>
+      <div class="powered-by">
+        <span class="body-2">Powered by &nbsp;</span>
+        <img alt="Lago Logo" src="lago-logo-invoice.png" />
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply m-0 h-full w-full overflow-hidden p-0;
+  }
+
+  body {
+    @apply relative font-sans text-base text-grey-600 subpixel-antialiased;
+  }
+
+  a {
+    @apply text-blue no-underline visited:text-purple hover:underline focus:rounded focus:ring;
+  }
+
+  b {
+    @apply text-base font-medium -tracking-[0.01em];
+  }
+
+  ul {
+    @apply m-0 list-disc pl-6;
+  }
+
+  li {
+    @apply m-0 list-none;
+  }
+
+  svg {
+    @apply inline-block;
+  }
+
+  span.line-break-anywhere {
+    @apply break-all;
+  }
+}

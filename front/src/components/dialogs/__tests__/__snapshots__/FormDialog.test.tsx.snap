@@ -1,0 +1,178 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`FormDialog Snapshot Tests matches snapshot with all optional props 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <form
+    class="flex max-h-[calc(100vh-10rem)] flex-col"
+    id="test-form-dialog"
+  >
+    <header
+      class="p-8"
+    >
+      <div
+        class="flex flex-col gap-8"
+      >
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="dialog-title"
+          >
+            Form Dialog Title
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+            data-test="body"
+          >
+            Full description
+          </div>
+        </div>
+        <div>
+          <div>
+            Header Content
+          </div>
+        </div>
+      </div>
+    </header>
+    <div
+      class="overflow-auto shadow-t"
+    >
+      <div>
+        Form Fields
+      </div>
+    </div>
+    <div
+      class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="form-cancel"
+        tabindex="0"
+        type="button"
+      >
+        Cancel
+      </button>
+      <button
+        data-test="main-action-button"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`FormDialog Snapshot Tests matches snapshot with basic props 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <form
+    class="flex max-h-[calc(100vh-10rem)] flex-col"
+    id="test-form-dialog"
+  >
+    <header
+      class="p-8"
+    >
+      <div
+        class="flex flex-col gap-8"
+      >
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="dialog-title"
+          >
+            Form Dialog Title
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+            data-test="body"
+          >
+            Form Dialog Description
+          </div>
+        </div>
+      </div>
+    </header>
+    <div
+      class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="form-cancel"
+        tabindex="0"
+        type="button"
+      >
+        Close
+      </button>
+      <button
+        data-test="main-action-button"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`FormDialog Snapshot Tests matches snapshot with cancel button 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <form
+    class="flex max-h-[calc(100vh-10rem)] flex-col"
+    id="test-form-dialog"
+  >
+    <header
+      class="p-8"
+    >
+      <div
+        class="flex flex-col gap-8"
+      >
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="dialog-title"
+          >
+            Form Dialog Title
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+            data-test="body"
+          >
+            Form Dialog Description
+          </div>
+        </div>
+      </div>
+    </header>
+    <div
+      class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="form-cancel"
+        tabindex="0"
+        type="button"
+      >
+        Cancel
+      </button>
+      <button
+        data-test="main-action-button"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+</div>
+`;

@@ -1,0 +1,9 @@
+---
+zh-TW:
+  quote_version:
+    mention_variables:
+      payment_terms: Net %{count}
+      term_duration:
+        days: "%{count}天"
+        months: "%{count}個月"
+        years: "%{count}年"

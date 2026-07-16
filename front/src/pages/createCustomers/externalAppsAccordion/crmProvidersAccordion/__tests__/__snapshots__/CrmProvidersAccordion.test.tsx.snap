@@ -1,0 +1,1115 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`CrmProvidersAccordion Integration Tests WHEN rendering the component THEN should render a matching snapshot 1`] = `
+<div>
+  <div>
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line mb-1 css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      CRM connection
+    </div>
+    <div
+      class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded MuiAccordion-gutters border border-solid border-grey-400 has-[:focus-visible]:ring addCustomerCrmProviderAccordion css-hash-MuiPaper-root-MuiAccordion-root
+    >
+      <div
+        aria-expanded="false"
+        class=MuiButtonBase-root MuiAccordionSummary-root MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-18 rounded-xl hover:bg-grey-100 active:bg-grey-200 css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class=MuiAccordionSummary-content MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+        >
+          <div
+            class="mr-3"
+          >
+            <div
+              aria-label="Expand"
+              class=""
+              data-mui-internal-clone-element="true"
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="open-charge"
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-right-filled/medium"
+                  fill="none"
+                  title="chevron-right-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6.7256 3.30037L10.5607 6.94427C10.842 7.22505 11 7.60566 11 8.0025C11 8.39933 10.842 8.77994 10.5607 9.06072L6.7256 12.6996C6.63234 12.7947 6.52097 12.8703 6.39802 12.9218C6.27507 12.9734 6.14303 13 6.00964 13C5.87625 13 5.7442 12.9734 5.62126 12.9218C5.49831 12.8703 5.38694 12.7947 5.29368 12.6996C5.10718 12.5126 5.0025 12.2596 5.0025 11.9958L5 8.0025V4.00669C5 3.87549 5.02594 3.74558 5.07633 3.62439C5.12672 3.50319 5.20058 3.39309 5.29368 3.30037C5.38694 3.20529 5.49831 3.12973 5.62126 3.07815C5.7442 3.02657 5.87625 3 6.00964 3C6.14303 3 6.27507 3.02657 6.39802 3.07815C6.52097 3.12973 6.63234 3.20529 6.7256 3.30037Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div
+            class="flex flex-1 flex-row items-center gap-3"
+          >
+            <div
+              class="flex flex-1 flex-row items-center gap-3"
+            >
+              <div
+                class="relative flex items-center justify-center [&>img]:size-full [&>img]:rounded-[inherit] [&>img]:object-cover w-10 min-w-10 h-10 rounded-xl bg-grey-100 text-grey-600"
+                data-test="connector/big"
+              >
+                <svg
+                  class="text-grey-600 size-4 min-w-4"
+                  data-test="plug/medium"
+                  fill="currentColor"
+                  title="plug/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M12.8069 0.284018C13.1856 0.662708 13.1856 1.27669 12.8069 1.65538L10.9471 3.51516L12.4848 5.05289L14.3446 3.19311C14.7233 2.81442 15.3373 2.81442 15.716 3.19311C16.0947 3.5718 16.0947 4.18578 15.716 4.56447L13.8562 6.42425L14.7766 7.3447C15.7059 8.27392 15.4614 9.83843 14.2934 10.4401L14.2934 10.4401L8.73288 13.3047C7.60826 13.884 6.23815 13.6701 5.34361 12.7756L4.96969 12.4017L1.65538 15.716C1.27669 16.0947 0.662708 16.0947 0.284018 15.716C-0.0946726 15.3373 -0.0946726 14.7233 0.284018 14.3446L3.59833 11.0303L3.22445 10.6564C2.32991 9.76189 2.11603 8.39178 2.69537 7.26716L5.55989 1.70659L5.55991 1.70655C6.16168 0.538545 7.72619 0.294315 8.65531 1.22336L8.65534 1.22339L9.57575 2.1438L11.4355 0.284018C11.8142 -0.0946726 12.4282 -0.0946726 12.8069 0.284018ZM4.41945 8.15531L7.28394 2.59479L7.28401 2.59478L13.4053 8.71606L13.4052 8.71608L13.4052 8.71609L7.84472 11.5806C7.46985 11.7737 7.01315 11.7024 6.71497 11.4042L4.5958 9.28507C4.29762 8.98689 4.22633 8.53018 4.41945 8.15531Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div
+                class="flex flex-col"
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Select a connection
+                </div>
+              </div>
+            </div>
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CrmProvidersAccordion Integration Tests WHEN rendering the component THEN should render a matching snapshot after expansion 1`] = `
+<div>
+  <div>
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line mb-1 css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      CRM connection
+    </div>
+    <div
+      class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters border border-solid border-grey-400 has-[:focus-visible]:ring addCustomerCrmProviderAccordion css-hash-MuiPaper-root-MuiAccordion-root
+    >
+      <div
+        aria-expanded="true"
+        class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-18 rounded-t-xl hover:bg-grey-100 active:bg-grey-200 css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+        >
+          <div
+            class="mr-3"
+          >
+            <div
+              aria-label="Collapse"
+              class=""
+              data-mui-internal-clone-element="true"
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="open-charge"
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-down-filled/medium"
+                  fill="none"
+                  title="chevron-down-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div
+            class="flex flex-1 flex-row items-center gap-3"
+          >
+            <div
+              class="flex flex-1 flex-row items-center gap-3"
+            >
+              <div
+                class="relative flex items-center justify-center [&>img]:size-full [&>img]:rounded-[inherit] [&>img]:object-cover w-10 min-w-10 h-10 rounded-xl bg-grey-100 text-grey-600"
+                data-test="connector/big"
+              >
+                <svg
+                  class="text-grey-600 size-4 min-w-4"
+                  data-test="plug/medium"
+                  fill="currentColor"
+                  title="plug/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M12.8069 0.284018C13.1856 0.662708 13.1856 1.27669 12.8069 1.65538L10.9471 3.51516L12.4848 5.05289L14.3446 3.19311C14.7233 2.81442 15.3373 2.81442 15.716 3.19311C16.0947 3.5718 16.0947 4.18578 15.716 4.56447L13.8562 6.42425L14.7766 7.3447C15.7059 8.27392 15.4614 9.83843 14.2934 10.4401L14.2934 10.4401L8.73288 13.3047C7.60826 13.884 6.23815 13.6701 5.34361 12.7756L4.96969 12.4017L1.65538 15.716C1.27669 16.0947 0.662708 16.0947 0.284018 15.716C-0.0946726 15.3373 -0.0946726 14.7233 0.284018 14.3446L3.59833 11.0303L3.22445 10.6564C2.32991 9.76189 2.11603 8.39178 2.69537 7.26716L5.55989 1.70659L5.55991 1.70655C6.16168 0.538545 7.72619 0.294315 8.65531 1.22336L8.65534 1.22339L9.57575 2.1438L11.4355 0.284018C11.8142 -0.0946726 12.4282 -0.0946726 12.8069 0.284018ZM4.41945 8.15531L7.28394 2.59479L7.28401 2.59478L13.4053 8.71606L13.4052 8.71608L13.4052 8.71609L7.84472 11.5806C7.46985 11.7737 7.01315 11.7024 6.71497 11.4042L4.5958 9.28507C4.29762 8.98689 4.22633 8.53018 4.41945 8.15531Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div
+                class="flex flex-col"
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Select a connection
+                </div>
+              </div>
+            </div>
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+        style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+      >
+        <div
+          class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+        >
+          <div
+            class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+          >
+            <div
+              class="MuiAccordion-region"
+              role="region"
+            >
+              <div
+                class=MuiAccordionDetails-root flex flex-col shadow-t p-0 css-hash-MuiAccordionDetails-root
+              >
+                <div
+                  class="flex flex-col gap-6 p-4"
+                >
+                  <div
+                    class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="bodyHl"
+                  >
+                    Connection
+                  </div>
+                  <div
+                    class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+                  >
+                    <div
+                      class="flex flex-col gap-1 group/combobox-input"
+                    >
+                      <div
+                        class="flex items-center gap-1"
+                      >
+                        <label
+                          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                          data-test="captionHl"
+                          for="crmProviderCode"
+                        >
+                          <span
+                            class="flex flex-row gap-1"
+                          >
+                            Connected account
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                      >
+                        <div
+                          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                        >
+                          <input
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-invalid="false"
+                            autocapitalize="none"
+                            autocomplete="off"
+                            class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                            id=:r-mui-id:
+                            name="crmProviderCode"
+                            placeholder="Search and select a connected account"
+                            role="combobox"
+                            spellcheck="false"
+                            type="text"
+                            value=""
+                          />
+                          <div
+                            class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+                          >
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="close-circle-filled/medium"
+                                fill="currentColor"
+                                title="close-circle-filled/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="chevron-up-down/medium"
+                                fill="currentColor"
+                                title="chevron-up-down/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  clip-rule="evenodd"
+                                  d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                                  fill-rule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <fieldset
+                            aria-hidden="true"
+                            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                          >
+                            <legend
+                              class=css-hash-MuiNotchedOutlined-root
+                            >
+                              <span
+                                class="notranslate"
+                              >
+                                ​
+                              </span>
+                            </legend>
+                          </fieldset>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CrmProvidersAccordion Integration Tests WHEN rendering the component THEN should render with customer data 1`] = `
+<div>
+  <div>
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line mb-1 css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      CRM connection
+    </div>
+    <div
+      class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters border border-solid border-grey-400 has-[:focus-visible]:ring addCustomerCrmProviderAccordion css-hash-MuiPaper-root-MuiAccordion-root
+    >
+      <div
+        aria-expanded="true"
+        class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-18 rounded-t-xl hover:bg-grey-100 active:bg-grey-200 css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+        >
+          <div
+            class="mr-3"
+          >
+            <div
+              aria-label="Collapse"
+              class=""
+              data-mui-internal-clone-element="true"
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="open-charge"
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-down-filled/medium"
+                  fill="none"
+                  title="chevron-down-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div
+            class="flex flex-1 flex-row items-center gap-3"
+          >
+            <div
+              class="flex flex-1 flex-row items-center gap-3"
+            >
+              <div
+                class="relative flex items-center justify-center [&>img]:size-full [&>img]:rounded-[inherit] [&>img]:object-cover w-10 min-w-10 h-10 rounded-xl bg-grey-100 text-grey-600"
+                data-test="connector/big"
+              >
+                <svg
+                  class="text-grey-600 size-4 min-w-4"
+                  data-test="plug/medium"
+                  fill="currentColor"
+                  title="plug/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M12.8069 0.284018C13.1856 0.662708 13.1856 1.27669 12.8069 1.65538L10.9471 3.51516L12.4848 5.05289L14.3446 3.19311C14.7233 2.81442 15.3373 2.81442 15.716 3.19311C16.0947 3.5718 16.0947 4.18578 15.716 4.56447L13.8562 6.42425L14.7766 7.3447C15.7059 8.27392 15.4614 9.83843 14.2934 10.4401L14.2934 10.4401L8.73288 13.3047C7.60826 13.884 6.23815 13.6701 5.34361 12.7756L4.96969 12.4017L1.65538 15.716C1.27669 16.0947 0.662708 16.0947 0.284018 15.716C-0.0946726 15.3373 -0.0946726 14.7233 0.284018 14.3446L3.59833 11.0303L3.22445 10.6564C2.32991 9.76189 2.11603 8.39178 2.69537 7.26716L5.55989 1.70659L5.55991 1.70655C6.16168 0.538545 7.72619 0.294315 8.65531 1.22336L8.65534 1.22339L9.57575 2.1438L11.4355 0.284018C11.8142 -0.0946726 12.4282 -0.0946726 12.8069 0.284018ZM4.41945 8.15531L7.28394 2.59479L7.28401 2.59478L13.4053 8.71606L13.4052 8.71608L13.4052 8.71609L7.84472 11.5806C7.46985 11.7737 7.01315 11.7024 6.71497 11.4042L4.5958 9.28507C4.29762 8.98689 4.22633 8.53018 4.41945 8.15531Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div
+                class="flex flex-col"
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Select a connection
+                </div>
+              </div>
+            </div>
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+        style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+      >
+        <div
+          class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+        >
+          <div
+            class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+          >
+            <div
+              class="MuiAccordion-region"
+              role="region"
+            >
+              <div
+                class=MuiAccordionDetails-root flex flex-col shadow-t p-0 css-hash-MuiAccordionDetails-root
+              >
+                <div
+                  class="flex flex-col gap-6 p-4"
+                >
+                  <div
+                    class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="bodyHl"
+                  >
+                    Connection
+                  </div>
+                  <div
+                    class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+                  >
+                    <div
+                      class="flex flex-col gap-1 group/combobox-input"
+                    >
+                      <div
+                        class="flex items-center gap-1"
+                      >
+                        <label
+                          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                          data-test="captionHl"
+                          for="crmProviderCode"
+                        >
+                          <span
+                            class="flex flex-row gap-1"
+                          >
+                            Connected account
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                      >
+                        <div
+                          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                        >
+                          <input
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-invalid="false"
+                            autocapitalize="none"
+                            autocomplete="off"
+                            class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                            id=:r-mui-id:
+                            name="crmProviderCode"
+                            placeholder="Search and select a connected account"
+                            role="combobox"
+                            spellcheck="false"
+                            type="text"
+                            value=""
+                          />
+                          <div
+                            class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+                          >
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="close-circle-filled/medium"
+                                fill="currentColor"
+                                title="close-circle-filled/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="chevron-up-down/medium"
+                                fill="currentColor"
+                                title="chevron-up-down/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  clip-rule="evenodd"
+                                  d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                                  fill-rule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <fieldset
+                            aria-hidden="true"
+                            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                          >
+                            <legend
+                              class=css-hash-MuiNotchedOutlined-root
+                            >
+                              <span
+                                class="notranslate"
+                              >
+                                ​
+                              </span>
+                            </legend>
+                          </fieldset>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CrmProvidersAccordion Integration Tests WHEN rendering the component THEN should render with edition mode 1`] = `
+<div>
+  <div>
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line mb-1 css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      CRM connection
+    </div>
+    <div
+      class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters border border-solid border-grey-400 has-[:focus-visible]:ring addCustomerCrmProviderAccordion css-hash-MuiPaper-root-MuiAccordion-root
+    >
+      <div
+        aria-expanded="true"
+        class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-18 rounded-t-xl hover:bg-grey-100 active:bg-grey-200 css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+        >
+          <div
+            class="mr-3"
+          >
+            <div
+              aria-label="Collapse"
+              class=""
+              data-mui-internal-clone-element="true"
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="open-charge"
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-down-filled/medium"
+                  fill="none"
+                  title="chevron-down-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div
+            class="flex flex-1 flex-row items-center gap-3"
+          >
+            <div
+              class="flex flex-1 flex-row items-center gap-3"
+            >
+              <div
+                class="relative flex items-center justify-center [&>img]:size-full [&>img]:rounded-[inherit] [&>img]:object-cover w-10 min-w-10 h-10 rounded-xl bg-grey-100 text-grey-600"
+                data-test="connector/big"
+              >
+                <svg
+                  class="text-grey-600 size-4 min-w-4"
+                  data-test="plug/medium"
+                  fill="currentColor"
+                  title="plug/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M12.8069 0.284018C13.1856 0.662708 13.1856 1.27669 12.8069 1.65538L10.9471 3.51516L12.4848 5.05289L14.3446 3.19311C14.7233 2.81442 15.3373 2.81442 15.716 3.19311C16.0947 3.5718 16.0947 4.18578 15.716 4.56447L13.8562 6.42425L14.7766 7.3447C15.7059 8.27392 15.4614 9.83843 14.2934 10.4401L14.2934 10.4401L8.73288 13.3047C7.60826 13.884 6.23815 13.6701 5.34361 12.7756L4.96969 12.4017L1.65538 15.716C1.27669 16.0947 0.662708 16.0947 0.284018 15.716C-0.0946726 15.3373 -0.0946726 14.7233 0.284018 14.3446L3.59833 11.0303L3.22445 10.6564C2.32991 9.76189 2.11603 8.39178 2.69537 7.26716L5.55989 1.70659L5.55991 1.70655C6.16168 0.538545 7.72619 0.294315 8.65531 1.22336L8.65534 1.22339L9.57575 2.1438L11.4355 0.284018C11.8142 -0.0946726 12.4282 -0.0946726 12.8069 0.284018ZM4.41945 8.15531L7.28394 2.59479L7.28401 2.59478L13.4053 8.71606L13.4052 8.71608L13.4052 8.71609L7.84472 11.5806C7.46985 11.7737 7.01315 11.7024 6.71497 11.4042L4.5958 9.28507C4.29762 8.98689 4.22633 8.53018 4.41945 8.15531Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div
+                class="flex flex-col"
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Select a connection
+                </div>
+              </div>
+            </div>
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+        style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+      >
+        <div
+          class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+        >
+          <div
+            class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+          >
+            <div
+              class="MuiAccordion-region"
+              role="region"
+            >
+              <div
+                class=MuiAccordionDetails-root flex flex-col shadow-t p-0 css-hash-MuiAccordionDetails-root
+              >
+                <div
+                  class="flex flex-col gap-6 p-4"
+                >
+                  <div
+                    class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="bodyHl"
+                  >
+                    Connection
+                  </div>
+                  <div
+                    class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+                  >
+                    <div
+                      class="flex flex-col gap-1 group/combobox-input"
+                    >
+                      <div
+                        class="flex items-center gap-1"
+                      >
+                        <label
+                          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                          data-test="captionHl"
+                          for="crmProviderCode"
+                        >
+                          <span
+                            class="flex flex-row gap-1"
+                          >
+                            Connected account
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                      >
+                        <div
+                          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                        >
+                          <input
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-invalid="false"
+                            autocapitalize="none"
+                            autocomplete="off"
+                            class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                            id=:r-mui-id:
+                            name="crmProviderCode"
+                            placeholder="Search and select a connected account"
+                            role="combobox"
+                            spellcheck="false"
+                            type="text"
+                            value=""
+                          />
+                          <div
+                            class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+                          >
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="close-circle-filled/medium"
+                                fill="currentColor"
+                                title="close-circle-filled/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="chevron-up-down/medium"
+                                fill="currentColor"
+                                title="chevron-up-down/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  clip-rule="evenodd"
+                                  d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                                  fill-rule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <fieldset
+                            aria-hidden="true"
+                            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                          >
+                            <legend
+                              class=css-hash-MuiNotchedOutlined-root
+                            >
+                              <span
+                                class="notranslate"
+                              >
+                                ​
+                              </span>
+                            </legend>
+                          </fieldset>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`CrmProvidersAccordion Integration Tests WHEN user interacts with the accordion THEN should display expected accordion content 1`] = `
+<div>
+  <div>
+    <div
+      class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line mb-1 css-hash-MuiTypography-root
+      data-test="captionHl"
+    >
+      CRM connection
+    </div>
+    <div
+      class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters border border-solid border-grey-400 has-[:focus-visible]:ring addCustomerCrmProviderAccordion css-hash-MuiPaper-root-MuiAccordion-root
+    >
+      <div
+        aria-expanded="true"
+        class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-18 rounded-t-xl hover:bg-grey-100 active:bg-grey-200 css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+        >
+          <div
+            class="mr-3"
+          >
+            <div
+              aria-label="Collapse"
+              class=""
+              data-mui-internal-clone-element="true"
+            >
+              <button
+                class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                data-test="open-charge"
+                tabindex="-1"
+                type="button"
+              >
+                <svg
+                  class="text-inherit size-4 min-w-4"
+                  data-test="chevron-down-filled/medium"
+                  fill="none"
+                  title="chevron-down-filled/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div
+            class="flex flex-1 flex-row items-center gap-3"
+          >
+            <div
+              class="flex flex-1 flex-row items-center gap-3"
+            >
+              <div
+                class="relative flex items-center justify-center [&>img]:size-full [&>img]:rounded-[inherit] [&>img]:object-cover w-10 min-w-10 h-10 rounded-xl bg-grey-100 text-grey-600"
+                data-test="connector/big"
+              >
+                <svg
+                  class="text-grey-600 size-4 min-w-4"
+                  data-test="plug/medium"
+                  fill="currentColor"
+                  title="plug/medium"
+                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    clip-rule="evenodd"
+                    d="M12.8069 0.284018C13.1856 0.662708 13.1856 1.27669 12.8069 1.65538L10.9471 3.51516L12.4848 5.05289L14.3446 3.19311C14.7233 2.81442 15.3373 2.81442 15.716 3.19311C16.0947 3.5718 16.0947 4.18578 15.716 4.56447L13.8562 6.42425L14.7766 7.3447C15.7059 8.27392 15.4614 9.83843 14.2934 10.4401L14.2934 10.4401L8.73288 13.3047C7.60826 13.884 6.23815 13.6701 5.34361 12.7756L4.96969 12.4017L1.65538 15.716C1.27669 16.0947 0.662708 16.0947 0.284018 15.716C-0.0946726 15.3373 -0.0946726 14.7233 0.284018 14.3446L3.59833 11.0303L3.22445 10.6564C2.32991 9.76189 2.11603 8.39178 2.69537 7.26716L5.55989 1.70659L5.55991 1.70655C6.16168 0.538545 7.72619 0.294315 8.65531 1.22336L8.65534 1.22339L9.57575 2.1438L11.4355 0.284018C11.8142 -0.0946726 12.4282 -0.0946726 12.8069 0.284018ZM4.41945 8.15531L7.28394 2.59479L7.28401 2.59478L13.4053 8.71606L13.4052 8.71608L13.4052 8.71609L7.84472 11.5806C7.46985 11.7737 7.01315 11.7024 6.71497 11.4042L4.5958 9.28507C4.29762 8.98689 4.22633 8.53018 4.41945 8.15531Z"
+                    fill-rule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div
+                class="flex flex-col"
+              >
+                <div
+                  class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                  data-test="bodyHl"
+                >
+                  Select a connection
+                </div>
+              </div>
+            </div>
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="button"
+              tabindex="0"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="trash/medium"
+                fill="currentColor"
+                title="trash/medium"
+                viewBox="0 0 14 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+        style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+      >
+        <div
+          class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+        >
+          <div
+            class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+          >
+            <div
+              class="MuiAccordion-region"
+              role="region"
+            >
+              <div
+                class=MuiAccordionDetails-root flex flex-col shadow-t p-0 css-hash-MuiAccordionDetails-root
+              >
+                <div
+                  class="flex flex-col gap-6 p-4"
+                >
+                  <div
+                    class=MuiTypography-root MuiTypography-bodyHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="bodyHl"
+                  >
+                    Connection
+                  </div>
+                  <div
+                    class=MuiAutocomplete-root MuiAutocomplete-hasPopupIcon css-hash-MuiAutocomplete-root
+                  >
+                    <div
+                      class="flex flex-col gap-1 group/combobox-input"
+                    >
+                      <div
+                        class="flex items-center gap-1"
+                      >
+                        <label
+                          class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                          data-test="captionHl"
+                          for="crmProviderCode"
+                        >
+                          <span
+                            class="flex flex-row gap-1"
+                          >
+                            Connected account
+                          </span>
+                        </label>
+                      </div>
+                      <div
+                        class=MuiFormControl-root MuiFormControl-fullWidth MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                      >
+                        <div
+                          class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-fullWidth MuiInputBase-formControl MuiInputBase-adornedEnd css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                        >
+                          <input
+                            aria-autocomplete="list"
+                            aria-expanded="false"
+                            aria-invalid="false"
+                            autocapitalize="none"
+                            autocomplete="off"
+                            class=MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                            id=:r-mui-id:
+                            name="crmProviderCode"
+                            placeholder="Search and select a connected account"
+                            role="combobox"
+                            spellcheck="false"
+                            type="text"
+                            value=""
+                          />
+                          <div
+                            class=MuiInputAdornment-root MuiInputAdornment-positionEnd MuiInputAdornment-outlined MuiInputAdornment-sizeMedium css-hash-MuiInputAdornment-root
+                          >
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center MuiAutocomplete-clearIndicator hidden css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="close-circle-filled/medium"
+                                fill="currentColor"
+                                title="close-circle-filled/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM10.85 11.85C10.6 11.85 10.35 11.75 10.15 11.55L8 9.4L5.9 11.5C5.5 11.9 4.9 11.9 4.5 11.5C4.1 11.1 4.1 10.5 4.5 10.1L6.6 8L4.5 5.9C4.25 5.65 4.15 5.3 4.25 4.95C4.35 4.6 4.6 4.35 4.95 4.25C5.3 4.15 5.65 4.25 5.9 4.5L8 6.6L10.1 4.5C10.35 4.25 10.7 4.15 11.05 4.25C11.4 4.35 11.65 4.6 11.75 4.95C11.85 5.3 11.75 5.65 11.5 5.9L9.4 8L11.5 10.1C11.7 10.3 11.8 10.55 11.8 10.8C11.85 11.4 11.4 11.85 10.85 11.85Z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                              data-test="button"
+                              tabindex="0"
+                              type="button"
+                            >
+                              <svg
+                                class="text-inherit size-4 min-w-4"
+                                data-test="chevron-up-down/medium"
+                                fill="currentColor"
+                                title="chevron-up-down/medium"
+                                viewBox="0 0 16 16"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  clip-rule="evenodd"
+                                  d="M4.295 12.71C4.19976 12.6169 4.12408 12.5056 4.07241 12.3829C4.02074 12.2601 3.99413 12.1282 3.99413 11.995C3.99413 11.8618 4.02074 11.7299 4.07241 11.6071C4.12408 11.4844 4.19976 11.3731 4.295 11.28C4.48215 11.0953 4.73453 10.9917 4.9975 10.9917C5.26047 10.9917 5.51285 11.0953 5.7 11.28L8 13.905L10.3 11.27C10.4872 11.0853 10.7395 10.9817 11.0025 10.9817C11.2655 10.9817 11.5179 11.0853 11.705 11.27C11.8002 11.3631 11.8759 11.4744 11.9276 11.5971C11.9793 11.7199 12.0059 11.8518 12.0059 11.985C12.0059 12.1182 11.9793 12.2501 11.9276 12.3729C11.8759 12.4956 11.8002 12.6069 11.705 12.7L9.255 15.34L9.06 15.55C8.77875 15.8309 8.3975 15.9887 8 15.9887C7.6025 15.9887 7.22125 15.8309 6.94 15.55L4.295 12.71ZM11.705 3.29C11.8002 3.38313 11.8759 3.49436 11.9276 3.61714C11.9793 3.73992 12.0059 3.87179 12.0059 4.005C12.0059 4.13821 11.9793 4.27008 11.9276 4.39287C11.8759 4.51565 11.8002 4.62687 11.705 4.72C11.5179 4.90474 11.2655 5.00832 11.0025 5.00832C10.7395 5.00832 10.4872 4.90474 10.3 4.72L8 2.095L5.7 4.73C5.51285 4.91474 5.26047 5.01832 4.9975 5.01832C4.73453 5.01832 4.48215 4.91474 4.295 4.73C4.19976 4.63687 4.12408 4.52565 4.07241 4.40286C4.02074 4.28008 3.99413 4.14821 3.99413 4.015C3.99413 3.88179 4.02074 3.74992 4.07241 3.62714C4.12408 3.50436 4.19976 3.39313 4.295 3.3L6.745 0.660002L6.94 0.450002C7.22125 0.169101 7.6025 0.011322 8 0.011322C8.3975 0.011322 8.77875 0.169101 9.06 0.450002L11.705 3.29Z"
+                                  fill-rule="evenodd"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                          <fieldset
+                            aria-hidden="true"
+                            class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                          >
+                            <legend
+                              class=css-hash-MuiNotchedOutlined-root
+                            >
+                              <span
+                                class="notranslate"
+                              >
+                                ​
+                              </span>
+                            </legend>
+                          </fieldset>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

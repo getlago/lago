@@ -1,0 +1,10 @@
+---
+it:
+  payment_receipt:
+    document_name: Ricevuta
+    download_invoice: Scarica fattura
+    download_receipt: Scarica ricevuta
+    number: Numero della ricevuta
+    paid_on: 'Pagato il %{date} (Rimanente da pagare: %{total_due_amount})'
+    payment_date: Pagato il
+    payment_method: Mode de paiement

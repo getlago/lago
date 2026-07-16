@@ -1,0 +1,65 @@
+- ranges = amount_details['graduated_percentage_ranges']
+- first_range = ranges[0]['to_value'].nil? ? nil : ranges[0]
+- last_range = ranges.find { |r| r['to_value'].nil? }
+- next_ranges = ranges.select { |r| r['from_value'] != 0 && !r['to_value'].nil? }
+
+- if first_range
+  / First graduated range
+  tr.details
+    td.body-2 = I18n.t('invoice.graduated.fee_per_unit_for_the_first', to: first_range['to_value'])
+    td.body-2 = first_range['units']
+    td.body-2 = first_range['rate'] + '%'
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, first_range['per_unit_total_amount'])
+
+- next_ranges.each do |range|
+  tr.details
+    td.body-2 = I18n.t('invoice.graduated.fee_per_unit_for_the_next', from: range['from_value'], to: range['to_value'])
+    td.body-2 = range['units']
+    td.body-2 = range['rate'] + '%'
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, range['per_unit_total_amount'])
+
+- if last_range
+  / Last graduated range
+  tr.details
+    td.body-2 = I18n.t('invoice.graduated.fee_per_unit_for_the_last', from: last_range['from_value'])
+    td.body-2 = last_range['units']
+    td.body-2 = last_range['rate'] + '%'
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, last_range['per_unit_total_amount'])
+
+- if first_range && first_range['flat_unit_amount'].to_f.positive?
+  / First flat fee
+  tr.details
+    td.body-2 = I18n.t('invoice.graduated.flat_fee_for_the_first', to: first_range['to_value'])
+    td.body-2 = 1
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, first_range['flat_unit_amount'])
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, first_range['flat_unit_amount'])
+
+- next_ranges.each do |range|
+  - if range['flat_unit_amount'].to_f.positive?
+    tr.details
+      td.body-2 = I18n.t('invoice.graduated.flat_fee_for_the_next', from: range['from_value'], to: range['to_value'])
+      td.body-2 = 1
+      td.body-2 = FeeDisplayHelper.format_as_currency(self, range['flat_unit_amount'])
+      td.body-2 == TaxHelper.applied_taxes(self)
+      td.body-2 = FeeDisplayHelper.format_as_currency(self, range['flat_unit_amount'])
+
+- if last_range && last_range['flat_unit_amount'].to_f.positive?
+  / Last flat fee
+  tr.details
+    td.body-2 = I18n.t('invoice.graduated.flat_fee_for_the_last', from: last_range['from_value'])
+    td.body-2 = 1
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, last_range['flat_unit_amount'])
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, last_range['flat_unit_amount'])
+
+/ Sub total
+tr.details.subtotal
+  td.body-2 = I18n.t('invoice.sub_total')
+  td.body-2
+  td.body-2
+  td.body-2
+  td.body-2 = FeeDisplayHelper.format_amount(self)

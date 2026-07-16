@@ -1,0 +1,16 @@
+/tmp/*
+.rsa_private.pem
+.rsa_public.pem
+
+.git
+.gitignore
+.github
+
+README.md
+LICENSE
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+
+Dockerfile
+Dockerfile.dev

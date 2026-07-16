@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Popper Basic rendering matches snapshot with basic props 1`] = `
+<div>
+  <div
+    class=""
+  >
+    <button>
+      Open Popper
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Popper Complex scenarios matches snapshot with nested content 1`] = `
+<div>
+  <div
+    class=""
+  >
+    <button>
+      Open Menu
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Popper Props customization matches snapshot with custom PopperProps 1`] = `
+<div>
+  <div
+    class=""
+  >
+    <button>
+      Click me
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Popper Props customization renders with displayInDialog prop 1`] = `
+<div>
+  <div
+    class=""
+  >
+    <button>
+      Click me
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Popper Render props opener matches snapshot with function-based opener 1`] = `
+<div>
+  <div
+    class=""
+  >
+    <button>
+      Open
+    </button>
+  </div>
+</div>
+`;

@@ -1,0 +1,16 @@
+{
+  "succeededCompanies": [
+      {
+          "id": "2e50c200-9a54-4a66-b241-1e75fb87373f",
+          "name": "Test",
+          "email": "roger@rogers.com",
+          "lago_billing_email": "roger@rogers.com",
+          "city": "NYC",
+          "zip": "73993",
+          "country": "US",
+          "state": "NYC",
+          "phone": "+33818282828"
+      }
+  ],
+  "failedCompanies": []
+}

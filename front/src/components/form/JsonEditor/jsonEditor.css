@@ -1,0 +1,153 @@
+.ace-editor {
+  width: 100%;
+  min-height: 136px;
+  font-family:
+    IBM Plex Mono,
+    Consolas,
+    Monaco,
+    Andale Mono,
+    Ubuntu Mono,
+    monospace;
+  font-size: 14px;
+}
+
+.ace-tm .ace_active-line {
+  background-color: theme(colors.grey.100);
+}
+
+.ace-tm .ace_cursor {
+  display: none !important;
+}
+
+.ace-tm.ace_focus .ace_active-line {
+  background-color: theme(colors.blue.100);
+}
+
+.ace-tm.ace_focus .ace_cursor {
+  display: block !important;
+  border-left: 1px solid;
+  color: theme(colors.grey.600);
+}
+
+.ace-tm .ace_autocomplete {
+  width: inherit;
+  max-width: 500 !important;
+}
+
+.ace-tm .ace_content {
+  color: theme(colors.grey.700);
+}
+
+.ace-tm .ace_fold-widget.ace_invalid {
+  background-color: theme(colors.red.100);
+  border-color: theme(colors.red.600);
+}
+
+.ace-tm .ace_variable {
+  color: theme(colors.grey.700);
+}
+
+.ace-tm .ace_string {
+  color: theme(colors.green.600);
+}
+
+.ace-tm .ace_constant.ace_numeric {
+  color: theme(colors.yellow.500);
+}
+
+.ace-tm .ace_scroller {
+  left: 42px !important;
+}
+
+.ace-tm .ace_gutter {
+  background-color: theme(colors.grey.100);
+  color: theme(colors.grey.500);
+  width: 42px !important;
+}
+
+.ace-tm .ace_gutter > * {
+  width: 42px !important;
+}
+
+.ace-tm .ace_gutter-active-line.ace_gutter-cell {
+  background-color: theme(colors.grey.200);
+  padding-right: theme(space.3);
+}
+
+.ace-tm .ace_gutter-cell {
+  padding-right: theme(space.3);
+}
+
+.ace-tm .ace_gutter-cell.ace_error {
+  background-image: none;
+  background-color: theme(colors.red.100);
+}
+
+.ace-tm .ace_gutter-cell.ace_error:before {
+  content: '•';
+  color: theme(colors.red.600);
+  font-size: 30px;
+  position: absolute;
+  left: 1px;
+  top: -11px;
+}
+
+.ace-tm .ace_scroller.ace_scroll-left {
+  box-shadow: none;
+}
+
+.ace-tm .ace_tooltip.ace_error {
+  background-color: theme(colors.black);
+  border: none;
+  border-radius: 12px;
+  color: theme(colors.white);
+  padding: theme(space.3) theme(space.4);
+  font-family: Inter, Arial, Verdana, Helvetica, sans-serif;
+}
+
+.ace-tm .ace_placeholder {
+  color: theme(colors.grey.500);
+  font-family:
+    IBM Plex Mono,
+    Consolas,
+    Monaco,
+    Andale Mono,
+    Ubuntu Mono,
+    monospace;
+  font-size: 14px;
+  top: 10px;
+  padding: 0 !important;
+  margin: 0;
+  left: theme(space.1);
+}
+
+.ace-editor.json-editor--disabled {
+  background-color: theme(colors.grey.100);
+}
+
+.ace-editor.json-editor--disabled .ace_cursor,
+.ace-editor.json-editor--disabled .ace_active-line {
+  display: none !important;
+}
+
+.ace-editor.json-editor--disabled .ace_content,
+.ace-editor.json-editor--disabled .ace_numeric,
+.ace-editor.json-editor--disabled .ace_string,
+.ace-editor.json-editor--disabled .ace_variable {
+  color: theme(colors.grey.600);
+}
+
+.ace-editor.json-editor--disabled .ace_gutter,
+.ace-editor.json-editor--disabled .ace_gutter-active-line.ace_gutter-cell {
+  background-color: theme(colors.grey.200);
+}
+
+.ace-editor.json-editor--readonly .ace_cursor,
+.ace-editor.json-editor--readonly .ace_active-line {
+  display: none !important;
+}
+
+.ace-editor.json-editor--readonlywithoutstyles .ace_cursor,
+.ace-editor.json-editor--readonlywithoutstyles .ace_active-line {
+  display: none !important;
+}

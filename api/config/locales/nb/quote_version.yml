@@ -1,0 +1,15 @@
+---
+nb:
+  quote_version:
+    mention_variables:
+      payment_terms: Net %{count}
+      term_duration:
+        days:
+          one: én dag
+          other: "%{count} dager"
+        months:
+          one: én måned
+          other: "%{count} måneder"
+        years:
+          one: ett år
+          other: "%{count} år"

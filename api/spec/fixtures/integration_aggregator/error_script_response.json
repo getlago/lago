@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The action script failed with an error: {}",
+    "code": "action_script_failure",
+    "payload": {
+      "error": "Error starting integration 'netsuite-customer-create': {\n  \"name\": \"TRPCClientError\",\n  \"message\": \"fetch failed\"\n}"
+    }
+  }
+}

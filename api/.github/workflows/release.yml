@@ -1,0 +1,156 @@
+name: Release
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version
+        required: true
+env:
+  REGISTRY_IMAGE: getlago/api
+permissions: { }
+jobs:
+  build-images:
+    strategy:
+      matrix:
+        platform:
+          - version: linux/amd64
+            runner: ubuntu-latest
+          - version: linux/arm64
+            runner: linux-arm64
+    name: Build ${{ matrix.platform.version }} Image
+    runs-on: ${{ matrix.platform.runner }}
+    steps:
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform.version }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Docker Meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=raw,value=${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: latest
+
+      - name: Log In to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Add version into docker image
+        id: add_version
+        run: |
+          echo "${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}" > LAGO_VERSION
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          platforms: ${{ matrix.platform.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            SEGMENT_WRITE_KEY=${{ secrets.SEGMENT_WRITE_KEY }}
+            GOCARDLESS_CLIENT_ID=${{ secrets.PRODUCTION_GOCARDLESS_CLIENT_ID }}
+            GOCARDLESS_CLIENT_SECRET=${{ secrets.PRODUCTION_GOCARDLESS_CLIENT_SECRET }}
+            LAGO_OAUTH_URL=https://proxy.getlago.com
+
+      - name: Export Digest
+        run: |
+          mkdir -p ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests/${digest#sha256:}"
+
+      - name: Upload Digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Clean up
+        if: always()
+        run: |
+          [ -e ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests ] && \
+          rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+
+  merge:
+    name: Merge Images
+    runs-on: ubuntu-latest
+    needs: [build-images]
+    steps:
+      - name: Download Digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ./_tmp/${{ github.run_id}}/${{ github.run_attempt }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=raw,value=${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Create manifest and push
+        working-directory: ./_tmp/${{ github.run_id }}/${{ github.run_attempt}}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+
+      - name: Inspect Image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
+
+      - name: Clean up
+        if: always()
+        run: |
+          [ -e ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests ] && \
+          rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+
+  notify:
+    name: Notify Private Release
+    runs-on: ubuntu-latest
+    needs: [merge]
+    steps:
+      - name: Set version for dispatch
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger lago-embedded repository
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          repository: getlago/lago-embedded
+          event-type: lago-private-release
+          client-payload: '{"version": "${{ steps.version.outputs.version }}"}'

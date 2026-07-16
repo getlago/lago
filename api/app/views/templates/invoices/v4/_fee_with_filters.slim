@@ -1,0 +1,27 @@
+tr.charge-name.fee
+  td.body-1
+    = FeeDisplayHelper.fee_title(self)
+    - if self.billable_metric.weighted_sum_agg?
+      .body-3 = I18n.t('invoice.units_prorated_per_period', period: IntervalHelper.interval_name(self.subscription.plan.interval))
+    - if self.charge.percentage?
+      .body-3 = I18n.t('invoice.total_events', count: self.events_count)
+    - if self.charge.prorated?
+      .body-3 = I18n.t('invoice.fee_prorated')
+  td.body-2
+  td.body-2
+  td.body-2
+  td.body-2
+
+- case self.charge.charge_model.to_sym
+- when :graduated_percentage
+  == SlimHelper.render('templates/invoices/v4/_graduated_percentage', self)
+- when :graduated
+  == SlimHelper.render('templates/invoices/v4/_graduated', self)
+- when :percentage
+  == SlimHelper.render('templates/invoices/v4/_percentage', self)
+- when :volume
+  == SlimHelper.render('templates/invoices/v4/_volume', self)
+- when :package
+  == SlimHelper.render('templates/invoices/v4/_package', self)
+
+== SlimHelper.render('templates/invoices/v4/_conversion_row', self)

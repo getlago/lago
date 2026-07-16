@@ -1,0 +1,25 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "bookingDate": "2023-05-13T18:03:05Z"
+        },
+        "amount": {
+          "currency": "USD",
+          "value": 1000
+        },
+        "eventCode": "REFUND",
+        "eventDate": "2023-05-13T18:02:30+02:00",
+        "merchantAccountCode": "Lago",
+        "merchantReference": "2280c3e7-569c-4346-893d-12a23798322e",
+        "originalReference": "ABCDEFGH",
+        "paymentMethod": "amex",
+        "pspReference": "ABCDEFGH",
+        "reason": "",
+        "success": "true"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+- fee = self
+- if fee.pricing_unit_usage
+  - name = fee.pricing_unit_usage.short_name
+  - fiat_counterpart = MoneyHelper.format_with_precision(fee.pricing_unit_usage.conversion_rate, fee.charge.plan.amount_currency)
+
+  tr.details.subtotal
+    td.body-2 = "#{I18n.t("invoice.conversion_rate")}: 1 #{name} = #{fiat_counterpart}"
+    td.body-2
+    td.body-2
+    td.body-2
+    td.body-2 = MoneyHelper.format(fee.amount)

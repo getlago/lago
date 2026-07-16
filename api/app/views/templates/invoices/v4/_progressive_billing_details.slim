@@ -1,0 +1,90 @@
+- subscription = subscriptions.first
+- invoice_subscription = invoice_subscription(subscription.id)
+
+/ Subscription fee section
+.invoice-resume.overflow-auto
+  table.invoice-resume-table width="100%"
+    tr.first_child
+      td.body-2 = I18n.t('invoice.fees_from_to_date', from_date: I18n.l(invoice_subscription.charges_from_datetime_in_customer_timezone&.to_date, format: :default), to_date: I18n.l(issuing_date, format: :default))
+      td.body-2 = I18n.t('invoice.units')
+      td.body-2 = I18n.t('invoice.unit_price')
+      td.body-2 = I18n.t('invoice.tax_rate')
+      td.body-2 = I18n.t('invoice.amount')
+
+/ Charge fees section for subscription invoice
+- if subscription_fees(subscription.id).charge.any?
+  / Charges payed in arrears OR charges and plan payed in advance
+  - if subscription.plan.charges.any?
+    .invoice-resume.overflow-auto
+      table.invoice-resume-table width="100%"
+
+        / Loop over all top level fees
+        - subscription_fees(subscription.id).charge.positive_units.where(true_up_parent_fee: nil).joins(charge: :billable_metric).sort_by { |f| f.invoice_sorting_clause }.group_by(&:charge_id).each do |_charge_id, fees|
+          - fee = fees.first
+          - next if fee.charge.pay_in_advance?
+
+          / Fees for filters
+          - if fees.all? { |f| f.charge_filter_id? } && fees.sum(&:units) > 0
+            - fees.select { |f| f.units.positive? }.each do |fee|
+              - if fee.amount_details.blank?
+                == SlimHelper.render('templates/invoices/v4/_default_fee_with_filters', fee)
+              - else
+                == SlimHelper.render('templates/invoices/v4/_fee_with_filters', fee)
+
+            / True up fees attached to the fee
+            - fees.select { |f| f.true_up_fee.present? }.each do |fee|
+              == SlimHelper.render('templates/invoices/v4/_true_up_fee', fee)
+
+          / Fees without filters
+          - else
+            - fees.sort_by { |f| f.invoice_sorting_clause }.each do |fee|
+              == SlimHelper.render('templates/invoices/v4/_fees_without_filters', fee)
+
+/ Total section
+.invoice-resume.overflow-auto
+  table.total-table width="100%"
+    - if progressive_billing_credit_amount.positive?
+      tr
+        td.body-2
+        td.body-2 = I18n.t('invoice.progressive_billing_credit')
+        td.body-2 = '-' + MoneyHelper.format(progressive_billing_credit_amount)
+
+    - if coupons_amount_cents.positive?
+      - credits.coupon_kind.order(created_at: :asc).each do |credit|
+        tr
+          td.body-2
+          td.body-2 #{credit.invoice_coupon_display_name}
+          td.body-2 = '-' +  MoneyHelper.format(credit.amount)
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.sub_total_without_tax')
+      td.body-2 = MoneyHelper.format(sub_total_excluding_taxes_amount)
+    - if applied_taxes.present?
+      - applied_taxes.order(tax_rate: :desc).each do |applied_tax|
+        tr
+          td.body-2
+          - if applied_tax.applied_on_whole_invoice?
+            td.body-2 = I18n.t('invoice.tax_name_only.' + applied_tax.tax_code)
+          - else
+            td.body-2 = I18n.t('invoice.tax_name', name: applied_tax.tax_name, rate: applied_tax.tax_rate, amount: MoneyHelper.format(applied_tax.taxable_amount))
+            td.body-2 = MoneyHelper.format(applied_tax.amount)
+    - else
+      tr
+        td.body-2
+        td.body-2 = I18n.t('invoice.tax_name_with_details', name: 'Tax', rate: 0)
+        td.body-2 = MoneyHelper.format(0.to_money(currency))
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.sub_total_with_tax')
+      td.body-2 = MoneyHelper.format(sub_total_including_taxes_amount)
+    - if credits.credit_note_kind.any?
+      tr
+        td.body-2
+        td.body-2 = I18n.t('invoice.credit_notes')
+        td.body-2 = '-' +  MoneyHelper.format(credit_notes_amount)
+    == SlimHelper.render('templates/invoices/v4/_prepaid_credits', self)
+    tr
+      td.body-2
+      td.body-1 = I18n.t('invoice.total')
+      td.body-1
+        = MoneyHelper.format(total_amount)

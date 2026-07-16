@@ -1,0 +1,7 @@
+.shiki {
+  @apply my-4 overflow-auto rounded-lg p-4;
+}
+
+.shiki code {
+  @apply font-code text-sm/6 font-normal;
+}

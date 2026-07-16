@@ -1,0 +1,22 @@
+name: Release
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version
+        required: true
+jobs:
+  build-front-image:
+    name: Build Front Image
+    uses: getlago/lago/.github/workflows/docker-build-multi-arch.yaml@main
+    with:
+      image-name: getlago/front
+      ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+      cache-type: disabled
+      exact-tags-only: true
+
+    secrets:
+      registry-user: ${{ secrets.DOCKERHUB_USERNAME }}
+      registry-token: ${{ secrets.DOCKERHUB_PASSWORD }}

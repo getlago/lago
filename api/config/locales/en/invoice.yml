@@ -1,0 +1,141 @@
+---
+en:
+  invoice:
+    account_holder_name: Account holder name
+    account_number: Account number
+    account_type: Account type
+    all_subscriptions: All Subscriptions
+    all_usage_based_fees: All usage based fees
+    already_paid: Already paid
+    amount: Amount
+    amount_with_tax: Amount (incl. tax)
+    amount_without_tax: Amount (excl. tax)
+    bank_code: Bank code
+    bank_name: Bank name
+    bank_transfer_info: Bank transfers may take several business days to process. To pay via bank transfer, transfer funds using the following bank information.
+    bic: BIC
+    bill_from: From
+    bill_to: Bill to
+    branch_code: Branch code
+    branch_name: Branch name
+    breakdown: Breakdown
+    breakdown_for_days: Used %{breakdown_duration} out of %{breakdown_total_duration} days
+    breakdown_of: Breakdown of %{fee_filter_display_name}
+    charges_paid_in_advance: Charges paid in advance
+    clabe: CLABE
+    conversion_rate: Conversion rate
+    country: Country
+    coupons: Coupons
+    credit_notes: Credit notes
+    date_from: From
+    date_to: to
+    details: "%{resource} details"
+    document_name: Invoice
+    document_tax_name: Tax invoice
+    due_date: Due %{date}
+    e_invoicing:
+      credit_card: Credit Card Payment
+      credit_card_information: Credit card payment received on %{date}
+      discount_reason: Discount %{tax_rate} portion
+      payment_information: "%{payment_label} of %{currency} %{amount} applied"
+      standard_payment: Standard payment
+    fee_prorated: The fee is prorated for the period; the displayed unit price is an average
+    fees_from_to_date: Fees from %{from_date} to %{to_date}
+    free_credits: Free credits
+    from_to_date: From %{from_date} to %{to_date}
+    graduated:
+      fee_per_unit_for_the_first: Fee per unit for the first %{to}
+      fee_per_unit_for_the_last: Fee per unit for %{from} and above
+      fee_per_unit_for_the_next: Fee per unit for the next %{from} to %{to}
+      flat_fee_for_the_first: Flat fee for first %{to}
+      flat_fee_for_the_last: Flat fee for %{from} and above
+      flat_fee_for_the_next: Flat fee for the next %{from} to %{to}
+    half_year: half-year
+    iban: IBAN
+    invoice_number: Invoice Number
+    issue_date: Issue Date
+    item: Item
+    list_of_charges: List of charges used from %{from} to %{to}
+    month: month
+    monthly: Monthly
+    notice_full: Regardless of when an event is received, the unit is not prorated, we charge the full price.
+    notice_prorated: If a unit is added or removed during the monthly plan, we calculate the prorated price based on the ratio of days remaining or used to the total number of days in the plan. For example, if 15 days are left in a %{days_in_month}-day period, we charge 15/%{days_in_month} of the period price. If a unit was used for 10 days, we charge 10/%{days_in_month} of the period price.
+    package:
+      fee_per_package: Fee per package
+      fee_per_package_unit_price: "%{amount} per %{package_size}"
+      free_units_for_the_first: Free units for the first %{count}
+    paid_invoice: Paid invoice
+    paid_tax_invoice: Paid tax invoice
+    pay_with_bank_transfer: Pay with a bank transfer
+    payment_term: Payment term
+    payment_term_days: "%{net_payment_term} days"
+    percentage:
+      adjustment_per_transaction: Adjustment for min/max per transaction
+      fee_per_transaction: Fixed fee per transaction
+      free_units_per_transaction:
+        one: Free units for 1 transaction
+        other: Free units for %{count} transactions
+      percentage_rate_on_amount: Rate on the amount
+    powered_by: Powered by
+    prepaid_credit_invoice: Advance invoice
+    prepaid_credits: Prepaid credits
+    prepaid_credits_with_value: Prepaid credits - %{wallet_name}
+    progressive_billing_credit: Usage already billed
+    purchase_order_number: Purchase Order Number
+    quarter: quarter
+    quarterly: Quarterly
+    reached_usage_threshold: This progressive billing is generated because your cumulative usage has reached %{usage_amount}, exceeding the %{threshold_amount} threshold.
+    routing_number: Routing number
+    see_breakdown: See breakdown for total unit
+    self_billed:
+      document_name: Self-billing invoice
+      footer: This self-billing invoice was issued by the client on behalf of the partner, with their consent. The partner has agreed not to issue their own invoice for this transaction.
+    semiannual: Semiannual
+    sort_code: Sort code
+    sub_total: Subtotal
+    sub_total_with_tax: Subtotal (incl. tax)
+    sub_total_without_tax: Subtotal (excl. tax)
+    subscription: Subscription
+    subscription_interval: "%{plan_interval} subscription - %{plan_name}"
+    swift_code: SWIFT code
+    tax: Tax
+    tax_identification_number: 'Tax ID: %{tax_identification_number}'
+    tax_name: "%{name} (%{rate}% on %{amount})"
+    tax_name_only:
+      customer_exempt: Customer is tax exempt
+      juris_has_no_tax: No tax
+      juris_not_taxed: No tax
+      not_collecting: No tax
+      reverse_charge: Reverse charge - Tax liability shifted to customer
+      transaction_exempt: Customer is tax exempt
+      unknown_taxation: Unknown
+    tax_name_with_details: "%{name} (%{rate}%)"
+    tax_rate: Tax rate
+    taxes:
+      fr_tax_exempt: Customer is tax exempt according to article 259-1 of the French Tax General Code.
+      reverse_charge: Reverse charge - Tax liability shifted to customer.
+      tax_exempt: Customer is tax exempt.
+    total: Total
+    total_credits: Total credits
+    total_credits_with_value: 'Total credits: %{credit_amount} credits'
+    total_due: Total due
+    total_due_amount: Amount due
+    total_events: 'Total events: %{count}'
+    total_paid_amount: Amount paid
+    total_unit: 'Total unit: %{units}'
+    total_unit_interval: 'Total unit: %{events_count} events for %{units}'
+    true_up_details: Minimum spend of %{min_amount} prorated on days of usage
+    true_up_metric: "%{metric} - True-up"
+    unit: Unit
+    unit_price: Unit price
+    units: Units
+    units_prorated_per_period: Units prorated per second per %{period}
+    usage_based_fees: Usage based fees
+    usage_breakdown_by: Usage breakdown by %{keys}
+    volume:
+      fee_per_unit: Fee per unit
+      flat_fee_for_all_units: Flat fee for all units
+    week: week
+    weekly: Weekly
+    year: year
+    yearly: Yearly

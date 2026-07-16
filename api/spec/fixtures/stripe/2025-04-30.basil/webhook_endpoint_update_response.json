@@ -1,0 +1,21 @@
+{
+  "id": "we_1RWK7AQ8iJWBZFaMa5O0M5XQ",
+  "object": "webhook_endpoint",
+  "api_version": "2025-04-30.basil",
+  "application": null,
+  "created": 1749054272,
+  "description": null,
+  "enabled_events": [
+    "setup_intent.succeeded",
+    "payment_intent.payment_failed",
+    "payment_intent.succeeded",
+    "payment_method.detached",
+    "charge.refund.updated",
+    "customer.updated",
+    "charge.dispute.closed"
+  ],
+  "livemode": false,
+  "metadata": {},
+  "status": "enabled",
+  "url": "https://api.lago.dev/webhooks/stripe/777b8139-9981-470a-bbb5-5c6e851f5913?code=stripe_spec"
+}

@@ -1,0 +1,43 @@
+name: Linters
+on: [pull_request]
+permissions: {}
+jobs:
+  linters:
+    name: Linters
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      RAILS_ENV: production
+      RAILS_MASTER_KEY: N+XcWoGDzKjuoxrU8BIPN5D0/GSuqx9s
+      SECRET_KEY_BASE: cvIAI6ycC0OnVDRAjT5hmbRxnjCxl4YB
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.2"
+          bundler-cache: true
+      - name: Setup Rubocop
+        # A bug requires the use of `bundle install` to use `rubocop-rails`. A fix is coming to Rubocop.
+        # See: https://github.com/rubocop/rubocop/issues/12823
+        run: |
+          bundle install
+      - name: Run Rubocop
+        # We must pass the list of files because for now, rubocop on the entire project throws too many errors.
+        # We exclude the db/schema.rb file explicitly because passing a list of files will override the `AllCops.Exclude` config in .rubocop.yml
+        run: |
+          FILES=$(git diff --diff-filter=d --name-only origin/${{ github.base_ref }}...HEAD -- '*.rb' ':!db/*structure.sql')
+          if [ -z "$FILES" ]; then
+            echo "No Ruby files to lint"
+            exit 0
+          else
+            echo "Linting Ruby files"
+            bundle exec rubocop $FILES
+          fi
+      - name: Generate RSA keys
+        run: ./scripts/generate.rsa.sh
+      - name: Zeitwerk check
+        run: bin/rails zeitwerk:check

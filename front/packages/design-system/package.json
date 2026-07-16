@@ -1,0 +1,58 @@
+{
+  "name": "lago-design-system",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types/index.d.ts",
+      "style": "./dist/style.css"
+    },
+    "./images/*": "./dist/images/*",
+    "./style": "./dist/style.css"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/style.css",
+    "dist/types",
+    "dist/images"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc --build tsconfig.build.json && vite build",
+    "lint": "prettier --check \"./src/**/*.{ts,tsx,svg}\" && eslint ."
+  },
+  "peerDependencies": {
+    "@mui/material": "5.18.0",
+    "@mui/x-date-pickers": "6.20.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.4"
+  },
+  "dependencies": {
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1",
+    "sanitize-html": "2.17.5"
+  },
+  "devDependencies": {
+    "@svgr/core": "8.1.0",
+    "@svgr/plugin-jsx": "8.1.0",
+    "@types/lodash": "4.17.24",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@types/react-router-dom": "5.3.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "autoprefixer": "10.5.2",
+    "class-variance-authority": "0.7.1",
+    "lago-configs": "workspace:*",
+    "tailwind-merge": "2.6.1",
+    "tailwindcss": "3.4.19",
+    "postcss": "8.5.15",
+    "typescript": "6.0.3",
+    "vite": "7.3.6",
+    "vite-plugin-svgr": "5.2.0"
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "type": "transaction.purchase.failed",
+  "status_id": "Zv2kmzZ",
+  "operation_id": "Z0kD6Dg",
+  "intent": {
+    "id": "LVR0VXL",
+    "created": "2025-03-11 00:04:17.347506+00:00",
+    "custom_fields": {
+      "lago_mit": false,
+      "lago_mh_service": "Invoices::Payments::MoneyhashService",
+      "lago_payable_id": "2b618048-af9e-48f5-b188-f38642eef389",
+      "lago_customer_id": "53c14b65-3406-4b1b-9d49-77fb389ee92e",
+      "lago_payable_type": "Invoice",
+      "lago_organization_id": "1f6edf98-9eb4-4baf-8c64-7c6be9d0b414"
+    },
+    "split_data": [],
+    "custom_form_answers": null,
+    "amount": {
+      "value": 5,
+      "currency": "USD"
+    },
+    "flow_data": {
+      "id": "xgXlXgX",
+      "version": 1,
+      "sequence": null
+    },
+    "payment_status": {
+      "status": "AUTHORIZE_ATTEMPT_FAILED",
+      "balances": {
+        "total_authorized": "0.00",
+        "total_voided": "0.00",
+        "available_to_void": "0.00",
+        "total_captured": "0.00",
+        "available_to_capture": "0.00",
+        "total_refunded": "0.00",
+        "available_to_refund": "0.00"
+      }
+    }
+  },
+  "account": {
+    "id": "lgaxEBL"
+  },
+  "transaction": {
+    "type": "payment",
+    "id": "2414609b-8c3f-4298-8879-c9daa244a039",
+    "created": "2025-03-11 00:04:33.864332+00:00",
+    "status": "purchase.failed",
+    "billing_data": {
+      "name": "Legal00x3 Customer",
+      "first_name": "Legal00x3",
+      "last_name": "Customer",
+      "email": "test@mh.io",
+      "phone_number": "+201087654321",
+      "address": null,
+      "address1": null,
+      "apartment": null,
+      "floor": null,
+      "building": null,
+      "street": null,
+      "city": null,
+      "state": null,
+      "country": null,
+      "postal_code": null,
+      "mobile_wallet_number": null
+    },
+    "external_action_message": [],
+    "provider_transaction_fields": {
+      "checkoutdotcom_payment_id": null,
+      "checkoutdotcom_payment_auth_code": null,
+      "checkoutdotcom_increase_auth_code": null,
+      "checkoutdotcom_increase_auth_action_id": null,
+      "checkoutdotcom_acquirer_reference_number": null,
+      "checkoutdotcom_processing_object": null,
+      "checkoutdotcom_operation_fields": {}
+    },
+    "provider_unique_reference": {
+      "key": "checkoutdotcom_payment_id",
+      "value": null
+    },
+    "operations": [
+      {
+        "id": "Z0kD6Dg",
+        "type": "purchase",
+        "status": "failed",
+        "amount": {
+          "value": 5,
+          "currency": "USD"
+        },
+        "latest_status": {
+          "id": "Zv2kmzZ",
+          "value": "failed",
+          "code": "7000",
+          "provider_error_code": null,
+          "provider_error_message": null,
+          "message": "A generic payment processing error occurred.",
+          "localized_message": "A generic payment processing error occurred."
+        },
+        "statuses": [
+          {
+            "id": "Zo2p0Vg",
+            "value": "pending",
+            "code": "8000",
+            "provider_error_code": null,
+            "provider_error_message": null,
+            "message": "Pending",
+            "localized_message": "Pending",
+            "created": "2025-03-11 00:04:33.903421+00:00"
+          },
+          {
+            "id": "Zv2kmzZ",
+            "value": "failed",
+            "code": "7000",
+            "provider_error_code": null,
+            "provider_error_message": null,
+            "message": "A generic payment processing error occurred.",
+            "localized_message": "A generic payment processing error occurred.",
+            "created": "2025-03-11 00:04:34.016913+00:00"
+          }
+        ],
+        "refund_type": null,
+        "custom_fields": null,
+        "extra": {},
+        "rrn": null,
+        "arn": null,
+        "authorization_code": null
+      }
+    ],
+    "fraud_decision": null,
+    "device_check": null,
+    "custom_message": "",
+    "method": {
+      "id": "gqYGvEg",
+      "display_name": "CheckoutDotCom - Card",
+      "service_provider": {
+        "id": "gQJnWwZ",
+        "display_name": "Checkout.com"
+      }
+    },
+    "payment_method_details": {
+      "type": "CARD",
+      "data": null,
+      "provider_data": null
+    },
+    "authentication_data": null,
+    "paying_card_token": null,
+    "authorization_code": null,
+    "merchant_reference": null,
+    "shipping_data": null,
+    "trx_rrn": null,
+    "ip": {
+      "ip_address": "196.150.203.149",
+      "country": {
+        "iso_code": "EG",
+        "name": "Egypt"
+      }
+    },
+    "full_capture": false
+  },
+  "api_version": "1.1"
+}

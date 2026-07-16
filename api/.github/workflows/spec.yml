@@ -1,0 +1,96 @@
+name: Run Spec
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  run-spec:
+    name: Run Spec
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: getlago/postgres-partman:15.0-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: lago
+          POSTGRES_USER: lago
+          POSTGRES_PASSWORD: lago
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_node_total: [10]
+        ci_node_index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: "postgres://lago:lago@localhost:5432/lago"
+      LAGO_REDIS_CACHE_URL: "redis://localhost:6379"
+      LAGO_REDIS_STORE_URL: "localhost:6379"
+      RAILS_MASTER_KEY: N+XcWoGDzKjuoxrU8BIPN5D0/GSuqx9s
+      SECRET_KEY_BASE: cvIAI6ycC0OnVDRAjT5hmbRxnjCxl4YB
+      LAGO_API_URL: https://api.lago.dev
+      LAGO_PDF_URL: https://pdf.lago.dev
+      LAGO_DATA_API_URL: http://data_api
+      LAGO_FROM_EMAIL: noreply@getlago.com
+      LAGO_CLICKHOUSE_ENABLED: true
+      LAGO_CLICKHOUSE_MIGRATIONS_ENABLED: true
+      LAGO_CLICKHOUSE_HOST: localhost
+      LAGO_CLICKHOUSE_DATABASE: default
+      LAGO_CLICKHOUSE_USERNAME: ""
+      LAGO_CLICKHOUSE_PASSWORD: "password"
+      LAGO_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+      LAGO_KAFKA_ACTIVITY_LOGS_TOPIC: activity_logs
+      LAGO_KAFKA_API_LOGS_TOPIC: api_logs
+      LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC: events_charged_in_advance
+      LAGO_KAFKA_SECURITY_LOGS_TOPIC: security_logs
+      KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC }}
+      KNAPSACK_PRO_CI_NODE_TOTAL: ${{ matrix.ci_node_total }}
+      KNAPSACK_PRO_CI_NODE_INDEX: ${{ matrix.ci_node_index }}
+      KNAPSACK_PRO_FIXED_QUEUE_SPLIT: true
+      KNAPSACK_PRO_LOG_LEVEL: info
+      MISTRAL_API_KEY: ""
+      MISTRAL_AGENT_ID: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.2"
+          bundler-cache: true
+      - name: Start Clickhouse database
+        run: |
+          docker run -d --rm -p 8123:8123 -p 9000:9000 --ulimit nofile=262144:262144 -v ./clickhouse-s3:/var/lib/clickhouse-s3 -v ./ci/clickhouse/config.xml:/etc/clickhouse-server/config.d/config.xml -e CLICKHOUSE_PASSWORD=password clickhouse/clickhouse-server:25.12-alpine
+
+        shell: bash
+      - name: Generate RSA keys
+        run: ./scripts/generate.rsa.sh
+      - name: Set up Postgres database schema
+        run: bin/rails db:schema:load:primary
+      - name: Set up Clickhouse database schema
+        run: bin/rails db:migrate:clickhouse
+      - name: Run tests
+        run: |
+          if [[ -z "$KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" ]]; then
+            echo "::warning::This is a community PR. We'll default to running the test using 'parallel_tests'."
+            bundle exec parallel_rspec --only-group "${KNAPSACK_PRO_CI_NODE_INDEX}" -n "${KNAPSACK_PRO_CI_NODE_TOTAL}" --exclude-pattern "spec/integration/.*_integration_spec.rb"
+          else
+            bundle exec rake knapsack_pro:queue:rspec
+          fi
+        continue-on-error: true
+      - name: retry failed tests
+        run: bundle exec rspec --only-failures

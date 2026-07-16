@@ -1,0 +1,31 @@
+{
+  "status": { "code": 200, "message": "success", "errors": [] },
+  "data": {
+    "id": "dc98b896-c008-4446-97b8-8af852f476ef",
+    "type": "INDIVIDUAL",
+    "name": "Legal00x3 Customer",
+    "first_name": "Legal00x3",
+    "last_name": "Customer",
+    "email": "test@mh.io",
+    "phone_number": "+201087654321",
+    "description": null,
+    "custom_fields": null,
+    "company_name": "legal name cust00x3",
+    "tax_id": 76543456,
+    "tax_rate": null,
+    "address": "first line addr",
+    "national_id": null,
+    "contact_person_name": "legal name cust00x3 - Legal00x3 Customer",
+    "birth_date": null,
+    "is_live": false,
+    "wallets": {},
+    "created_during_a_payment": false,
+    "webhook_url": null,
+    "last_used_payment_method": null,
+    "last_used_method": {},
+    "custom_webhook_headers": {}
+  },
+  "count": 1,
+  "next": null,
+  "previous": null
+}

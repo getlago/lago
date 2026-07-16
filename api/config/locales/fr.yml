@@ -1,0 +1,58 @@
+---
+fr:
+  date:
+    abbr_day_names:
+    - Dim
+    - Lun
+    - Mar
+    - Mer
+    - Jeu
+    - Ven
+    - Sam
+    abbr_month_names:
+    -
+    - janv.
+    - févr.
+    - mars
+    - avr.
+    - mai
+    - juin
+    - juill.
+    - août
+    - sept.
+    - oct.
+    - nov.
+    - déc.
+    day_names:
+    - Dimanche
+    - Lundi
+    - Mardi
+    - Mercredi
+    - Jeudi
+    - Vendredi
+    - Samedi
+    formats:
+      default: "%-d %b %Y"
+    month_names:
+    -
+    - Janvier
+    - Février
+    - Mars
+    - Avril
+    - Mai
+    - Juin
+    - Juillet
+    - Août
+    - Septembre
+    - Octobre
+    - Novembre
+    - Décembre
+    order:
+    - :year
+    - :month
+    - :day
+  money:
+    custom_format: "%n %{iso_code}"
+    decimal_mark: ","
+    format: "%n %u"
+    thousands_separator: " "

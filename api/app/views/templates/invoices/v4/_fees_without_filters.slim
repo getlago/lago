@@ -1,0 +1,38 @@
+- fee = self
+
+- if fee.amount.zero? || fee.amount_details.blank?
+  == SlimHelper.render('templates/invoices/v4/_default_fee', fee)
+- else
+  tr.charge-name.fee
+    td.body-1
+      = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+      - if fee.charge_filter_id?
+        = ' • ' + fee.filter_display_name(separator: ' • ')
+      - if fee.billable_metric.weighted_sum_agg?
+        .body-3 = I18n.t('invoice.units_prorated_per_period', period: IntervalHelper.interval_name(fee.subscription.plan.interval))
+      - if fee.charge.percentage?
+        .body-3 = I18n.t('invoice.total_events', count: fee.events_count)
+      - if fee.charge.prorated?
+        .body-3 = I18n.t('invoice.fee_prorated')
+    td.body-2
+    td.body-2
+    td.body-2
+    td.body-2
+
+  - case fee.charge.charge_model.to_sym
+  - when :graduated_percentage
+    == SlimHelper.render('templates/invoices/v4/_graduated_percentage', fee)
+  - when :graduated
+    == SlimHelper.render('templates/invoices/v4/_graduated', fee)
+  - when :percentage
+    == SlimHelper.render('templates/invoices/v4/_percentage', fee)
+  - when :volume
+    == SlimHelper.render('templates/invoices/v4/_volume', fee)
+  - when :package
+    == SlimHelper.render('templates/invoices/v4/_package', fee)
+
+  == SlimHelper.render('templates/invoices/v4/_conversion_row', fee)
+
+/ True up fees attached to the fee
+- if fee.true_up_fee.present?
+  == SlimHelper.render('templates/invoices/v4/_true_up_fee', fee)

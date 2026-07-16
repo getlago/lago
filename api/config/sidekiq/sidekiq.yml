@@ -1,0 +1,19 @@
+concurrency: 10
+timeout: 25
+retry: 1
+queues:
+  - high_priority
+  - default
+  - mailers
+  - clock
+  - providers
+  - webhook
+  - invoices
+  - integrations
+  - low_priority
+  - long_running
+
+production:
+  concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+staging:
+  concurrency: 10

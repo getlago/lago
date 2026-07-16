@@ -1,0 +1,18 @@
+/ Prepaid credits section - shows breakdown if available, otherwise shows total
+- if (subscription? || progressive_billing?) && wallet_transactions.exists?
+  - if prepaid_granted_credit_amount_cents.present? || prepaid_purchased_credit_amount_cents.present?
+    - if prepaid_granted_credit_amount_cents&.positive?
+      tr
+        td.body-2
+        td.body-2 = I18n.t('invoice.free_credits')
+        td.body-2 = '-' + MoneyHelper.format(prepaid_granted_credit_amount)
+    - if prepaid_purchased_credit_amount_cents&.positive?
+      tr
+        td.body-2
+        td.body-2 = I18n.t('invoice.prepaid_credits')
+        td.body-2 = '-' + MoneyHelper.format(prepaid_purchased_credit_amount)
+  - else
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.prepaid_credits')
+      td.body-2 = '-' + MoneyHelper.format(prepaid_credit_amount)

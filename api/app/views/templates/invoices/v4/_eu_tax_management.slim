@@ -1,0 +1,11 @@
+- if billing_entity.eu_tax_management.present?
+  - if applied_taxes.present?
+    - applied_tax_codes = applied_taxes.pluck(:tax_code)
+    p.body-3.mb-24
+      - if applied_tax_codes.include?('lago_eu_tax_exempt')
+        - if billing_entity.country == 'FR'
+          = I18n.t('invoice.taxes.fr_tax_exempt')
+        - else
+          = I18n.t('invoice.taxes.tax_exempt')
+      - if applied_tax_codes.include?('lago_eu_reverse_charge')
+        = I18n.t('invoice.taxes.reverse_charge')

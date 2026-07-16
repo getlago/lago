@@ -1,0 +1,64 @@
+{
+  "type": "intent.time_expired",
+  "intent_type": "PAYMENT",
+  "data": {
+    "intent_id": "9J0x2Dg",
+    "intent": {
+      "id": "9J0x2Dg",
+      "status": "TIME_EXPIRED",
+      "amount": 6.77,
+      "amount_currency": "USD",
+      "type": "Payin",
+      "account": "lgaxEBL",
+      "custom_fields": {
+        "lago_mit": false,
+        "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+        "lago_mh_service": "Invoices::Payments::MoneyhashService",
+        "lago_payable_id": "b42828c5-ae57-4716-8281-3317fed01042",
+        "lago_customer_id": "e6676e85-9e4f-4fb5-bd2f-590a9c170d0e",
+        "lago_payable_type": "Invoice",
+        "lago_organization_id": "1f6edf98-9eb4-4baf-8c64-7c6be9d0b414",
+        "lago_subscription_external_id": "7373a747-b6ab-44f2-b6cd-0662b73cbfcb"
+      },
+      "billing_data": {
+        "first_name": "Ahmed",
+        "last_name": "Shahwan",
+        "email": "a.shahwan@moneyhash.io",
+        "phone_number": "+201087654321"
+      },
+      "active_transaction": null,
+      "transactions_count": 0,
+      "transactions_history": [],
+      "method": {},
+      "flow": "xgXlXgX",
+      "flow_data": {
+        "id": "xgXlXgX",
+        "version": 1,
+        "sequence": null
+      },
+      "is_live": false,
+      "created": "2025-03-11T11:21:02.267317Z",
+      "merchant_reference": null,
+      "ip": {
+        "ip_address": "196.150.203.149",
+        "country": {
+          "iso_code": "EG",
+          "name": "Egypt"
+        }
+      },
+      "payment_status": {
+        "status": "EXPIRED",
+        "balances": {
+          "total_authorized": "0.00",
+          "total_voided": "0.00",
+          "available_to_void": "0.00",
+          "total_captured": "0.00",
+          "available_to_capture": "0.00",
+          "total_refunded": "0.00",
+          "available_to_refund": "0.00"
+        }
+      }
+    }
+  },
+  "api_version": "1.1"
+}

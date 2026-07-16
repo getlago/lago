@@ -1,0 +1,58 @@
+---
+nb:
+  date:
+    abbr_day_names:
+    - Søn
+    - Man
+    - Tir
+    - Ons
+    - Tor
+    - Fre
+    - Lør
+    abbr_month_names:
+    -
+    - jan.
+    - feb.
+    - mars
+    - apr.
+    - mai
+    - juni
+    - juli
+    - aug.
+    - sep.
+    - okt.
+    - nov.
+    - des.
+    day_names:
+    - Søndag
+    - Mandag
+    - Tirsdag
+    - Onsdag
+    - Torsdag
+    - Fredag
+    - Lørdag
+    formats:
+      default: "%d. %b %Y"
+    month_names:
+    -
+    - Januar
+    - Februar
+    - Mars
+    - April
+    - Mai
+    - Juni
+    - Juli
+    - August
+    - September
+    - Oktober
+    - November
+    - Desember
+    order:
+    - :year
+    - :month
+    - :day
+  money:
+    custom_format: "%{iso_code} %n"
+    decimal_mark: ","
+    format: "%u%n"
+    thousands_separator: " "

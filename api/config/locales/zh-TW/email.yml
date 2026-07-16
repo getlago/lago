@@ -1,0 +1,85 @@
+---
+zh-TW:
+  email:
+    api_key:
+      created:
+        access_warning: 若您未授權此變更，請立即重設您的密碼並刪除該 API 金鑰，以保護您的帳戶安全。
+        change_notice: 若此變更是由您團隊中的成員發起，您現在即可開始使用此 API 金鑰來自動化您的計費流程。
+        email_info: 您會收到此電子郵件，是因為在您的 Lago 執行個體中建立了一個新的 API 金鑰，而您具有管理員權限。
+        greetings: 您好，
+        key_has_been_created: 已成功為您的組織 %{organization_name} 建立新的 API 金鑰。
+        subject: 已建立新的 Lago API 金鑰
+      destroyed:
+        access_warning: 若您未授權此請求，請立即重設您的密碼以確保帳戶安全。
+        change_notice: 若此變更是由您團隊中的成員發起，則無需採取任何進一步行動。
+        email_info: 您會收到此電子郵件，是因為在您的 Lago 執行個體中刪除了一個 API 金鑰，而您具有管理員權限。
+        greetings: 您好，
+        key_has_been_destroyed: 已為您的組織 %{organization_name} 刪除一個 API 金鑰。
+        subject: 已刪除 Lago API 金鑰
+      rotated:
+        access_warning: 若您未授權此請求，請立即重設您的密碼並輪替您的 API 金鑰，以確保帳戶安全。
+        change_notice: 若此變更是由您團隊中的成員發起，則無需採取任何進一步行動。為確保計費順暢運作，請盡快更新您的應用程式以使用新的權杖。
+        email_info: 您會收到此電子郵件，是因為在您的 Lago 執行個體中已輪替一個 API 金鑰，而您具有管理員權限。
+        greetings: 您好，
+        key_has_been_rotated: 您的組織 %{organization_name} 的 API 金鑰已完成輪替！
+        subject: 您的 Lago API 金鑰已完成輪替
+    credit_note:
+      created:
+        credit_note_from: 來自 %{billing_entity_name} 的折讓單
+        credit_note_number: 折讓單號碼
+        credited_notice: 已於 %{date} 入帳至客戶餘額
+        download: 下載折讓單以查看詳細資訊
+        invoice_number: 發票號碼
+        issue_date: 開立日期
+        issued_notice: 開立於 %{date}
+        offset_invoice_notice: 發票 %{invoice_number} 已於 %{date} 抵銷
+        refunded_notice: 已於 %{date} 退款
+        subject: '您來自 %{billing_entity_name} 的折讓單 #%{credit_note_number}'
+    data_export:
+      completed:
+        fallback_text: 若連結已過期，請從您的控制台重新產生一個新的連結。
+        greetings: 您好
+        intro: 您的 %{resource_type} 匯出檔已準備完成！您可使用下方連結下載，連結有效期限為 7 天。
+        lago_team: Lago 團隊
+        main_cta_label: 下載匯出檔
+        subject: 您的 Lago %{resource_type} 匯出檔已準備完成！
+        thanks: 謝謝，
+    invoice:
+      finalized:
+        download: 下載發票以查看詳細資訊
+        due_date: 應付總額 %{date}
+        invoice_from: 來自 %{billing_entity_name} 的發票
+        invoice_number: 發票號碼
+        issue_date: 開立日期
+        issued_on: 於 %{date} 開立
+        subject: '您來自 %{billing_entity_name} 的發票 #%{invoice_number}'
+    organization:
+      authentication_methods_updated:
+        changes: 使用者 %{user_email} 對登入驗證方式進行了以下變更。
+        disabled: 已停用 %{login_method}
+        email_info: 若您未預期會有此變更，請檢視您的驗證設定。
+        enabled: 已啟用 %{login_method}
+        reasoning: 您會收到此訊息，是因為您是該組織的管理員。
+        subject: 您的 Lago 工作區登入方式已更新
+    password_reset:
+      subject: 重設您的 Lago 密碼
+    payment_receipt:
+      created:
+        payment_receipt_from: 來自 %{billing_entity_name} 的付款收據
+        subject: '您來自 %{billing_entity_name} 的付款收據 #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: 若您已完成付款，請忽略此電子郵件。
+        hello: 您好 %{customer_name}，
+        pay_amount: 支付餘額
+        payment_terms:
+          one: 依合約約定，我們的付款期限為 %{count} 天。
+          other: 依合約約定，我們的付款期限為 %{count} 天。
+          zero: 依合約約定，需於發票產生時立即付款。
+        remaining_amount: 尚需支付金額
+        reminder_overdue_balance: 這是來自 %{billing_entity_name} 財務團隊的提醒，部分發票已逾期。
+        subject: 您在 %{billing_entity_name} 的逾期應付金額
+        thank_you: 謝謝您。
+        total_amount_due: 應付總金額為 %{amount}。
+    powered_by: 技術提供
+    questions: 有任何問題嗎？請透過以下方式聯絡我們：

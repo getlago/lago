@@ -1,0 +1,39 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "authCode": "051793",
+          "paymentLinkId": "PLF11278A8985273C2",
+          "metadata.payment_type": "one-time",
+          "cardSummary": "1142",
+          "checkout.cardAddedBrand": "visa",
+          "expiryDate": "03/2030",
+          "metadata.lago_customer_id": "a5488a6c-d2ed-44fd-8c97-7fcca4a6a84a",
+          "threeds2.cardEnrolled": "false",
+          "recurringProcessingModel": "CardOnFile",
+          "metadata.lago_payment_request_id": "ec82efeb-88bb-44f8-ba30-0d55b3fd583a",
+          "metadata.lago_payable_type": "PaymentRequest"
+        },
+        "amount": {
+          "currency": "EUR",
+          "value": 71
+        },
+        "eventCode": "AUTHORISATION",
+        "eventDate": "2024-01-26T14:06:02+01:00",
+        "merchantAccountCode": "LagoAccountECOM",
+        "merchantReference": "HOO-3588-202401-033",
+        "operations": [
+          "CANCEL",
+          "CAPTURE",
+          "REFUND"
+        ],
+        "paymentMethod": "visa",
+        "pspReference": "SGVWRSNQLDQ2WN82",
+        "reason": "051793:1142:03/2030",
+        "success": "true"
+      }
+    }
+  ]
+}

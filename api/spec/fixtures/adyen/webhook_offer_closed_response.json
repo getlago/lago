@@ -1,0 +1,25 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "hmacSignature": "b0ea55c2fe60d4d1d605e9c385e0e7...",
+          "paymentMethodVariant": "ideal"
+        },
+        "amount": {
+          "currency": "EUR",
+          "value": 1000
+        },
+        "eventCode": "OFFER_CLOSED",
+        "eventDate": "2021-01-01T01:00:00+01:00",
+        "merchantAccountCode": "YOUR_MERCHANT_ACCOUNT",
+        "merchantReference": "YOUR_MERCHANT_REFERENCE",
+        "paymentMethod": "ideal",
+        "pspReference": "QFQTPCQ8HXSKGK82",
+        "reason": "",
+        "success": "true"
+      }
+    }
+  ]
+}

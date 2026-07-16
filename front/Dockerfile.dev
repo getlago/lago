@@ -1,0 +1,11 @@
+FROM node:24.18.0-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache bash && \
+    corepack enable && corepack prepare pnpm@latest --activate
+
+# Increase Node.js memory limit to 8GB for development
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+
+CMD ["./start.dev.sh"]

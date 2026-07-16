@@ -1,0 +1,55 @@
+# This Docker Compose file is to use for CI purposes only
+# At Lago we use it to run ours integrations tests
+
+version: '3.8'
+
+services:
+  db:
+    image: getlago/postgres-partman:15.0-alpine
+    container_name: lago-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lago
+      POSTGRES_USER: lago
+      POSTGRES_PASSWORD: lago
+    ports:
+      - 5432:5432
+    
+  redis:
+    image: redis:6.2-alpine
+    container_name: lago_redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+  
+  api:
+    image: getlago/api:ci
+    container_name: lago-api
+    restart: unless-stopped
+    depends_on: 
+      - "db"
+    ports:
+      - 3000:3000
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://lago:lago@db:5432/lago
+      REDIS_URL: redis://redis:6379
+      LAGO_FRONT_URL: http://localhost
+      SECRET_KEY_BASE: secret-key
+      LAGO_RSA_PRIVATE_KEY: ${LAGO_RSA_PRIVATE_KEY}
+      LAGO_ENCRYPTION_PRIMARY_KEY: encryption-primary-key
+      LAGO_ENCRYPTION_DETERMINISTIC_KEY: encryption-deterministic-key
+      LAGO_ENCRYPTION_KEY_DERIVATION_SALT: encryption-derivation-salt
+      LAGO_DISABLE_SEGMENT: "true"
+      RAILS_LOG_TO_STDOUT: "true"
+      LAGO_LICENSE: ${LAGO_LICENSE}
+
+  front:
+    image: getlago/front:ci
+    container_name: lago-front
+    restart: unless-stopped
+    environment:
+      API_URL: http://localhost:3000
+      NODE_ENV: staging
+    ports:
+      - 80:80

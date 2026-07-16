@@ -1,0 +1,601 @@
+{
+  "details": "https://github.com/ibericode/vat-rates",
+  "version": 4,
+  "items": {
+    "ES": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "super_reduced": 4,
+          "reduced": 10,
+          "standard": 21
+        },
+        "exceptions": [
+          {
+            "name": "Canary Islands",
+            "postcode": "(35\\d{3}|38\\d{3})",
+            "standard": 0
+          },
+          {
+            "name": "Ceuta",
+            "postcode": "(5100[1-5]|5107[0-1]|51081)",
+            "standard": 0
+          },
+          {
+            "name": "Melilla",
+            "postcode": "(5200[0-6]|5207[0-1]|52081)",
+            "standard": 0
+          }
+        ]
+      }
+    ],
+    "BG": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 9,
+          "standard": 20
+        }
+      }
+    ],
+    "HU": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 18,
+          "standard": 27
+        }
+      }
+    ],
+    "LV": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 12,
+          "standard": 21
+        }
+      }
+    ],
+    "PL": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 8,
+          "standard": 23
+        }
+      }
+    ],
+    "CZ": [
+      {
+        "effective_from": "2024-01-01",
+        "rates": {
+          "reduced": 12,
+          "standard": 21
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 10,
+          "reduced2": 15,
+          "standard": 21
+        }
+      }
+    ],
+    "MT": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 7,
+          "standard": 18
+        }
+      }
+    ],
+    "IT": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "super_reduced": 4,
+          "reduced1": 5,
+          "reduced2": 10,
+          "standard": 22
+        },
+        "exceptions": [
+          {
+            "name": "Campione d'Italia",
+            "postcode": "22061",
+            "standard": 0
+          },
+          {
+            "name": "Livigno",
+            "postcode": "23041",
+            "standard": 0
+          }
+        ]
+      }
+    ],
+    "SI": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9.5,
+          "standard": 22
+        }
+      }
+    ],
+    "IE": [
+      {
+        "effective_from": "2021-03-01",
+        "rates": {
+          "super_reduced": 4.8,
+          "reduced1": 9,
+          "reduced2": 13.5,
+          "standard": 23,
+          "parking": 13.5
+        }
+      },
+      {
+        "effective_from": "2020-09-01",
+        "rates": {
+          "super_reduced": 4.8,
+          "reduced1": 9,
+          "reduced2": 13.5,
+          "standard": 21,
+          "parking": 13.5
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "super_reduced": 4.8,
+          "reduced1": 9,
+          "reduced2": 13.5,
+          "standard": 23,
+          "parking": 13.5
+        }
+      }
+    ],
+    "SE": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 6,
+          "reduced2": 12,
+          "standard": 25
+        }
+      }
+    ],
+    "DK": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "standard": 25
+        }
+      }
+    ],
+    "FI": [
+      {
+        "effective_from": "2024-09-01",
+        "rates": {
+          "reduced1": 10,
+          "reduced2": 14,
+          "standard": 25.5
+        },
+        "exceptions": [
+          {
+            "name": "Aland Islands",
+            "postcode": "22\\d{3,}",
+            "standard": 0
+          }
+        ]
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 10,
+          "reduced2": 14,
+          "standard": 24
+        }
+      }
+    ],
+    "CY": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 19
+        }
+      }
+    ],
+    "LU": [
+      {
+        "effective_from": "2024-01-01",
+        "rates": {
+          "super_reduced": 3,
+          "reduced1": 8,
+          "standard": 17,
+          "parking": 14
+        }
+      },
+      {
+        "effective_from": "2023-01-01",
+        "rates": {
+          "super_reduced": 3,
+          "reduced1": 7,
+          "standard": 16,
+          "parking": 13
+        }
+      },
+      {
+        "effective_from": "2016-01-01",
+        "rates": {
+          "super_reduced": 3,
+          "reduced1": 8,
+          "standard": 17,
+          "parking": 13
+        }
+      },
+      {
+        "effective_from": "2015-01-01",
+        "rates": {
+          "super_reduced": 3,
+          "reduced1": 8,
+          "reduced2": 14,
+          "standard": 17,
+          "parking": 12
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "super_reduced": 3,
+          "reduced1": 6,
+          "reduced2": 12,
+          "standard": 15,
+          "parking": 12
+        }
+      }
+    ],
+    "RO": [
+      {
+        "effective_from": "2025-08-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 21
+        }
+      },
+      {
+        "effective_from": "2017-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 19
+        }
+      },
+      {
+        "effective_from": "2016-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 20
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 24
+        }
+      }
+    ],
+    "EE": [
+      {
+        "effective_from": "2025-07-01",
+        "rates": {
+          "reduced": 13,
+          "standard": 24
+        }
+      },
+      {
+        "effective_from": "2025-01-01",
+        "rates": {
+          "reduced": 13,
+          "standard": 22
+        }
+      },
+      {
+        "effective_from": "2024-01-01",
+        "rates": {
+          "reduced": 9,
+          "standard": 22
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 9,
+          "standard": 20
+        }
+      }
+    ],
+    "GR": [
+      {
+        "effective_from": "2016-06-01",
+        "rates": {
+          "reduced1": 6,
+          "reduced2": 13,
+          "standard": 24
+        },
+        "exceptions": [
+          {
+            "name": "Mount Athos",
+            "postcode": "63086",
+            "standard": 0
+          }
+        ]
+      },
+      {
+        "effective_from": "2016-01-01",
+        "rates": {
+          "reduced1": 6,
+          "reduced2": 13.5,
+          "standard": 23
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 6.5,
+          "reduced2": 13,
+          "standard": 23
+        }
+      }
+    ],
+    "LT": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 9,
+          "standard": 21
+        }
+      }
+    ],
+    "FR": [
+      {
+        "effective_from": "2014-01-01",
+        "rates": {
+          "super_reduced": 2.1,
+          "reduced1": 5.5,
+          "reduced2": 10,
+          "standard": 20
+        },
+        "exceptions": [
+          {
+            "name": "Guadeloupe",
+            "postcode": "971\\d{2,}",
+            "standard": 8.5
+          },
+          {
+            "name": "Martinique",
+            "postcode": "972\\d{2,}",
+            "standard": 8.5
+          },
+          {
+            "name": "Guyane",
+            "postcode": "973\\d{2,}",
+            "standard": 0
+          },
+          {
+            "name": "Reunion",
+            "postcode": "974\\d{2,}",
+            "standard": 8.5
+          },
+          {
+            "name": "Mayotte",
+            "postcode": "976\\d{2,}",
+            "standard": 0
+          }
+        ]
+      },
+      {
+        "effective_from": "2012-01-01",
+        "rates": {
+          "super_reduced": 2.1,
+          "reduced1": 5.5,
+          "reduced2": 7,
+          "standard": 19.6
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "super_reduced": 2.1,
+          "reduced1": 5.5,
+          "standard": 19.6
+        }
+      }
+    ],
+    "HR": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 5,
+          "reduced2": 13,
+          "standard": 25
+        }
+      }
+    ],
+    "BE": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 6,
+          "reduced2": 12,
+          "standard": 21,
+          "parking": 12
+        }
+      }
+    ],
+    "NL": [
+      {
+        "effective_from": "2019-01-01",
+        "rates": {
+          "reduced": 9,
+          "standard": 21
+        }
+      },
+      {
+        "effective_from": "2012-10-01",
+        "rates": {
+          "reduced": 6,
+          "standard": 21
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 6,
+          "standard": 19
+        }
+      }
+    ],
+    "SK": [
+      {
+        "effective_from": "2025-01-01",
+        "rates": {
+          "reduced": 19,
+          "standard": 23
+        }
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 10,
+          "standard": 20
+        }
+      }
+    ],
+    "DE": [
+      {
+        "effective_from": "2021-01-01",
+        "rates": {
+          "reduced": 7,
+          "standard": 19
+        },
+        "exceptions": [
+          {
+            "name": "Büsingen am Hochrhein",
+            "postcode": "78266",
+            "standard": 0
+          },
+          {
+            "name": "Heligoland",
+            "postcode": "27498",
+            "standard": 0
+          }
+        ]
+      },
+      {
+        "effective_from": "2020-07-01",
+        "rates": {
+          "reduced": 5,
+          "standard": 16
+        },
+        "exceptions": [
+          {
+            "name": "Büsingen am Hochrhein",
+            "postcode": "78266",
+            "standard": 0
+          },
+          {
+            "name": "Heligoland",
+            "postcode": "27498",
+            "standard": 0
+          }
+        ]
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 7,
+          "standard": 19
+        },
+        "exceptions": [
+          {
+            "name": "Büsingen am Hochrhein",
+            "postcode": "78266",
+            "standard": 0
+          },
+          {
+            "name": "Heligoland",
+            "postcode": "27498",
+            "standard": 0
+          }
+        ]
+      }
+    ],
+    "PT": [
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced1": 6,
+          "reduced2": 13,
+          "standard": 23,
+          "parking": 13
+        },
+        "exceptions": [
+          {
+            "name": "Madeira",
+            "postcode": "9[0-4]\\d{2,}",
+            "standard": 22
+          },
+          {
+            "name": "Azores",
+            "postcode": "9[5-9]\\d{2,}",
+            "standard": 18
+          }
+        ]
+      }
+    ],
+    "AT": [
+      {
+        "effective_from": "2016-01-01",
+        "rates": {
+          "reduced1": 10,
+          "reduced2": 13,
+          "standard": 20,
+          "parking": 13
+        },
+        "exceptions": [
+          {
+            "name": "Jungholz",
+            "postcode": "6691",
+            "standard": 19
+          },
+          {
+            "name": "Mittelberg",
+            "postcode": "699[123]",
+            "standard": 19
+          }
+        ]
+      },
+      {
+        "effective_from": "0000-01-01",
+        "rates": {
+          "reduced": 10,
+          "standard": 20,
+          "parking": 12
+        }
+      }
+    ]
+  }
+}

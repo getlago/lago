@@ -1,0 +1,77 @@
+html
+  head
+    meta http-equiv="Content-Type" content="text/html; charset=utf-8"
+    meta charset="utf-8"
+    meta name="viewport" content="width=device-width,initial-scale=1"
+    meta name="x-apple-disable-message-reformatting"
+    css:
+      table td {
+        mso-line-height-rule: exactly;
+      }
+      table,
+      td {
+        font-family: Helvetica Neue, Helvetica, Arial;
+      }
+      .main-table {
+        margin: auto;
+        max-width: 600px;
+        min-width: 600px;
+      }
+
+      @media screen and (max-width: 776px) {
+        .main-table {
+          max-width: 360px;
+          min-width: 360px;
+        }
+      }
+      a img {
+        border: none;
+      }
+      a[x-apple-data-detectors] {
+        color: inherit !important;
+        text-decoration: none !important;
+      }
+      a,
+      a:visited,
+      a:hover,
+      a:active {
+        color: inherit;
+      }
+  body style="margin: 0; padding: 0; word-spacing: normal; background-color: #f3f4f6; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;"
+    table style="width: 100%; border: 0; margin: 0; padding: 0" cellspacing="0" cellpadding="0"
+      tr
+        td
+          table.main-table cellpadding="0" cellspacing="0" style="padding: 64px 0"
+            - if @organization.present?
+              tr
+                td
+                  table cellpadding="0" cellspacing="0" style="margin: auto; padding-bottom: 32px"
+                    tr
+                      - if @organization.logo.present?
+                        td valign="middle" style="vertical-align: middle; padding-right: 12px"
+                          a style="text-decoration: none" href=""
+                            img src=@organization.logo_url valign="middle" style="vertical-align: middle; height: 32px; width: 32px; border-radius: 8px;"
+                      td style="height: 32px; font-size: 20px; font-weight: 700; line-height: 28px; letter-spacing: 0em;"
+                        = @organization.name
+            tr
+              td
+                table cellpadding="0" cellspacing="0" style="width: 100%; background-color: #fff; border: 1px solid #d9dee7; border-radius: 12px; padding: 32px;"
+                  tr
+                    td
+                      = yield
+                      - if @organization.present? && @organization.email.present?
+                        table cellpadding="0" cellspacing="0" style="margin: auto; padding-top: 24px"
+                          tr
+                            td style="font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0em; text-align: center; color: #66758f;"
+                              = I18n.t('email.questions')
+                              | &nbsp;
+                              a style="text-decoration: none; color: #006cfa" href="mailto:#{@organization.email}"
+                                = @organization.email
+
+                - if @show_lago_logo
+                  table cellpadding="0" cellspacing="0" style="margin: auto; padding-top: 32px"
+                    tr
+                      td style="font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0em; text-align: center; color: #8c95a6; padding-right: 4px;"
+                        = I18n.t('email.powered_by')
+                      td style="padding-right: 4px; padding-top: 2px"
+                        img src="#{@lago_logo_url}" style="width: 40px; height: 12px;" width="40" height="12" alt="Lago Logo"

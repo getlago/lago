@@ -1,0 +1,38 @@
+- if amount_details['free_units'].to_f.positive?
+  / Free units per transaction
+  tr.details
+    td.body-2 = I18n.t('invoice.percentage.free_units_per_transaction', count: amount_details['free_events'])
+    td.body-2 = amount_details['free_units']
+    td.body-2 = MoneyHelper.format(0.to_money(amount_currency))
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = MoneyHelper.format(0.to_money(amount_currency))
+/ Percentage rate on amount
+tr.details
+  td.body-2 = I18n.t('invoice.percentage.percentage_rate_on_amount')
+  td.body-2 = amount_details['paid_units']
+  td.body-2 = amount_details['rate'] + '%'
+  td.body-2 == TaxHelper.applied_taxes(self)
+  td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['per_unit_total_amount'])
+- if amount_details['fixed_fee_unit_amount'].to_f.positive?
+  / Fixed fee per transaction
+  tr.details
+    td.body-2 = I18n.t('invoice.percentage.fee_per_transaction')
+    td.body-2 = amount_details['paid_events']
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['fixed_fee_unit_amount'])
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['fixed_fee_total_amount'])
+- unless amount_details['min_max_adjustment_total_amount'].to_f.zero?
+  / Adjustment for min/max per transaction
+  tr.details
+    td.body-2 = I18n.t('invoice.percentage.adjustment_per_transaction')
+    td.body-2 = 1
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['min_max_adjustment_total_amount'])
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['min_max_adjustment_total_amount'])
+/ Sub total
+tr.details.subtotal
+  td.body-2 = I18n.t('invoice.sub_total')
+  td.body-2
+  td.body-2
+  td.body-2
+  td.body-2 = FeeDisplayHelper.format_amount(self)

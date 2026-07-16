@@ -1,0 +1,75 @@
+{
+  "id": "evt_3R3dvoQ8iJWBZFaM0Wh4E44o",
+  "object": "event",
+  "api_version": "2024-09-30.acacia",
+  "created": 1742218937,
+  "data": {
+    "object": {
+      "id": "pi_3R3dvoQ8iJWBZFaM0uu1G1rx",
+      "object": "payment_intent",
+      "amount": 3897,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 3897,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic",
+      "client_secret": "pi_3R3dvoQ8iJWBZFaM0uu1G1rx_secret_qADOJoHblKMdHbpS73aZEncpt",
+      "confirmation_method": "automatic",
+      "created": 1742218936,
+      "currency": "usd",
+      "customer": "cus_Rw5Qso78STEap3",
+      "description": "Hooli - Invoice HOO-CAAB-028-004",
+      "invoice": null,
+      "last_payment_error": null,
+      "latest_charge": "ch_3R3dvoQ8iJWBZFaM0NhAbztB",
+      "livemode": false,
+      "metadata": {
+        "invoice_type": "one_off",
+        "lago_customer_id": "e4674f68-a7ba-4ce8-95e9-981f346b49d7",
+        "invoice_issuing_date": "2025-03-17",
+        "lago_invoice_id": "5ccdc601-18a5-4f22-a8e7-a53ca18e1f00"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": "pm_1R2DFsQ8iJWBZFaMw3LLbR0r",
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        },
+        "crypto": {}
+      },
+      "payment_method_types": [
+        "card",
+        "crypto"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "succeeded",
+      "transfer_data": null,
+      "transfer_group": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 3,
+  "request": {
+    "id": "req_O6QX7CMLkdywUG",
+    "idempotency_key": "payment-086e04f0-7459-41d2-ab66-8795f2c0ff9e"
+  },
+  "type": "payment_intent.succeeded"
+}

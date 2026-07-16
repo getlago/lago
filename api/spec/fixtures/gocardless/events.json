@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "id": "EVTESTYM78PGEM",
+      "created_at": "2022-10-29T16:26:50.380Z",
+      "resource_type": "payments",
+      "action": "paid_out",
+      "links": {
+        "payment": "PM0068WBTXDQ0Q"
+      },
+      "details": {
+        "origin": "gocardless",
+        "cause": "payment_paid_out",
+        "description": "The payment has been paid out by GoCardless."
+      },
+      "metadata": {}
+    }
+  ],
+  "meta": {
+    "webhook_id": "WB001F6SJ8MG2S"
+  }
+}

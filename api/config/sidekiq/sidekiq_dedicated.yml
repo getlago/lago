@@ -1,0 +1,11 @@
+concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+timeout: 25
+retry: 1
+queues:
+  - ["dedicated_alerts", 1]
+  - ["dedicated_wallets", 1]
+
+production:
+  concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+staging:
+  concurrency: 10

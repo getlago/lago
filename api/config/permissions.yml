@@ -1,0 +1,243 @@
+# The list of permissions to be associated to predefined roles.
+# In the leafs of the tree we keep the array of names of predefined roles.
+---
+addons:
+  view:
+    - finance
+    - manager
+  create:
+  update:
+  delete:
+ai_conversations:
+  view:
+  create:
+audit_logs:
+  view:
+authentication_methods:
+  view:
+  update:
+analytics:
+  view:
+    - finance
+billable_metrics:
+  view:
+  create:
+  update:
+  delete:
+billing_entities:
+  view:
+    - finance
+    - manager
+  create:
+    - finance
+  update:
+    - finance
+  delete:
+    - finance
+charges:
+  create:
+  update:
+  delete:
+coupons:
+  view:
+    - finance
+    - manager
+  create:
+  update:
+  delete:
+  attach:
+    - manager
+  detach:
+    - manager
+credit_notes:
+  view:
+    - finance
+    - manager
+  create:
+    - finance
+    - manager
+  update:
+    - finance
+    - manager
+  void:
+    - finance
+    - manager
+  export:
+    - finance
+    - manager
+  send:
+    - finance
+    - manager
+customers:
+  view:
+    - finance
+    - manager
+  create:
+    - manager
+  update:
+    - manager
+  delete:
+    - manager
+data_api:
+  view:
+    - finance
+developers:
+  manage:
+  keys:
+    manage:
+dunning_campaigns:
+  view:
+    - finance
+    - manager
+  create:
+    - finance
+  update:
+    - finance
+  delete:
+    - finance
+features:
+  view:
+  create:
+  update:
+  delete:
+invoices:
+  view:
+    - finance
+    - manager
+  send:
+    - finance
+    - manager
+  create:
+    - finance
+    - manager
+  update:
+    - finance
+    - manager
+  void:
+    - finance
+    - manager
+  export:
+    - finance
+    - manager
+invoice_custom_sections:
+  view:
+    - finance
+  create:
+    - finance
+  update:
+    - finance
+  delete:
+    - finance
+quotes:
+  view:
+    - finance
+    - manager
+  create:
+    - manager
+  update:
+    - manager
+  approve:
+    - manager
+  clone:
+    - manager
+  void:
+    - manager
+order_forms:
+  view:
+    - finance
+    - manager
+  sign:
+    - manager
+  void:
+    - manager
+orders:
+  view:
+    - finance
+    - manager
+  update:
+    - manager
+organization:
+  view:
+    - finance
+  update:
+    - finance
+  invoices:
+    view:
+      - finance
+    update:
+      - finance
+  taxes:
+    view:
+    update:
+  emails:
+    view:
+    update:
+  integrations:
+    view:
+      - finance
+    create:
+      - finance
+    update:
+      - finance
+    delete:
+      - finance
+  members:
+    view:
+    create:
+    update:
+    delete:
+payments:
+  view:
+    - finance
+    - manager
+  create:
+    - finance
+    - manager
+payment_methods:
+  view:
+  create:
+  update:
+  delete:
+payment_receipts:
+  view:
+    - finance
+    - manager
+  send:
+    - finance
+    - manager
+plans:
+  view:
+    - finance
+    - manager
+  create:
+  update:
+  delete:
+pricing_units:
+  view:
+    - finance
+  create:
+  update:
+roles:
+  view:
+  create:
+  update:
+  delete:
+security_logs:
+  view:
+subscriptions:
+  view:
+    - finance
+    - manager
+  create:
+    - manager
+  update:
+    - manager
+wallets:
+  create:
+    - manager
+  update:
+    - manager
+  top_up:
+    - manager
+  terminate:
+    - manager

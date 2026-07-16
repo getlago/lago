@@ -1,0 +1,11 @@
+{
+  "status": {
+    "code": 400,
+    "message": "",
+    "errors": [{ "card_token": "This field may not be null." }]
+  },
+  "data": {},
+  "count": null,
+  "next": null,
+  "previous": null
+}

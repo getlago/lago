@@ -1,0 +1,62 @@
+{
+  "id": "evt_1LVXQRH4tiDZlIUa2kOODfxl",
+  "object": "event",
+  "api_version": "2020-08-27",
+  "created": 1660209095,
+  "data": {
+      "object": {
+          "id": "card_1LVXJrH4tiDZlIUaDiJElAN9",
+          "object": "payment_method",
+          "billing_details": {
+              "address": {
+                  "city": null,
+                  "country": null,
+                  "line1": null,
+                  "line2": null,
+                  "postal_code": null,
+                  "state": null
+              },
+              "email": null,
+              "name": null,
+              "phone": null
+          },
+          "card": {
+              "brand": "visa",
+              "checks": {
+                  "address_line1_check": null,
+                  "address_postal_code_check": null,
+                  "cvc_check": "pass"
+              },
+              "country": "US",
+              "exp_month": 12,
+              "exp_year": 2023,
+              "fingerprint": "ek9QuolF5FxYiTDH",
+              "funding": "debit",
+              "generated_from": null,
+              "last4": "5556",
+              "networks": {
+                  "available": [
+                      "visa"
+                  ],
+                  "preferred": null
+              },
+              "three_d_secure_usage": {
+                  "supported": true
+              },
+              "wallet": null
+          },
+          "created": 1660208687,
+          "customer": "cus_LxpUP3kyHRmiwV",
+          "livemode": false,
+          "metadata": {},
+          "type": "card"
+      }
+  },
+  "livemode": false,
+  "pending_webhooks": 3,
+  "request": {
+      "id": "req_fs39TluTwjkndU",
+      "idempotency_key": "c41958b3-5ab4-49d2-8791-a7871635765d"
+  },
+  "type": "payment_method.detached"
+}

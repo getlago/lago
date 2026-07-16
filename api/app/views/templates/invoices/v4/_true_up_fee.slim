@@ -1,0 +1,10 @@
+tr.fee
+  td
+    .body-1 = I18n.t('invoice.true_up_metric', metric: true_up_fee.true_up_parent_fee.invoice_name)
+    .body-3 = I18n.t('invoice.true_up_details', min_amount: ChargeDisplayHelper.format_min_amount(charge))
+  td.body-2 = 1
+  td.body-2 = FeeDisplayHelper.format_amount(true_up_fee)
+  td.body-2 == TaxHelper.applied_taxes(true_up_fee)
+  td.body-2 = FeeDisplayHelper.format_amount(true_up_fee)
+
+== SlimHelper.render('templates/invoices/v4/_conversion_row', true_up_fee)

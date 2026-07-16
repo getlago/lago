@@ -1,0 +1,77 @@
+---
+pt-BR:
+  email:
+    api_key:
+      created:
+        access_warning: No entanto, se você não autorizou esta alteração, por favor redefina sua senha e exclua a API Key imediatamente para proteger sua conta.
+        change_notice: Se alguém da sua equipe iniciou isso, você pode começar a usar esta API Key para automatizar seu processo de faturamento.
+        email_info: Você está recebendo este email porque uma nova API Key foi criada na sua instância do Lago, e você tem privilégios de administrador.
+        greetings: Olá,
+        key_has_been_created: Uma nova API Key foi criada com sucesso para sua organização, %{organization_name}.
+        subject: Uma nova API Key do Lago foi criada
+      destroyed:
+        access_warning: Se você não autorizou esta solicitação, por favor redefina sua senha imediatamente para proteger sua conta.
+        change_notice: Se alguém da sua equipe iniciou esta alteração, nenhuma ação adicional é necessária.
+        email_info: Você está recebendo este email porque uma API Key foi excluída na sua instância do Lago, e você tem privilégios de administrador.
+        greetings: Olá,
+        key_has_been_destroyed: Uma API Key foi excluída para sua organização, %{organization_name}.
+        subject: Uma API Key do Lago foi excluída
+      rotated:
+        access_warning: Se você não autorizou esta solicitação, por favor redefina sua senha e role sua API Key imediatamente para proteger sua conta.
+        change_notice: Se alguém da sua equipe iniciou esta alteração, nenhuma ação adicional é necessária. Para manter seu faturamento funcionando suavemente, atualize seu aplicativo para referenciar o novo token o mais rápido possível.
+        email_info: Você está recebendo este email porque uma API Key foi rotacionada na sua instância do Lago, e você tem privilégios de administrador.
+        greetings: Olá,
+        key_has_been_rotated: A API Key da %{organization_name} foi rotacionada!
+        subject: Sua API Key do Lago foi rotacionada
+    credit_note:
+      created:
+        credit_note_from: Nota de Crédito de %{billing_entity_name}
+        credit_note_number: Número da nota de crédito
+        credited_notice: Creditado no saldo do cliente em %{date}
+        download: Baixar nota de crédito para detalhes
+        invoice_number: Número da fatura
+        issue_date: Data de emissão
+        issued_notice: Emitida em %{date}
+        offset_invoice_notice: Fatura %{invoice_number} compensada em %{date}
+        refunded_notice: Reembolsado em %{date}
+        subject: 'Sua nota de crédito de %{billing_entity_name} #%{credit_note_number}'
+    data_export:
+      completed:
+        fallback_text: Se o link expirou, por favor gere um novo no seu Dashboard.
+        greetings: Olá
+        intro: Sua exportação de %{resource_type} está pronta! Você pode baixá-la usando o link abaixo, que estará disponível por 7 dias.
+        lago_team: A Equipe Lago
+        main_cta_label: Baixar exportação
+        subject: Sua exportação de %{resource_type} do Lago está pronta!
+        thanks: Obrigado,
+    invoice:
+      finalized:
+        download: Baixar fatura para detalhes
+        due_date: total devido %{date}
+        invoice_from: Fatura de %{billing_entity_name}
+        invoice_number: Número da Fatura
+        issue_date: Data de Emissão
+        issued_on: emitida em %{date}
+        subject: 'Sua Fatura de %{billing_entity_name} #%{invoice_number}'
+    password_reset:
+      subject: Redefinir sua senha do Lago
+    payment_receipt:
+      created:
+        payment_receipt_from: Recibo de pagamento de %{billing_entity_name}
+        subject: 'Seu recibo de pagamento de %{billing_entity_name} #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: Se você já fez o pagamento, por favor desconsidere este email.
+        hello: Olá %{customer_name},
+        pay_amount: Pagar saldo
+        payment_terms:
+          one: Nossos termos de pagamento contratualmente acordados são de %{count} dia.
+          other: Nossos termos de pagamento contratualmente acordados são de %{count} dias.
+          zero: Nossos termos de pagamento contratualmente acordados exigem pagamento na geração da fatura.
+        remaining_amount: Valor restante a pagar
+        reminder_overdue_balance: Este é um lembrete da equipe financeira de %{billing_entity_name} de que algumas faturas estão em atraso.
+        subject: Seu saldo em atraso de %{billing_entity_name}
+        thank_you: Obrigado.
+        total_amount_due: O valor total devido é %{amount}.
+    powered_by: Desenvolvido por
+    questions: Dúvidas? Entre em contato conosco em

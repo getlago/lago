@@ -1,0 +1,77 @@
+{
+  "id": "evt_3RTkpYQ8iJWBZFaM1G1JtOIT",
+  "object": "event",
+  "api_version": "2025-04-30.basil",
+  "created": 1748441984,
+  "data": {
+    "object": {
+      "id": "pi_3RTkpYQ8iJWBZFaM1LBHNo0J",
+      "object": "payment_intent",
+      "amount": 4620,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 4620,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic_async",
+      "client_secret": "pi_3RTkpYQ8iJWBZFaM1LBHNo0J_secret_f0dnQpWeyO5mbpUXVoumiPsPL",
+      "confirmation_method": "automatic",
+      "created": 1748441984,
+      "currency": "eur",
+      "customer": "cus_SOXv8CncjHqSEv",
+      "description": "Oberbrunner-Purdy - Invoice OBE-B200-001-001",
+      "last_payment_error": null,
+      "latest_charge": "ch_3RTkpYQ8iJWBZFaM1WnB7qvm",
+      "livemode": false,
+      "metadata": {
+        "invoice_type": "one_off",
+        "lago_customer_id": "1342ce9f-c8cb-4b16-b9d4-7add8ec0cf5d",
+        "lago_payment_id": "de7602d6-fbd7-40e4-891e-c9937d2d4aa9",
+        "lago_payable_type": "Invoice",
+        "lago_billing_entity_id": "c0612b05-c818-456e-aa1b-0381b3fbb200",
+        "lago_payable_id": "0d0b6c24-c5bd-44db-98ae-e8beeb4560bb",
+        "invoice_issuing_date": "2025-05-28",
+        "lago_invoice_id": "0d0b6c24-c5bd-44db-98ae-e8beeb4560bb",
+        "lago_organization_id": "9a443ddf-b2f3-4abb-b822-b99f425b8578"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": "pm_1RTkpWQ8iJWBZFaMdDm6wKzg",
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "succeeded",
+      "transfer_data": null,
+      "transfer_group": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_8GknGVjaPItZiK",
+    "idempotency_key": "payment-de7602d6-fbd7-40e4-891e-c9937d2d4aa9"
+  },
+  "type": "payment_intent.succeeded"
+}

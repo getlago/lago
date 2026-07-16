@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <div class="wrapper">
+      <div class="mb-24">
+        <h1 class="credit-note-title">
+          Credit note
+        </h1>
+      </div>
+      <div class="mb-24 overflow-auto">
+        <div class="credit-note-information-column">
+          <table class="credit-note-information-table">
+            <tr>
+              <td class="body-1">
+                Credit note number
+              </td>
+              <td class="body-2">
+                CN-202510-001
+              </td>
+            </tr>
+            <tr>
+              <td class="body-1">
+                Invoice number
+              </td>
+              <td class="body-2">
+                LAGO-202509-001
+              </td>
+            </tr>
+            <tr>
+              <td class="body-1">
+                Issue date
+              </td>
+              <td class="body-2">
+                Oct 05, 2025
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="credit-note-information-column">
+          <table class="credit-note-information-table">
+          </table>
+        </div>
+      </div>
+      <div class="mb-24 overflow-auto">
+        <div class="billing-information-column">
+          <div class="body-1">
+            From
+          </div>
+          <div class="body-2">ACME Corporation
+          </div>
+          <div class="body-2">
+            123 Business St
+          </div>
+          <div class="body-2">
+            Suite 100
+          </div>
+          <div class="body-2">
+            <span>94105</span>
+            <span>, &nbsp;</span>
+            <span>San Francisco</span>
+          </div>
+          <div class="body-2">
+            CA
+          </div>
+          <div class="body-2">
+            United States
+          </div>
+          <div class="body-2">
+            billing@acme.com
+          </div>
+        </div>
+        <div class="billing-information-column">
+          <div class="body-1">
+            Credit to
+          </div>
+          <div class="body-2">
+            Doe Corp - John Doe
+          </div>
+          <div class="body-2">
+            1234567890
+          </div>
+          <div class="body-2">
+            456 Customer Ave
+          </div>
+          <div class="body-2">
+            Apt 202
+          </div>
+          <div class="body-2">
+            <span>10001</span>
+            <span>, &nbsp;</span>
+            <span>New York</span>
+          </div>
+          <div class="body-2">
+            NY
+          </div>
+          <div class="body-2">
+            United States
+          </div>
+          <div class="body-2">
+            john.doe@example.com
+          </div>
+        </div>
+      </div>
+      <div class="mb-24">
+        <h2 class="title-2 mb-8">
+          $30.00
+        </h2>
+        <div class="body-1">
+          Credited on customer balance on Oct 05, 2025
+        </div>
+      </div>
+      <div class="credit-note-resume mb-24 overflow-auto">
+        <table class="credit-note-resume-table" width="100%">
+          <tr>
+            <td class="body-3">Item</td>
+            <td class="body-3">Tax rate</td>
+            <td class="body-3">Amount (excl. tax)</td>
+          </tr>
+          <tr>
+            <td class="body-1" width="60%">Subscription - Premium Plan</td>
+            <td class="body-2" width="20%">
+              <div>0.0%</div>
+            </td>
+            <td class="body-2" width="20%">$10.00</td>
+          </tr>
+          <tr>
+            <td class="body-1" width="60%">Setup Fee</td>
+            <td class="body-2" width="20%">
+              <div>0.0%</div>
+            </td>
+            <td class="body-2" width="20%">$10.00</td>
+          </tr>
+          <tr>
+            <td class="body-1" width="60%">API Calls</td>
+            <td class="body-2" width="20%">
+              <div>0.0%</div>
+            </td>
+            <td class="body-2" width="20%">$10.00</td>
+          </tr>
+        </table>
+        <table class="total-table" width="100%">
+          <tr>
+            <td class="body-2"></td>
+            <td class="body-2" width="70%">Sub total (excl. tax)</td>
+            <td class="body-2" width="30%">$30.00</td>
+          </tr>
+          <tr>
+            <td class="body-2"></td>
+            <td class="body-2">Tax (0%)</td>
+            <td class="body-2">$0.00</td>
+          </tr>
+          <tr>
+            <td class="body-2"></td>
+            <td class="body-2">Credited on customer balance</td>
+            <td class="body-2">$30.00</td>
+          </tr>
+          <tr>
+            <td class="body-2"></td>
+            <td class="body-1">Total</td>
+            <td class="body-1">$30.00</td>
+          </tr>
+        </table>
+      </div>
+      <p class="body-3 mb-24">
+      </p>
+      <div class="powered-by">
+        <span class="body-2">Powered by &nbsp;</span>
+        <img alt="Lago Logo" src="lago-logo-invoice.png" />
+      </div>
+    </div>
+  </body>
+</html>

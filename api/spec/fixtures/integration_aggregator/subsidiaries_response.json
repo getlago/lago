@@ -1,0 +1,49 @@
+{
+  "records": [
+    {
+      "id": "1",
+      "name": "Holo, Inc.",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi4zNDEyODUrMDA6MDB8fDAwYTM5NzdmLWYxYjctNTU2ZS04ZDRhLTJkYTRmY2UyODkwMg=="
+      }
+    },
+    {
+      "id": "3",
+      "name": "Holo, Inc. : Elimination Subsidiary",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi4zNDEyODUrMDA6MDB8fDYwOWNmYzg5LTdhMGItNTYxNy1iYWEyLWU3ODczNzE3NzJlYQ=="
+      }
+    },
+    {
+      "id": "4",
+      "name": "Holo, Inc. : Te Inc",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi4zNDEyODUrMDA6MDB8fDhjNzY3NDg1LTQyOTgtNWU1YS1hOWI0LTIyMTZhOTYwMTk0ZQ=="
+      }
+    },
+    {
+      "id": "2",
+      "name": "Holo, Inc. : Te SRL",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.341285+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi4zNDEyODUrMDA6MDB8fGI5MzYyMTkxLWU0NzItNTU1Zi1hYTA0LTQzZmFhOTg1NjU5OA=="
+      }
+    }
+  ],
+  "next_cursor": null
+}

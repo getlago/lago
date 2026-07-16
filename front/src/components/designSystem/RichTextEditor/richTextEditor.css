@@ -1,0 +1,485 @@
+/* Strip default tippy styling so the SlashMenu controls its own appearance */
+.rich-text-editor .tippy-box {
+  @apply border-none shadow-none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.rich-text-editor .tippy-content {
+  @apply p-0;
+}
+
+/* Restore styles stripped by Tailwind preflight inside the TipTap editor */
+.ProseMirror {
+  @apply text-base font-normal leading-6 text-grey-700;
+  font-family: Inter, Arial, Verdana, Helvetica, sans-serif;
+  letter-spacing: -0.16px;
+
+  /* Placeholder */
+  p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-grey-400;
+    content: attr(data-placeholder);
+  }
+
+  /* Headings */
+  h1 {
+    @apply my-3 text-2xl font-semibold leading-8 text-grey-700;
+    letter-spacing: -0.4px;
+  }
+
+  h2 {
+    @apply my-2 text-lg font-semibold leading-6 text-grey-700;
+    letter-spacing: -0.4px;
+  }
+
+  h3 {
+    @apply my-2 text-base font-semibold leading-6 text-grey-700;
+    letter-spacing: -0.4px;
+  }
+
+  /* Paragraphs */
+  p {
+    @apply my-1 text-base font-normal leading-6 text-grey-700;
+    letter-spacing: -0.16px;
+  }
+
+  /* Inline styles */
+  strong {
+    @apply font-medium;
+  }
+
+  u {
+    @apply underline;
+  }
+
+  s {
+    @apply line-through;
+  }
+
+  mark {
+    @apply rounded px-0.5;
+  }
+
+  sup {
+    @apply text-xs;
+    vertical-align: super;
+  }
+
+  sub {
+    @apply text-xs;
+    vertical-align: sub;
+  }
+
+  a {
+    @apply cursor-pointer text-blue-600 underline;
+  }
+
+  /* Lists */
+  ul {
+    @apply my-2 pl-6;
+
+    li {
+      @apply list-disc;
+    }
+  }
+
+  ol {
+    @apply my-2 pl-6;
+
+    li {
+      @apply list-decimal;
+    }
+  }
+
+  li p {
+    @apply m-0;
+  }
+
+  /* Inline code */
+  code {
+    @apply rounded bg-grey-100 px-1 text-sm leading-6;
+    font-family:
+      IBM Plex Mono,
+      monospace;
+  }
+
+  /* Code block */
+  pre {
+    @apply my-2 rounded-lg bg-grey-700 p-4;
+
+    code {
+      @apply p-0 text-sm leading-relaxed text-white;
+      background: transparent;
+    }
+  }
+
+  /* Tables */
+  table {
+    @apply border-collapse;
+  }
+
+  th,
+  td {
+    @apply relative min-w-[100px] border border-grey-300 px-3 py-2 text-base leading-6;
+  }
+
+  .lago-table-cell {
+    @apply px-0;
+  }
+
+  --cell-highlight-size: 2px;
+  --cell-highlight-color: theme('colors.blue.600');
+
+  /* Focused cell — cursor is inside this cell */
+  .focusedCell {
+    box-shadow: inset 0 0 0 var(--cell-highlight-size) var(--cell-highlight-color);
+  }
+
+  /* Selected cells — row/column selection via CellSelection.
+     Uses ::before pseudo-elements with negative positioning to extend over
+     collapsed borders, eliminating the gap between adjacent cells.
+     :where() zeroes out specificity so column rules can override. */
+
+  /* === Row selection === */
+
+  /* Base: top + bottom borders. Left/right extend -1px to cover collapsed
+     vertical borders so the blue line is continuous across cells. */
+  .selectedCell::before {
+    content: '';
+    @apply pointer-events-none absolute;
+    top: calc(-1 * var(--cell-highlight-size));
+    bottom: calc(-1 * var(--cell-highlight-size));
+    left: -1px;
+    right: -1px;
+    border-top: var(--cell-highlight-size) solid var(--cell-highlight-color);
+    border-bottom: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* First selected cell in a horizontal run: add left border */
+  .selectedCell:where(:not(.selectedCell + .selectedCell))::before {
+    left: calc(-1 * var(--cell-highlight-size));
+    border-left: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* Last selected cell in a horizontal run: add right border */
+  .selectedCell:where(:not(:has(+ .selectedCell)))::before {
+    right: calc(-1 * var(--cell-highlight-size));
+    border-right: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* === Column selection === */
+
+  /* Base: left + right borders. Top/bottom extend -1px to cover collapsed
+     horizontal borders so the blue line is continuous across rows. */
+  .selectedCell.colSelected::before {
+    top: -1px;
+    bottom: -1px;
+    left: calc(-1 * var(--cell-highlight-size));
+    right: calc(-1 * var(--cell-highlight-size));
+    border-top: none;
+    border-bottom: none;
+    border-left: var(--cell-highlight-size) solid var(--cell-highlight-color);
+    border-right: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* First cell in column: add top border */
+  .selectedCell.colSelected--first::before {
+    top: calc(-1 * var(--cell-highlight-size));
+    border-top: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* Last cell in column: add bottom border */
+  .selectedCell.colSelected--last::before {
+    bottom: calc(-1 * var(--cell-highlight-size));
+    border-bottom: var(--cell-highlight-size) solid var(--cell-highlight-color);
+  }
+
+  /* Edit mode — extra margin for table controls */
+  &:not([contenteditable='false']) {
+    table {
+      @apply w-full;
+    }
+  }
+
+  /* Preview mode */
+  &[contenteditable='false'] {
+    caret-color: transparent;
+
+    p.is-editor-empty:first-child::before {
+      content: none;
+    }
+
+    .block-handle-group {
+      @apply hidden;
+    }
+  }
+
+  .variable-mention {
+    @apply rounded bg-grey-300 px-1.5 py-0.5 text-base;
+  }
+
+  .variable-mention--resolved {
+    @apply px-0 py-0;
+    background: transparent;
+  }
+
+  .block-type-wrapper {
+    @apply flex w-full flex-col;
+  }
+
+  .block-type-tag {
+    @apply self-start rounded-tl-xl rounded-tr-xl border border-b-0 border-grey-400 bg-grey-100 px-2 py-0.5;
+  }
+
+  .icon-wrapper {
+    @apply flex size-10 items-center justify-center rounded-xl bg-grey-100 text-grey-600;
+  }
+
+  .click-icon-wrapper {
+    @apply flex size-10 items-center justify-center text-grey-600;
+  }
+
+  /* Pricing block */
+  .pricing-block {
+    @apply my-2 mt-0 flex items-center justify-between gap-3 rounded-xl rounded-tl-none border border-grey-300 p-3;
+  }
+
+  .pricing-block--empty {
+    @apply flex cursor-pointer items-center justify-center border-dashed py-6 transition-colors hover:bg-grey-100;
+  }
+
+  .pricing-block--clickable {
+    @apply cursor-pointer transition-colors hover:bg-grey-100;
+  }
+
+  .pricing-block-content {
+    @apply flex items-center gap-3;
+  }
+
+  .pricing-block-text {
+    @apply flex flex-col items-start;
+  }
+
+  .pricing-block__placeholder {
+    @apply text-sm text-grey-400;
+  }
+
+  .pricing-block__unresolved {
+    @apply text-sm text-grey-500;
+  }
+
+  .pricing-block__table {
+    @apply m-0 w-full;
+  }
+
+  .link-card {
+    @apply my-2 rounded-lg border border-grey-300 p-3 transition-colors hover:bg-grey-100;
+  }
+
+  .link-card__anchor {
+    @apply flex flex-col gap-1 no-underline;
+  }
+
+  .link-card__domain {
+    @apply text-sm font-medium text-grey-700;
+  }
+
+  .link-card__url {
+    @apply truncate text-xs text-grey-500;
+  }
+
+  /* Template selector */
+  .template-list {
+    @apply flex flex-col;
+  }
+}
+
+/* Table controls — Notion-style hover buttons */
+.table-controls {
+  @apply pointer-events-none absolute inset-0;
+}
+
+/* Hover-bridge zones — pointer-events-auto containers that reveal children on :hover */
+.table-controls__row-border-zone,
+.table-controls__col-border-zone,
+.table-controls__add-col-zone,
+.table-controls__add-row-zone {
+  @apply pointer-events-auto absolute;
+}
+
+/* Row border zone — left of each row */
+.table-controls__row-border-zone {
+  @apply flex items-center justify-center;
+}
+
+/* Column border zone — top of each column */
+.table-controls__col-border-zone {
+  @apply flex items-center justify-center;
+}
+
+/* Menu trigger buttons on row/column borders */
+.table-controls__menu-btn {
+  @apply flex cursor-pointer items-center justify-center rounded border border-grey-500 bg-white text-grey-500 opacity-0 transition-opacity duration-150 ease-in-out;
+}
+
+.table-controls__menu-btn--row {
+  @apply h-5 w-[14px];
+  transform: translateX(-50%);
+}
+
+.table-controls__menu-btn--col {
+  @apply h-[14px] w-5;
+  transform: translateY(-50%);
+}
+
+/* Reveal menu buttons when the cell in this row/column is focused */
+.table-controls__row-border-zone[data-focused] .table-controls__menu-btn,
+.table-controls__col-border-zone[data-focused] .table-controls__menu-btn {
+  @apply opacity-100;
+}
+
+/* Menu button when its row/column is selected */
+.table-controls__menu-btn.is-selected {
+  @apply border-blue-600 bg-blue-600 text-white opacity-100 hover:bg-blue-700 hover:text-white;
+}
+
+.table-controls__add-zone {
+  @apply pointer-events-auto opacity-0 transition-opacity duration-150 ease-in-out hover:opacity-100;
+}
+
+.table-controls__add-btn {
+  @apply flex items-center justify-center rounded bg-grey-200 text-lg font-medium text-blue-600;
+}
+
+/* "+" button on the right edge to add a column */
+.table-controls__add-col {
+  @apply ml-2 w-6;
+}
+
+/* "+" button on the bottom edge to add a row */
+.table-controls__add-row {
+  @apply mt-2 h-6;
+}
+
+/* Block selection highlight (edit mode only) */
+.ProseMirror:not([contenteditable='false']) .ProseMirror-selectednode,
+.ProseMirror:not([contenteditable='false']) .is-block-selected {
+  @apply rounded-md bg-blue-100;
+}
+
+/* Hide selection highlight while dragging */
+.ProseMirror.is-dragging .ProseMirror-selectednode,
+.ProseMirror.is-dragging .is-block-selected {
+  @apply opacity-40;
+  background-color: transparent;
+}
+
+/* Colored blocks padding */
+.ProseMirror [style*='background-color'] {
+  @apply rounded;
+}
+
+/* When a block has an explicit text color, inner elements must inherit it
+   instead of using the default text-grey-700 from the base rules above. */
+.ProseMirror [style*='color'] p,
+.ProseMirror [style*='color'] li,
+.ProseMirror [style*='color'] h1,
+.ProseMirror [style*='color'] h2,
+.ProseMirror [style*='color'] h3,
+.ProseMirror [style*='color'] h4 {
+  color: inherit;
+}
+
+/* Block handle group — floated left into the padding gutter.
+   Contains the plus button (slash commands) and grip button (drag handle).
+   margin-top aligns the group with the first line of the following block,
+   accounting for spacer padding-top (6px default) + block-wrapper padding (2px). */
+.block-handle-group {
+  @apply float-left mt-2 flex items-center gap-0.5 opacity-0 transition-all duration-200 ease-in-out;
+  margin-left: -56px;
+}
+
+.block-handle-button {
+  @apply flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg text-grey-600 transition-colors duration-200 ease-in-out;
+}
+
+.block-handle-group:has(+ .spacer[data-type='heading-1']) {
+  margin-top: 36px;
+}
+
+.block-handle-group:has(+ .spacer[data-type='heading-2']) {
+  margin-top: 24px;
+}
+
+.block-handle-group:has(+ .spacer[data-type='heading-3']) {
+  margin-top: 20px;
+}
+
+.tableWrapper {
+  @apply relative rounded-md p-2 pb-8;
+}
+
+/* Show handle group when hovering the spacer/table next to it, or the group itself */
+.block-handle-group:has(+ .spacer:hover),
+.block-handle-group:has(+ .tableWrapper:hover),
+.block-handle-group:hover {
+  @apply opacity-100;
+}
+
+/* Highlight individual buttons on hover */
+.ProseMirror:hover > .block-handle-group .block-handle-button:hover {
+  @apply bg-grey-200;
+}
+
+/* Block wrappers — strip padding from inner content elements */
+.ProseMirror .block-wrapper > p,
+.ProseMirror .block-wrapper > h1,
+.ProseMirror .block-wrapper > h2,
+.ProseMirror .block-wrapper > h3,
+.ProseMirror .block-wrapper > h4,
+.ProseMirror .block-wrapper > h5,
+.ProseMirror .block-wrapper > h6,
+.ProseMirror .block-wrapper > blockquote,
+.ProseMirror .block-wrapper > pre {
+  @apply m-0 p-0;
+}
+
+/* Lists keep pl-6 so markers sit inside the content/colored area */
+.ProseMirror .block-wrapper > ul,
+.ProseMirror .block-wrapper > ol {
+  @apply m-0 py-0 pl-6 pr-0;
+}
+
+.ProseMirror .block-wrapper {
+  @apply p-0.5;
+}
+
+/* Paragraphs inside list items — remove spacer padding to avoid double spacing */
+.ProseMirror li > .spacer {
+  @apply p-0;
+}
+
+.ProseMirror .spacer {
+  padding: 6px;
+
+  &[data-type='heading-1'] {
+    padding-top: 30px;
+  }
+
+  &[data-type='heading-2'] {
+    padding-top: 22px;
+  }
+
+  &[data-type='heading-3'] {
+    padding-top: 18px;
+  }
+
+  &[data-type='bulletList'],
+  &[data-type='orderedList'] {
+    /* Colors are applied directly to the <ul>/<ol> element so that list markers
+       sit inside the colored area. Strip the duplicate style that addGlobalAttributes
+       puts on the spacer wrapper. */
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+}

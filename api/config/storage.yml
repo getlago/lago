@@ -1,0 +1,32 @@
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+
+amazon:
+  service: S3
+  access_key_id: <%= ENV['LAGO_AWS_S3_ACCESS_KEY_ID'] %>
+  secret_access_key: <%= ENV['LAGO_AWS_S3_SECRET_ACCESS_KEY'] %>
+  region: <%= ENV['LAGO_AWS_S3_REGION'] %>
+  bucket: <%= ENV['LAGO_AWS_S3_BUCKET'] %>
+
+amazon_compatible_endpoint:
+  service: S3
+  access_key_id: <%= ENV['LAGO_AWS_S3_ACCESS_KEY_ID'] %>
+  secret_access_key: <%= ENV['LAGO_AWS_S3_SECRET_ACCESS_KEY'] %>
+  endpoint: <%= ENV['LAGO_AWS_S3_ENDPOINT'] %>
+  bucket: <%= ENV['LAGO_AWS_S3_BUCKET'] %>
+  region: <%= ENV['LAGO_AWS_S3_REGION'] %>
+  force_path_style: <%= ENV.fetch('LAGO_AWS_S3_PATH_STYLE', false) %>
+  ssl_verify_peer: <%= ENV.fetch('LAGO_AWS_S3_SSL_VERIFY', true) %>
+
+google:
+  service: GCS
+  credentials: <%= ENV.fetch('LAGO_GCS_KEYFILE_JSON_PATH', Rails.root.join('gcs_keyfile.json')) %>
+  iam: <%= ENV.fetch('LAGO_GCS_IAM', false) %>
+  gsa_email: <%= ENV.fetch('LAGO_GCS_GSA_EMAIL', nil) %>
+  project: <%= ENV['LAGO_GCS_PROJECT'] %>
+  bucket: <%= ENV['LAGO_GCS_BUCKET'] %>

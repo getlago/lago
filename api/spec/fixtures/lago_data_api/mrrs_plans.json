@@ -1,0 +1,68 @@
+
+{
+  "mrrs_plans": [
+    {
+        "dt": "2025-02-25",
+        "amount_currency": "EUR",
+        "plan_id": "8f550d3e-1234-4f4d-a752-61b0f98a9ef7",
+        "active_customers_count": 1,
+        "mrr": 1000000.0,
+        "mrr_share": 0.0279,
+        "plan_name": "Tondr",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_code": "custom_plan_tondr",
+        "plan_deleted_at": null,
+        "plan_interval": "monthly",
+        "active_customers_share": 0.009
+    },
+    {
+        "dt": "2025-02-25",
+        "amount_currency": "EUR",
+        "plan_id": "627ee06a-4567-47f7-8eae-a07eec5a9ba3",
+        "active_customers_count": 1,
+        "mrr": 849000.0,
+        "mrr_share": 0.0237,
+        "plan_name": "Place",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_code": "custom_plan_place",
+        "plan_deleted_at": null,
+        "plan_interval": "monthly",
+        "active_customers_share": 0.009
+    },
+    {
+        "dt": "2025-02-25",
+        "amount_currency": "EUR",
+        "plan_id": "504cb319-8910-4175-9364-840028c39475",
+        "active_customers_count": 1,
+        "mrr": 799000.0,
+        "mrr_share": 0.0223,
+        "plan_name": "Silo",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_code": "custom_plan_silo",
+        "plan_deleted_at": null,
+        "plan_interval": "monthly",
+        "active_customers_share": 0.009
+    },
+    {
+        "dt": "2025-02-25",
+        "amount_currency": "EUR",
+        "plan_id": "8d39f27f-1112-43ea-a327-c9579e70eeb3",
+        "active_customers_count": 1,
+        "mrr": 790000.0,
+        "mrr_share": 0.022,
+        "plan_name": "Penny",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_code": "custom_plan_penny",
+        "plan_deleted_at": null,
+        "plan_interval": "monthly",
+        "active_customers_share": 0.009
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "next_page": 2,
+    "prev_page": 0,
+    "total_count": 100,
+    "total_pages": 5
+  }
+}

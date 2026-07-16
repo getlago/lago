@@ -1,0 +1,18 @@
+- invoiceable = fees.first.invoiceable
+table.invoice-resume-table width="100%"
+  tr
+    td.body-2 = I18n.t('invoice.item')
+    td.body-2 = I18n.t('invoice.unit')
+    td.body-2 = I18n.t('invoice.unit_price')
+    td.body-2 = I18n.t('invoice.amount_without_tax')
+  tr
+    td.body-1 = I18n.t('invoice.prepaid_credits_with_value', wallet_name: invoiceable.wallet.name)
+    td.body-2 = invoiceable.credit_amount
+    td.body-2 = invoiceable.wallet.rate_amount
+    td.body-2 = MoneyHelper.format(fees.first.amount)
+
+table.total-table width="100%"
+  tr
+    td.body-2
+    td.body-1 = I18n.t('invoice.total_due')
+    td.body-1 = MoneyHelper.format(total_amount)

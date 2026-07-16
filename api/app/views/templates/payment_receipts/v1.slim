@@ -1,0 +1,140 @@
+doctype html
+html
+  head
+    meta charset='UTF-8'
+    meta http-equiv='X-UA-Compatible' content='IE=edge'
+    meta name='viewport' content='width=device-width, initial-scale=1.0'
+    title =I18n.t('payment_receipt.document_name')
+  body
+    == SlimHelper.render('templates/payment_receipts/v1/_styles', self)
+
+    - @billing_entity = payment.payable.billing_entity
+    - @customer = payment.payable.customer
+
+    .wrapper
+      .mb-24
+        h1.invoice-title = I18n.t('payment_receipt.document_name')
+        - if @billing_entity.logo.present?
+          img.header-logo src="data:#{@billing_entity.logo.content_type};base64,#{@billing_entity.base64_logo}"
+
+      .mb-24.overflow-auto
+        .invoice-information-column
+          table.invoice-information-table
+            tr
+              td.body-1 = I18n.t('payment_receipt.number')
+              td.body-2 = number
+            - if payment.payable.is_a?(Invoice)
+              tr
+                td.body-1 = I18n.t('invoice.invoice_number')
+                td.body-2
+                  a style="text-decoration: none" target="_blank" href=payment.payable.file_url
+                    = payment.payable.number
+            -if payment.method_display_name.present?
+              tr
+                td.body-1 = I18n.t('payment_receipt.payment_method')
+                td.body-2 = payment.method_display_name
+            tr
+              td.body-1 = I18n.t('payment_receipt.payment_date')
+              td.body-2 = I18n.l(payment.created_at.to_date, format: :default)
+        .invoice-information-column
+          table.invoice-information-table
+            - if @customer.metadata.displayable.any?
+              - @customer.metadata.displayable.order(created_at: :asc).each do |metadata|
+                tr
+                  td.body-1 = metadata.key
+                  td.body-2 = metadata.value
+
+      .mb-24.overflow-auto
+        .billing-information-column
+          .body-1 = I18n.t('invoice.bill_from')
+          .body-2
+            - if @billing_entity.legal_name.present?
+              | #{@billing_entity.legal_name}
+            - else
+              | #{@billing_entity.name}
+          - if @billing_entity.legal_number.present?
+            .body-2 #{@billing_entity.legal_number}
+          .body-2 = @billing_entity.address_line1
+          .body-2 = @billing_entity.address_line2
+          .body-2
+            span
+              = @billing_entity.zipcode
+            - if @billing_entity.zipcode.present? && @billing_entity.city.present?
+              span
+                | , &nbsp;
+            span
+              = @billing_entity.city
+          - if @billing_entity.state.present?
+            .body-2 = @billing_entity.state
+          .body-2 = ISO3166::Country.new(@billing_entity.country)&.common_name
+          .body-2 = @billing_entity.email
+          - if @billing_entity.tax_identification_number.present?
+            .body-2 = I18n.t('invoice.tax_identification_number', tax_identification_number: @billing_entity.tax_identification_number)
+        .billing-information-column
+          .body-1 = I18n.t('invoice.bill_to')
+          .body-2 = @customer.display_name
+          - if @customer.legal_number.present?
+            .body-2 #{@customer.legal_number}
+          .body-2 = @customer.address_line1
+          .body-2 = @customer.address_line2
+          .body-2
+            span
+              = @customer.zipcode
+            - if @customer.zipcode.present? && @customer.city.present?
+              span
+                | , &nbsp;
+            span
+              = @customer.city
+          .body-2 = @customer.state
+          .body-2 = ISO3166::Country.new(@customer.country)&.common_name
+          .body-2 = @customer.email&.gsub(/,\s*/, ', ')
+          - if @customer.tax_identification_number.present?
+            .body-2 = I18n.t('invoice.tax_identification_number', tax_identification_number: @customer.tax_identification_number)
+
+      .mb-24
+        h2.title-2.mb-4 = MoneyHelper.format(payment.amount)
+
+        - @total_due_amount = payment.payable.is_a?(Invoice) ? payment.payable.total_due_amount : payment.payable.amount - payment.amount
+
+        .body-1 = I18n.t('payment_receipt.paid_on',
+          date: I18n.l(payment.created_at.to_date, format: :default),
+          total_due_amount: MoneyHelper.format(@total_due_amount))
+
+      - if payment.payable.is_a?(Invoice)
+        .invoice-resume.mb-24.overflow-auto
+          - if payment.payable.credit?
+            == SlimHelper.render('templates/invoices/v4/_credit', payment.payable)
+          - elsif payment.payable.one_off?
+            == SlimHelper.render('templates/invoices/v4/_one_off', payment.payable)
+          - elsif payment.payable.advance_charges?
+            == SlimHelper.render('templates/invoices/v4/_charge', payment.payable)
+          - elsif payment.payable.progressive_billing?
+            == SlimHelper.render('templates/invoices/v4/_progressive_billing_details', payment.payable)
+          - elsif payment.payable.subscriptions.count == 1
+            == SlimHelper.render('templates/invoices/v4/_subscription_details', payment.payable, disable_presentation_breakdowns: true)
+          - else
+            == SlimHelper.render('templates/invoices/v4/_subscriptions_summary', payment.payable)
+
+        == SlimHelper.render('templates/invoices/v4/_eu_tax_management', payment.payable)
+
+        - applied_usage_threshold = payment.payable.progressive_billing_last_applied_usage_threshold
+        - if applied_usage_threshold
+          p.body-3.mb-24
+            = I18n.t('invoice.reached_usage_threshold', usage_amount: MoneyHelper.format(applied_usage_threshold.lifetime_usage_amount), threshold_amount: MoneyHelper.format(applied_usage_threshold.passed_threshold_amount))
+
+        - if payment.payable.applied_invoice_custom_sections.present?
+          == SlimHelper.render('templates/invoices/v4/_custom_sections', payment.payable)
+
+        p.body-3.mb-24 = LineBreakHelper.break_lines(@billing_entity.invoice_footer)
+
+        == SlimHelper.render('templates/invoices/v4/_powered_by_logo', payment.payable)
+
+        - if payment.payable.subscriptions.count > 1
+          == SlimHelper.render('templates/invoices/v4/_subscription_details', payment.payable, disable_presentation_breakdowns: true)
+
+      - else
+        == SlimHelper.render('templates/payment_receipts/v1/_payment_request', self)
+
+        p.body-3.mb-24 = LineBreakHelper.break_lines(@billing_entity.invoice_footer)
+
+        == SlimHelper.render('templates/payment_receipts/v1/_powered_by_logo', self)

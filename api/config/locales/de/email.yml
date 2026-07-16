@@ -1,0 +1,44 @@
+---
+de:
+  email:
+    credit_note:
+      created:
+        credit_note_from: Gutschriftsbeleg von %{billing_entity_name}
+        credit_note_number: Gutschriftsbelegnummer
+        credited_notice: Gutschrift auf Kundenkonto am %{date}
+        download: Gutschriftsbeleg herunterladen, um Details anzuzeigen
+        invoice_number: Rechnungsnummer
+        issue_date: Ausstellungsdatum
+        issued_notice: Ausgestellt am %{date}
+        offset_invoice_notice: Rechnung %{invoice_number} am %{date} ausgeglichen
+        refunded_notice: Zurückerstattet am %{date}
+        subject: 'Dein Gutschriftsbeleg von %{billing_entity_name} #%{credit_note_number}'
+    invoice:
+      finalized:
+        download: Rechnung herunterladen, um Details anzuzeigen
+        due_date: Gesamtbetrag fällig am %{date}
+        invoice_from: Rechnung von %{billing_entity_name}
+        invoice_number: Rechnungsnummer
+        issue_date: Ausstellungsdatum
+        issued_on: ausgestellt am %{date}
+        subject: 'Deine Rechnung von %{billing_entity_name} #%{invoice_number}'
+    payment_receipt:
+      created:
+        payment_receipt_from: Zahlungsquittung von %{billing_entity_name}
+        subject: 'Ihre Zahlungsquittung von %{billing_entity_name} #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: Wenn Sie die Zahlung bereits vorgenommen haben, ignorieren Sie bitte diese E-Mail.
+        hello: Hallo %{customer_name},
+        pay_amount: Restbetrag bezahlen
+        payment_terms:
+          one: Unsere vertraglich vereinbarten Zahlungsbedingungen sind %{count} Tag.
+          other: Unsere vertraglich vereinbarten Zahlungsbedingungen sind %{count} Tage.
+          zero: Unsere vertraglich vereinbarten Zahlungsbedingungen erfordern die Zahlung bei Rechnungserstellung.
+        remaining_amount: Restbetrag zu zahlen
+        reminder_overdue_balance: Dies ist eine Erinnerung des Finanzteams von %{billing_entity_name}, dass einige Rechnungen überfällig sind.
+        subject: Ihr überfälliger Saldo von %{billing_entity_name}
+        thank_you: Danke.
+        total_amount_due: Der insgesamt fällige Betrag beträgt %{amount}.
+    powered_by: Bereitgestellt von
+    questions: Fragen? Kontaktiere uns unter

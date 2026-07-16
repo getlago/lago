@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "invalid_secret_key_format",
+    "message": "Authentication failed. The provided secret key is not a UUID v4."
+  }
+}

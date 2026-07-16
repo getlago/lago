@@ -1,0 +1,84 @@
+name: Run rails migrations
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  run-migrations:
+    name: Run migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: getlago/postgres-partman:15.0-alpine
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_DB: lago
+          POSTGRES_USER: lago
+          POSTGRES_PASSWORD: lago
+      redis:
+        image: redis
+        ports:
+          - "6379:6379"
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: "postgres://lago:lago@localhost:5432/lago"
+      RAILS_MASTER_KEY: N+XcWoGDzKjuoxrU8BIPN5D0/GSuqx9s
+      SECRET_KEY_BASE: cvIAI6ycC0OnVDRAjT5hmbRxnjCxl4YB
+      ENCRYPTION_PRIMARY_KEY: 5I9mjfzry2P787x4S5ZuDdJwXNgYEwqo
+      ENCRYPTION_DETERMINISTIC_KEY: SGiZzmh18EjBF9gSW8LCNk7pelauWVr4
+      ENCRYPTION_KEY_DERIVATION_SALT: q3pkMw34ZkRPFSf2LmtWe705yw532Pf7
+      LAGO_API_URL: https://api.lago.dev
+      LAGO_PDF_URL: https://pdf.lago.dev
+      LAGO_FROM_EMAIL: noreply@getlago.com
+      LAGO_CLICKHOUSE_ENABLED: true
+      LAGO_CLICKHOUSE_MIGRATIONS_ENABLED: true
+      LAGO_CLICKHOUSE_HOST: localhost
+      LAGO_CLICKHOUSE_DATABASE: default
+      LAGO_CLICKHOUSE_USERNAME: ""
+      LAGO_CLICKHOUSE_PASSWORD: "password"
+      LAGO_DISABLE_SCHEMA_DUMP: true
+      LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC: events_charged_in_advance
+      ANNOTATE_SKIP_ON_DB_MIGRATE: 1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0.2"
+          bundler-cache: true
+      - name: Install pg 14
+        uses: tj-actions/install-postgresql@v3
+        with:
+          postgresql-version: "15"
+      - name: Start Clickhouse database
+        run: |
+          docker run -d --rm -p 8123:8123 -p 9000:9000 --ulimit nofile=262144:262144 -v ./clickhouse-s3:/var/lib/clickhouse-s3 -v ./ci/clickhouse/config.xml:/etc/clickhouse-server/config.d/config.xml -e CLICKHOUSE_PASSWORD=password clickhouse/clickhouse-server:25.12-alpine
+        shell: bash
+      - name: Generate RSA keys
+        run: ./scripts/generate.rsa.sh
+      - run: "pg_dump --version"
+      - name: Move db schema for comparison
+        run: mv db/structure.sql db/structure-before-dump.sql
+      - name: Perform Postgres database migrations
+        run: bin/rails db:migrate:primary
+      - name: dump schema
+        run: LAGO_DISABLE_SCHEMA_DUMP="" bin/rails db:schema:dump:primary
+      - name: Ensure no changes to structure.sql (excluding restrict/unrestrict)
+        run: |
+          grep -v '\\restrict' db/structure.sql | grep -v '\\unrestrict' | grep -v 'Dumped from database version' | grep -v 'Dumped by pg_dump version' | sed '/^[[:space:]]*$/d' > db/structure.sql.filtered
+          grep -v '\\restrict' db/structure-before-dump.sql | grep -v '\\unrestrict' | grep -v 'Dumped from database version' | grep -v 'Dumped by pg_dump version' | sed '/^[[:space:]]*$/d' > db/structure-before-dump.sql.filtered
+          diff db/structure.sql.filtered db/structure-before-dump.sql.filtered
+      - name: Ensure annotations are up to date
+        run: bundle exec annotaterb --frozen
+      - name: Perform Clickhouse database migrations
+        run: bin/rails db:migrate:clickhouse

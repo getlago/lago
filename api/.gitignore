@@ -1,0 +1,48 @@
+# Ignore bundler config.
+/.bundle
+
+# Ignore the default SQLite database.
+/db/*.sqlite3
+/db/*.sqlite3-*
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory.
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+
+# Ignore uploaded files in development.
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+db/events_schema.rb
+db/events_structure.sql
+db/clickhouse_schema.rb
+db/clickhouse_structure.sql
+/config/master.key
+
+.env
+.byebug_history
+.irb_history
+
+# Ignore Simplecov coverage status
+/coverage/*
+
+config/keys/*
+.rsa_private.pem
+.rsa_public.pem
+LAGO_VERSION
+
+**/.DS_Store
+.vscode
+.zed
+.idea
+
+/vendor/bundle

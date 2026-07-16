@@ -1,0 +1,320 @@
+{
+  "error": {
+    "code": "authentication_required",
+    "decline_code": "authentication_not_handled",
+    "doc_url": "https://stripe.com/docs/error-codes/authentication-required",
+    "message": "This payment required an authentication action to complete, but `error_on_requires_action` was set. When you're ready, you can upgrade your integration to handle actions at https://stripe.com/docs/payments/payment-intents/upgrade-to-handle-actions.",
+    "payment_intent": {
+      "id": "pi_3SUpk9Q8iJWBZFaM20I3flZT",
+      "object": "payment_intent",
+      "amount": 1343333,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 0,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic",
+      "charges": {
+        "object": "list",
+        "data": [
+          {
+            "id": "ch_3SUpk9Q8iJWBZFaM216nFNJC",
+            "object": "charge",
+            "amount": 1343333,
+            "amount_captured": 0,
+            "amount_refunded": 0,
+            "application": null,
+            "application_fee": null,
+            "application_fee_amount": null,
+            "balance_transaction": null,
+            "billing_details": {
+              "address": {
+                "city": null,
+                "country": null,
+                "line1": null,
+                "line2": null,
+                "postal_code": null,
+                "state": null
+              },
+              "email": null,
+              "name": null,
+              "phone": null,
+              "tax_id": null
+            },
+            "calculated_statement_descriptor": "JULIEN",
+            "captured": false,
+            "created": 1763475533,
+            "currency": "eur",
+            "customer": "cus_TRjC4B0UDzH8K1",
+            "description": "VonRueden-Harber - Invoice VON-A4DD-001-002",
+            "destination": null,
+            "dispute": null,
+            "disputed": false,
+            "failure_balance_transaction": null,
+            "failure_code": "authentication_required",
+            "failure_message": "Your card was declined. This transaction requires authentication.",
+            "fraud_details": {},
+            "invoice": null,
+            "livemode": false,
+            "metadata": {
+              "invoice_type": "subscription",
+              "lago_customer_id": "98bf77bb-cac2-47c6-a358-41092b25c9f9",
+              "lago_payment_id": "2df287d3-eca2-41b1-9058-72b4c6e1b641",
+              "lago_payable_type": "Invoice",
+              "lago_billing_entity_id": "c1d5c434-0218-4a98-a23e-66a90e06a4dd",
+              "lago_payable_id": "0c5c28cc-f852-4ae1-9eb3-c66f04ed1f7a",
+              "invoice_issuing_date": "2025-11-18",
+              "lago_invoice_id": "0c5c28cc-f852-4ae1-9eb3-c66f04ed1f7a",
+              "lago_organization_id": "3b6eb26a-2fba-4a09-89a1-c8dc35d0d294"
+            },
+            "on_behalf_of": null,
+            "order": null,
+            "outcome": {
+              "advice_code": null,
+              "network_advice_code": null,
+              "network_decline_code": null,
+              "network_status": "declined_by_network",
+              "reason": "authentication_required",
+              "risk_level": "normal",
+              "risk_score": 33,
+              "seller_message": "The bank returned the decline code `authentication_required`.",
+              "type": "issuer_declined"
+            },
+            "paid": false,
+            "payment_intent": "pi_3SUpk9Q8iJWBZFaM20I3flZT",
+            "payment_method": "pm_1SUpk3Q8iJWBZFaMdTZGqSKL",
+            "payment_method_details": {
+              "card": {
+                "amount_authorized": null,
+                "authorization_code": "178760",
+                "brand": "visa",
+                "checks": {
+                  "address_line1_check": null,
+                  "address_postal_code_check": null,
+                  "cvc_check": "pass"
+                },
+                "country": "DE",
+                "exp_month": 11,
+                "exp_year": 2026,
+                "extended_authorization": {
+                  "status": "disabled"
+                },
+                "fingerprint": "Kimrq0v3wE9PFZiL",
+                "funding": "credit",
+                "incremental_authorization": {
+                  "status": "unavailable"
+                },
+                "installments": null,
+                "last4": "3184",
+                "mandate": null,
+                "multicapture": {
+                  "status": "unavailable"
+                },
+                "network": "visa",
+                "network_token": {
+                  "used": false
+                },
+                "network_transaction_id": "751051091141134",
+                "overcapture": {
+                  "maximum_amount_capturable": 1343333,
+                  "status": "unavailable"
+                },
+                "regulated_status": "unregulated",
+                "three_d_secure": null,
+                "wallet": null
+              },
+              "type": "card"
+            },
+            "radar_options": {},
+            "receipt_email": null,
+            "receipt_number": null,
+            "receipt_url": null,
+            "refunded": false,
+            "refunds": {
+              "object": "list",
+              "data": [],
+              "has_more": false,
+              "total_count": 0,
+              "url": "/v1/charges/ch_3SUpk9Q8iJWBZFaM216nFNJC/refunds"
+            },
+            "review": null,
+            "shipping": null,
+            "source": null,
+            "source_transfer": null,
+            "statement_descriptor": null,
+            "statement_descriptor_suffix": null,
+            "status": "failed",
+            "transfer_data": null,
+            "transfer_group": null
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/charges?payment_intent=pi_3SUpk9Q8iJWBZFaM20I3flZT"
+      },
+      "client_secret": "pi_3S**********************_******_*********************pT2d",
+      "confirmation_method": "automatic",
+      "created": 1763475533,
+      "currency": "eur",
+      "customer": "cus_TRjC4B0UDzH8K1",
+      "description": "VonRueden-Harber - Invoice VON-A4DD-001-002",
+      "excluded_payment_method_types": null,
+      "invoice": null,
+      "last_payment_error": {
+        "code": "authentication_required",
+        "decline_code": "authentication_not_handled",
+        "doc_url": "https://stripe.com/docs/error-codes/authentication-required",
+        "message": "This payment required an authentication action to complete, but `error_on_requires_action` was set. When you're ready, you can upgrade your integration to handle actions at https://stripe.com/docs/payments/payment-intents/upgrade-to-handle-actions.",
+        "payment_method": {
+          "id": "pm_1SUpk3Q8iJWBZFaMdTZGqSKL",
+          "object": "payment_method",
+          "allow_redisplay": "unspecified",
+          "billing_details": {
+            "address": {
+              "city": null,
+              "country": null,
+              "line1": null,
+              "line2": null,
+              "postal_code": null,
+              "state": null
+            },
+            "email": null,
+            "name": null,
+            "phone": null,
+            "tax_id": null
+          },
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "address_line1_check": null,
+              "address_postal_code_check": null,
+              "cvc_check": "pass"
+            },
+            "country": "DE",
+            "display_brand": "visa",
+            "exp_month": 11,
+            "exp_year": 2026,
+            "fingerprint": "Kimrq0v3wE9PFZiL",
+            "funding": "credit",
+            "generated_from": null,
+            "last4": "3184",
+            "networks": {
+              "available": [
+                "visa"
+              ],
+              "preferred": null
+            },
+            "regulated_status": "unregulated",
+            "three_d_secure_usage": {
+              "supported": true
+            },
+            "wallet": null
+          },
+          "created": 1763475527,
+          "customer": "cus_TRjC4B0UDzH8K1",
+          "livemode": false,
+          "metadata": {},
+          "type": "card"
+        },
+        "type": "card_error"
+      },
+      "latest_charge": "ch_3SUpk9Q8iJWBZFaM216nFNJC",
+      "livemode": false,
+      "metadata": {
+        "invoice_type": "subscription",
+        "lago_customer_id": "98bf77bb-cac2-47c6-a358-41092b25c9f9",
+        "lago_payment_id": "2df287d3-eca2-41b1-9058-72b4c6e1b641",
+        "lago_payable_type": "Invoice",
+        "lago_billing_entity_id": "c1d5c434-0218-4a98-a23e-66a90e06a4dd",
+        "lago_payable_id": "0c5c28cc-f852-4ae1-9eb3-c66f04ed1f7a",
+        "invoice_issuing_date": "2025-11-18",
+        "lago_invoice_id": "0c5c28cc-f852-4ae1-9eb3-c66f04ed1f7a",
+        "lago_organization_id": "3b6eb26a-2fba-4a09-89a1-c8dc35d0d294"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": null,
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "requires_payment_method",
+      "transfer_data": null,
+      "transfer_group": null
+    },
+    "payment_method": {
+      "id": "pm_1SUpk3Q8iJWBZFaMdTZGqSKL",
+      "object": "payment_method",
+      "allow_redisplay": "unspecified",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": null,
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": null,
+        "name": null,
+        "phone": null,
+        "tax_id": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": null,
+          "cvc_check": "pass"
+        },
+        "country": "DE",
+        "display_brand": "visa",
+        "exp_month": 11,
+        "exp_year": 2026,
+        "fingerprint": "Kimrq0v3wE9PFZiL",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "3184",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1763475527,
+      "customer": "cus_TRjC4B0UDzH8K1",
+      "livemode": false,
+      "metadata": {},
+      "type": "card"
+    },
+    "request_log_url": "https://dashboard.stripe.com/test/logs/req_DTG7G7rkBx6HNr?t=1763475533",
+    "type": "card_error"
+  }
+}

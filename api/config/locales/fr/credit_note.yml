@@ -1,0 +1,29 @@
+---
+fr:
+  credit_note:
+    amount: Montant (HT)
+    coupon_adjustment: Coupons
+    credit_from: De
+    credit_note_number: Nº d'avoir
+    credit_to: Crédité à
+    credited_notice: Crédité sur le solde du client le %{issuing_date}
+    credited_on_customer_balance: Crédit sur le solde du client
+    document_name: Avoir
+    invoice_number: Nº de facture
+    issue_date: Date d'émission
+    issued_notice: Émise le %{issuing_date}
+    item: Article
+    offset_invoice: Compensation sur la facture %{invoice_number}
+    offset_invoice_notice: Facture %{invoice_number} compensée le %{issuing_date}
+    powered_by: Généré par
+    prepaid_credits_for_wallet: Crédit(s) prépayé(s) - %{wallet_name}
+    purchase_order_number: Nº de bon de commande
+    refunded: Remboursement
+    refunded_notice: Remboursé le %{issuing_date}
+    self_billed:
+      footer: Cette avoir sur une facture d'autofacturation a été émise par le client au nom du partenaire, avec son consentement. Le partenaire a convenu de ne pas établir sa propre note de crédit pour cette transaction.
+    sub_total_without_tax: Sous total (HT)
+    subscription: Souscription
+    tax: "%{name} (%{rate}% sur %{amount})"
+    tax_rate: Taux de taxe
+    total: Total

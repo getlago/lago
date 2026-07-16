@@ -1,0 +1,29 @@
+{
+  "amount": 10,
+  "amount_currency": "USD",
+  "billing_data": {
+    "email": "a.shahwan@moneyhash.io",
+    "first_name": "Ahmed",
+    "last_name": "Shahwan",
+    "phone_number": "+201087654321"
+  },
+  "custom_fields": {
+    "lago_customer_id": "e6676e85-9e4f-4fb5-bd2f-590a9c170d0e",
+    "lago_external_customer_id": "ext_cust_004",
+    "lago_mh_service": "PaymentProviders::Moneyhash::Payments::CreateService",
+    "lago_mit": true,
+    "lago_payable_id": "15fb51fb-586f-42bd-8e39-620d539d4e79",
+    "lago_payable_type": "Invoice",
+    "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+    "lago_provider_customer_id": "c4fc7f2f-e46b-42d1-842b-c246cf1a597d",
+    "lago_subscription_external_id": "7373a747-b6ab-44f2-b6cd-0662b73cbfcb"
+  },
+  "customer": "c4fc7f2f-e46b-42d1-842b-c246cf1a597d",
+  "card_token": "card_token_001",
+  "flow_id": "xgXlXgX",
+  "merchant_initiated": true,
+  "recurring_data": {
+    "agreement_id": "7373a747-b6ab-44f2-b6cd-0662b73cbfcb"
+  },
+  "webhook_url": "https://29c9-196-150-203-149.ngrok-free.app/webhooks/moneyhash/1f6edf98-9eb4-4baf-8c64-7c6be9d0b414?code=mh-lago"
+}

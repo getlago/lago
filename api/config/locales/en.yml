@@ -1,0 +1,83 @@
+---
+en:
+  activerecord:
+    errors:
+      messages:
+        blank: value_is_mandatory
+        cannot_be_empty: cannot_be_empty
+        content_type_invalid: invalid_content_type
+        country_code_invalid: not_a_valid_country_code
+        country_must_be_present: country_must_be_present
+        country_not_supported: country_not_supported
+        exclusion: value_is_reserved
+        feature_unavailable: feature_unavailable
+        file_size_not_less_than: file_too_large
+        graduated_percentage_requires_premium_license: graduated_percentage_requires_premium_license
+        greater_than: value_is_out_of_range
+        greater_than_or_equal_to: value_is_out_of_range
+        inclusion: value_is_invalid
+        invalid: value_is_invalid
+        invalid_aggregation_type_or_charge_model: invalid_aggregation_type_or_charge_model
+        invalid_amount: invalid_amount
+        invalid_billable_metric_or_charge_model: invalid_billable_metric_or_charge_model
+        invalid_charge_model: invalid_charge_model
+        invalid_content_type: invalid_content_type
+        invalid_date: invalid_date
+        invalid_date_range: invalid_date_range
+        invalid_email_format: invalid_email_format
+        invalid_expression: invalid_expression
+        invalid_fixed_amount: invalid_fixed_amount
+        invalid_flat_amount: invalid_flat_amount
+        invalid_format: invalid_format
+        invalid_free_units: invalid_free_units
+        invalid_free_units_per_events: invalid_free_units_per_events
+        invalid_free_units_per_total_aggregation: invalid_free_units_per_total_aggregation
+        invalid_graduated_ranges: invalid_graduated_ranges
+        invalid_organization: invalid_organization
+        invalid_owner: invalid_owner
+        invalid_package_size: invalid_package_size
+        invalid_per_unit_amount: invalid_per_unit_amount
+        invalid_rate: invalid_rate
+        invalid_size: invalid_size
+        invalid_timezone: invalid_timezone
+        invalid_void_reason: invalid_void_reason
+        invalid_volume_ranges: invalid_volume_ranges
+        language_code_invalid: not_a_valid_language_code
+        less_than_or_equal_to: value_is_out_of_range
+        missing_graduated_ranges: missing_graduated_ranges
+        missing_volume_ranges: missing_volume_ranges
+        modification_not_allowed: modification_not_allowed
+        must_be_array: must_be_array
+        must_be_greater_than_or_equal_min: must_be_greater_than_or_equal_min
+        must_be_greater_than_or_equal_threshold: must_be_greater_than_or_equal_threshold
+        must_be_true_unless_pay_in_advance: must_be_true_unless_pay_in_advance
+        not_compatible_with_aggregation_type: not_compatible_with_aggregation_type
+        not_compatible_with_pay_in_advance: not_compatible_with_pay_in_advance
+        one_of_plan_or_subscription_required: one_of_plan_or_subscription_required
+        only_compatible_with_pay_in_advance_and_non_invoiceable: only_compatible_with_pay_in_advance_and_non_invoiceable
+        payment_request_is_already_succeeded: payment_request_is_already_succeeded
+        present: value_must_be_blank
+        required: relation_must_exist
+        taken: value_already_exist
+        too_long: value_is_too_long
+        too_short: value_is_too_short
+        unsupported_value: unsupported_value
+        url_invalid: url_is_invalid
+        value_already_exist: value_already_exist
+      models:
+        api_key:
+          attributes:
+            permissions:
+              forbidden_keys: 'contains forbidden keys: %{keys}'
+        webhook_endpoint:
+          attributes:
+            event_types:
+              invalid_types: 'contains invalid types: %{invalid_types}'
+  date:
+    formats:
+      default: "%b %d, %Y"
+  money:
+    custom_format: "%{iso_code} %n"
+    decimal_mark: "."
+    format: "%u%n"
+    thousands_separator: ","

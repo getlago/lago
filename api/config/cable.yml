@@ -1,0 +1,17 @@
+development:
+  adapter: redis
+  url: <%= ENV.fetch("LAGO_REDIS_CABLE_URL", ENV.fetch("REDIS_URL", "redis://localhost:6379/1")) %>
+  channel_prefix: lago_development
+
+test:
+  adapter: test
+
+staging:
+  adapter: redis
+  url: <%= ENV.fetch("LAGO_REDIS_CABLE_URL", ENV.fetch("REDIS_URL", "redis://localhost:6379/1")) %>
+  channel_prefix: lago_staging
+
+production:
+  adapter: redis
+  url: <%= ENV.fetch("LAGO_REDIS_CABLE_URL", ENV.fetch("REDIS_URL", "redis://localhost:6379/1")) %>
+  channel_prefix: lago_production

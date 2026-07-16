@@ -1,0 +1,419 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`SalesforceCrmProviderContent Integration Tests WHEN rendering the component THEN should render a matching snapshot 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+  >
+    <div
+      class="flex items-center gap-1"
+    >
+      <label
+        class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+        data-test="captionHl"
+        for="crmCustomer.crmCustomerId"
+      >
+        <span
+          class="flex flex-row gap-1"
+        >
+          Salesforce Account ID
+        </span>
+      </label>
+    </div>
+    <div
+      class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+    >
+      <div
+        class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+      >
+        <input
+          aria-invalid="false"
+          class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+          id="crmCustomer.crmCustomerId"
+          name="crmCustomer.crmCustomerId"
+          placeholder="Type a Salesforce Account ID"
+          type="text"
+          value=""
+        />
+        <fieldset
+          aria-hidden="true"
+          class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+        >
+          <legend
+            class=css-hash-MuiNotchedOutlined-root
+          >
+            <span
+              class="notranslate"
+            >
+              ​
+            </span>
+          </legend>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+  <label
+    class="flex flex-col cursor-pointer"
+    data-test="checkbox-crmCustomer.syncWithProvider"
+    for=:r-mui-id:
+  >
+    <div
+      class="mx-0 flex items-start align-middle *:leading-7"
+    >
+      <div
+        class="mr-3 inline-flex items-center pt-1"
+      >
+        <input
+          aria-checked="false"
+          aria-labelledby="Create automatically this customer in Salesforce"
+          class="absolute m-0 size-0 p-0 opacity-0"
+          id=:r-mui-id:
+          readonly=""
+          type="checkbox"
+        />
+        <svg
+          aria-hidden="true"
+          class="text-white hover:text-grey-200 active:text-grey-300"
+          fill="none"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            fill="currentColor"
+            height="15"
+            rx="3.5"
+            stroke="#8C95A6"
+            width="15"
+            x="0.5"
+            y="0.5"
+          />
+        </svg>
+      </div>
+      <div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Create automatically this customer in Salesforce
+        </div>
+      </div>
+    </div>
+  </label>
+</div>
+`;
+
+exports[`SalesforceCrmProviderContent Integration Tests WHEN rendering the component THEN should render in edition mode 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+  >
+    <div
+      class="flex items-center gap-1"
+    >
+      <label
+        class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+        data-test="captionHl"
+        for="crmCustomer.crmCustomerId"
+      >
+        <span
+          class="flex flex-row gap-1"
+        >
+          Salesforce Account ID
+        </span>
+      </label>
+    </div>
+    <div
+      class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+    >
+      <div
+        class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+      >
+        <input
+          aria-invalid="false"
+          class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+          id="crmCustomer.crmCustomerId"
+          name="crmCustomer.crmCustomerId"
+          placeholder="Type a Salesforce Account ID"
+          type="text"
+          value=""
+        />
+        <fieldset
+          aria-hidden="true"
+          class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+        >
+          <legend
+            class=css-hash-MuiNotchedOutlined-root
+          >
+            <span
+              class="notranslate"
+            >
+              ​
+            </span>
+          </legend>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+  <label
+    class="flex flex-col cursor-pointer"
+    data-test="checkbox-crmCustomer.syncWithProvider"
+    for=:r-mui-id:
+  >
+    <div
+      class="mx-0 flex items-start align-middle *:leading-7"
+    >
+      <div
+        class="mr-3 inline-flex items-center pt-1"
+      >
+        <input
+          aria-checked="false"
+          aria-labelledby="Create automatically this customer in Test Salesforce Integration"
+          class="absolute m-0 size-0 p-0 opacity-0"
+          id=:r-mui-id:
+          readonly=""
+          type="checkbox"
+        />
+        <svg
+          aria-hidden="true"
+          class="text-white hover:text-grey-200 active:text-grey-300"
+          fill="none"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            fill="currentColor"
+            height="15"
+            rx="3.5"
+            stroke="#8C95A6"
+            width="15"
+            x="0.5"
+            y="0.5"
+          />
+        </svg>
+      </div>
+      <div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Create automatically this customer in Test Salesforce Integration
+        </div>
+      </div>
+    </div>
+  </label>
+</div>
+`;
+
+exports[`SalesforceCrmProviderContent Integration Tests WHEN rendering the component THEN should render with Salesforce integration data 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+  >
+    <div
+      class="flex items-center gap-1"
+    >
+      <label
+        class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+        data-test="captionHl"
+        for="crmCustomer.crmCustomerId"
+      >
+        <span
+          class="flex flex-row gap-1"
+        >
+          Salesforce Account ID
+        </span>
+      </label>
+    </div>
+    <div
+      class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+    >
+      <div
+        class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+      >
+        <input
+          aria-invalid="false"
+          class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+          id="crmCustomer.crmCustomerId"
+          name="crmCustomer.crmCustomerId"
+          placeholder="Type a Salesforce Account ID"
+          type="text"
+          value=""
+        />
+        <fieldset
+          aria-hidden="true"
+          class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+        >
+          <legend
+            class=css-hash-MuiNotchedOutlined-root
+          >
+            <span
+              class="notranslate"
+            >
+              ​
+            </span>
+          </legend>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+  <label
+    class="flex flex-col cursor-pointer"
+    data-test="checkbox-crmCustomer.syncWithProvider"
+    for=:r-mui-id:
+  >
+    <div
+      class="mx-0 flex items-start align-middle *:leading-7"
+    >
+      <div
+        class="mr-3 inline-flex items-center pt-1"
+      >
+        <input
+          aria-checked="false"
+          aria-labelledby="Create automatically this customer in Test Salesforce Integration"
+          class="absolute m-0 size-0 p-0 opacity-0"
+          id=:r-mui-id:
+          readonly=""
+          type="checkbox"
+        />
+        <svg
+          aria-hidden="true"
+          class="text-white hover:text-grey-200 active:text-grey-300"
+          fill="none"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            fill="currentColor"
+            height="15"
+            rx="3.5"
+            stroke="#8C95A6"
+            width="15"
+            x="0.5"
+            y="0.5"
+          />
+        </svg>
+      </div>
+      <div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Create automatically this customer in Test Salesforce Integration
+        </div>
+      </div>
+    </div>
+  </label>
+</div>
+`;
+
+exports[`SalesforceCrmProviderContent Integration Tests WHEN rendering the component THEN should render with initial integration customer 1`] = `
+<div>
+  <div
+    class="flex flex-col gap-1"
+  >
+    <div
+      class="flex items-center gap-1"
+    >
+      <label
+        class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+        data-test="captionHl"
+        for="crmCustomer.crmCustomerId"
+      >
+        <span
+          class="flex flex-row gap-1"
+        >
+          Salesforce Account ID
+        </span>
+      </label>
+    </div>
+    <div
+      class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+    >
+      <div
+        class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary Mui-disabled MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+      >
+        <input
+          aria-invalid="false"
+          class=MuiInputBase-input MuiOutlinedInput-input Mui-disabled css-hash-MuiInputBase-input-MuiOutlinedInput-input
+          disabled=""
+          id="crmCustomer.crmCustomerId"
+          name="crmCustomer.crmCustomerId"
+          placeholder="Type a Salesforce Account ID"
+          type="text"
+          value=""
+        />
+        <fieldset
+          aria-hidden="true"
+          class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+        >
+          <legend
+            class=css-hash-MuiNotchedOutlined-root
+          >
+            <span
+              class="notranslate"
+            >
+              ​
+            </span>
+          </legend>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+  <label
+    class="flex flex-col"
+    data-test="checkbox-crmCustomer.syncWithProvider"
+    for=:r-mui-id:
+  >
+    <div
+      class="mx-0 flex items-start align-middle *:leading-7"
+    >
+      <div
+        class="mr-3 inline-flex items-center pt-1"
+      >
+        <input
+          aria-checked="false"
+          aria-labelledby="Create automatically this customer in Test Salesforce Integration"
+          class="absolute m-0 size-0 p-0 opacity-0"
+          disabled=""
+          id=:r-mui-id:
+          readonly=""
+          type="checkbox"
+        />
+        <svg
+          aria-hidden="true"
+          class="text-white hover:text-grey-200 active:text-grey-300"
+          fill="none"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            fill="currentColor"
+            height="15"
+            rx="3.5"
+            stroke="#8C95A6"
+            width="15"
+            x="0.5"
+            y="0.5"
+          />
+        </svg>
+      </div>
+      <div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Create automatically this customer in Test Salesforce Integration
+        </div>
+      </div>
+    </div>
+  </label>
+</div>
+`;

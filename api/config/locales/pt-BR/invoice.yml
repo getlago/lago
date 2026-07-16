@@ -1,0 +1,140 @@
+---
+pt-BR:
+  invoice:
+    account_holder_name: Nome do titular da conta
+    account_number: Número da conta
+    account_type: Tipo de conta
+    all_subscriptions: Todas as Assinaturas
+    all_usage_based_fees: Todas as taxas baseadas em uso
+    already_paid: Já pago
+    amount: Valor
+    amount_with_tax: Valor (incl. imposto)
+    amount_without_tax: Valor (excl. imposto)
+    bank_code: Código do banco
+    bank_name: Nome do banco
+    bank_transfer_info: Transferências bancárias podem levar alguns dias úteis para serem processadas. Para pagar via transferência bancária, transfira os fundos usando as seguintes informações bancárias.
+    bic: BIC
+    bill_from: De
+    bill_to: Faturar para
+    branch_code: Código da agência
+    branch_name: Nome da agência
+    breakdown: Detalhamento
+    breakdown_for_days: Usado %{breakdown_duration} de %{breakdown_total_duration} dias
+    breakdown_of: Detalhamento de %{fee_filter_display_name}
+    charges_paid_in_advance: Cobranças pagas antecipadamente
+    clabe: CLABE
+    country: País
+    coupons: Cupons
+    credit_notes: Notas de crédito
+    date_from: De
+    date_to: até
+    details: Detalhes de %{resource}
+    document_name: Fatura
+    document_tax_name: Nota fiscal
+    due_date: Vencimento %{date}
+    e_invoicing:
+      credit_card: Pagamento com cartão de crédito
+      credit_card_information: Pago com cartão de crédito em %{date}
+      discount_reason: Desconto da parte de %{tax_rate}
+      payment_information: "%{payment_label} de %{currency} %{amount} aplicado"
+      standard_payment: Pagamento padrão
+    fee_prorated: A taxa é proporcional ao período; o preço unitário exibido é uma média
+    fees_from_to_date: Taxas de %{from_date} até %{to_date}
+    free_credits: Créditos gratuitos
+    from_to_date: De %{from_date} até %{to_date}
+    graduated:
+      fee_per_unit_for_the_first: Taxa por unidade para os primeiros %{to}
+      fee_per_unit_for_the_last: Taxa por unidade para %{from} e acima
+      fee_per_unit_for_the_next: Taxa por unidade para os próximos %{from} até %{to}
+      flat_fee_for_the_first: Taxa fixa para os primeiros %{to}
+      flat_fee_for_the_last: Taxa fixa para %{from} e acima
+      flat_fee_for_the_next: Taxa fixa para os próximos %{from} até %{to}
+    half_year: semestre
+    iban: IBAN
+    invoice_number: Número da Fatura
+    issue_date: Data de Emissão
+    item: Item
+    list_of_charges: Lista de cobranças usadas de %{from} até %{to}
+    month: mês
+    monthly: Mensal
+    notice_full: Independentemente de quando um evento é recebido, a unidade não é proporcional, cobramos o preço total.
+    notice_prorated: Se uma unidade é adicionada ou removida durante o plano mensal, calculamos o preço proporcional com base na proporção de dias restantes ou usados em relação ao número total de dias no plano. Por exemplo, se restam 15 dias no plano, multiplicamos o preço por 15/%{days_in_month}, e se uma unidade foi usada por 10 dias, multiplicamos o preço por 10/%{days_in_month}.
+    package:
+      fee_per_package: Taxa por pacote
+      fee_per_package_unit_price: "%{amount} por %{package_size}"
+      free_units_for_the_first: Unidades gratuitas para os primeiros %{count}
+    paid_invoice: Fatura paga
+    paid_tax_invoice: Nota fiscal paga
+    pay_with_bank_transfer: Pagar com transferência bancária
+    payment_term: Prazo de pagamento
+    payment_term_days: "%{net_payment_term} dias"
+    percentage:
+      adjustment_per_transaction: Ajuste para mín/máx por transação
+      fee_per_transaction: Taxa fixa por transação
+      free_units_per_transaction:
+        one: Unidades gratuitas para 1 transação
+        other: Unidades gratuitas para %{count} transações
+      percentage_rate_on_amount: Taxa sobre o valor
+    powered_by: Desenvolvido por
+    prepaid_credit_invoice: Fatura antecipada
+    prepaid_credits: Créditos pré-pagos
+    prepaid_credits_with_value: Créditos pré-pagos - %{wallet_name}
+    progressive_billing_credit: Uso já faturado
+    purchase_order_number: Número do pedido de compra
+    quarter: trimestre
+    quarterly: Trimestral
+    reached_usage_threshold: Esta cobrança progressiva é gerada porque seu uso cumulativo atingiu %{usage_amount}, excedendo o limite de %{threshold_amount}.
+    routing_number: Número de roteamento
+    see_breakdown: Ver detalhamento para unidade total
+    self_billed:
+      document_name: Fatura de autofaturamento
+      footer: Esta fatura de autofaturamento foi emitida pelo cliente em nome do parceiro, com seu consentimento. O parceiro concordou em não emitir sua própria fatura para esta transação.
+    semiannual: Semestral
+    sort_code: Código de classificação
+    sub_total: Subtotal
+    sub_total_with_tax: Subtotal (incl. imposto)
+    sub_total_without_tax: Subtotal (excl. imposto)
+    subscription: Assinatura
+    subscription_interval: Assinatura %{plan_interval} - %{plan_name}
+    swift_code: Código SWIFT
+    tax: Imposto
+    tax_identification_number: 'ID do Imposto: %{tax_identification_number}'
+    tax_name: "%{name} (%{rate}% sobre %{amount})"
+    tax_name_only:
+      customer_exempt: Cliente isento de impostos
+      juris_has_no_tax: Sem imposto
+      juris_not_taxed: Sem imposto
+      not_collecting: Sem imposto
+      reverse_charge: Cobrança reversa - Responsabilidade fiscal transferida para o cliente
+      transaction_exempt: Cliente isento de impostos
+      unknown_taxation: Desconhecido
+    tax_name_with_details: "%{name} (%{rate}%)"
+    tax_rate: Taxa de imposto
+    taxes:
+      fr_tax_exempt: Cliente isento de impostos de acordo com o artigo 259-1 do Código Geral Tributário Francês.
+      reverse_charge: Cobrança reversa - Responsabilidade fiscal transferida para o cliente.
+      tax_exempt: Cliente isento de impostos.
+    total: Total
+    total_credits: Total de créditos
+    total_credits_with_value: 'Total de créditos: %{credit_amount} créditos'
+    total_due: Total devido
+    total_due_amount: Valor devido
+    total_events: 'Total de eventos: %{count}'
+    total_paid_amount: Valor pago
+    total_unit: 'Unidade total: %{units}'
+    total_unit_interval: 'Unidade total: %{events_count} eventos para %{units}'
+    true_up_details: Gasto mínimo de %{min_amount} proporcional aos dias de uso
+    true_up_metric: "%{metric} - Ajuste"
+    unit: Unidade
+    unit_price: Preço unitário
+    units: Unidades
+    units_prorated_per_period: Unidades proporcionais por segundo por %{period}
+    usage_based_fees: Taxas baseadas em uso
+    usage_breakdown_by: Detalhamento de uso por %{keys}
+    volume:
+      fee_per_unit: Taxa por unidade
+      flat_fee_for_all_units: Taxa fixa para todas as unidades
+    week: semana
+    weekly: Semanal
+    year: ano
+    yearly: Anual

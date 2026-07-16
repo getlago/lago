@@ -1,0 +1,59 @@
+{
+  "revenue_streams_customers": [
+    {
+        "amount_currency": "EUR",
+        "customer_id": "e4676e50-1234-4606-bcdb-42effbc2b635",
+        "customer_deleted_at": null,
+        "customer_name": "Penny",
+        "gross_revenue_share": 0.1185,
+        "net_revenue_share": 0.1185,
+        "organization_id": "c0047031-41b6-4386-a10b-0a36f787c84f",
+        "external_customer_id": "2537afc4-1234-4abb-89b7-d9b28c35780b",
+        "gross_revenue_amount_cents": 124628322,
+        "net_revenue_amount_cents": 124628322
+    },
+    {
+        "amount_currency": "EUR",
+        "customer_id": "144944d4-5678-4136-854f-11b92b171847",
+        "customer_deleted_at": null,
+        "customer_name": "Indy",
+        "gross_revenue_share": 0.0767,
+        "net_revenue_share": 0.0767,
+        "organization_id": "c0047031-41b6-4386-a10b-0a36f787c84f",
+        "external_customer_id": "cb999dff-4567-4d08-962d-93565dfdbad8",
+        "gross_revenue_amount_cents": 80609006,
+        "net_revenue_amount_cents": 80609006
+    },
+    {
+        "amount_currency": "EUR",
+        "customer_id": "93fdf149-9012-4f7e-b799-20b7edbb9628",
+        "customer_deleted_at": null,
+        "customer_name": "Place",
+        "gross_revenue_share": 0.056,
+        "net_revenue_share": 0.056,
+        "organization_id": "c0047031-41b6-4386-a10b-0a36f787c84f",
+        "external_customer_id": "58dd4fa2-8910-4a41-825b-ca3b865fe81b",
+        "gross_revenue_amount_cents": 58883577,
+        "net_revenue_amount_cents": 58883577
+    },
+    {
+        "amount_currency": "EUR",
+        "customer_id": "8fd8731f-3456-4d2e-96c9-a9aa7a6a2550",
+        "customer_deleted_at": null,
+        "customer_name": "Piano",
+        "gross_revenue_share": 0.042,
+        "net_revenue_share": 0.042,
+        "organization_id": "c0047031-41b6-4386-a10b-0a36f787c84f",
+        "external_customer_id": "ca3535f0-2345-4f5e-9238-e6ed7372b133",
+        "gross_revenue_amount_cents": 44196934,
+        "net_revenue_amount_cents": 44196934
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "next_page": 2,
+    "prev_page": 0,
+    "total_pages": 5,
+    "total_count": 100
+  }
+}

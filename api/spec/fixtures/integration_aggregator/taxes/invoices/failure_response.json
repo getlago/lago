@@ -1,0 +1,29 @@
+{
+  "succeededInvoices": [],
+  "failedInvoices": [
+    {
+      "issuing_date": "2024-12-03",
+      "currency": "EUR",
+      "contact": {
+        "external_id": "sync-1-test-1",
+        "name": "sync-1-test-1",
+        "address_line_1": "88 rue du Chemin Vert",
+        "city": "Paris",
+        "zip": "75011",
+        "country": "fr",
+        "taxable": true,
+        "tax_number": "FR86894827773"
+      },
+      "fees": [
+        {
+          "item_id": "sync-1",
+          "item_code": "lago_default_b2b",
+          "amount_cents": 2000
+        }
+      ],
+      "validation_errors": {
+        "type": "taxDateTooFarInFuture"
+      }
+    }
+  ]
+}

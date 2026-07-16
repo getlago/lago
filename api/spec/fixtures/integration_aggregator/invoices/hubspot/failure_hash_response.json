@@ -1,0 +1,17 @@
+{
+  "error": {
+      "message": "An error occurred during an HTTP call",
+      "code": "script_http_error",
+      "payload": {
+          "status": "error",
+          "message": "Error creating LagoInvoices.  Some required properties were not set.",
+          "correlationId": "12345678-1111-2222-3333-db140d8d163f",
+          "context": {
+              "properties": [
+                  "lago_invoice_id"
+              ]
+          },
+          "category": "VALIDATION_ERROR"
+      }
+  }
+}

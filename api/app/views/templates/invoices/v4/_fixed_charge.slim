@@ -1,0 +1,62 @@
+- invoice_subscription = invoice_subscriptions.first
+- fixed_charge_fees = fees.fixed_charge.order(:succeeded_at, :created_at)
+- grouped_fees = FeeBoundariesHelper.group_fees_by_billing_period(fixed_charge_fees, invoice_subscription:)
+
+== SlimHelper.render('templates/invoices/v4/_subscription_name', self, subscription: invoice_subscription.subscription, page_break: false)
+
+- grouped_fees.each_with_index do |fee_group, group_index|
+  - next unless fee_group.fixed_charge_fees.any?
+  - billing_period = fee_group.billing_period
+
+  .invoice-resume.overflow-auto class="#{'mt-24' if group_index > 0}"
+    table.invoice-resume-table width="100%"
+      tr.first_child
+        td.body-2 = FeeBoundariesHelper.format_billing_period(billing_period, customer:)
+        td.body-2 = I18n.t('invoice.units')
+        td.body-2 = I18n.t('invoice.unit_price')
+        td.body-2 = I18n.t('invoice.tax_rate')
+        td.body-2 = I18n.t('invoice.amount')
+      - fee_group.fixed_charge_fees.each do |fee|
+        == SlimHelper.render('templates/invoices/v4/_fixed_charge_fee', fee)
+
+table.total-table width="100%"
+  - if coupons_amount_cents.positive?
+    - credits.coupon_kind.order(created_at: :asc).each do |credit|
+      tr
+        td.body-2
+        td.body-2 #{credit.invoice_coupon_display_name}
+        td.body-2 = '-' +  MoneyHelper.format(credit.amount)
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_without_tax')
+    td.body-2 = MoneyHelper.format(sub_total_excluding_taxes_amount)
+  - if applied_taxes.present?
+    - applied_taxes.order(tax_rate: :desc).each do |applied_tax|
+      tr
+        - if applied_tax.applied_on_whole_invoice?
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name_only.' + applied_tax.tax_code)
+          td.body-2
+        - else
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name', name: applied_tax.tax_name, rate: applied_tax.tax_rate, amount: MoneyHelper.format(applied_tax.taxable_amount))
+          td.body-2 = MoneyHelper.format(applied_tax.amount)
+  - else
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.tax_name_with_details', name: 'Tax', rate: 0)
+      td.body-2 = MoneyHelper.format(0.to_money(currency))
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_with_tax')
+    td.body-2 = MoneyHelper.format(sub_total_including_taxes_amount)
+  - if credits.credit_note_kind.any?
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.credit_notes')
+      td.body-2 = '-' +  MoneyHelper.format(credit_notes_amount)
+  == SlimHelper.render('templates/invoices/v4/_prepaid_credits', self)
+  tr
+    td.body-2
+    td.body-1 = advance_charges? ? I18n.t('invoice.already_paid') : I18n.t('invoice.total')
+    td.body-1 = MoneyHelper.format(total_amount)

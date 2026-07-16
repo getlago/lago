@@ -1,0 +1,31 @@
+common: &default_settings
+  license_key: <%= ENV['NEW_RELIC_KEY'] %>
+  app_name: api
+
+  distributed_tracing:
+    enabled: true
+
+  log_level: info
+
+  application_logging:
+    enabled: true
+    forwarding:
+      enabled: true
+      max_samples_stored: 10000
+    metrics:
+      enabled: true
+    local_decorating:
+      enabled: false
+
+development:
+  monitor_mode: false
+
+test:
+  monitor_mode: false
+
+staging:
+  <<: *default_settings
+  app_name: api (Staging)
+
+production:
+  <<: *default_settings

@@ -1,0 +1,22 @@
+/ Fee per unit
+tr.details
+  td.body-2 = I18n.t('invoice.volume.fee_per_unit')
+  td.body-2 = RoundingHelper.round_decimal_part(units)
+  td.body-2 = FeeDisplayHelper.format_with_precision(self, amount_details['per_unit_amount'])
+  td.body-2 == TaxHelper.applied_taxes(self)
+  td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['per_unit_total_amount'])
+- if amount_details['flat_unit_amount'].to_f.positive?
+  / Flat fee for all units
+  tr.details
+    td.body-2 = I18n.t('invoice.volume.flat_fee_for_all_units')
+    td.body-2 = 1
+    td.body-2 = FeeDisplayHelper.format_as_currency(self, amount_details['flat_unit_amount'])
+    td.body-2 == TaxHelper.applied_taxes(self)
+    td.body-2 = MoneyHelper.format(amount_details['flat_unit_amount'].to_money(amount_currency))
+/ Sub total
+tr.details.subtotal
+  td.body-2 = I18n.t('invoice.sub_total')
+  td.body-2
+  td.body-2
+  td.body-2
+  td.body-2 = FeeDisplayHelper.format_amount(self)

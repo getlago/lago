@@ -1,0 +1,36 @@
+{
+  "succeededInvoices": [
+    {
+      "id": "cc1576cf-7b1c-480e-8f25-ae10fa34d6d1",
+      "type": "ACCREC",
+      "external_contact_id": "b20f8b1e-b934-464d-9bf6-b82551b7f352",
+      "status": "AUTHORISED",
+      "issuing_date": "2024-12-19T00:00:00.000Z",
+      "payment_due_date": "2024-01-23T00:00:00.000Z",
+      "number": "INV-007129",
+      "currency": "USD",
+      "purchase_order": null,
+      "fees": [
+        {
+          "item_id": "44665d26-7852-4bfa-bc38-e4886c130fec",
+          "description": "Test item3",
+          "units": 10,
+          "precise_unit_amount": 15,
+          "account_code": "4000",
+          "amount_cents": 15000,
+          "taxes_amount_cents": 1800
+        },
+        {
+          "item_id": "7f2c5416-5f70-48c4-86f2-ace369afee22",
+          "description": "Test item3",
+          "units": 1,
+          "precise_unit_amount": -1,
+          "account_code": "4000",
+          "amount_cents": -100,
+          "taxes_amount_cents": 0
+        }
+      ]
+    }
+  ],
+  "failedInvoices": []
+}

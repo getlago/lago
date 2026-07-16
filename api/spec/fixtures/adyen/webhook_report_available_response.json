@@ -1,0 +1,23 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "hmacSignature": "b0ea55c2fe60d4d1d605e9c385e0e7..."
+        },
+        "amount": {
+          "currency": "EUR",
+          "value": 1000
+        },
+        "eventCode": "REPORT_AVAILABLE",
+        "eventDate": "2021-01-01T01:00:00+01:00",
+        "merchantAccountCode": "YOUR_MERCHANT_ACCOUNT",
+        "merchantReference": "",
+        "pspReference": "QFQTPCQ8HXSKGK82",
+        "reason": "URL_TO_DOWNLOAD_REPORT",
+        "success": "true"
+      }
+    }
+  ]
+}

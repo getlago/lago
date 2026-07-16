@@ -1,0 +1,1 @@
+export const MANDATORY_EINVOICING_COUNTRIES = ['FR', 'DE']

@@ -1,0 +1,33 @@
+{
+  "succeededInvoices": [
+    {
+      "issuing_date": "2024-03-07",
+      "sub_total_excluding_taxes": 9900,
+      "taxes_amount_cents": 0,
+      "currency": "USD",
+      "contact": {
+        "external_id": "cus_lago_12345",
+        "name": "John Doe",
+        "taxable": true,
+        "tax_number": "1234567890"
+      },
+      "fees": [
+        {
+          "item_id": "lago_fee_id",
+          "item_code": "lago_default_b2b",
+          "amount_cents": 9900,
+          "tax_amount_cents": 0,
+          "tax_breakdown": [
+            {
+              "name": "GST/HST",
+              "rate": "0.10",
+              "tax_amount": 990,
+              "type": "tax_exempt"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "failedInvoices": []
+}

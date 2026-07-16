@@ -1,0 +1,305 @@
+{
+  "error": {
+    "advice_code": "try_again_later",
+    "charge": "ch_3QxY0cQ8iJWBZFaM1fnWlwJp",
+    "code": "card_declined",
+    "decline_code": "generic_decline",
+    "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+    "message": "Your card was declined.",
+    "payment_intent": {
+      "id": "pi_3QxY0cQ8iJWBZFaM1rmKGIIJ",
+      "object": "payment_intent",
+      "amount": 110,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 0,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic",
+      "charges": {
+        "object": "list",
+        "data": [
+          {
+            "id": "ch_3QxY0cQ8iJWBZFaM1fnWlwJp",
+            "object": "charge",
+            "amount": 110,
+            "amount_captured": 0,
+            "amount_refunded": 0,
+            "application": null,
+            "application_fee": null,
+            "application_fee_amount": null,
+            "balance_transaction": null,
+            "billing_details": {
+              "address": {
+                "city": null,
+                "country": "US",
+                "line1": null,
+                "line2": null,
+                "postal_code": "87654",
+                "state": null
+              },
+              "email": "adwawd@esef.com",
+              "name": "Testing Stripe",
+              "phone": null
+            },
+            "calculated_statement_descriptor": "JULIEN",
+            "captured": false,
+            "created": 1740766203,
+            "currency": "usd",
+            "customer": "cus_RqyKy71Xwsb1Xr",
+            "description": "Pre-authorization for subscription",
+            "destination": null,
+            "dispute": null,
+            "disputed": false,
+            "failure_balance_transaction": null,
+            "failure_code": "card_declined",
+            "failure_message": "Your card was declined.",
+            "fraud_details": {},
+            "invoice": null,
+            "livemode": false,
+            "metadata": {
+              "plan_code": "plan_a"
+            },
+            "on_behalf_of": null,
+            "order": null,
+            "outcome": {
+              "advice_code": "try_again_later",
+              "network_advice_code": null,
+              "network_decline_code": null,
+              "network_status": "declined_by_network",
+              "reason": "generic_decline",
+              "risk_level": "normal",
+              "risk_score": 52,
+              "seller_message": "The bank did not return any further details with this decline.",
+              "type": "issuer_declined"
+            },
+            "paid": false,
+            "payment_intent": "pi_3QxY0cQ8iJWBZFaM1rmKGIIJ",
+            "payment_method": "pm_1QxGfaQ8iJWBZFaMWvBuRccO",
+            "payment_method_details": {
+              "card": {
+                "amount_authorized": null,
+                "authorization_code": null,
+                "brand": "visa",
+                "checks": {
+                  "address_line1_check": null,
+                  "address_postal_code_check": "pass",
+                  "cvc_check": null
+                },
+                "country": "US",
+                "exp_month": 12,
+                "exp_year": 2028,
+                "extended_authorization": {
+                  "status": "disabled"
+                },
+                "fingerprint": "pmIfA8TCefcd72yD",
+                "funding": "credit",
+                "incremental_authorization": {
+                  "status": "unavailable"
+                },
+                "installments": null,
+                "last4": "0341",
+                "mandate": null,
+                "multicapture": {
+                  "status": "unavailable"
+                },
+                "network": "visa",
+                "network_token": {
+                  "used": false
+                },
+                "network_transaction_id": "112109731026556",
+                "overcapture": {
+                  "maximum_amount_capturable": 110,
+                  "status": "unavailable"
+                },
+                "regulated_status": "unregulated",
+                "three_d_secure": null,
+                "wallet": null
+              },
+              "type": "card"
+            },
+            "radar_options": {},
+            "receipt_email": null,
+            "receipt_number": null,
+            "receipt_url": null,
+            "refunded": false,
+            "refunds": {
+              "object": "list",
+              "data": [],
+              "has_more": false,
+              "total_count": 0,
+              "url": "/v1/charges/ch_3QxY0cQ8iJWBZFaM1fnWlwJp/refunds"
+            },
+            "review": null,
+            "shipping": null,
+            "source": null,
+            "source_transfer": null,
+            "statement_descriptor": null,
+            "statement_descriptor_suffix": null,
+            "status": "failed",
+            "transfer_data": null,
+            "transfer_group": null
+          }
+        ],
+        "has_more": false,
+        "total_count": 1,
+        "url": "/v1/charges?payment_intent=pi_3QxY0cQ8iJWBZFaM1rmKGIIJ"
+      },
+      "client_secret": "pi_3Q**********************_******_*********************eUu2",
+      "confirmation_method": "automatic",
+      "created": 1740766202,
+      "currency": "usd",
+      "customer": "cus_RqyKy71Xwsb1Xr",
+      "description": "Pre-authorization for subscription",
+      "invoice": null,
+      "last_payment_error": {
+        "advice_code": "try_again_later",
+        "charge": "ch_3QxY0cQ8iJWBZFaM1fnWlwJp",
+        "code": "card_declined",
+        "decline_code": "generic_decline",
+        "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+        "message": "Your card was declined.",
+        "payment_method": {
+          "id": "pm_1QxGfaQ8iJWBZFaMWvBuRccO",
+          "object": "payment_method",
+          "allow_redisplay": "always",
+          "billing_details": {
+            "address": {
+              "city": null,
+              "country": "US",
+              "line1": null,
+              "line2": null,
+              "postal_code": "87654",
+              "state": null
+            },
+            "email": "adwawd@esef.com",
+            "name": "Testing Stripe",
+            "phone": null
+          },
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "address_line1_check": null,
+              "address_postal_code_check": "pass",
+              "cvc_check": "pass"
+            },
+            "country": "US",
+            "display_brand": "visa",
+            "exp_month": 12,
+            "exp_year": 2028,
+            "fingerprint": "pmIfA8TCefcd72yD",
+            "funding": "credit",
+            "generated_from": null,
+            "last4": "0341",
+            "networks": {
+              "available": [
+                "visa"
+              ],
+              "preferred": null
+            },
+            "regulated_status": "unregulated",
+            "three_d_secure_usage": {
+              "supported": true
+            },
+            "wallet": null
+          },
+          "created": 1740699551,
+          "customer": "cus_RqyKy71Xwsb1Xr",
+          "livemode": false,
+          "metadata": {},
+          "type": "card"
+        },
+        "type": "card_error"
+      },
+      "latest_charge": "ch_3QxY0cQ8iJWBZFaM1fnWlwJp",
+      "livemode": false,
+      "metadata": {
+        "plan_code": "plan_a"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": null,
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "capture_method": "manual",
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "requires_payment_method",
+      "transfer_data": null,
+      "transfer_group": null
+    },
+    "payment_method": {
+      "id": "pm_1QxGfaQ8iJWBZFaMWvBuRccO",
+      "object": "payment_method",
+      "allow_redisplay": "always",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": "US",
+          "line1": null,
+          "line2": null,
+          "postal_code": "87654",
+          "state": null
+        },
+        "email": "adwawd@esef.com",
+        "name": "Testing Stripe",
+        "phone": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": "pass",
+          "cvc_check": "pass"
+        },
+        "country": "US",
+        "display_brand": "visa",
+        "exp_month": 12,
+        "exp_year": 2028,
+        "fingerprint": "pmIfA8TCefcd72yD",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "0341",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1740699551,
+      "customer": "cus_RqyKy71Xwsb1Xr",
+      "livemode": false,
+      "metadata": {},
+      "type": "card"
+    },
+    "request_log_url": "https://dashboard.stripe.com/test/logs/req_R6dwJQCrHDQkZr?t=1740766202",
+    "type": "card_error"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "succeededContacts": [],
+  "failedContacts": [
+      {
+          "id": "2e50c200-9a54-4a66-b241-1e75fb87373f",
+          "name": "Test",
+          "email": "s@",
+          "city": "z",
+          "zip": "73993",
+          "country": "US",
+          "state": "NYC",
+          "phone": "+33818282828",
+          "validation_errors": [
+              {
+                  "Message": "Email address must be valid."
+              }
+          ]
+      }
+  ]
+}

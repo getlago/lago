@@ -1,0 +1,70 @@
+{
+  "records": [
+    {
+      "id": "755",
+      "item_code": "test-lead-conduit",
+      "name": "Test-LeadConduit",
+      "account_code": "7691",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi40MzA0MjgrMDA6MDB8fDAwNmZmYjJjLWQ1MjAtNWNiNy1hMjRhLTE5NzYzNzI1MDhlZQ=="
+      }
+    },
+    {
+      "id": "745",
+      "item_code": "test-trusted-form",
+      "name": "Test-TrustedForm : TF Pings",
+      "account_code": "2428",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi40MzA0MjgrMDA6MDB8fGY1ZDZiZmNiLTNlOGMtNWFlZS04OTU4LTQxMDBlMGNjMmYyMw=="
+      }
+    },
+    {
+      "id": "753",
+      "item_code": "test-anura",
+      "name": "Test-Anura",
+      "account_code": "1411",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi40MzA0MjgrMDA6MDB8fGZiM2UwYjhiLTYyNjctNWEwNy1iNzhiLTk2ZDY1YjIwMTAzNA=="
+      }
+    },
+    {
+      "id": "484",
+      "item_code": "test-platform",
+      "name": "Test-Platform Subscription Annual",
+      "account_code": "9662",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi40MzA0MjgrMDA6MDB8fGZlNWMwZjcxLTM0ZDktNTFiYy05ZGFiLTIxMGJkMTcyZmUyMw=="
+      }
+    },
+    {
+      "id": "828",
+      "item_code": "test-lead-conduit-add-on",
+      "name": "Test-LeadConduit : Add-Ons : CoreLogic Title Verification",
+      "account_code": "2904",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_modified_at": "2024-04-17T12:10:02.430428+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMjoxMDowMi40MzA0MjgrMDA6MDB8fGZlYTRjNGQwLWYwZjctNTQwZi1iNjE5LWIyZGZlYzM5NGM0Zg=="
+      }
+    }
+  ],
+  "next_cursor": null
+}

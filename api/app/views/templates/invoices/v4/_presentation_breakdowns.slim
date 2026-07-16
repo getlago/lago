@@ -1,0 +1,24 @@
+- fees_with_presentation_breakdowns = fees.select { |fee| fee.charge? && fee.presentation_breakdowns_displayed_in_invoice.any? }
+
+- if fees_with_presentation_breakdowns.any?
+  .presentation-breakdowns-page
+
+- fees_with_presentation_breakdowns.group_by(&:charge_id).each do |_charge_id, charge_group_fees|
+  - displayable_keys = charge_group_fees.first.presentation_group_keys_values_displayed_in_invoice
+
+  .breakdown-details.overflow-auto.mb-24.presentation-breakdowns
+    table.breakdown-details-table width="100%"
+      tr.first_child.section-end
+        td.body-2 = I18n.t("invoice.usage_breakdown_by", keys: displayable_keys.to_sentence)
+        td.body-2 = I18n.t("invoice.units")
+
+      - charge_group_fees.each do |fee|
+        - sorted_rows = FeeDisplayHelper.sorted_presentation_breakdowns_displayed_in_invoice(fee)
+        tr.fee
+          td.body-1 = FeeDisplayHelper.fee_title(fee)
+          td.body-2 = RoundingHelper.round_decimal_part(fee.units)
+
+        - sorted_rows.each_with_index do |(values, units), idx|
+          tr.presentation-group class=("section-end" if idx == sorted_rows.size - 1)
+            td.body-2 = values.compact.join(', ')
+            td.body-2 = RoundingHelper.round_decimal_part(units)

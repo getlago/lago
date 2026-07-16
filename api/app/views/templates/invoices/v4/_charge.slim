@@ -1,0 +1,110 @@
+table.invoice-resume-table width="100%"
+  tr
+    td.body-2 = I18n.t('invoice.item')
+    td.body-2 = I18n.t('invoice.units')
+    td.body-2 = I18n.t('invoice.unit_price')
+    td.body-2 = I18n.t('invoice.tax_rate')
+    td.body-2 = I18n.t('invoice.amount')
+  - fees.order(:succeeded_at, :created_at).each do |fee|
+    - if fee.fixed_charge?
+      - next
+    - if fee.charge.percentage? && fee.amount_details.present?
+      - if fee.basic_rate_percentage?
+        tr.fee
+          td.body-1
+            = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+          td.body-2 = fee.amount_details['paid_units']
+          td.body-2 = fee.amount_details['rate'] + '%'
+          td.body-2 == TaxHelper.applied_taxes(fee)
+          td.body-2 = FeeDisplayHelper.format_as_currency(fee, fee.amount_details['per_unit_total_amount'])
+      - else
+        tr.charge-name.fee
+          td.body-1
+            = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+            - if fee.charge_filter_id?
+              = ' • ' + fee.filter_display_name(separator: ' • ')
+            - if fee.billable_metric.weighted_sum_agg?
+              .body-3 = I18n.t('invoice.units_prorated_per_period', period: IntervalHelper.interval_name(fee.subscription.plan.interval))
+            - if fee.succeeded_at.present?
+              .body-3 = I18n.l(fee.succeeded_at.to_date, format: :default) + ' • ' + I18n.t('invoice.total_events', count: fee.events_count)
+            - else
+              .body-3 = I18n.t('invoice.total_events', count: fee.events_count)
+            - if fee.charge.prorated?
+              .body-3 = I18n.t('invoice.fee_prorated')
+          td.body-2
+          td.body-2
+          td.body-2
+          td.body-2
+        == SlimHelper.render('templates/invoices/v4/_charge_percentage', fee)
+    - else
+      tr.fee
+        - if !fee.charge.invoiceable? # TODO: edit with `invoicing_strategy`
+          td
+            .body-1
+              = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+              - if fee.charge_filter_id?
+                = ' • ' + fee.filter_display_name(separator: ' • ')
+            - succeeded_at_date = fee.succeeded_at&.in_time_zone(customer.applicable_timezone)&.to_date
+            - if succeeded_at_date
+              .body-3 = I18n.l(succeeded_at_date, format: :default)
+        - elsif fee.charge.prorated?
+          - pay_in_advance_range = charge_pay_in_advance_proration_range(fee, invoice_subscription(fee.subscription.id).timestamp)
+          td
+            .body-1
+              = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+              - if fee.charge_filter_id?
+                = ' • ' + fee.filter_display_name(separator: ' • ')
+            .body-3 = I18n.t('invoice.breakdown_for_days', breakdown_duration: pay_in_advance_range[:number_of_days], breakdown_total_duration: pay_in_advance_range[:period_duration])
+        - else
+          td.body-1
+            = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+            - if fee.charge_filter_id?
+              = ' • ' + fee.filter_display_name(separator: ' • ')
+        td.body-2 = RoundingHelper.round_decimal_part(fee.units)
+        td.body-2 = FeeDisplayHelper.format_precise_unit_amount(fee)
+        td.body-2 == TaxHelper.applied_taxes(fee)
+        td.body-2 = FeeDisplayHelper.format_amount(fee)
+
+    == SlimHelper.render('templates/invoices/v4/_conversion_row', fee)
+
+table.total-table width="100%"
+  - if coupons_amount_cents.positive?
+    - credits.coupon_kind.order(created_at: :asc).each do |credit|
+      tr
+        td.body-2
+        td.body-2 #{credit.invoice_coupon_display_name}
+        td.body-2 = '-' +  MoneyHelper.format(credit.amount)
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_without_tax')
+    td.body-2 = MoneyHelper.format(sub_total_excluding_taxes_amount)
+  - if applied_taxes.present?
+    - applied_taxes.order(tax_rate: :desc).each do |applied_tax|
+      tr
+        - if applied_tax.applied_on_whole_invoice?
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name_only.' + applied_tax.tax_code)
+          td.body-2
+        - else
+          td.body-2
+          td.body-2 = I18n.t('invoice.tax_name', name: applied_tax.tax_name, rate: applied_tax.tax_rate, amount: MoneyHelper.format(applied_tax.taxable_amount))
+          td.body-2 = MoneyHelper.format(applied_tax.amount)
+  - else
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.tax_name_with_details', name: 'Tax', rate: 0)
+      td.body-2 = MoneyHelper.format(0.to_money(currency))
+  tr
+    td.body-2
+    td.body-2 = I18n.t('invoice.sub_total_with_tax')
+    td.body-2 = MoneyHelper.format(sub_total_including_taxes_amount)
+  - if credits.credit_note_kind.any?
+    tr
+      td.body-2
+      td.body-2 = I18n.t('invoice.credit_notes')
+      td.body-2 = '-' +  MoneyHelper.format(credit_notes_amount)
+  == SlimHelper.render('templates/invoices/v4/_prepaid_credits', self)
+  tr
+    td.body-2
+    td.body-1 = advance_charges? ? I18n.t('invoice.already_paid') : I18n.t('invoice.total')
+    td.body-1 = MoneyHelper.format(total_amount)

@@ -1,0 +1,46 @@
+{
+  "succeededInvoices": [
+    {
+      "id": "transaction-id-12345",
+      "issuing_date": "2024-03-07",
+      "sub_total_excluding_taxes": 9900,
+      "taxes_amount_cents": 99,
+      "currency": "USD",
+      "contact": {
+        "external_id": "cus_lago_12345",
+        "name": "John Doe",
+        "taxable": true,
+        "tax_number": "1234567890"
+      },
+      "fees": [
+        {
+          "item_id": "sub_fee_id-12345",
+          "item_code": "lago_default_b2b",
+          "amount_cents": 2000,
+          "tax_amount_cents": 200,
+          "tax_breakdown": [
+            {
+              "name": "GST/HST",
+              "rate": "0.10",
+              "tax_amount": 200
+            }
+          ]
+        },
+        {
+          "item_id": "charge_fee_id-12345",
+          "item_code": "lago_default_b2c",
+          "amount_cents": 1000,
+          "tax_amount_cents": 150,
+          "tax_breakdown": [
+            {
+              "name": "GST/HST",
+              "rate": "0.15",
+              "tax_amount": 150
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "failedInvoices": []
+}

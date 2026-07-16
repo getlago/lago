@@ -1,0 +1,19 @@
+- fee = self
+- if fee.amount.zero? || fee.amount_details.blank?
+  == SlimHelper.render('templates/invoices/v4/_default_fee', fee)
+- else
+  tr.fixed-charge-name.fee
+    td.body-1
+      = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+      - if fee.fixed_charge.prorated?
+        .body-3 = I18n.t('invoice.fee_prorated')
+    td.body-2
+    td.body-2
+    td.body-2
+    td.body-2
+
+  - case fee.fixed_charge.charge_model.to_sym
+  - when :graduated
+    == SlimHelper.render('templates/invoices/v4/_graduated', fee)
+  - when :volume
+    == SlimHelper.render('templates/invoices/v4/_volume', fee)

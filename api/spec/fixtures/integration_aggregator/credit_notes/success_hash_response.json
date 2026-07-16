@@ -1,0 +1,26 @@
+{
+  "succeededCreditNotes": [
+    {
+      "id": "e5a62e05-e192-489f-8965-e01b597b523b",
+      "type": "ACCRECCREDIT",
+      "external_contact_id": "e78e0e6b-dd7e-44f6-9f68-075bcd328535",
+      "status": "AUTHORISED",
+      "number": "CN-0053",
+      "currency": "USD",
+      "reference": "",
+      "issuing_date": "2023-12-19T00:00:00.000Z",
+      "fees": [
+        {
+          "item_id": "552732aa-ad09-4373-bbf8-20eb74b0582e",
+          "description": "Test item3",
+          "units": 1,
+          "precise_unit_amount": 250,
+          "account_code": "4000",
+          "amount_cents": 25000,
+          "taxes_amount_cents": 10000
+        }
+      ]
+    }
+  ],
+  "failedCreditNotes": []
+}

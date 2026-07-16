@@ -1,0 +1,44 @@
+---
+fr:
+  email:
+    credit_note:
+      created:
+        credit_note_from: Votre avoir de %{billing_entity_name}
+        credit_note_number: Avoir nº
+        credited_notice: Crédité sur le solde du client le %{date}
+        download: Télécharger l'avoir pour plus de détails
+        invoice_number: Facture nº
+        issue_date: Date d'émission
+        issued_notice: Émis le %{date}
+        offset_invoice_notice: Facture %{invoice_number} compensée le %{date}
+        refunded_notice: Remboursé le %{date}
+        subject: Votre avoir nº  %{credit_note_number} de %{billing_entity_name}
+    invoice:
+      finalized:
+        download: Télécharger la facture pour plus de détails
+        due_date: Date d'émission le %{date}
+        invoice_from: Facture de %{billing_entity_name}
+        invoice_number: Nº de facture
+        issue_date: Date d'émission
+        issued_on: émise le %{date}
+        subject: Votre facture nº %{invoice_number} de %{billing_entity_name}
+    payment_receipt:
+      created:
+        payment_receipt_from: Reçu de paiement de %{billing_entity_name}
+        subject: 'Votre reçu de paiement de %{billing_entity_name} #%{payment_receipt_number}'
+    payment_request:
+      requested:
+        already_paid: Si vous avez déjà réglé ces factures, veuillez ignorer cet e-mail.
+        hello: Bonjour %{customer_name},
+        pay_amount: Payer le solde
+        payment_terms:
+          one: Nos conditions de paiement convenues contractuellement sont de %{count} jour.
+          other: Nos conditions de paiement convenues contractuellement sont de %{count} jours.
+          zero: Nos conditions de paiement définies contractuellement exigent le paiement à la création de la facture.
+        remaining_amount: Montant restant à payer
+        reminder_overdue_balance: Ceci est un rappel de l'équipe financière de %{billing_entity_name} que certaines de vos factures sont arrivées à échéance et non réglées.
+        subject: Votre solde impayé pour %{billing_entity_name}
+        thank_you: Merci.
+        total_amount_due: Le montant total dû est de %{amount}.
+    powered_by: Généré par
+    questions: Questions? Contactez nous à

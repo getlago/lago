@@ -1,0 +1,29 @@
+---
+sv:
+  credit_note:
+    amount: Belopp (exkl. moms)
+    coupon_adjustment: Rabatt
+    credit_from: Avsändare
+    credit_note_number: Kreditfakturanummer
+    credit_to: Mottagare
+    credited_notice: Krediterad till kundens förbetalda kontobalans den %{issuing_date}
+    credited_on_customer_balance: Krediterad till kundens förbetalda kontobalans
+    document_name: Kreditfaktura
+    invoice_number: Fakturanummer
+    issue_date: Fakturadatum
+    issued_notice: Utfärdad den %{issuing_date}
+    item: Artikel
+    offset_invoice: Kvittning på faktura %{invoice_number}
+    offset_invoice_notice: Faktura %{invoice_number} kvittad den %{issuing_date}
+    powered_by: Genererad av
+    prepaid_credits_for_wallet: Förbetald kontobalans - %{wallet_name}
+    purchase_order_number: Inköpsordernummer
+    refunded: Återbetald
+    refunded_notice: Återbetald den %{issuing_date}
+    self_billed:
+      footer: Denna självfaktura har utfärdats av kunden för partnerns räkning, med deras samtycke. Partnern har gått med på att inte utfärda en egen faktura för denna transaktion.
+    sub_total_without_tax: Delsumma (exkl. moms)
+    subscription: Prenumeration
+    tax: "%{name} (%{rate}% på %{amount})"
+    tax_rate: Momssats
+    total: Att betala

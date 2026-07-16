@@ -1,0 +1,44 @@
+[
+  {
+    "organization_id": "5e6eb312-1e25-40d7-83b8-4ee117b74255",
+    "start_of_period_dt": "2023-12-01",
+    "end_of_period_dt": "2023-12-31",
+    "amount_currency": "EUR",
+    "purchased_amount": 0.0,
+    "offered_amount": 0.0,
+    "consumed_amount": 120.45,
+    "voided_amount": 0.0,
+    "purchased_credits_quantity": 0.0,
+    "offered_credits_quantity": 0.0,
+    "consumed_credits_quantity": 120.45,
+    "voided_credits_quantity": 0.0
+  },
+  {
+    "organization_id": "5e6eb312-1e25-40d7-83b8-4ee117b74255",
+    "start_of_period_dt": "2024-01-01",
+    "end_of_period_dt": "2024-01-31",
+    "amount_currency": "EUR",
+    "purchased_amount": 0.0,
+    "offered_amount": 0.0,
+    "consumed_amount": 8223.74,
+    "voided_amount": 0.0,
+    "purchased_credits_quantity": 0.0,
+    "offered_credits_quantity": 0.0,
+    "consumed_credits_quantity": 8223.74,
+    "voided_credits_quantity": 0.0
+  },
+  {
+    "organization_id": "5e6eb312-1e25-40d7-83b8-4ee117b74255",
+    "start_of_period_dt": "2024-02-01",
+    "end_of_period_dt": "2024-02-29",
+    "amount_currency": "EUR",
+    "purchased_amount": 0.0,
+    "offered_amount": 0.0,
+    "consumed_amount": 10340.97,
+    "voided_amount": 0.0,
+    "purchased_credits_quantity": 0.0,
+    "offered_credits_quantity": 0.0,
+    "consumed_credits_quantity": 10340.97,
+    "voided_credits_quantity": 0.0
+  }
+]

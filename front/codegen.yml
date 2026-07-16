@@ -1,0 +1,14 @@
+overwrite: true
+schema:
+  - ${CODEGEN_API}
+  - './src/core/apolloClient/graphqlResolvers.tsx'
+documents: ['src/**/*.tsx', 'src/**/*.ts']
+generates:
+  src/generated/graphql.tsx:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-apollo'
+    config:
+      reactApolloVersion: 3
+      exportFragmentSpreadSubTypes: true

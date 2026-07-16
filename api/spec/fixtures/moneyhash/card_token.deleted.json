@@ -1,0 +1,26 @@
+{
+  "type": "card_token.deleted",
+  "data": {
+    "intent_id": "ZBv8DkZ",
+    "card_token": {
+      "id": "bf05e221-1305-44cb-ac04-f227f0a8b67a",
+      "hashid": "gERzJPZ",
+      "brand": "Visa",
+      "card_holder_name": "Kevin Smith",
+      "bin": "111100",
+      "last_4": "0000",
+      "issuer": "test",
+      "expiry_month": "02",
+      "expiry_year": "26",
+      "country": null,
+      "type": null,
+      "custom_fields": {
+        "lago_customer_id": "2f2f4867-1ac9-4529-b03b-4f7133897b82"
+      },
+      "provider_token_data": [],
+      "requires_cvv": true,
+      "fingerprint": "d795b7befe90eaf9d91a9d563f446487c69f06c3a35374289a385d40709a82f0b14ebe7c24139e19aaca6f3661ec1a3715d92e51a5b099880acb66b39a621dc5",
+      "vault_region": "default"
+    }
+  }
+}

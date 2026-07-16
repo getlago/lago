@@ -1,0 +1,25 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "recurring.shopperReference": "cus_0001",
+          "paymentLinkId": "XXX",
+          "recurring.recurringDetailReference": "YYY",
+          "shopperReference": "cus_0001"
+        },
+        "amount": { "currency": "USD", "value": 0 },
+        "eventCode": "RECURRING_CONTRACT",
+        "eventDate": "2025-07-01T09:21:50+02:00",
+        "merchantAccountCode": "YOUR_MERCHANT_ACCOUNT",
+        "merchantReference": "",
+        "originalReference": "WWW",
+        "paymentMethod": "visa",
+        "pspReference": "ZZZ",
+        "reason": "",
+        "success": "true"
+      }
+    }
+  ]
+}

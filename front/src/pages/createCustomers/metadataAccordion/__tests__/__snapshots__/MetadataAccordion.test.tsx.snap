@@ -1,0 +1,487 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`MetadataAccordion Integration Tests WHEN rendering the component THEN should display headers when metadata exists 1`] = `
+<div>
+  <div
+    class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters !rounded-none css-hash-MuiPaper-root-MuiAccordion-root
+  >
+    <div
+      aria-expanded="true"
+      class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-auto focus:rounded-lg focus-visible:ring css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+      >
+        <div
+          class="mr-3"
+        >
+          <div
+            aria-label="Collapse"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="open-charge"
+              tabindex="-1"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="chevron-down-filled/medium"
+                fill="none"
+                title="chevron-down-filled/medium"
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="subhead1"
+          >
+            Metadata
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            Add metadata to the customer and decide if it appears on the invoice.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+      style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+    >
+      <div
+        class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+      >
+        <div
+          class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+        >
+          <div
+            class="MuiAccordion-region"
+            role="region"
+          >
+            <div
+              class=MuiAccordionDetails-root flex flex-col mt-6 css-hash-MuiAccordionDetails-root
+            >
+              <div>
+                <div
+                  class="grid grid-cols-[200px_1fr_60px_24px] gap-x-3 gap-y-6 mb-1 [&>*:nth-child(3)]:col-span-2"
+                >
+                  <div
+                    class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="captionHl"
+                  >
+                    Key
+                  </div>
+                  <div
+                    class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="captionHl"
+                  >
+                    Value
+                  </div>
+                  <div
+                    class=MuiTypography-root MuiTypography-captionHl whitespace-pre-line css-hash-MuiTypography-root
+                    data-test="captionHl"
+                  >
+                    Invoice
+                  </div>
+                </div>
+                <div
+                  class="grid grid-cols-[200px_1fr_60px_24px] gap-x-3 gap-y-6"
+                >
+                  <div
+                    class=""
+                  >
+                    <div
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <div
+                        class="flex flex-col gap-1"
+                      >
+                        <div
+                          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                        >
+                          <div
+                            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                          >
+                            <input
+                              aria-invalid="false"
+                              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                              id="metadata[0].key"
+                              name="metadata[0].key"
+                              placeholder="Enter a key"
+                              type="text"
+                              value="test-key"
+                            />
+                            <fieldset
+                              aria-hidden="true"
+                              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                            >
+                              <legend
+                                class=css-hash-MuiNotchedOutlined-root
+                              >
+                                <span
+                                  class="notranslate"
+                                >
+                                  ​
+                                </span>
+                              </legend>
+                            </fieldset>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class=""
+                  >
+                    <div
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <div
+                        class="flex flex-col gap-1"
+                      >
+                        <div
+                          class=MuiFormControl-root MuiTextField-root css-hash-MuiFormControl-root-MuiTextField-root
+                        >
+                          <div
+                            class=MuiInputBase-root MuiOutlinedInput-root MuiInputBase-colorPrimary MuiInputBase-formControl css-hash-MuiInputBase-root-MuiOutlinedInput-root
+                          >
+                            <input
+                              aria-invalid="false"
+                              class=MuiInputBase-input MuiOutlinedInput-input css-hash-MuiInputBase-input-MuiOutlinedInput-input
+                              id="metadata[0].value"
+                              name="metadata[0].value"
+                              placeholder="Enter a value"
+                              type="text"
+                              value="test-value"
+                            />
+                            <fieldset
+                              aria-hidden="true"
+                              class=MuiOutlinedInput-notchedOutline css-hash-MuiNotchedOutlined-root-MuiOutlinedInput-notchedOutline
+                            >
+                              <legend
+                                class=css-hash-MuiNotchedOutlined-root
+                              >
+                                <span
+                                  class="notranslate"
+                                >
+                                  ​
+                                </span>
+                              </legend>
+                            </fieldset>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="h-[initial] p-0 flex items-center flex-row"
+                  >
+                    <div
+                      class="switchField relative flex h-8 w-15 min-w-15 max-w-15 items-center justify-between rounded-[32px] px-1 bg-blue cursor-pointer hover:bg-blue-700 active:hover:bg-blue-800 transition-all duration-250 ease-in-out"
+                    >
+                      <input
+                        aria-label="metadata[0].displayInInvoice"
+                        checked=""
+                        class="absolute m-0 size-0 p-0 opacity-0"
+                        readonly=""
+                        type="checkbox"
+                      />
+                      <div
+                        class=MuiTypography-root MuiTypography-noteHl whitespace-pre-line w-6 text-center opacity-100 css-hash-MuiTypography-root
+                        data-test="noteHl"
+                      >
+                        On
+                      </div>
+                      <div
+                        class=MuiTypography-root MuiTypography-noteHl whitespace-pre-line w-6 text-center opacity-100 css-hash-MuiTypography-root
+                        data-test="noteHl"
+                      >
+                        Off
+                      </div>
+                      <svg
+                        class="absolute opacity-100 left-8"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        width="24"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          fill="#fff"
+                          r="12"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          fill="#fff"
+                          r="11"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div
+                    class="flex items-center"
+                  >
+                    <div
+                      aria-label="Remove metadata"
+                      class=""
+                      data-mui-internal-clone-element="true"
+                    >
+                      <button
+                        class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                        data-test="button"
+                        tabindex="0"
+                        type="button"
+                      >
+                        <svg
+                          class="text-inherit size-4 min-w-4"
+                          data-test="trash/medium"
+                          fill="currentColor"
+                          title="trash/medium"
+                          viewBox="0 0 14 16"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 2a2 2 0 014 0h4a1 1 0 110 1.99H1a1 1 0 110-2h4zM2 13.5V6h2v7.5c0 .28.22.5.5.5H6V6h2v8h1.5a.5.5 0 00.5-.5V6h2v7.5A2.5 2.5 0 019.5 16h-5A2.5 2.5 0 012 13.5z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-inline min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center mt-4 css-hash-MuiButtonBase-root-MuiButton-root
+                  data-test="add-metadata-button"
+                  tabindex="0"
+                  type="button"
+                >
+                  <span
+                    class=MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium css-hash-MuiButton-startIcon
+                  >
+                    <svg
+                      class="text-inherit size-4 min-w-4"
+                      data-test="plus/medium"
+                      fill="currentColor"
+                      title="plus/medium"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7 9H1C0.734784 9 0.48043 8.89464 0.292893 8.70711C0.105357 8.51957 0 8.26522 0 8C0 7.73478 0.105357 7.48043 0.292893 7.29289C0.48043 7.10536 0.734784 7 1 7H7V1C7 0.734784 7.10536 0.48043 7.29289 0.292893C7.48043 0.105357 7.73478 0 8 0C8.26522 0 8.51957 0.105357 8.70711 0.292893C8.89464 0.48043 9 0.734784 9 1V7H15C15.2652 7 15.5196 7.10536 15.7071 7.29289C15.8946 7.48043 16 7.73478 16 8C16 8.26522 15.8946 8.51957 15.7071 8.70711C15.5196 8.89464 15.2652 9 15 9H9V15C9 15.2652 8.89464 15.5196 8.70711 15.7071C8.51957 15.8946 8.26522 16 8 16C7.73478 16 7.48043 15.8946 7.29289 15.7071C7.10536 15.5196 7 15.2652 7 15V9Z"
+                      />
+                    </svg>
+                  </span>
+                  Add metadata
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MetadataAccordion Integration Tests WHEN rendering the component THEN should render a matching snapshot 1`] = `
+<div>
+  <div
+    class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded MuiAccordion-gutters !rounded-none css-hash-MuiPaper-root-MuiAccordion-root
+  >
+    <div
+      aria-expanded="false"
+      class=MuiButtonBase-root MuiAccordionSummary-root MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-auto focus:rounded-lg focus-visible:ring css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class=MuiAccordionSummary-content MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+      >
+        <div
+          class="mr-3"
+        >
+          <div
+            aria-label="Expand"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="open-charge"
+              tabindex="-1"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="chevron-right-filled/medium"
+                fill="none"
+                title="chevron-right-filled/medium"
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6.7256 3.30037L10.5607 6.94427C10.842 7.22505 11 7.60566 11 8.0025C11 8.39933 10.842 8.77994 10.5607 9.06072L6.7256 12.6996C6.63234 12.7947 6.52097 12.8703 6.39802 12.9218C6.27507 12.9734 6.14303 13 6.00964 13C5.87625 13 5.7442 12.9734 5.62126 12.9218C5.49831 12.8703 5.38694 12.7947 5.29368 12.6996C5.10718 12.5126 5.0025 12.2596 5.0025 11.9958L5 8.0025V4.00669C5 3.87549 5.02594 3.74558 5.07633 3.62439C5.12672 3.50319 5.20058 3.39309 5.29368 3.30037C5.38694 3.20529 5.49831 3.12973 5.62126 3.07815C5.7442 3.02657 5.87625 3 6.00964 3C6.14303 3 6.27507 3.02657 6.39802 3.07815C6.52097 3.12973 6.63234 3.20529 6.7256 3.30037Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="subhead1"
+          >
+            Metadata
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            Add metadata to the customer and decide if it appears on the invoice.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MetadataAccordion Integration Tests WHEN rendering the component THEN should render a matching snapshot after expansion 1`] = `
+<div>
+  <div
+    class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded Mui-expanded MuiAccordion-gutters !rounded-none css-hash-MuiPaper-root-MuiAccordion-root
+  >
+    <div
+      aria-expanded="true"
+      class=MuiButtonBase-root MuiAccordionSummary-root Mui-expanded MuiAccordionSummary-gutters select-text focus:bg-inherit focus:outline-none h-auto focus:rounded-lg focus-visible:ring css-hash-MuiButtonBase-root-MuiAccordionSummary-root
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class=MuiAccordionSummary-content Mui-expanded MuiAccordionSummary-contentGutters css-hash-MuiAccordionSummary-content
+      >
+        <div
+          class="mr-3"
+        >
+          <div
+            aria-label="Collapse"
+            class=""
+            data-mui-internal-clone-element="true"
+          >
+            <button
+              class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+              data-test="open-charge"
+              tabindex="-1"
+              type="button"
+            >
+              <svg
+                class="text-inherit size-4 min-w-4"
+                data-test="chevron-down-filled/medium"
+                fill="none"
+                title="chevron-down-filled/medium"
+                viewBox="0 0 16 16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12.376 5.076c.12.05.23.125.324.218a1 1 0 0 1 .222 1.104 1 1 0 0 1-.222.328L9.056 10.56a1.495 1.495 0 0 1-2.117 0L3.3 6.726a1.002 1.002 0 0 1 0-1.432.997.997 0 0 1 .704-.291h3.994L11.992 5c.131 0 .261.026.383.076Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div
+          class="flex flex-col gap-2"
+        >
+          <div
+            class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+            data-test="subhead1"
+          >
+            Metadata
+          </div>
+          <div
+            class=MuiTypography-root MuiTypography-caption whitespace-pre-line css-hash-MuiTypography-root
+            data-test="caption"
+          >
+            Add metadata to the customer and decide if it appears on the invoice.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class=MuiCollapse-root MuiCollapse-vertical MuiCollapse-entered css-hash-MuiCollapse-root
+      style="min-height: 0px; height: auto; transition-duration: 0ms; transition-timing-function: undefined;"
+    >
+      <div
+        class=MuiCollapse-wrapper MuiCollapse-vertical css-hash-MuiCollapse-wrapper
+      >
+        <div
+          class=MuiCollapse-wrapperInner MuiCollapse-vertical css-hash-MuiCollapse-wrapperInner
+        >
+          <div
+            class="MuiAccordion-region"
+            role="region"
+          >
+            <div
+              class=MuiAccordionDetails-root flex flex-col mt-6 css-hash-MuiAccordionDetails-root
+            >
+              <div>
+                <div
+                  class="grid grid-cols-[200px_1fr_60px_24px] gap-x-3 gap-y-6"
+                />
+                <button
+                  class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-inline min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+                  data-test="add-metadata-button"
+                  tabindex="0"
+                  type="button"
+                >
+                  <span
+                    class=MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium css-hash-MuiButton-startIcon
+                  >
+                    <svg
+                      class="text-inherit size-4 min-w-4"
+                      data-test="plus/medium"
+                      fill="currentColor"
+                      title="plus/medium"
+                      viewBox="0 0 16 16"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7 9H1C0.734784 9 0.48043 8.89464 0.292893 8.70711C0.105357 8.51957 0 8.26522 0 8C0 7.73478 0.105357 7.48043 0.292893 7.29289C0.48043 7.10536 0.734784 7 1 7H7V1C7 0.734784 7.10536 0.48043 7.29289 0.292893C7.48043 0.105357 7.73478 0 8 0C8.26522 0 8.51957 0.105357 8.70711 0.292893C8.89464 0.48043 9 0.734784 9 1V7H15C15.2652 7 15.5196 7.10536 15.7071 7.29289C15.8946 7.48043 16 7.73478 16 8C16 8.26522 15.8946 8.51957 15.7071 8.70711C15.5196 8.89464 15.2652 9 15 9H9V15C9 15.2652 8.89464 15.5196 8.70711 15.7071C8.51957 15.8946 8.26522 16 8 16C7.73478 16 7.48043 15.8946 7.29289 15.7071C7.10536 15.5196 7 15.2652 7 15V9Z"
+                      />
+                    </svg>
+                  </span>
+                  Add metadata
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

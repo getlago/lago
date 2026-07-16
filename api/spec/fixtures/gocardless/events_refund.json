@@ -1,0 +1,22 @@
+{
+  "events": [
+    {
+      "id": "EVTESTJZ4276PM",
+      "created_at": "2022-11-24T14:08:43.756Z",
+      "resource_type": "refunds",
+      "action": "paid",
+      "links": {
+        "refund": "index_ID_123"
+      },
+      "details": {
+        "origin": "gocardless",
+        "cause": "refund_paid",
+        "description": "The refund has been paid to your customer."
+      },
+      "metadata": {}
+    }
+  ],
+  "meta": {
+    "webhook_id": "WB001GFRA4YMX2"
+  }
+}

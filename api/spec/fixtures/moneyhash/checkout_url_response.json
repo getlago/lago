@@ -1,0 +1,67 @@
+{
+  "status": {
+    "code": 200,
+    "message": "success",
+    "errors": []
+  },
+  "data": {
+    "embed_url": "https://stg-embed.moneyhash.io/embed/payment/LYPoo59",
+    "id": "LYPoo59",
+    "status": "UNPROCESSED",
+    "amount": 50.0,
+    "amount_currency": "USD",
+    "type": "Payin",
+    "account": "lgaxEBL",
+    "custom_fields": {
+      "lago_mit": false,
+      "lago_customer_id": "2f2f4867-1ac9-4529-b03b-4f7133897b82",
+      "lago_request": "generate_checkout_url",
+      "lago_provider_customer_id": "d835774d-7839-48b2-9161-aaae81eb3b89",
+      "lago_organization_id": "1f6edf98-9eb4-4baf-8c64-7c6be9d0b414"
+    },
+    "billing_data": {
+      "first_name": "mustafa",
+      "last_name": "eid",
+      "email": "test@email.com",
+      "phone_number": "+201064610000"
+    },
+    "transaction_provider_fields": {},
+    "active_transaction": null,
+    "transactions_history": [],
+    "flow": "xgXlXgX",
+    "flow_data": {
+      "id": "xgXlXgX",
+      "version": 1,
+      "sequence": null
+    },
+    "is_live": false,
+    "created": "today",
+    "template": null,
+    "merchant_reference": null,
+    "customer": "d835774d-7839-48b2-9161-aaae81eb3b89",
+    "state": "INTENT_FORM",
+    "state_details": {
+      "embed_url": "https://stg-embed.moneyhash.io/embed/payment/LYPoo59"
+    },
+    "customer_last_used_payment_method": "CARD",
+    "last_used_method": {
+      "id": "CARD",
+      "type": "payment_method"
+    },
+    "payment_status": {
+      "status": "NO_AUTHORIZE_ATTEMPTS",
+      "balances": {
+        "total_authorized": "0.00",
+        "total_voided": "0.00",
+        "available_to_void": "0.00",
+        "total_captured": "0.00",
+        "available_to_capture": "0.00",
+        "total_refunded": "0.00",
+        "available_to_refund": "0.00"
+      }
+    }
+  },
+  "count": 1,
+  "next": null,
+  "previous": null
+}

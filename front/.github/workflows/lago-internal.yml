@@ -1,0 +1,17 @@
+name: "Lago Internal"
+on:
+  push:
+    branches:
+      - main
+jobs:
+  lago-internal:
+    name: Lago Internal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ secrets.GH_TOKEN}}
+          repository: getlago/lago-deploy
+          event-type: front-push-main
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

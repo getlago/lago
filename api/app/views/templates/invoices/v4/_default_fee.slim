@@ -1,0 +1,19 @@
+- fee = self
+tr.fee
+  td
+    .body-1
+      = fee.invoice_name + FeeDisplayHelper.grouped_by_display(fee)
+      - if fee.charge_filter_id?
+        = ' • ' + fee.filter_display_name(separator: ' • ')
+    - if fee.billable_metric&.weighted_sum_agg?
+      .body-3 = I18n.t('invoice.units_prorated_per_period', period: IntervalHelper.interval_name(fee.subscription.plan.interval))
+    - if fee.charge&.percentage?
+      .body-3 = I18n.t('invoice.total_events', count: fee.events_count)
+    - if fee.charge&.prorated? || fee.fixed_charge&.prorated?
+      .body-3 = I18n.t('invoice.fee_prorated')
+  td.body-2 = RoundingHelper.round_decimal_part(fee.units)
+  td.body-2 = FeeDisplayHelper.format_precise_unit_amount(fee)
+  td.body-2 == TaxHelper.applied_taxes(fee)
+  td.body-2 = FeeDisplayHelper.format_amount(fee)
+
+== SlimHelper.render('templates/invoices/v4/_conversion_row', fee)

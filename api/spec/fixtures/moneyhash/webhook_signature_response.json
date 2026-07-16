@@ -1,0 +1,13 @@
+{
+  "status": {
+    "code": 200,
+    "message": "success",
+    "errors": []
+  },
+  "data": {
+    "webhook_signature_secret": "oVZo2bro-a7UBN3k9QFlsSz6cN_Zrdt9KCWk4_5q2lo="
+  },
+  "count": 1,
+  "next": null,
+  "previous": null
+}

@@ -1,0 +1,54 @@
+[
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2023-11-01",
+      "end_of_period_dt": "2023-11-30",
+      "amount_currency": "EUR",
+      "starting_mrr": 0,
+      "ending_mrr": 23701746,
+      "mrr_new": 25016546,
+      "mrr_expansion": 0,
+      "mrr_contraction": 0,
+      "mrr_churn": -1314800,
+      "mrr_change": 23701746
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2023-12-01",
+      "end_of_period_dt": "2023-12-31",
+      "amount_currency": "EUR",
+      "starting_mrr": 23701746,
+      "ending_mrr": 23457216,
+      "mrr_new": 6171791,
+      "mrr_expansion": 0,
+      "mrr_contraction": 0,
+      "mrr_churn": -6416321,
+      "mrr_change": -244530
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-01-01",
+      "end_of_period_dt": "2024-01-31",
+      "amount_currency": "EUR",
+      "starting_mrr": 23457216,
+      "ending_mrr": 24821948,
+      "mrr_new": 4334134,
+      "mrr_expansion": 0,
+      "mrr_contraction": 0,
+      "mrr_churn": -2969402,
+      "mrr_change": 1364732
+  },
+  {
+      "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+      "start_of_period_dt": "2024-02-01",
+      "end_of_period_dt": "2024-02-29",
+      "amount_currency": "EUR",
+      "starting_mrr": 24821948,
+      "ending_mrr": 25828288,
+      "mrr_new": 1306340,
+      "mrr_expansion": 0,
+      "mrr_contraction": 0,
+      "mrr_churn": -300000,
+      "mrr_change": 1006340
+  }
+]

@@ -1,0 +1,175 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`PremiumWarningDialog Snapshot Tests matches snapshot with custom mailto props 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <header
+    class="p-8"
+  >
+    <div
+      class="flex flex-col gap-8"
+    >
+      <div
+        class="flex flex-col gap-2"
+      >
+        <div
+          class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+          data-test="dialog-title"
+        >
+          This is a premium feature
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Premium features are available to users with a specific license. Please contact Lago to unlock this feature.
+        </div>
+      </div>
+    </div>
+  </header>
+  <div
+    class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+  >
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      Close
+    </button>
+    <a
+      class="mb-0 mr-0"
+      href="mailto:hello@getlago.com?subject=Custom%20Subject&body=Custom%20Body"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center w-full css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="button"
+        tabindex="0"
+        type="button"
+      >
+        Contact Lago
+      </button>
+    </a>
+  </div>
+</div>
+`;
+
+exports[`PremiumWarningDialog Snapshot Tests matches snapshot with custom title and description 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <header
+    class="p-8"
+  >
+    <div
+      class="flex flex-col gap-8"
+    >
+      <div
+        class="flex flex-col gap-2"
+      >
+        <div
+          class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+          data-test="dialog-title"
+        >
+          Custom Premium Title
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Custom Premium Description
+        </div>
+      </div>
+    </div>
+  </header>
+  <div
+    class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+  >
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      Close
+    </button>
+    <a
+      class="mb-0 mr-0"
+      href="mailto:hello@getlago.com?subject=Request%20access%20to%20premium%20features&body=Hello%2C%20I%20would%20like%20to%20access%20Lago%20premium%20features.%20Please%20let%20me%20know%20if%20you%20need%20more%20info!"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center w-full css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="button"
+        tabindex="0"
+        type="button"
+      >
+        Contact Lago
+      </button>
+    </a>
+  </div>
+</div>
+`;
+
+exports[`PremiumWarningDialog Snapshot Tests matches snapshot with default props 1`] = `
+<div
+  aria-labelledby=:r-mui-id:
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation24 MuiDialog-paper max-h-[calc(100vh-10rem)] MuiDialog-paperScrollBody MuiDialog-paperWidthSm flex flex-col md:max-w-xl my-0 rounded-xl z-dialog max-w-full shadow-xl mx-auto css-hash-MuiPaper-root-MuiDialog-paper
+  role="dialog"
+>
+  <header
+    class="p-8"
+  >
+    <div
+      class="flex flex-col gap-8"
+    >
+      <div
+        class="flex flex-col gap-2"
+      >
+        <div
+          class=MuiTypography-root MuiTypography-subhead1 whitespace-pre-line css-hash-MuiTypography-root
+          data-test="dialog-title"
+        >
+          This is a premium feature
+        </div>
+        <div
+          class=MuiTypography-root MuiTypography-body whitespace-pre-line css-hash-MuiTypography-root
+          data-test="body"
+        >
+          Premium features are available to users with a specific license. Please contact Lago to unlock this feature.
+        </div>
+      </div>
+    </div>
+  </header>
+  <div
+    class="flex flex-col-reverse flex-wrap justify-end gap-3 px-8 py-4 shadow-t md:flex-row"
+  >
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      Close
+    </button>
+    <a
+      class="mb-0 mr-0"
+      href="mailto:hello@getlago.com?subject=Request%20access%20to%20premium%20features&body=Hello%2C%20I%20would%20like%20to%20access%20Lago%20premium%20features.%20Please%20let%20me%20know%20if%20you%20need%20more%20info!"
+    >
+      <button
+        class=MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center w-full css-hash-MuiButtonBase-root-MuiButton-root
+        data-test="button"
+        tabindex="0"
+        type="button"
+      >
+        Contact Lago
+      </button>
+    </a>
+  </div>
+</div>
+`;

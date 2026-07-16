@@ -1,0 +1,99 @@
+name: TestE2E
+
+on:
+  pull_request:
+    types: [opened, reopened, review_requested, ready_for_review, synchronize]
+
+jobs:
+  cypress-run:
+    if: github.event.pull_request.draft == false
+    name: Run Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v7.0.0
+
+      - name: Checkout API Git repository
+        uses: actions/checkout@v7.0.0
+        with:
+          repository: getlago/lago-api
+          ref: ${{ github.event.inputs.api_branch }}
+          path: api
+
+      - name: Build Front local image
+        run: |
+          docker build -t getlago/front:ci ./
+
+      - name: Build API local image
+        run: |
+          docker build -t getlago/api:ci ./api
+
+      - name: Generate API RSA Key
+        run: |
+          echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
+
+      - name: Launch APP + API
+        env:
+          LAGO_LICENSE: ${{ secrets.LAGO_LICENSE }}
+        run: |
+          docker compose -f ./ci/docker-compose.ci.yml --env-file ./.env up -d db redis api front
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: package.json
+          cache: "pnpm"
+          cache-dependency-path: ./pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Populate db
+        run: docker compose -f ./ci/docker-compose.ci.yml --env-file ./.env exec api bundle exec rails db:seed
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v6.1.0
+        id: cypress-cache
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-binary-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: cypress-binary-
+
+      - name: Cypress install
+        if: steps.cypress-cache.outputs.cache-hit != 'true'
+        run: pnpm cypress install
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v7.4.0
+        with:
+          browser: chrome
+          install: false
+          record: false
+          config-file: ./cypress/cypress.config.js
+          config: baseUrl=http://localhost,viewportHeight=800,viewportWidth=1280,video=true
+          working-directory: ./
+          spec: |
+            cypress/e2e/00-auth/*
+            cypress/e2e/10-resources/*
+            cypress/e2e/t10-*
+            cypress/e2e/t20-*
+            cypress/e2e/t30-*
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v7.0.1
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v7.0.1
+        if: failure()
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore

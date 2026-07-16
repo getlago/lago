@@ -1,0 +1,9 @@
+concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+timeout: 25
+retry: 1
+queues:
+  - ai_agent
+production:
+  concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', 10) %>
+staging:
+  concurrency: 10

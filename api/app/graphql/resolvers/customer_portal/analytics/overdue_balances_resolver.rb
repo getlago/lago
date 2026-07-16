@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+module Resolvers
+  module CustomerPortal
+    module Analytics
+      class OverdueBalancesResolver < Resolvers::BaseResolver
+        include AuthenticableCustomerPortalUser
+
+        description "Query overdue balances of a customer portal user"
+
+        argument :months, Integer, required: false
+
+        argument :expire_cache, Boolean, required: false
+
+        type Types::Analytics::OverdueBalances::Object.collection_type, null: false
+
+        def resolve(**args)
+          ::Analytics::OverdueBalance.find_all_by(
+            context[:customer_portal_user].organization.id,
+            **args.merge(
+              currency: context[:customer_portal_user].currency,
+              external_customer_id: context[:customer_portal_user].external_id
+            )
+          )
+        end
+      end
+    end
+  end
+end

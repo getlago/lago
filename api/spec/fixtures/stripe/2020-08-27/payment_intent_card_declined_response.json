@@ -1,0 +1,180 @@
+{
+  "error": {
+    "advice_code": "try_again_later",
+    "charge": "ch_3RECBrEODpjARzFD04rY3lbk",
+    "code": "card_declined",
+    "decline_code": "generic_decline",
+    "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+    "message": "Your card was declined.",
+    "payment_intent": {
+      "id": "pi_3RECBrEODpjARzFD0ML00Ti8",
+      "object": "payment_intent",
+      "amount": 1000,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 0,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": null,
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic_async",
+      "client_secret": "pi_3R**********************_******_*********************3QVt",
+      "confirmation_method": "automatic",
+      "created": 1744733907,
+      "currency": "usd",
+      "customer": "cus_S8R6JWuhYOpkRg",
+      "description": "Prod QA - Invoice PRO-377A-162-005",
+      "last_payment_error": {
+        "advice_code": "try_again_later",
+        "charge": "ch_3RECBrEODpjARzFD04rY3lbk",
+        "code": "card_declined",
+        "decline_code": "generic_decline",
+        "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+        "message": "Your card was declined.",
+        "payment_method": {
+          "id": "pm_1REC83EODpjARzFD3ldcuxvo",
+          "object": "payment_method",
+          "allow_redisplay": "always",
+          "billing_details": {
+            "address": {
+              "city": null,
+              "country": null,
+              "line1": null,
+              "line2": null,
+              "postal_code": null,
+              "state": null
+            },
+            "email": null,
+            "name": null,
+            "phone": null
+          },
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "address_line1_check": null,
+              "address_postal_code_check": null,
+              "cvc_check": "pass"
+            },
+            "country": "US",
+            "display_brand": "visa",
+            "exp_month": 2,
+            "exp_year": 2027,
+            "fingerprint": "Vv4JaVkpcCmfA1tl",
+            "funding": "credit",
+            "generated_from": null,
+            "last4": "0341",
+            "networks": {
+              "available": [
+                "visa"
+              ],
+              "preferred": null
+            },
+            "regulated_status": "unregulated",
+            "three_d_secure_usage": {
+              "supported": true
+            },
+            "wallet": null
+          },
+          "created": 1744733671,
+          "customer": "cus_S8R6JWuhYOpkRg",
+          "livemode": false,
+          "metadata": {},
+          "radar_options": {},
+          "type": "card"
+        },
+        "type": "card_error"
+      },
+      "latest_charge": "ch_3RECBrEODpjARzFD04rY3lbk",
+      "livemode": false,
+      "metadata": {
+        "invoice_type": "one_off",
+        "lago_customer_id": "b0529d6b-25ad-4e41-b4b2-8302884df936",
+        "invoice_issuing_date": "2025-04-15",
+        "lago_invoice_id": "4aec6beb-92c4-49c5-94e8-a57476a509bf",
+        "lago_payment_id": "19fadd69-d45d-4408-a6c9-986ac0c060a2"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": null,
+      "payment_method_configuration_details": null,
+      "payment_method_options": {
+        "card": {
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        }
+      },
+      "payment_method_types": [
+        "card"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "requires_payment_method",
+      "transfer_data": null,
+      "transfer_group": null
+    },
+    "payment_method": {
+      "id": "pm_1REC83EODpjARzFD3ldcuxvo",
+      "object": "payment_method",
+      "allow_redisplay": "always",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": null,
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": null,
+        "name": null,
+        "phone": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": null,
+          "cvc_check": "pass"
+        },
+        "country": "US",
+        "display_brand": "visa",
+        "exp_month": 2,
+        "exp_year": 2027,
+        "fingerprint": "Vv4JaVkpcCmfA1tl",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "0341",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1744733671,
+      "customer": "cus_S8R6JWuhYOpkRg",
+      "livemode": false,
+      "metadata": {},
+      "radar_options": {},
+      "type": "card"
+    },
+    "request_log_url": "https://dashboard.stripe.com/test/logs/req_SHiR3CuoVK6Z5n?t=1744733907",
+    "type": "card_error"
+  }
+}

@@ -1,0 +1,620 @@
+doctype html
+html
+  head
+    meta charset='UTF-8'
+    meta http-equiv='X-UA-Compatible' content='IE=edge'
+    meta name='viewport' content='width=device-width, initial-scale=1.0'
+    title Invoice
+  body
+    css:
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 100;
+        font-display: swap;
+        src: local("Inter-Thin");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 100;
+        font-display: swap;
+        src: local("Inter-ThinItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 200;
+        font-display: swap;
+        src: local("Inter-ExtraLight");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 200;
+        font-display: swap;
+        src: local("Inter-ExtraLightItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 300;
+        font-display: swap;
+        src: local("Inter-Light");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 300;
+        font-display: swap;
+        src: local("Inter-LightItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 400;
+        font-display: swap;
+        src: local("Inter-Regular");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 400;
+        font-display: swap;
+        src: local("Inter-Italic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 500;
+        font-display: swap;
+        src: local("Inter-Medium");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 500;
+        font-display: swap;
+        src: local("Inter-MediumItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 600;
+        font-display: swap;
+        src: local("Inter-SemiBold");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 600;
+        font-display: swap;
+        src: local("Inter-SemiBoldItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 700;
+        font-display: swap;
+        src: local("Inter-Bold");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 700;
+        font-display: swap;
+        src: local("Inter-BoldItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 800;
+        font-display: swap;
+        src: local("Inter-ExtraBold");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 800;
+        font-display: swap;
+        src: local("Inter-ExtraBoldItalic");
+      }
+
+      @font-face {
+        font-family: 'Inter';
+        font-style:  normal;
+        font-weight: 900;
+        font-display: swap;
+        src: local("Inter-Black");
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style:  italic;
+        font-weight: 900;
+        font-display: swap;
+        src: local("Inter-BlackItalic");
+      }
+
+
+      /* ----------------------- variable ----------------------- */
+
+      @font-face {
+        font-family: 'Inter var';
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: local('Inter-roman') format('woff2');
+        font-named-instance: 'Regular';
+      }
+
+      @font-face {
+        font-family: 'Inter var';
+        font-style: italic;
+        font-weight: 100 900;
+        font-display: swap;
+        src: local('Inter-italic') format('woff2');
+        font-named-instance: 'Italic';
+      }
+      h1, h2, p { margin: 0; padding: 0; }
+      html { font-family: Inter, sans-serif; }
+      h1 { color: #19212e; font-weight: 700; font-size: 24px; line-height: 32px; }
+      h2 {
+        color: #19212e;
+        font-weight: 700;
+        font-size: 18px;
+        line-height: 24px;
+      }
+      .body-1 {
+        color: #19212e;
+        font-weight: 600;
+        font-size: 10px;
+        line-height: 16px;
+      }
+      .body-2 {
+        color: #19212e;
+        font-weight: 400;
+        font-size: 10px;
+        line-height: 16px;
+      }
+      .body-3 {
+        color: #66758f;
+        font-weight: 400;
+        font-size: 9px;
+        line-height: 16px;
+      }
+      .prepaid-amount {
+        font-size: 10px;
+        font-family: Inter;
+        color: #008559;
+        font-weight: 400;
+        line-height: 16px;
+      }
+
+      .mb-8 {
+        margin-bottom: 8px;
+      }
+      .mb-24 {
+        margin-bottom: 24px;
+      }
+
+      .overflow-auto {
+        overflow: auto;
+      }
+      tr {
+        break-inside: avoid;
+      }
+
+      .invoice-title {
+        display: inline;
+      }
+      .header-logo {
+        float: right;
+        max-height: 32px;
+      }
+
+      .invoice-information-column {
+        float: left;
+        width: 50%;
+      }
+      .invoice-information-table tr td:first-child {
+        padding: 0 16px 0 0;
+      }
+      .invoice-information-table tr td:last-child {
+        width: 55%;
+      }
+      .invoice-information-table, tr td{
+        text-wrap: normal;
+        word-wrap: break-word;
+        vertical-align: top;
+      }
+      .invoice-information-table {
+        border-collapse: collapse;
+        table-layout: fixed;
+        width: 100%;
+      }
+
+      .billing-information-column {
+        float: left;
+        width: 50%;
+      }
+
+      .invoice-resume-table tr td {
+        padding-bottom: 12px;
+      }
+      .invoice-resume-table tr td:last-child {
+        text-align: right;
+      }
+      .invoice-resume-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .invoice-resume table {
+        border-collapse: collapse;
+      }
+      .invoice-resume .total-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .invoice-resume .total-table tr:first-child td {
+        padding-top: 24px;
+      }
+      .invoice-resume .total-table tr td {
+        padding-bottom: 12px;
+        text-align: right;
+      }
+      .invoice-resume .total-table tr td:first-of-type {
+        text-align: left;
+        padding-left: 50%;
+      }
+
+      .invoice-details-title {
+        page-break-before: always;
+      }
+
+      .subscription-details-table tr td:last-child {
+        text-align: right;
+      }
+      .subscription-details-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .subscription-details table {
+        border-collapse: collapse;
+      }
+      .subscription-details .total-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .subscription-details .total-table tr:first-child td {
+        padding-top: 24px;
+      }
+      .subscription-details .total-table tr td {
+        text-align: right;
+      }
+
+      .charge-details-table tr td {
+        padding-bottom: 12px;
+      }
+      .charge-details-table tr td:last-child {
+        text-align: right;
+      }
+      .charge-details-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .charge-details table {
+        border-collapse: collapse;
+      }
+      .charge-details .total-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+      .charge-details .total-table tr:first-child td {
+        padding-top: 24px;
+      }
+      .charge-details .total-table tr td {
+        text-align: right;
+      }
+      .charge-details-resume .total-table tr td:first-of-type {
+        text-align: left;
+        padding-left: 50%;
+      }
+
+      .breakdown-details table {
+        border-collapse: collapse;
+      }
+      .breakdown-details-table tr td {
+        padding-bottom: 12px;
+      }
+      .breakdown-details-table tr td:last-child {
+        text-align: right;
+      }
+      .breakdown-details-table tr:last-child td {
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 24px;
+      }
+
+      .powered-by {
+        width: 100%;
+        text-align: right;
+      }
+      .powered-by span {
+        color: #8c95a6;
+      }
+      .powered-by img {
+        width: 37px;
+        height: 11px;
+        vertical-align: middle;
+        margin-top: 2px;
+      }
+      .alert {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 16px;
+        gap: 16px;
+        background: #F3F4F6;
+        border-radius: 12px;
+      }
+
+    .wrapper
+      .mb-24
+        h1.invoice-title = document_invoice_name
+        - if billing_entity.logo.present?
+          img.header-logo src="data:#{billing_entity.logo.content_type};base64,#{billing_entity.base64_logo}"
+
+      .mb-24.overflow-auto
+        .invoice-information-column
+          table.invoice-information-table
+            tr
+              td.body-1 = I18n.t('invoice.invoice_number')
+              td.body-2 = number
+            tr
+              td.body-1 = I18n.t('invoice.issue_date')
+              td.body-2 = I18n.l(issuing_date, format: :default)
+        .invoice-information-column
+          table.invoice-information-table
+            - if customer.metadata.displayable.any?
+              - customer.metadata.displayable.order(created_at: :asc).each do |metadata|
+                tr
+                  td.body-1 = metadata.key
+                  td.body-2 = metadata.value
+
+      .mb-24.overflow-auto
+        .billing-information-column
+          .body-1 = I18n.t('invoice.bill_from')
+          .body-2
+            - if billing_entity.legal_name.present?
+              | #{billing_entity.legal_name}
+            - else
+              | #{billing_entity.name}
+          .body-2 = billing_entity.address_line1
+          .body-2 = billing_entity.address_line2
+          .body-2
+            span
+              = billing_entity.zipcode
+            - if billing_entity.zipcode.present? && billing_entity.city.present?
+              span
+                | , &nbsp;
+            span
+              = billing_entity.city
+          - if billing_entity.state.present?
+            .body-2 = billing_entity.state
+          .body-2 = ISO3166::Country.new(billing_entity.country)&.common_name
+          .body-2 = billing_entity.email
+        .billing-information-column
+          .body-1 = I18n.t('invoice.bill_to')
+          .body-2 = customer.display_name
+          .body-2 = customer.address_line1
+          .body-2 = customer.address_line2
+          .body-2
+            span
+              = customer.zipcode
+            - if customer.zipcode.present? && customer.city.present?
+              span
+                | , &nbsp;
+            span
+              = customer.city
+          .body-2 = customer.state
+          .body-2 = ISO3166::Country.new(customer.country)&.common_name
+          .body-2 = customer.email
+
+      .mb-24
+        h2.title-2.mb-8 = total_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+        .body-1 = I18n.t('invoice.due_date', date: I18n.l(issuing_date, format: :default))
+
+      .invoice-resume.mb-24.overflow-auto
+        table.invoice-resume-table width="100%"
+          tr
+            td width="70%"
+              .body-1
+                - if add_on?
+                  | #{fees.first.add_on.invoice_name}
+                - elsif credit?
+                  = I18n.t('invoice.prepaid_credits_with_value', wallet_name: fees.first.invoiceable.wallet.name)
+                  .body-3
+                    = I18n.t('invoice.total_credits_with_value', credit_amount: fees.first.invoiceable.credit_amount)
+                - elsif subscription?
+                  = I18n.t('invoice.all_subscriptions')
+            - if add_on? || credit?
+              td.body-1 style="text-align: right;" width="30%"
+                = fees.first&.amount&.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+            - elsif subscription?
+              td.body-1 style="text-align: right;" width="30%"
+                = subscription_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+          - if fees.charge.any?
+            tr
+              td width="70%"
+                .body-1 = I18n.t('invoice.all_usage_based_fees')
+              td.body-1 style="text-align: right;" width="30%"
+                = charge_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+
+        table.total-table width="100%"
+          - unless credit?
+            tr
+              td.body-2 width="70%" = I18n.t('invoice.sub_total_without_tax')
+              td.body-2 width="30%" = sub_total_excluding_taxes_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+            tr
+              td.body-2 #{I18n.t('invoice.tax')} (#{taxes_rate || 0}%)
+              td.body-2 = taxes_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+            tr
+              td.body-2 = I18n.t('invoice.sub_total_with_tax')
+              td.body-2 = sub_total_including_taxes_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+          - if credits.credit_note_kind.any?
+            tr
+              td.body-2 = I18n.t('invoice.credit_notes')
+              td.body-2 style="text-align: right; color: #008559;"
+                = credit_notes_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+          - if credits.coupon_kind.any?
+            - credits.coupon_kind.order(created_at: :asc).each do |credit|
+              tr
+                td.body-2 #{credit.invoice_coupon_display_name}
+                td.body-2 style="text-align: right; color: #008559;"
+                  = credit.amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+          - if subscription? && wallet_transactions.exists?
+            tr
+              td.body-2 width="70%" = I18n.t('invoice.prepaid_credits')
+              td.prepaid-amount width="30%" = prepaid_credit_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+          tr
+            td.body-1 width="70%" = I18n.t('invoice.total_due')
+            td.body-1 width="30%" = total_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+
+
+      p.body-3.mb-24 = LineBreakHelper.break_lines(billing_entity.invoice_footer)
+
+      .powered-by
+        span.body-2
+          | #{I18n.t('invoice.powered_by')} &nbsp;
+        img src="#{::SlimHelper::PDF_LOGO_FILENAME}" alt="Lago Logo"
+
+      - if subscription?
+        - subscriptions.each do |subscription|
+          h2.invoice-details-title.title-2.mb-24 = I18n.t('invoice.details', resource: subscription.invoice_name)
+          .body-1 = I18n.t('invoice.subscription')
+          .mb-24.body-3
+            | #{I18n.t('invoice.date_from')} #{I18n.l(invoice_subscription(subscription.id).from_datetime_in_customer_timezone&.to_date, format: :default)} #{I18n.t('invoice.date_to')} #{I18n.l(invoice_subscription(subscription.id).to_datetime_in_customer_timezone&.to_date, format: :default)}
+
+          .invoice-resume.mb-24.overflow-auto
+            table.invoice-resume-table width="100%"
+              tr
+                td width="70%"
+                  .body-1
+                    = I18n.t('invoice.subscription_interval', plan_interval: I18n.t("invoice.#{subscription.plan.interval}"), plan_name: subscription.plan.invoice_name)
+                td.body-1 style="text-align: right;" width="30%"
+                  = subscription_fees(subscription.id).subscription.first&.amount&.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+            table.total-table width="100%"
+              tr
+                td.body-2 width="70%" = I18n.t('invoice.sub_total')
+                td.body-1 width="30%" = invoice_subscription(subscription.id).subscription_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+
+          - if subscription? && subscription_fees(subscription.id).charge.any?
+            .body-1 = I18n.t('invoice.usage_based_fees')
+            .mb-24.body-3
+              = I18n.t('invoice.list_of_charges', from: I18n.l(invoice_subscription(subscription.id).charges_from_datetime_in_customer_timezone&.to_date, format: :default), to: I18n.l(invoice_subscription(subscription.id).charges_to_datetime_in_customer_timezone&.to_date, format: :default))
+            .charge-details.mb-24
+              table.charge-details-table width="100%"
+                - subscription_fees(subscription.id).charge.where(true_up_parent_fee: nil).group_by(&:charge_id).each do |_charge_id, fees|
+                  - fee = fees.first
+                  - if fees.all? { |f| f.group_id? } && fees.sum(&:units) > 0
+                    tr
+                      td width="70%"
+                        .body-1 = fee.invoice_name
+                        .body-3
+                          - if fee.charge.percentage?
+                            = I18n.t('invoice.total_unit_interval', events_count: fees.sum(&:events_count), units: fees.sum(&:units))
+                          - else
+                            = I18n.t('invoice.total_unit', units: fees.sum(&:units))
+                      td width="30%"
+
+                    - fees.select { |f| f.units.positive? }.each do |fee|
+                      tr
+                        td width="70%" style="padding-left: 16px;"
+                          .body-1 = fee.filter_display_name(separator: ' • ')
+                          .body-3
+                            - if fee.charge.percentage?
+                              = I18n.t('invoice.total_unit_interval', events_count: fee.events_count, units: fee.units)
+                            - else
+                              = I18n.t('invoice.total_unit', units: fee.units)
+                        td.body-1 width="30%" = fee.amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+                    - if fee.true_up_fee.present?
+                      tr
+                        td width="70%"
+                          .body-1 = I18n.t('invoice.true_up_metric', metric: fee.invoice_name)
+                          .body-3 = I18n.t('invoice.true_up_details', min_amount: ChargeDisplayHelper.format_min_amount(fee.charge))
+                        td.body-1 width="30%" = fee.true_up_fee.amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+                  - else
+                    tr
+                      td width="70%"
+                        .body-1 = fee.invoice_name
+                        .body-3
+                          - if fee.charge.percentage?
+                            = I18n.t('invoice.total_unit_interval', events_count: fees.sum(&:events_count), units: fees.sum(&:units))
+                          - else
+                            = I18n.t('invoice.total_unit', units: fees.sum(&:units))
+                      td.body-1 width="30%" = fees.sum(&:amount).format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+                    - if fee.true_up_fee.present?
+                      tr
+                        td width="70%"
+                          .body-1 = I18n.t('invoice.true_up_metric', metric: fee.invoice_name)
+                          .body-3 = I18n.t('invoice.true_up_details', min_amount: ChargeDisplayHelper.format_min_amount(fee.charge))
+                        td.body-1 width="30%" = fee.true_up_fee.amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+
+              .charge-details-resume
+                table.total-table width="100%"
+                  tr
+                    td.body-2 width="70%" = I18n.t('invoice.sub_total')
+                    td.body-1 width="30%" = invoice_subscription(subscription.id).charge_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+                table.total-table width="100%"
+                  tr
+                    td.body-2 width="70%" = I18n.t('invoice.total')
+                    td.body-1 width="30%" = invoice_subscription(subscription.id).total_amount.format(format: I18n.t('money.format'), decimal_mark: I18n.t('money.decimal_mark'), thousands_separator: I18n.t('money.thousands_separator'))
+
+            - recurring_fees(subscription.id).group_by(&:charge_id).each do |_charge_id, fees|
+              - if fees.sum(&:units) > 0
+                h2.invoice-details-title.title-2.mb-24 = I18n.t('invoice.details', resource: subscription.invoice_name)
+
+                - if fees.all? { |f| f.group_id? }
+                  - fees.select { |f| f.units.positive? }.each do |fee|
+                    .body-3 = fees.first.invoice_name
+                    .body-1.mb-24 = I18n.t('invoice.breakdown_of', fee_filter_display_name: fee.filter_display_name(separator: ' • '))
+                    .breakdown-details.mb-24
+                      table.breakdown-details-table width="100%"
+                        - recurring_breakdown(fee).each do |breakdown|
+                          tr
+                            td.body-3 width="15%" = I18n.l(breakdown.date, format: :default)
+                            td.body-1 width="65%"
+                              - if breakdown.action.to_sym == :add
+                                | +#{breakdown.count} #{fee.invoice_name}
+                              - elsif breakdown.action.to_sym == :remove
+                                | -#{breakdown.count} #{fee.invoice_name}
+                              - else
+                                | +/-#{breakdown.count} #{fee.invoice_name}
+                            td.body-3 width="20%"
+                              = I18n.t('invoice.breakdown_for_days', breakdown_duration: breakdown.duration, breakdown_total_duration: breakdown.total_duration)
+                - else
+                  .body-3 = fees.first.invoice_name
+                  .body-1.mb-24 = I18n.t('invoice.breakdown')
+                  .breakdown-details.mb-24
+                    table.breakdown-details-table width="100%"
+                      - fees.each do |fee|
+                        - recurring_breakdown(fee).each do |breakdown|
+                          tr
+                            td.body-3 width="15%" = breakdown.date.strftime('%b %d, %Y')
+                            td.body-1 width="65%"
+                              - if breakdown.action.to_sym == :add
+                                | +#{breakdown.count} #{fee.invoice_name}
+                              - elsif breakdown.action.to_sym == :remove
+                                | -#{breakdown.count} #{fee.invoice_name}
+                              - else
+                                | +/-#{breakdown.count} #{fee.invoice_name}
+                            td.body-3 width="20%"
+                              = I18n.t('invoice.breakdown_for_days', breakdown_duration: breakdown.duration, breakdown_total_duration: breakdown.total_duration)
+
+                .alert.body-3 = I18n.t('invoice.notice')

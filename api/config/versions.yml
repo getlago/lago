@@ -1,0 +1,13 @@
+versions:
+  - version: 1.5.0
+    migrations: []
+  - version: 1.5.1
+    migrations: []
+  - version: 1.6.0
+    migrations: []
+  - version: 1.6.1
+    migrations:
+      - 20240603095841
+      - 20240628083830
+  - version: 1.7.0
+    migrations: []

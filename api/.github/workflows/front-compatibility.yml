@@ -1,0 +1,78 @@
+name: Front compatibility (PR check, informational)
+
+# Runs on PRs targeting main that modify schema.graphql. Regenerates
+# lago-front's types from the PR's schema and runs tsc against
+# lago-front main. Failure is informational only — the job is marked
+# continue-on-error so it never blocks merging. Authors can still see
+# a red/green signal in the PR's checks panel and inspect logs when
+# something breaks.
+#
+# Path filter on schema.graphql — most PRs don't change the schema, so
+# the workflow rarely runs. Cost: a few minutes of CI per schema change.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['schema.graphql']
+
+jobs:
+  front-typecheck:
+    name: Front typecheck against PR schema (informational)
+    runs-on: ubuntu-latest
+    # Non-blocking: a failure here surfaces in the checks panel but does
+    # not fail the workflow run, so branch protection cannot gate on it.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout lago-api (PR head — the new schema)
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: api
+
+      - name: Checkout lago-front (main — stable baseline)
+        uses: actions/checkout@v6
+        with:
+          repository: getlago/lago-front
+          ref: main
+          path: front
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          # lago-front declares its pnpm version in `packageManager`.
+          # Point the action at front's package.json so the version
+          # tracks whatever lago-front pins, no manual upkeep here.
+          package_json_file: front/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          # Inherit the version from lago-front's own package.json
+          # (engines.node) so this workflow tracks any node bump on the
+          # front side without manual upkeep here.
+          node-version-file: front/package.json
+          cache: pnpm
+          cache-dependency-path: front/pnpm-lock.yaml
+
+      - name: Install front dependencies
+        working-directory: front
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages (prebuild)
+        working-directory: front
+        run: pnpm prebuild
+
+      - name: Regenerate front types from PR schema
+        working-directory: front
+        env:
+          # graphql-codegen accepts file paths in its `schema:` field.
+          # codegen.yml reads ${CODEGEN_API}; pointing it at the API
+          # PR's checked-in schema.graphql skips the API boot step
+          # entirely — no docker compose, no resolvers, just the schema.
+          CODEGEN_API: ../api/schema.graphql
+        run: pnpm codegen
+
+      - name: Type-check front
+        working-directory: front
+        run: pnpm tsc --noEmit

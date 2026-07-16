@@ -1,0 +1,29 @@
+---
+nb:
+  credit_note:
+    amount: Beløp (ekskl. MVA)
+    coupon_adjustment: Kuponger
+    credit_from: Fra
+    credit_note_number: Kreditnota nummer
+    credit_to: Til
+    credited_notice: Kreditert til kontobalanse %{issuing_date}
+    credited_on_customer_balance: Kreditert til kontobalanse
+    document_name: Kreditnota
+    invoice_number: Fakturanummer
+    issue_date: Dato
+    issued_notice: Utstedt den %{issuing_date}
+    item: Vare
+    offset_invoice: Utligning på faktura %{invoice_number}
+    offset_invoice_notice: Faktura %{invoice_number} utlignet den %{issuing_date}
+    powered_by: Fakturering drevet av
+    prepaid_credits_for_wallet: Forhåndsbetalte kreditter - %{wallet_name}
+    purchase_order_number: Bestillingsnummer
+    refunded: Refundert
+    refunded_notice: Refundert %{issuing_date}
+    self_billed:
+      footer: Denne egenfakturaen ble utstedt av kunden på vegne av partneren, med deres samtykke. Partneren har gått med på å ikke utstede sin egen faktura for denne transaksjonen.
+    sub_total_without_tax: Sub total (ekskl. MVA)
+    subscription: Abonnement
+    tax: "%{name} (%{rate}% on %{amount})"
+    tax_rate: Tax rate
+    total: Beløp

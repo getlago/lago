@@ -1,0 +1,291 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Drawer Snapshot Tests matches snapshot with ReactNode title 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div>
+      Custom Title
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="px-4 pb-20 pt-12 md:px-12"
+  >
+    <div>
+      Drawer Content
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Drawer Snapshot Tests matches snapshot with children as function 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-bodyHl MuiTypography-noWrap css-hash-MuiTypography-root
+      data-test="bodyHl"
+    >
+      Test Drawer
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="px-4 pb-20 pt-12 md:px-12"
+  >
+    <div>
+      <p>
+        Content
+      </p>
+      <button>
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Drawer Snapshot Tests matches snapshot with drawer open 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-bodyHl MuiTypography-noWrap css-hash-MuiTypography-root
+      data-test="bodyHl"
+    >
+      Test Drawer
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="px-4 pb-20 pt-12 md:px-12"
+  >
+    <div>
+      Drawer Content
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Drawer Snapshot Tests matches snapshot with fullContentHeight and no padding 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-bodyHl MuiTypography-noWrap css-hash-MuiTypography-root
+      data-test="bodyHl"
+    >
+      Test Drawer
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="h-full"
+  >
+    <div>
+      Drawer Content
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Drawer Snapshot Tests matches snapshot with sticky bottom bar 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] grid grid-rows-[72px_1fr_64px] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-bodyHl MuiTypography-noWrap css-hash-MuiTypography-root
+      data-test="bodyHl"
+    >
+      Test Drawer
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="px-4 pb-20 pt-12 md:px-12"
+  >
+    <div>
+      Drawer Content
+    </div>
+  </div>
+  <div
+    class="sticky bottom-0 box-border flex items-center justify-end bg-white px-4 shadow-t md:px-12"
+  >
+    <div>
+      <button>
+        Cancel
+      </button>
+      <button>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Drawer Snapshot Tests matches snapshot with stickyBottomBar and custom className 1`] = `
+<div
+  class=MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiDrawer-paper MuiDrawer-paperAnchorRight w-full max-w-[816px] md:w-[calc(100vw-48px)] grid grid-rows-[72px_1fr_64px] css-hash-MuiPaper-root-MuiDrawer-paper
+  tabindex="-1"
+>
+  <div
+    class="sticky top-0 z-drawer flex h-nav min-h-nav items-center justify-between bg-white px-4 py-0 shadow-b md:px-12"
+  >
+    <div
+      class=MuiTypography-root MuiTypography-bodyHl MuiTypography-noWrap css-hash-MuiTypography-root
+      data-test="bodyHl"
+    >
+      Test Drawer
+    </div>
+    <button
+      class=MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium MuiButton-textSizeMedium MuiButton-colorPrimary MuiButton-disableElevation button-icon-only min-w-[unset] whitespace-nowrap [&>svg]:cursor-pointer justify-center css-hash-MuiButtonBase-root-MuiButton-root
+      data-test="button"
+      tabindex="0"
+      type="button"
+    >
+      <svg
+        class="text-inherit size-4 min-w-4"
+        data-test="close/medium"
+        fill="currentColor"
+        title="close/medium"
+        viewBox="0 0 16 16"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M6.58847 8.00421L0.295157 1.7059C0.108808 1.51844 0.00421143 1.26485 0.00421143 1.00053C0.00421143 0.736203 0.108808 0.482618 0.295157 0.295157C0.482618 0.108808 0.736203 0.00421143 1.00053 0.00421143C1.26485 0.00421143 1.51844 0.108808 1.7059 0.295157L8.00421 6.58847L14.3025 0.295157C14.49 0.108808 14.7436 0.00421143 15.0079 0.00421143C15.2722 0.00421143 15.5258 0.108808 15.7133 0.295157C15.8996 0.482618 16.0042 0.736203 16.0042 1.00053C16.0042 1.26485 15.8996 1.51844 15.7133 1.7059L9.41996 8.00421L15.7133 14.3025C15.8772 14.4939 15.9628 14.7401 15.9531 14.9919C15.9434 15.2437 15.839 15.4826 15.6608 15.6608C15.4826 15.839 15.2437 15.9434 14.9919 15.9531C14.7401 15.9628 14.4939 15.8772 14.3025 15.7133L8.00421 9.41996L1.7059 15.7133C1.51844 15.8996 1.26485 16.0042 1.00053 16.0042C0.736203 16.0042 0.482618 15.8996 0.295157 15.7133C0.108808 15.5258 0.00421143 15.2722 0.00421143 15.0079C0.00421143 14.7436 0.108808 14.49 0.295157 14.3025L6.58847 8.00421Z"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="px-4 pb-20 pt-12 md:px-12"
+  >
+    <div>
+      Content
+    </div>
+  </div>
+  <div
+    class="sticky bottom-0 box-border flex items-center justify-end bg-white px-4 shadow-t md:px-12 custom-sticky-class"
+  >
+    <div>
+      <button>
+        Cancel
+      </button>
+      <button>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+`;

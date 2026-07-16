@@ -1,0 +1,9 @@
+packages:
+  - 'packages/configs/'
+  - 'packages/design-system/'
+
+# Supply-chain quarantine: a published version must be at least 7 days old
+# (10080 minutes) before any resolution installs it. Applied at the package
+# manager level so it also covers Renovate's weekly lockFileMaintenance
+# regeneration, which bypasses Renovate's own minimumReleaseAge filter.
+minimumReleaseAge: 10080

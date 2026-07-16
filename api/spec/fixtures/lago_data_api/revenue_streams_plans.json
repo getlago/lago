@@ -1,0 +1,71 @@
+{
+  "revenue_streams_plans": [
+    {
+        "plan_id": "8d39f27f-8371-43ea-a327-c9579e70eeb3",
+        "amount_currency": "EUR",
+        "plan_code": "custom_plan_penny",
+        "plan_deleted_at": null,
+        "customers_count": 1,
+        "gross_revenue_amount_cents": 120735293,
+        "net_revenue_amount_cents": 120735293,
+        "plan_name": "Penny",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_interval": "monthly",
+        "customers_share": 0.0055,
+        "gross_revenue_share": 0.1148,
+        "net_revenue_share": 0.1148
+    },
+    {
+        "plan_id": "bea5197f-d862-4a38-89e0-4244b07aa365",
+        "amount_currency": "EUR",
+        "plan_code": "custom_plan_indy",
+        "plan_deleted_at": null,
+        "customers_count": 1,
+        "gross_revenue_amount_cents": 79260312,
+        "net_revenue_amount_cents": 79260312,
+        "plan_name": "Indy",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_interval": "monthly",
+        "customers_share": 0.0055,
+        "gross_revenue_share": 0.0754,
+        "net_revenue_share": 0.0754
+    },
+    {
+        "plan_id": "627ee06a-6e08-47f7-8eae-a07eec5a9ba3",
+        "amount_currency": "EUR",
+        "plan_code": "custom_plan_place",
+        "plan_deleted_at": null,
+        "customers_count": 1,
+        "gross_revenue_amount_cents": 57755092,
+        "net_revenue_amount_cents": 57755092,
+        "plan_name": "Place",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_interval": "monthly",
+        "customers_share": 0.0055,
+        "gross_revenue_share": 0.0549,
+        "net_revenue_share": 0.0549
+    },
+    {
+        "plan_id": "25d18c15-71ae-49af-bd38-94c7c2c80c7c",
+        "amount_currency": "EUR",
+        "plan_code": "custom_plan_piano",
+        "plan_deleted_at": null,
+        "customers_count": 1,
+        "gross_revenue_amount_cents": 40018661,
+        "net_revenue_amount_cents": 40018661,
+        "plan_name": "Piano",
+        "organization_id": "2537afc4-0e7c-4abb-89b7-d9b28c35780b",
+        "plan_interval": "monthly",
+        "customers_share": 0.0055,
+        "gross_revenue_share": 0.0381,
+        "net_revenue_share": 0.0381
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "next_page": 2,
+    "prev_page": 0,
+    "total_count": 100,
+    "total_pages": 5
+  }
+}

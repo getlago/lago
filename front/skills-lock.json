@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "cve-doctor": {
+      "source": "ansmonjol/cve-doctor",
+      "sourceType": "github",
+      "computedHash": "74024022f01067cb4ca682344ac06983e5a9d3fe49d1b31851cb13e058e2c1ef"
+    }
+  }
+}

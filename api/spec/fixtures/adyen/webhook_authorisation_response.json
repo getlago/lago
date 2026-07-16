@@ -1,0 +1,34 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "expiryDate": "03\/2030",
+          "authCode": "12345",
+          "cardSummary": "0002",
+          "recurringProcessingModel": "UnscheduledCardOnFile",
+          "checkout.cardAddedBrand": "amex",
+          "shopperReference": "test_1"
+        },
+        "amount": {
+          "currency": "USD",
+          "value": 0
+        },
+        "eventCode": "AUTHORISATION",
+        "eventDate": "2023-05-13T12:17:10+02:00",
+        "merchantAccountCode": "Lago",
+        "merchantReference": "123-456-789",
+        "operations": [
+          "CANCEL",
+          "CAPTURE",
+          "REFUND"
+        ],
+        "paymentMethod": "amex",
+        "pspReference": "ABCDEFGH",
+        "reason": "092332:0002:03\/2030",
+        "success": "true"
+      }
+    }
+  ]
+}

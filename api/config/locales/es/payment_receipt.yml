@@ -1,0 +1,10 @@
+---
+es:
+  payment_receipt:
+    document_name: Recibo
+    download_invoice: Descargar factura
+    download_receipt: Descargar recibo
+    number: Número de recibo
+    paid_on: 'Pagado el %{date} (Pendiente de pago: %{total_due_amount})'
+    payment_date: Pagado el
+    payment_method: Método de pago

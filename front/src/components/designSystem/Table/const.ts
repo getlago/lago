@@ -1,0 +1,1 @@
+export const PADDING_SPACING_RIGHT_PX = 32

@@ -1,0 +1,365 @@
+css:
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 100;
+    font-display: swap;
+    src: local("Inter-Thin");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 100;
+    font-display: swap;
+    src: local("Inter-ThinItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 200;
+    font-display: swap;
+    src: local("Inter-ExtraLight");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 200;
+    font-display: swap;
+    src: local("Inter-ExtraLightItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 300;
+    font-display: swap;
+    src: local("Inter-Light");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 300;
+    font-display: swap;
+    src: local("Inter-LightItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local("Inter-Regular");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 400;
+    font-display: swap;
+    src: local("Inter-Italic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 500;
+    font-display: swap;
+    src: local("Inter-Medium");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 500;
+    font-display: swap;
+    src: local("Inter-MediumItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 600;
+    font-display: swap;
+    src: local("Inter-SemiBold");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 600;
+    font-display: swap;
+    src: local("Inter-SemiBoldItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local("Inter-Bold");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 700;
+    font-display: swap;
+    src: local("Inter-BoldItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 800;
+    font-display: swap;
+    src: local("Inter-ExtraBold");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 800;
+    font-display: swap;
+    src: local("Inter-ExtraBoldItalic");
+  }
+
+  @font-face {
+    font-family: 'Inter';
+    font-style:  normal;
+    font-weight: 900;
+    font-display: swap;
+    src: local("Inter-Black");
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style:  italic;
+    font-weight: 900;
+    font-display: swap;
+    src: local("Inter-BlackItalic");
+  }
+
+
+  /* ----------------------- variable ----------------------- */
+  :root {
+    --border-color: #D9DEE7;
+  }
+
+  @font-face {
+    font-family: 'Inter var';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: local('Inter-roman') format('woff2');
+    font-named-instance: 'Regular';
+  }
+
+  @font-face {
+    font-family: 'Inter var';
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+    src: local('Inter-italic') format('woff2');
+    font-named-instance: 'Italic';
+  }
+  h1, h2, p { margin: 0; padding: 0; }
+  html { font-family: Inter, sans-serif; }
+  h1 { color: #19212e; font-weight: 700; font-size: 24px; line-height: 32px; }
+  h2 {
+    color: #19212e;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 24px;
+  }
+  .body-1 {
+    color: #19212e;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 16px;
+  }
+  .body-2 {
+    color: #19212e;
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 16px;
+  }
+  .body-3 {
+    color: #66758f;
+    font-weight: 400;
+    font-size: 9px;
+    line-height: 16px;
+  }
+
+  .mb-4 {
+    margin-bottom: 4px;
+  }
+  .mb-24 {
+    margin-bottom: 24px;
+  }
+  .mt-24 {
+    margin-top: 24px;
+  }
+
+  .overflow-auto {
+    overflow: auto;
+  }
+  tr {
+    break-inside: avoid;
+  }
+
+  .invoice-title {
+    display: inline;
+  }
+  .header-logo {
+    float: right;
+    max-height: 32px;
+  }
+
+  .invoice-information-column {
+    float: left;
+    width: 50%;
+  }
+  .invoice-information-table tr td:first-child {
+    padding: 0 16px 0 0;
+  }
+  .invoice-information-table tr td:last-child {
+    width: 55%;
+  }
+  .invoice-information-table, tr td{
+    text-wrap: normal;
+    word-wrap: break-word;
+    vertical-align: top;
+  }
+  .invoice-information-table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .billing-information-column {
+    float: left;
+    width: 50%;
+  }
+
+  .invoice-resume-table tr.first_child td {
+    color: #66758F;
+  }
+  .invoice-resume-table tr {
+    border-bottom: 1px solid var(--border-color);
+  }
+  .invoice-resume-table tr td {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    text-align: right;
+    word-wrap: break-word;
+  }
+  .invoice-resume-table td:first-child {
+    width: 50%;
+    text-align: left;
+  }
+  .invoice-resume-table td:nth-child(2) {
+    width: 12.5%;
+    max-width: 10vw;
+  }
+  .invoice-resume-table td:nth-child(3) {
+    width: 12.5%;
+    max-width: 10vw;
+  }
+  .invoice-resume-table td:nth-child(4) {
+    width: 12.5%;
+  }
+  .invoice-resume-table td:nth-child(5) {
+    width: 12.5%;
+    max-width: 10vw;
+  }
+  .invoice-resume table {
+    border-collapse: collapse;
+  }
+  .invoice-resume .total-table tr td {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    text-align: right;
+  }
+  .invoice-resume .total-table td:first-child {
+    width: 50%;
+  }
+  .invoice-resume .total-table tr:not(:last-child) td:nth-child(2) {
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    width: 35%;
+  }
+  .invoice-resume .total-table tr:not(:last-child) td:nth-child(3) {
+    border-bottom: 1px solid var(--border-color);
+    text-align: right;
+    width: 15%;
+  }
+  .invoice-resume .total-table tr:last-child td:nth-child(2) {
+    text-align: left;
+    width: 25%;
+  }
+  .invoice-resume .total-table tr:last-child td:nth-child(3) {
+    text-align: right;
+    width: 25%;
+  }
+
+  .invoice-details-title {
+    page-break-before: always;
+  }
+
+  .breakdown-details table {
+    border-collapse: collapse;
+  }
+  .breakdown-details {
+    margin-top: -15px;
+  }
+  .breakdown-details-table tr td {
+    padding-bottom: 8px;
+    padding-top: 8px;
+  }
+  .breakdown-details-table tr td:last-child {
+    text-align: right;
+  }
+  .breakdown-details-table tr td {
+    border-bottom: 1px solid var(--border-color);
+  }
+  .breakdown-details-table tr:first-child td {
+    border-top: 1px solid var(--border-color);
+  }
+
+  .powered-by {
+    width: 100%;
+    text-align: right;
+  }
+  .powered-by span {
+    color: #8c95a6;
+  }
+  .powered-by img {
+    width: 37px;
+    height: 11px;
+    vertical-align: middle;
+    margin-top: 2px;
+  }
+  .alert {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+    background: #F3F4F6;
+    border-radius: 12px;
+  }
+  .invoice-resume-table tr.details, .invoice-resume-table tr.charge-name {
+    border: none;
+  }
+  .invoice-resume-table tr.charge-name td {
+    padding-bottom: 0;
+    color: #19212e;
+  }
+  .invoice-resume-table tr.details td {
+    color: #66758F;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .invoice-resume-table tr.details td:first-child {
+    padding-left: 8px;
+  }
+  .invoice-resume-table tr.details.subtotal td {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: #19212e;
+  }

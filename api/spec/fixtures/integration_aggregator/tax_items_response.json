@@ -1,0 +1,49 @@
+{
+  "records": [
+    {
+      "id": "-3557",
+      "name": "CA_PLPL",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_modified_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMzowNDo0OC42OTk5NDcrMDA6MDB8fDAwMDU4MWQ1LThkNGMtNTk0Yi1hMDJkLWYyOTU3YzFiZTNjMA=="
+      }
+    },
+    {
+      "id": "-3879",
+      "name": "CA_ARROWHED FARM",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_modified_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMzowNDo0OC42OTk5NDcrMDA6MDB8fDAwMmVlYjA2LTRlMjktNTc0ZC04NWJhLTIwMzU4NWM5NGM2MA=="
+      }
+    },
+    {
+      "id": "-4692",
+      "name": "GA_STEWART",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_modified_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMzowNDo0OC42OTk5NDcrMDA6MDB8fDAwOGEzYmFmLTY5MmItNTllNC1hYmYyLWJmMDY1YWVmM2JlNg=="
+      }
+    },
+    {
+      "id": "-5307",
+      "name": "IL_FRANKLIN PARK",
+      "_nango_metadata": {
+        "first_seen_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_modified_at": "2024-04-17T13:04:48.699947+00:00",
+        "last_action": "ADDED",
+        "deleted_at": null,
+        "cursor": "MjAyNC0wNC0xN1QxMzowNDo0OC42OTk5NDcrMDA6MDB8fDAwYTEwZDllLTk2NjUtNWNlYy1iZDAwLWJlMjA3ZTk2ODJmMw=="
+      }
+    }
+  ],
+  "next_cursor": null
+}

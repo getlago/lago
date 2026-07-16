@@ -1,0 +1,29 @@
+---
+zh-TW:
+  credit_note:
+    amount: 金額（未稅）
+    coupon_adjustment: 優惠券
+    credit_from: 來自
+    credit_note_number: 折讓單號碼
+    credit_to: 折讓至
+    credited_notice: 已於 %{issuing_date} 入帳至客戶餘額
+    credited_on_customer_balance: 已入帳至客戶餘額
+    document_name: 折讓單
+    invoice_number: 發票號碼
+    issue_date: 開立日期
+    issued_notice: 開立於 %{issuing_date}
+    item: 項目
+    offset_invoice: 發票 %{invoice_number} 的抵銷
+    offset_invoice_notice: 發票 %{invoice_number} 已於 %{issuing_date} 抵銷
+    powered_by: 技術提供
+    prepaid_credits_for_wallet: 預付點數 - %{wallet_name}
+    purchase_order_number: 採購訂單編號
+    refunded: 已退款
+    refunded_notice: 已於 %{issuing_date} 退款
+    self_billed:
+      footer: 本自行開立發票所對應之折讓單係由客戶在合作夥伴同意下，代表合作夥伴開立。合作夥伴已同意不再為此交易自行開立折讓單。
+    sub_total_without_tax: 小計（未稅）
+    subscription: 訂閱
+    tax: "%{name}（%{amount} 的 %{rate}%）"
+    tax_rate: 稅率
+    total: 總計

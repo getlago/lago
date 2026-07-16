@@ -1,0 +1,80 @@
+{
+  "id": "evt_3RWXidQ8iJWBZFaM0N9UpCe2",
+  "object": "event",
+  "api_version": "2025-04-30.basil",
+  "created": 1749106569,
+  "data": {
+    "object": {
+      "id": "dp_1RWXieQ8iJWBZFaM572opwWo",
+      "object": "dispute",
+      "amount": 100,
+      "balance_transaction": null,
+      "balance_transactions": [],
+      "charge": "ch_3RWXidQ8iJWBZFaM07eC54Yk",
+      "created": 1749106568,
+      "currency": "usd",
+      "enhanced_eligibility_types": [],
+      "evidence": {
+        "access_activity_log": null,
+        "billing_address": null,
+        "cancellation_policy": null,
+        "cancellation_policy_disclosure": null,
+        "cancellation_rebuttal": null,
+        "customer_communication": null,
+        "customer_email_address": null,
+        "customer_name": null,
+        "customer_purchase_ip": null,
+        "customer_signature": null,
+        "duplicate_charge_documentation": null,
+        "duplicate_charge_explanation": null,
+        "duplicate_charge_id": null,
+        "enhanced_evidence": {},
+        "product_description": null,
+        "receipt": null,
+        "refund_policy": null,
+        "refund_policy_disclosure": null,
+        "refund_refusal_explanation": null,
+        "service_date": null,
+        "service_documentation": null,
+        "shipping_address": null,
+        "shipping_carrier": null,
+        "shipping_date": null,
+        "shipping_documentation": null,
+        "shipping_tracking_number": null,
+        "uncategorized_file": null,
+        "uncategorized_text": null
+      },
+      "evidence_details": {
+        "due_by": 1749945599,
+        "enhanced_eligibility": {},
+        "has_evidence": false,
+        "past_due": false,
+        "submission_count": 0
+      },
+      "is_charge_refundable": true,
+      "livemode": false,
+      "metadata": {},
+      "payment_intent": "pi_3RWXidQ8iJWBZFaM0hwfe7LL",
+      "payment_method_details": {
+        "card": {
+          "brand": "visa",
+          "case_type": "inquiry",
+          "network_reason_code": "10"
+        },
+        "type": "card"
+      },
+      "reason": "fraudulent",
+      "status": "warning_closed"
+    },
+    "previous_attributes": {
+      "status": "warning_needs_response"
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_SamoTJQJOWbCeW",
+    "idempotency_key": "dd3d2c7b-ebc7-4ec0-a02e-2147b5af3e98"
+  },
+  "type": "charge.dispute.closed"
+}

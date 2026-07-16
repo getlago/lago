@@ -1,0 +1,29 @@
+---
+es:
+  credit_note:
+    amount: Total (excl. impuestos)
+    coupon_adjustment: Descuento
+    credit_from: Desde
+    credit_note_number: Número de nota de crédito
+    credit_to: Crédito a
+    credited_notice: Acreditado en el saldo del cliente el %{issuing_date}
+    credited_on_customer_balance: Acreditado en el saldo del cliente
+    document_name: Nota de crédito
+    invoice_number: Número de factura
+    issue_date: Fecha de emisión
+    issued_notice: Emitida el %{issuing_date}
+    item: Item
+    offset_invoice: Compensación en la factura %{invoice_number}
+    offset_invoice_notice: Factura %{invoice_number} compensada el %{issuing_date}
+    powered_by: Generada por
+    prepaid_credits_for_wallet: Créditos prepagados - %{wallet_name}
+    purchase_order_number: Número de orden de compra
+    refunded: Reembolso
+    refunded_notice: Reembolso hecho el %{issuing_date}
+    self_billed:
+      footer: Esta nota de crédito sobre una factura de autoliquidación ha sido emitida por el cliente en nombre del socio, con su consentimiento. El socio ha aceptado no emitir su propia nota de crédito para esta transacción.
+    sub_total_without_tax: Subtotal (impuestos excl.)
+    subscription: Suscripción
+    tax: "%{name} (%{rate}% sobre %{amount})"
+    tax_rate: Tasas de impuestos
+    total: Total

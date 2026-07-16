@@ -1,0 +1,17 @@
+{
+  "error": {
+    "message": "An error occurred during an HTTP call",
+    "code": "script_http_error",
+    "payload": {
+      "status": "error",
+      "message": "Error creating LagoSubscriptions.  Some required properties were not set.",
+      "correlationId": "b9561d6a-f454-4146-ac49-c7ce9a8fe7cc",
+      "context": {
+        "properties": [
+          "lago_subscription_id"
+        ]
+      },
+      "category": "VALIDATION_ERROR"
+    }
+  }
+}

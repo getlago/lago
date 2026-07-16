@@ -1,0 +1,35 @@
+multiple_payment_methods:
+  description: "Allow multiple payment methods per customer"
+  owners: ["@lovrocolic", "@mariohd"]
+
+postgres_enriched_events:
+  description: "Turn on events pre-enrichement for organizations using the PG event store"
+  owners: ["@vincent-pochet"]
+
+enriched_events_aggregation:
+  description: "Use the enriched events store for aggregation queries in ClickHouse"
+  owners: ["@vincent-pochet"]
+
+wallet_traceability:
+  description: "Enable wallet traceability on newly created wallets"
+  owners: ["@groyoh", "@D1353L"]
+
+multi_currency:
+  description: "Allow customers to have billing objects in multiple currencies"
+  owners: ["@feliperodrigues", "@mariohd", "@lovrocolic"]
+
+payment_gated_subscriptions:
+  description: "Enable payment-gated subscription activation rules"
+  owners: ["@osmarluz", "@ancorcruz"]
+
+multi_entity_billing:
+  description: "Allow customers to have billing objects across multiple billing entities"
+  owners: ["@lovrocolic", "@feliperodrigues", "@mariohd"]
+
+order_forms:
+  description: "Enable quotes, order forms and orders"
+  owners: ["@murparreira", "@toommz", "@rinasergeeva"]
+
+stripe_shared_payment_token:
+  description: "Use Stripe Shared Payment Token for agent-initiated payments when no other payment method is attached"
+  owners: ["@ancorcruz"]

@@ -1,0 +1,187 @@
+{
+  "error": {
+    "advice_code": "try_again_later",
+    "charge": "ch_3RWO3wQ8iJWBZFaM14akVyoQ",
+    "code": "card_declined",
+    "decline_code": "generic_decline",
+    "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+    "message": "Your card was declined.",
+    "payment_intent": {
+      "id": "pi_3RWO3wQ8iJWBZFaM1DwAq25i",
+      "object": "payment_intent",
+      "amount": 2100,
+      "amount_capturable": 0,
+      "amount_details": {
+        "tip": {}
+      },
+      "amount_received": 0,
+      "application": null,
+      "application_fee_amount": null,
+      "automatic_payment_methods": {
+        "allow_redirects": "never",
+        "enabled": true
+      },
+      "canceled_at": null,
+      "cancellation_reason": null,
+      "capture_method": "automatic_async",
+      "client_secret": "pi_3R**********************_******_*********************EJNT",
+      "confirmation_method": "automatic",
+      "created": 1749069448,
+      "currency": "eur",
+      "customer": "cus_SRGblkdyBI9RS4",
+      "description": "Pre-authorization for subscription",
+      "last_payment_error": {
+        "advice_code": "try_again_later",
+        "charge": "ch_3RWO3wQ8iJWBZFaM14akVyoQ",
+        "code": "card_declined",
+        "decline_code": "generic_decline",
+        "doc_url": "https://stripe.com/docs/error-codes/card-declined",
+        "message": "Your card was declined.",
+        "payment_method": {
+          "id": "pm_1RWO3tQ8iJWBZFaMV8nA6nzH",
+          "object": "payment_method",
+          "allow_redisplay": "unspecified",
+          "billing_details": {
+            "address": {
+              "city": null,
+              "country": null,
+              "line1": null,
+              "line2": null,
+              "postal_code": null,
+              "state": null
+            },
+            "email": null,
+            "name": null,
+            "phone": null,
+            "tax_id": null
+          },
+          "card": {
+            "brand": "visa",
+            "checks": {
+              "address_line1_check": null,
+              "address_postal_code_check": null,
+              "cvc_check": "pass"
+            },
+            "country": "US",
+            "display_brand": "visa",
+            "exp_month": 6,
+            "exp_year": 2026,
+            "fingerprint": "pmIfA8TCefcd72yD",
+            "funding": "credit",
+            "generated_from": null,
+            "last4": "0341",
+            "networks": {
+              "available": [
+                "visa"
+              ],
+              "preferred": null
+            },
+            "regulated_status": "unregulated",
+            "three_d_secure_usage": {
+              "supported": true
+            },
+            "wallet": null
+          },
+          "created": 1749069445,
+          "customer": "cus_SRGblkdyBI9RS4",
+          "livemode": false,
+          "metadata": {},
+          "type": "card"
+        },
+        "type": "card_error"
+      },
+      "latest_charge": "ch_3RWO3wQ8iJWBZFaM14akVyoQ",
+      "livemode": false,
+      "metadata": {
+        "plan_code": "any_plan"
+      },
+      "next_action": null,
+      "on_behalf_of": null,
+      "payment_method": null,
+      "payment_method_configuration_details": {
+        "id": "pmc_1QsO8FQ8iJWBZFaMYOXGb0Ic",
+        "parent": null
+      },
+      "payment_method_options": {
+        "card": {
+          "capture_method": "manual",
+          "installments": null,
+          "mandate_options": null,
+          "network": null,
+          "request_three_d_secure": "automatic"
+        },
+        "link": {
+          "persistent_token": null
+        }
+      },
+      "payment_method_types": [
+        "card",
+        "link"
+      ],
+      "processing": null,
+      "receipt_email": null,
+      "review": null,
+      "setup_future_usage": null,
+      "shipping": null,
+      "source": null,
+      "statement_descriptor": null,
+      "statement_descriptor_suffix": null,
+      "status": "requires_payment_method",
+      "transfer_data": null,
+      "transfer_group": null
+    },
+    "payment_method": {
+      "id": "pm_1RWO3tQ8iJWBZFaMV8nA6nzH",
+      "object": "payment_method",
+      "allow_redisplay": "unspecified",
+      "billing_details": {
+        "address": {
+          "city": null,
+          "country": null,
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": null,
+        "name": null,
+        "phone": null,
+        "tax_id": null
+      },
+      "card": {
+        "brand": "visa",
+        "checks": {
+          "address_line1_check": null,
+          "address_postal_code_check": null,
+          "cvc_check": "pass"
+        },
+        "country": "US",
+        "display_brand": "visa",
+        "exp_month": 6,
+        "exp_year": 2026,
+        "fingerprint": "pmIfA8TCefcd72yD",
+        "funding": "credit",
+        "generated_from": null,
+        "last4": "0341",
+        "networks": {
+          "available": [
+            "visa"
+          ],
+          "preferred": null
+        },
+        "regulated_status": "unregulated",
+        "three_d_secure_usage": {
+          "supported": true
+        },
+        "wallet": null
+      },
+      "created": 1749069445,
+      "customer": "cus_SRGblkdyBI9RS4",
+      "livemode": false,
+      "metadata": {},
+      "type": "card"
+    },
+    "request_log_url": "https://dashboard.stripe.com/test/logs/req_2bJRp7SEnKhkMf?t=1749069448",
+    "type": "card_error"
+  }
+}

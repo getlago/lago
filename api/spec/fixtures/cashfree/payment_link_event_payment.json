@@ -1,0 +1,36 @@
+{
+  "data": {
+    "cf_link_id": 1576977,
+    "link_id": "payment_ps11",
+    "link_status": "PAID",
+    "link_currency": "INR",
+    "link_amount": "200.12",
+    "link_amount_paid": "55.00",
+    "link_partial_payments": true,
+    "link_minimum_partial_amount": "11.00",
+    "link_purpose": "Payment for order 10",
+    "link_created_at": "2021-08-18T07:13:41",
+    "customer_details": {
+      "customer_phone": "9000000000",
+      "customer_email": "john@gmail.com",
+      "customer_name": "John "
+    },
+    "link_meta": { "notify_url": "https://ee08e626ecd88c61c85f5c69c0418cb5.m.pipedream.net" },
+    "link_url": "https://payments-test.cashfree.com/links//U1mgll3c0e9g",
+    "link_expiry_time": "2021-11-28T21:46:20",
+    "link_notes": { "lago_invoice_id": "06afb06b-4e54-4f8f-89c1-6d8b9907465a" },
+    "link_auto_reminders": true,
+    "link_notify": { "send_sms": true, "send_email": true },
+    "order": {
+      "order_amount": "22.00",
+      "order_id": "CFPay_U1mgll3c0e9g_ehdcjjbtckf",
+      "order_expiry_time": "2021-08-18T07:34:50",
+      "order_hash": "Gb2gC7z0tILhGbZUIeds",
+      "transaction_id": 1021206,
+      "transaction_status": "SUCCESS"
+    }
+  },
+  "type": "PAYMENT_LINK_EVENT",
+  "version": 1,
+  "event_time": "2021-08-18T12:55:06+05:30"
+}

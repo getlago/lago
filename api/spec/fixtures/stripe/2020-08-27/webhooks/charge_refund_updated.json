@@ -1,0 +1,31 @@
+{
+  "id": "evt_1LEBtZDu4p87RxPwbHKmfr13",
+  "object": "event",
+  "api_version": "2020-08-27",
+  "created": 1656074757,
+  "data": {
+    "object": {
+      "id": "re_3M01Us2eZvKYlo2C1J36vhMv",
+      "object": "refund",
+      "amount": 100,
+      "balance_transaction": null,
+      "charge": "ch_3M01Us2eZvKYlo2C1O9xQHEB",
+      "created": 1667474532,
+      "currency": "usd",
+      "metadata": {},
+      "payment_intent": null,
+      "reason": null,
+      "receipt_number": null,
+      "source_transfer_reversal": null,
+      "status": "succeeded",
+      "transfer_reversal": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 0,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "charge.refund.updated"
+}

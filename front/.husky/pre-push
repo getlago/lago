@@ -1,0 +1,12 @@
+# Run lint only if a real ref is being pushed. Branch deletions send an
+# all-zeros local SHA on stdin — skip code:style for those (instant action).
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_sha" in
+    *[!0]*)
+      pnpm run code:style
+      exit $?
+      ;;
+  esac
+done
+
+exit 0

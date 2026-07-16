@@ -1,0 +1,26 @@
+[
+    {
+        "start_of_period_dt": "2024-01-01",
+        "end_of_period_dt": "2024-01-31",
+        "billable_metric_code": "account_members",
+        "amount_currency": "EUR",
+        "amount_cents": 26600,
+        "units": 266
+    },
+    {
+        "start_of_period_dt": "2024-01-01",
+        "end_of_period_dt": "2024-01-31",
+        "billable_metric_code": "accounts",
+        "amount_currency": "EUR",
+        "amount_cents": 145950,
+        "units": 1459
+    },
+    {
+        "start_of_period_dt": "2024-01-01",
+        "end_of_period_dt": "2024-01-31",
+        "billable_metric_code": "business_account_opening",
+        "amount_currency": "EUR",
+        "amount_cents": 2521800,
+        "units": 25218
+    }
+]

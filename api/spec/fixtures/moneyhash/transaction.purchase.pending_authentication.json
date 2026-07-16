@@ -1,0 +1,164 @@
+{
+  "type": "transaction.purchase.pending_authentication",
+  "status_id": "1LkmkZr",
+  "operation_id": "4L2GvgE",
+  "intent": {
+    "id": "wgjowZJ",
+    "created": "2025-02-26 20:31:54.673799+00:00",
+    "custom_fields": {
+      "lago_mit": false,
+      "lago_plan_id": "de95fd5d-3349-4439-a5d0-18b42b8551d1",
+      "lago_mh_service": "Invoices::Payments::MoneyhashService",
+      "lago_payable_id": "23fd1f3c-922c-4928-b40b-c8a31e4d6664",
+      "lago_customer_id": "53c14b65-3406-4b1b-9d49-77fb389ee92e",
+      "lago_payable_type": "Invoice",
+      "lago_organization_id": "1f6edf98-9eb4-4baf-8c64-7c6be9d0b414",
+      "lago_subscription_external_id": "69f64026-69eb-4836-b1bd-9323d9f7d892"
+    },
+    "split_data": [],
+    "custom_form_answers": null,
+    "amount": { "value": 50, "currency": "USD" },
+    "flow_data": null,
+    "payment_status": {
+      "status": "AUTHORIZE_ATTEMPT_PENDING",
+      "balances": {
+        "total_authorized": 0,
+        "total_voided": 0,
+        "available_to_void": 0,
+        "total_captured": 0,
+        "available_to_capture": 0,
+        "total_refunded": 0,
+        "available_to_refund": 0
+      }
+    }
+  },
+  "account": { "id": "YVglAZx" },
+  "transaction": {
+    "type": "payment",
+    "id": "e2a009af-af3c-4068-b254-2a5f140dc733",
+    "created": "2025-02-26 20:31:57.152967+00:00",
+    "status": "purchase.pending_authentication",
+    "billing_data": {
+      "name": null,
+      "first_name": null,
+      "last_name": null,
+      "email": null,
+      "phone_number": null,
+      "address": null,
+      "address1": null,
+      "apartment": null,
+      "floor": null,
+      "building": null,
+      "street": null,
+      "city": null,
+      "state": null,
+      "country": null,
+      "postal_code": null,
+      "mobile_wallet_number": null
+    },
+    "external_action_message": [],
+    "provider_transaction_fields": {
+      "hyperpay_checkout_id": null,
+      "hyperpay_transaction_id": "8ac7a4a19542d70b019543f5b42725d6",
+      "hyperpay_merchant_transaction_id": "e2a009afaf3c4068",
+      "hyperpay_result_details_object": {
+        "TermID": "71F00820",
+        "OrderID": "8316384413",
+        "AuthCode": "f2e7a815c3",
+        "ProcStatus": "0",
+        "ConnectorTxID1": "8ac7a4a19542d70b019543f5b42725d6",
+        "ConnectorTxID2": "8ac7a4a1",
+        "ConnectorTxID3": "42d70b019543f5b42725d6",
+        "AcquirerResponse": "00",
+        "ExtendedDescription": "Successfully processed",
+        "EXTERNAL_SYSTEM_LINK": "https://csi-test.retaildecisions.com/RS60/TransDetail.aspx?oid=000194001101S2E20110926045038668&support=Link+to+Risk+Details",
+        "clearingInstituteName": "NCB BANK"
+      },
+      "extended_error_description": null
+    },
+    "provider_unique_reference": {
+      "key": "hyperpay_checkout_id",
+      "value": null
+    },
+    "operations": [
+      {
+        "id": "4L2GvgE",
+        "type": "purchase",
+        "status": "pending_authentication",
+        "amount": { "value": 50, "currency": "USD" },
+        "latest_status": {
+          "id": "1LkmkZr",
+          "value": "pending_authentication",
+          "code": "8001",
+          "provider_error_code": null,
+          "provider_error_message": null,
+          "message": "Pending Authentication",
+          "localized_message": "Pending Authentication"
+        },
+        "statuses": [
+          {
+            "id": "GgqzyZx",
+            "value": "pending",
+            "code": "8000",
+            "provider_error_code": null,
+            "provider_error_message": null,
+            "message": "Pending",
+            "localized_message": "Pending",
+            "created": "2025-02-26 20:31:57.204039+00:00"
+          },
+          {
+            "id": "1LkmkZr",
+            "value": "pending_authentication",
+            "code": "8001",
+            "provider_error_code": null,
+            "provider_error_message": null,
+            "message": "Pending Authentication",
+            "localized_message": "Pending Authentication",
+            "created": "2025-02-26 20:32:11.034455+00:00"
+          }
+        ],
+        "refund_type": null,
+        "custom_fields": null,
+        "extra": {},
+        "rrn": null,
+        "arn": null,
+        "authorization_code": null
+      }
+    ],
+    "fraud_decision": null,
+    "device_check": null,
+    "custom_message": "",
+    "method": {
+      "id": "lgbY0LB",
+      "display_name": "Hyperpay - Card",
+      "service_provider": { "id": "8LVnmLr", "display_name": "HyperPay" }
+    },
+    "payment_method_details": {
+      "type": "CARD",
+      "data": {
+        "bin": "411111",
+        "type": null,
+        "brand": "VISA",
+        "issuer": null,
+        "last_4": "1111",
+        "country": null,
+        "expiry_year": "2025",
+        "expiry_month": "05",
+        "card_holder_name": "ahmed shahhwan"
+      },
+      "provider_data": null
+    },
+    "authentication_data": null,
+    "paying_card_token": null,
+    "authorization_code": null,
+    "merchant_reference": null,
+    "shipping_data": null,
+    "trx_rrn": null,
+    "ip": {
+      "ip_address": "127.0.0.1",
+      "country": { "iso_code": null, "name": null }
+    },
+    "full_capture": false
+  },
+  "api_version": "1.1"
+}

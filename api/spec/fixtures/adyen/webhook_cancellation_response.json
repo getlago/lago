@@ -1,0 +1,24 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "modification.action": "cancel"
+        },
+        "amount": {
+          "currency": "EUR",
+          "value": 1000
+        },
+        "eventCode": "CANCELLATION",
+        "eventDate": "2026-05-07T10:15:30+02:00",
+        "merchantAccountCode": "LagoAccountECOM",
+        "merchantReference": "ref-123",
+        "originalReference": "PSPREF123",
+        "pspReference": "MOD_REF_456",
+        "reason": "",
+        "success": "true"
+      }
+    }
+  ]
+}

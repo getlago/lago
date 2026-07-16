@@ -1,0 +1,35 @@
+ARG PDFCPU_VERSION=0.11.1
+ARG GO_VERSION=1.25.8
+
+FROM golang:${GO_VERSION} AS pdfcpu-build
+
+ARG PDFCPU_VERSION
+
+RUN go install github.com/pdfcpu/pdfcpu/cmd/pdfcpu@v${PDFCPU_VERSION}
+
+FROM ruby:4.0.2-slim
+
+WORKDIR /app
+ENV POSTGRES_VERSION=15
+
+RUN apt update -qq && \
+  apt-get install nodejs build-essential curl git pkg-config libpq-dev libclang-dev postgresql-common libyaml-dev libjemalloc2 -y && \
+  curl https://sh.rustup.rs -sSf | bash -s -- -y && \
+  /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -i -v $POSTGRES_VERSION
+
+COPY --from=pdfcpu-build /go/bin/pdfcpu /usr/local/bin/pdfcpu
+
+ENV BUNDLER_VERSION='4.0.4'
+ENV PATH="$PATH:/root/.cargo/bin/"
+
+ENV LD_PRELOAD=libjemalloc.so.2
+
+COPY ./Gemfile /app/Gemfile
+COPY ./Gemfile.lock /app/Gemfile.lock
+
+RUN gem install bundler --no-document -v '4.0.4'
+
+RUN bundle config set build.nokogiri --use-system-libraries && \
+  bundle install
+
+CMD ["./scripts/start.dev.sh"]

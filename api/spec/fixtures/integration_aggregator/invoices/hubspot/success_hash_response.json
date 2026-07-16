@@ -1,0 +1,26 @@
+{
+  "id": "123456789",
+  "properties": {
+      "hs_createdate": "2024-10-18T08:02:41.409Z",
+      "hs_lastmodifieddate": "2024-10-18T08:02:41.409Z",
+      "hs_object_id": "123456789123",
+      "hs_object_source": "INTEGRATION",
+      "hs_object_source_id": "3652947",
+      "hs_object_source_label": "INTEGRATION",
+      "lago_invoice_currency": "EUR",
+      "lago_invoice_file_url": "https://file.com",
+      "lago_invoice_id": "12345678-1234-1234-5678-7d76f44d5edc",
+      "lago_invoice_issuing_date": "2024-01-01",
+      "lago_invoice_number": "TWI-INV-001",
+      "lago_invoice_payment_due_date": "2024-01-01",
+      "lago_invoice_payment_overdue": "true",
+      "lago_invoice_payment_status": "failed",
+      "lago_invoice_status": "voided",
+      "lago_invoice_subtotal_excluding_taxes": "90.2",
+      "lago_invoice_total_amount": "100.2",
+      "lago_invoice_type": "subscription"
+  },
+  "createdAt": "2024-10-18T08:02:41.409Z",
+  "updatedAt": "2024-10-18T08:02:41.409Z",
+  "archived": false
+}

@@ -1,0 +1,28 @@
+{
+  "live" : "true",
+  "notificationItems" : [
+    {
+       "NotificationRequestItem" : {
+          "additionalData" : {
+             "chargebackReasonCode" : "13.1",
+             "modificationMerchantReferences" : "",
+             "chargebackSchemeCode" : "visa",
+             "disputeStatus" : "Lost"
+          },
+          "amount" : {
+             "currency" : "GBP",
+             "value" : 10000
+          },
+          "eventCode" : "CHARGEBACK",
+          "eventDate" : "2020-03-13T11:35:42+01:00",
+          "merchantAccountCode" : "YOUR_MERCHANT_ACCOUNT",
+          "merchantReference" : "YOUR_REFERENCE",
+          "originalReference":"9913333333333333",
+          "paymentMethod" : "visa",
+          "pspReference" : "9915555555555555",
+          "reason" : "Merchandise/Services Not Received",
+          "success" : "true"
+       }
+    }
+  ]
+}

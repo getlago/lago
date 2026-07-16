@@ -1,0 +1,59 @@
+{
+  "records": [
+    {
+      "id": "12ec4c59-ad56-4a4f-93eb-fb0a7740f4e2",
+      "code": "1111",
+      "name": "Accounts Payable",
+      "type": "CURRLIAB",
+      "tax_type": "NONE",
+      "description": "Outstanding invoices the company has received from suppliers but has not yet paid at balance date",
+      "class": "LIABILITY",
+      "bank_account_type": "",
+      "reporting_code": "LIA.CUR.PAY.TRA",
+      "_nango_metadata": {
+          "first_seen_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_modified_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_action": "ADDED",
+          "deleted_at": null,
+          "cursor": ""
+      }
+    },
+    {
+      "id": "6317441d-6547-417c-89e2-6e43ece791d8",
+      "code": "2222",
+      "name": "Accounts Receivable",
+      "type": "CURRENT",
+      "tax_type": "NONE",
+      "description": "Outstanding invoices the company has issued out to the client but has not yet received in cash at balance date.",
+      "class": "ASSET",
+      "bank_account_type": "",
+      "reporting_code": "ASS.CUR.REC.ACR",
+      "_nango_metadata": {
+          "first_seen_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_modified_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_action": "ADDED",
+          "deleted_at": null,
+          "cursor": ""
+      }
+    },
+    {
+      "id": "80701036-73b5-4468-a4b3-a139262035b4",
+      "code": "3333",
+      "name": "Automobile Expense",
+      "type": "EXPENSE",
+      "tax_type": "NONE",
+      "description": "",
+      "class": "EXPENSE",
+      "bank_account_type": "",
+      "reporting_code": "EXP.VEH",
+      "_nango_metadata": {
+          "first_seen_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_modified_at": "2024-05-21T15:05:44.031424+00:00",
+          "last_action": "ADDED",
+          "deleted_at": null,
+          "cursor": ""
+      }
+    }
+  ],
+  "next_cursor": null
+}

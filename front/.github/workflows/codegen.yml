@@ -1,0 +1,79 @@
+name: Run Codegen
+
+on:
+  pull_request:
+    types: [opened, reopened, review_requested, ready_for_review, synchronize]
+  workflow_dispatch:
+    inputs:
+      api_branch:
+        description: Api Branch
+        required: true
+        default: "main"
+
+jobs:
+  codegen:
+    if: github.event.pull_request.draft == false
+    name: Run Codegen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v7.0.0
+
+      - name: Checkout API Git repository
+        uses: actions/checkout@v7.0.0
+        with:
+          repository: getlago/lago-api
+          ref: ${{ github.event.inputs.api_branch }}
+          path: api
+
+      - name: Build API local image
+        run: |
+          docker build -t getlago/api:ci ./api
+
+      - name: Generate API RSA Key
+        run: |
+          echo "LAGO_RSA_PRIVATE_KEY=\"`openssl genrsa 2048 | base64`\"" >> .env
+
+      - name: Launch API
+        run: docker compose -f ./ci/docker-compose.ci.yml --env-file ./.env up -d api
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version-file: package.json
+          cache: "pnpm"
+
+      - name: Install Node.js dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm prebuild
+
+      - name: Wait for API to be ready
+        run: |
+          timeout 5m bash -c '
+            until curl -s -f -X POST http://localhost:3000/graphql \
+              -H "Content-Type: application/json" \
+              -d "{\"query\": \"query { __typename }\"}" > /dev/null; do
+              echo "Waiting for API to be ready..."
+              sleep 2
+            done
+          '
+        continue-on-error: true
+
+      - name: Get docker logs
+        if: failure()
+        run: |
+          docker logs lago-api
+
+      - name: Run codegen
+        env:
+          CODEGEN_API: http://localhost:3000/graphql
+        run: |
+          pnpm run codegen
+
+      - name: Run Typescript
+        run: pnpm tsc
