@@ -61,13 +61,7 @@ func (eps *EventProducerService) ProduceChargedInAdvanceEvent(context context.Co
 }
 
 func (eps *EventProducerService) ProduceToDeadLetterQueue(context context.Context, event models.Event, errorResult utils.AnyResult) {
-	failedEvent := models.FailedEvent{
-		Event:               event,
-		InitialErrorMessage: errorResult.ErrorMsg(),
-		ErrorCode:           errorResult.ErrorCode(),
-		ErrorMessage:        errorResult.ErrorMessage(),
-		FailedAt:            time.Now(),
-	}
+	failedEvent := buildFailedEvent(event, errorResult, time.Now())
 
 	eventJson, err := json.Marshal(failedEvent)
 	if err != nil {
@@ -82,6 +76,46 @@ func (eps *EventProducerService) ProduceToDeadLetterQueue(context context.Contex
 	if !pushed {
 		slog.Error("error while pushing to dead letter topic", slog.String("topic", eps.deadLetterProducer.GetTopic()))
 		utils.CaptureErrorResultWithExtra(errorResult, "event", event)
+	}
+}
+
+func buildFailedEvent(event models.Event, errorResult utils.AnyResult, failedAt time.Time) models.FailedEvent {
+	var eventIngestedAt *time.Time
+	var eventAgeSeconds *int64
+	var retryWindowSeconds *int64
+	expiredRetryWindow := false
+
+	if ingestedAt := event.IngestedAt.Time(); !ingestedAt.IsZero() {
+		eventIngestedAt = &ingestedAt
+		age := int64(failedAt.Sub(ingestedAt).Seconds())
+		if age < 0 {
+			age = 0
+		}
+		eventAgeSeconds = &age
+
+		if errorResult.IsRetryable() {
+			window := int64(maxRetryableEventAge.Seconds())
+			retryWindowSeconds = &window
+			expiredRetryWindow = failedAt.Sub(ingestedAt) >= maxRetryableEventAge
+		}
+	}
+
+	return models.FailedEvent{
+		Event:                  event,
+		InitialErrorMessage:    errorResult.ErrorMsg(),
+		ErrorCode:              errorResult.ErrorCode(),
+		ErrorMessage:           errorResult.ErrorMessage(),
+		Retryable:              errorResult.IsRetryable(),
+		Capturable:             errorResult.IsCapturable(),
+		EventIngestedAt:        eventIngestedAt,
+		EventAgeSeconds:        eventAgeSeconds,
+		RetryWindowSeconds:     retryWindowSeconds,
+		ExpiredRetryWindow:     expiredRetryWindow,
+		OrganizationID:         event.OrganizationID,
+		ExternalSubscriptionID: event.ExternalSubscriptionID,
+		TransactionID:          event.TransactionID,
+		Code:                   event.Code,
+		FailedAt:               failedAt,
 	}
 }
 

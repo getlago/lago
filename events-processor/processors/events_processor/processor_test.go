@@ -2,6 +2,7 @@ package events_processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/cache"
@@ -210,6 +212,90 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 	}
 }
 
+func TestProcessEventsRetriesUnresolvedUsageEventsBeforeDeadLettering(t *testing.T) {
+	testEnv := setupProcessorTestEnv(t, false)
+	defer testEnv.Cleanup()
+
+	event := models.Event{
+		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		ExternalSubscriptionID: "sub_id",
+		Code:                   "api_calls",
+		TransactionID:          "txn_retry",
+		Timestamp:              1741007009,
+		Source:                 "SQS",
+		IngestedAt:             utils.CustomTime(time.Now().Add(-time.Minute)),
+	}
+
+	testEnv.DataStore.SetBillableMetric(&models.BillableMetric{
+		ID:              "bm123",
+		OrganizationID:  event.OrganizationID,
+		Code:            event.Code,
+		AggregationType: models.AggregationTypeCount,
+		FieldName:       "api_requests",
+		CreatedAt:       utils.NowNullTime(),
+		UpdatedAt:       utils.NowNullTime(),
+	})
+	testEnv.DataStore.ExpectSubscriptionNotFound()
+
+	eventJSON, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	processed := testEnv.EventProcessor.ProcessEvents(context.Background(), []*kgo.Record{{Value: eventJSON}})
+
+	assert.Empty(t, processed)
+	assert.Equal(t, 0, testEnv.Producers.deadLetterProducer.ExecutionCount)
+}
+
+func TestProcessEventsDeadLettersExpiredUnresolvedUsageEventsWithRetryMetadata(t *testing.T) {
+	testEnv := setupProcessorTestEnv(t, false)
+	defer testEnv.Cleanup()
+
+	event := models.Event{
+		OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		ExternalSubscriptionID: "sub_id",
+		Code:                   "api_calls",
+		TransactionID:          "txn_expired",
+		Timestamp:              1741007009,
+		Source:                 "SQS",
+		IngestedAt:             utils.CustomTime(time.Now().Add(-maxRetryableEventAge - time.Minute)),
+	}
+
+	testEnv.DataStore.SetBillableMetric(&models.BillableMetric{
+		ID:              "bm123",
+		OrganizationID:  event.OrganizationID,
+		Code:            event.Code,
+		AggregationType: models.AggregationTypeCount,
+		FieldName:       "api_requests",
+		CreatedAt:       utils.NowNullTime(),
+		UpdatedAt:       utils.NowNullTime(),
+	})
+	testEnv.DataStore.ExpectSubscriptionNotFound()
+
+	eventJSON, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	record := &kgo.Record{Value: eventJSON}
+	processed := testEnv.EventProcessor.ProcessEvents(context.Background(), []*kgo.Record{record})
+
+	require.Len(t, processed, 1)
+	assert.Equal(t, record, processed[0])
+	assert.Equal(t, 1, testEnv.Producers.deadLetterProducer.ExecutionCount)
+
+	var failedEvent models.FailedEvent
+	require.NoError(t, json.Unmarshal(testEnv.Producers.deadLetterProducer.Value, &failedEvent))
+	assert.Equal(t, "subscription_not_found", failedEvent.ErrorCode)
+	assert.True(t, failedEvent.Retryable)
+	assert.False(t, failedEvent.Capturable)
+	assert.True(t, failedEvent.ExpiredRetryWindow)
+	assert.Equal(t, event.OrganizationID, failedEvent.OrganizationID)
+	assert.Equal(t, event.ExternalSubscriptionID, failedEvent.ExternalSubscriptionID)
+	assert.Equal(t, event.TransactionID, failedEvent.TransactionID)
+	require.NotNil(t, failedEvent.EventAgeSeconds)
+	require.NotNil(t, failedEvent.RetryWindowSeconds)
+	assert.GreaterOrEqual(t, *failedEvent.EventAgeSeconds, int64(maxRetryableEventAge.Seconds()))
+	assert.Equal(t, int64(maxRetryableEventAge.Seconds()), *failedEvent.RetryWindowSeconds)
+}
+
 func TestProcessEvent(t *testing.T) {
 	testModes := []struct {
 		name     string
@@ -336,7 +422,7 @@ func TestProcessEvent(t *testing.T) {
 			assert.Equal(t, "Error while converting event to enriched event", result.ErrorMessage())
 		})
 
-		t.Run("When event source is not post process on API when no subscriptions are found", func(t *testing.T) {
+		t.Run("When event source is not post processed on API and subscription is not found", func(t *testing.T) {
 			testEnv := setupProcessorTestEnv(t, mode.useCache)
 			defer testEnv.Cleanup()
 
@@ -362,7 +448,21 @@ func TestProcessEvent(t *testing.T) {
 			testEnv.DataStore.ExpectSubscriptionNotFound()
 
 			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
-			assert.True(t, result.Success())
+			assert.False(t, result.Success())
+			assert.True(t, result.IsRetryable())
+			assert.False(t, result.IsCapturable())
+			assert.Equal(t, "subscription_not_found", result.ErrorCode())
+			assert.Equal(
+				t,
+				"No active subscription matched the event external_subscription_id at the event timestamp",
+				result.ErrorMessage(),
+			)
+			assert.Contains(t, result.ErrorMsg(), `external_subscription_id "sub_id"`)
+
+			time.Sleep(50 * time.Millisecond)
+			assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+			assert.Equal(t, 0, testEnv.FlagStore.ExecutionCount)
 		})
 
 		t.Run("When event source is not post process on API when expression failed to evaluate", func(t *testing.T) {
