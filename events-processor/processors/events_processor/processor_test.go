@@ -175,7 +175,6 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 
 	testProducers := setupProducers()
 	chargeCache = &tests.MockCacheStore{}
-	chargeCacheStore := models.NewChargeCache(&chargeCache)
 	flagStore := tests.MockFlagStore{}
 	flagger := NewSubscriptionRefreshService(&flagStore)
 
@@ -197,7 +196,6 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 		NewEventEnrichmentService(apiStore, memCache),
 		testProducers.producerService,
 		flagger,
-		NewCacheService(chargeCacheStore),
 	)
 
 	return &ProcessorTestEnv{
