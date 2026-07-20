@@ -19,15 +19,13 @@ type EventProcessor struct {
 	EnrichmentService *EventEnrichmentService
 	ProducerService   *EventProducerService
 	RefreshService    *SubscriptionRefreshService
-	CacheService      *CacheService
 }
 
-func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, cacheService *CacheService) *EventProcessor {
+func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService) *EventProcessor {
 	return &EventProcessor{
 		EnrichmentService: enrichmentService,
 		ProducerService:   producerService,
 		RefreshService:    refreshService,
-		CacheService:      cacheService,
 	}
 }
 
@@ -157,9 +155,6 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
-
-		// Expire cache at charge and charge filter level
-		processor.CacheService.ExpireCache(enrichedEvents)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
