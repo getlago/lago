@@ -2,6 +2,7 @@ node_modules
 dist
 .DS_Store
 .env
+public/env-config.js
 coverage
 cypress/downloads
 .swc/

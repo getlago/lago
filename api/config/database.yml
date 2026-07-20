@@ -8,28 +8,21 @@ default: &default
 development:
   primary:
     <<: *default
-    host: db
-    username: lago
-    password: changeme
-    database: lago
+    url: <%= ENV.fetch('DATABASE_URL', 'postgresql://lago:changeme@localhost:5432/lago') %>
     pool: <%= ENV.fetch('DATABASE_POOL', 5) %>
-    port: 5432
   events:
     <<: *default
-    host: db
-    username: lago
-    password: changeme
-    database: lago
+    url: <%= ENV.fetch('DATABASE_URL', 'postgresql://lago:changeme@localhost:5432/lago') %>
     pool: <%= ENV.fetch('DATABASE_POOL', 5) %>
-    port: 5432
+    database_tasks: false
   clickhouse:
     adapter: clickhouse
-    database: default
-    host: clickhouse
+    database: <%= ENV.fetch('LAGO_CLICKHOUSE_DATABASE', 'default') %>
+    host: <%= ENV.fetch('LAGO_CLICKHOUSE_HOST', 'localhost') %>
     pool: <%= ENV.fetch('DATABASE_POOL', 5) %>
-    port: 8123
-    username: default
-    password: default
+    port: <%= ENV.fetch('LAGO_CLICKHOUSE_PORT', 8123) %>
+    username: <%= ENV.fetch('LAGO_CLICKHOUSE_USERNAME', 'default') %>
+    password: <%= ENV.fetch('LAGO_CLICKHOUSE_PASSWORD', 'default') %>
     migrations_paths: db/clickhouse_migrate
     debug: true
     database_tasks: <% if ENV['LAGO_CLICKHOUSE_MIGRATIONS_ENABLED'].present? %> true <% else %> false <% end %>

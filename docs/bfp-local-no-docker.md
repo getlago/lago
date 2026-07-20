@@ -1,150 +1,322 @@
 # BFP Lago local sem Docker
 
-Este guia registra o setup inicial do `etusdigital/bfp-lago` como monorepo privado: o codigo do Lago API e do Lago Front fica versionado diretamente dentro deste repositorio, sem submodulos.
+Este projeto e um monorepo privado: `api/` e `front/` ficam versionados diretamente em `etusdigital/bfp-lago`, sem submodulos.
 
-## 1. Validar o repo principal
+O objetivo deste guia e rodar o Lago localmente sem Docker no Windows 11, macOS ou Linux.
 
-```powershell
-cd C:\Users\ETUS-0711\Documents\PROJETOS\etus-projects\bfp-lago
+## Visao geral
 
-git config --global --add safe.directory C:/Users/ETUS-0711/Documents/PROJETOS/etus-projects/bfp-lago
-git config --global core.longpaths true
-git config core.longpaths true
+Servicos usados em desenvolvimento:
 
-git remote -v
-git remote add upstream https://github.com/getlago/lago.git
-git remote set-url --push upstream DISABLED
-```
+- API Rails: `http://localhost:3000`
+- Front Vite: `http://localhost:5173`
+- PostgreSQL: `127.0.0.1:5432`
+- Redis: `127.0.0.1:6379`
 
-Esperado:
-
-```text
-origin   https://github.com/etusdigital/bfp-lago.git
-upstream https://github.com/getlago/lago.git
-```
-
-Use `origin` para push e `upstream` apenas como referencia do Lago original.
-
-## 2. Como o codigo foi absorvido
-
-O Lago original usa submodulos:
-
-- `api` vinha de `getlago/lago-api`
-- `front` vinha de `getlago/lago-front`
-
-Neste repo, os submodulos foram removidos e as pastas `api/` e `front/` passaram a ser codigo normal do `bfp-lago`.
-
-Versoes de origem absorvidas:
-
-- `api`: `32efd35931cca340050c2623d811b14e75d78de9`
-- `front`: `19fa76109a48fbd30e693651135b9f9cb65341cb`
-
-Isso evita depender de forks separados como `bfp-lago-api` e `bfp-lago-front`.
-
-## 3. Pre-requisitos sem Docker
-
-Instale na maquina:
+Versoes esperadas:
 
 - Ruby `4.0.2`
 - Bundler `4.0.4`
 - Node `24.18.0`
-- pnpm `10.34.4` ou compativel
-- PostgreSQL local
-- Redis local
+- pnpm `10.34.4`
+- PostgreSQL `16`
+- Redis compativel
 
-Neste checkout, ja existe PostgreSQL 16, mas ainda faltam Ruby e Redis no PATH.
-O Node bundled do Codex esta em `24.14.0`; para reproduzir exatamente o lockfile do front, prefira `24.18.0`.
+No Windows 11, rode a API Rails dentro do WSL/Ubuntu. Ruby 4 e algumas gems nativas do Lago nao funcionam bem no Windows puro. O front pode rodar no Windows nativo ou no WSL.
 
-## 4. Variaveis locais
+## Env local
 
-Crie arquivos ignorados pelo Git:
+Arquivos de exemplo:
 
-- `api/.env`
-- `front/.env`
-- `api/config/keys/private.pem`
+- `env.example`: catalogo raiz com API + Front
+- `api/.env.example`: copie para `api/.env`
+- `front/.env.example`: copie para `front/.env`
 
-Neste workspace eles ja foram criados com valores locais para:
-
-- API em `http://localhost:3000`
-- Front em `http://localhost:5173`
-- Postgres em `localhost:5432`
-- Redis em `localhost:6379`
-- ClickHouse e PDF desabilitados no primeiro boot
-
-Importante: para ClickHouse, deixe `LAGO_CLICKHOUSE_ENABLED` vazio. Em alguns pontos do codigo, qualquer valor presente, inclusive `false`, pode ser tratado como habilitado.
-
-## 5. Banco local
-
-Crie usuario e banco no PostgreSQL:
+Criacao inicial:
 
 ```powershell
-psql -U postgres
+Copy-Item api\.env.example api\.env -Force
+Copy-Item front\.env.example front\.env -Force
+New-Item -ItemType Directory -Force api\config\keys
+openssl genrsa 2048 > api\config\keys\private.pem
 ```
 
-```sql
-CREATE USER lago WITH PASSWORD 'changeme';
-ALTER USER lago CREATEDB;
-CREATE DATABASE lago OWNER lago;
+Depois substitua estes placeholders em `api/.env`:
+
+- `SECRET_KEY_BASE`: gere com `openssl rand -hex 64`
+- `LAGO_ENCRYPTION_PRIMARY_KEY`: gere com `openssl rand -hex 32`
+- `LAGO_ENCRYPTION_DETERMINISTIC_KEY`: gere com `openssl rand -hex 32`
+- `LAGO_ENCRYPTION_KEY_DERIVATION_SALT`: gere com `openssl rand -hex 32`
+
+Para o primeiro boot local, mantenha:
+
+```env
+LAGO_DISABLE_PDF_GENERATION=true
+LAGO_CLICKHOUSE_ENABLED=
+LAGO_CLICKHOUSE_MIGRATIONS_ENABLED=
 ```
 
-Nesta maquina, `localhost:5432` esta respondendo, mas a autenticacao com `lago/changeme` falhou. Se o usuario `lago` ja existir com outra senha, ajuste com:
+Nao use `LAGO_CLICKHOUSE_ENABLED=false`: partes do codigo testam apenas se a variavel existe.
 
-```sql
-ALTER USER lago WITH PASSWORD 'changeme';
-ALTER USER lago CREATEDB;
-```
+## Windows 11
 
-## 6. Instalar dependencias e subir API
+### 1. Instalar Ubuntu no WSL
+
+No PowerShell:
 
 ```powershell
-cd C:\Users\ETUS-0711\Documents\PROJETOS\etus-projects\bfp-lago\api
+wsl --install -d Ubuntu
+```
+
+Abra o app Ubuntu uma vez e crie o usuario Linux quando ele pedir. Depois confirme:
+
+```powershell
+wsl -l -v
+```
+
+### 2. Instalar dependencias no Ubuntu
+
+Dentro do Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential libssl-dev libreadline-dev zlib1g-dev \
+  libyaml-dev libffi-dev libpq-dev redis-server git curl ca-certificates \
+  pkg-config libclang-dev clang cmake postgresql postgresql-contrib \
+  postgresql-16-partman
+```
+
+Instale runtimes com `mise`:
+
+```bash
+curl https://mise.run | sh
+echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
+source ~/.bashrc
+
+mise install ruby@4.0.2 node@24.18.0 rust@stable
+mise use -g ruby@4.0.2 node@24.18.0 rust@stable
+
 gem install bundler -v 4.0.4
+corepack enable
+corepack prepare pnpm@10.34.4 --activate
+```
+
+### 3. Preparar banco e gems
+
+No PowerShell, rode o script dentro do WSL:
+
+```powershell
+wsl -d Ubuntu -- bash -lc 'cd /mnt/c/Users/ETUS-0711/Documents/PROJETOS/etus-projects/bfp-lago && tr -d "\r" < scripts/local/db-prepare-wsl.sh > /tmp/db-prepare-wsl.sh && BFP_LAGO_ROOT="$PWD" bash /tmp/db-prepare-wsl.sh'
+```
+
+Se preferir fazer manualmente dentro do Ubuntu:
+
+```bash
+cd /mnt/c/Users/ETUS-0711/Documents/PROJETOS/etus-projects/bfp-lago
+
+sudo service postgresql start
+sudo service redis-server start
+
+sudo -u postgres psql -c "CREATE USER lago WITH PASSWORD 'changeme' SUPERUSER;" || true
+sudo -u postgres psql -c "ALTER USER lago WITH PASSWORD 'changeme' SUPERUSER;"
+sudo -u postgres createdb -O lago lago || true
+
+cd api
 bundle install
 bundle exec rails db:prepare
-bundle exec rails server -p 3000
 ```
 
-Em outro terminal, suba o worker quando Redis estiver rodando:
+O usuario `lago` fica como `SUPERUSER` somente no ambiente local porque o `structure.sql` do Lago usa extensoes como `pg_partman`.
+
+### 4. Subir API e Sidekiq
+
+Terminal 1:
 
 ```powershell
-cd C:\Users\ETUS-0711\Documents\PROJETOS\etus-projects\bfp-lago\api
-bundle exec sidekiq
+wsl -d Ubuntu -- bash -lc 'cd /mnt/c/Users/ETUS-0711/Documents/PROJETOS/etus-projects/bfp-lago && tr -d "\r" < scripts/local/start-api-wsl.sh > /tmp/start-api-wsl.sh && BFP_LAGO_ROOT="$PWD" bash /tmp/start-api-wsl.sh'
 ```
 
-## 7. Instalar dependencias e subir front
+Terminal 2:
 
 ```powershell
+wsl -d Ubuntu -- bash -lc 'cd /mnt/c/Users/ETUS-0711/Documents/PROJETOS/etus-projects/bfp-lago && tr -d "\r" < scripts/local/start-sidekiq-wsl.sh > /tmp/start-sidekiq-wsl.sh && BFP_LAGO_ROOT="$PWD" bash /tmp/start-sidekiq-wsl.sh'
+```
+
+Valide a API:
+
+```powershell
+curl http://localhost:3000/health
+```
+
+### 5. Subir front no Windows
+
+Opcao com Node portatil em `.local/node-v24.18.0-win-x64`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\local\start-front.ps1
+```
+
+Ou manualmente:
+
+```powershell
+$env:Path = "C:\Users\ETUS-0711\Documents\PROJETOS\etus-projects\bfp-lago\.local\node-v24.18.0-win-x64;" + $env:Path
 cd C:\Users\ETUS-0711\Documents\PROJETOS\etus-projects\bfp-lago\front
+corepack enable
+corepack prepare pnpm@10.34.4 --activate
 pnpm install
 pnpm dev --host 127.0.0.1 --port 5173
 ```
 
 Abra `http://localhost:5173`.
 
-Credenciais locais criadas pelo seed:
+## macOS
+
+### 1. Dependencias
+
+```bash
+brew install mise postgresql@16 redis pg_partman openssl libyaml libpq
+
+mise install ruby@4.0.2 node@24.18.0 rust@stable
+mise use -g ruby@4.0.2 node@24.18.0 rust@stable
+
+gem install bundler -v 4.0.4
+corepack enable
+corepack prepare pnpm@10.34.4 --activate
+```
+
+Se `pg_partman` nao estiver disponivel no Homebrew da maquina, instale a extensao pelo pacote recomendado para a versao local do PostgreSQL ou compile a partir do projeto oficial.
+
+### 2. Banco e Redis
+
+```bash
+brew services start postgresql@16
+brew services start redis
+
+createuser -s lago || true
+createdb -O lago lago || true
+psql -d postgres -c "ALTER USER lago WITH PASSWORD 'changeme' SUPERUSER;"
+```
+
+### 3. API e front
+
+```bash
+cp api/.env.example api/.env
+cp front/.env.example front/.env
+mkdir -p api/config/keys
+openssl genrsa 2048 > api/config/keys/private.pem
+
+cd api
+bundle install
+bundle exec rails db:prepare
+bundle exec rails server -p 3000
+```
+
+Em outro terminal:
+
+```bash
+cd api
+bundle exec sidekiq
+```
+
+Em outro terminal:
+
+```bash
+cd front
+pnpm install
+pnpm dev --host 127.0.0.1 --port 5173
+```
+
+## Linux
+
+Exemplo Ubuntu/Debian:
+
+```bash
+sudo apt update
+sudo apt install -y build-essential libssl-dev libreadline-dev zlib1g-dev \
+  libyaml-dev libffi-dev libpq-dev redis-server git curl ca-certificates \
+  pkg-config libclang-dev clang cmake postgresql postgresql-contrib \
+  postgresql-16-partman
+
+curl https://mise.run | sh
+echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc
+source ~/.bashrc
+
+mise install ruby@4.0.2 node@24.18.0 rust@stable
+mise use -g ruby@4.0.2 node@24.18.0 rust@stable
+
+gem install bundler -v 4.0.4
+corepack enable
+corepack prepare pnpm@10.34.4 --activate
+```
+
+Banco:
+
+```bash
+sudo service postgresql start
+sudo service redis-server start
+
+sudo -u postgres psql -c "CREATE USER lago WITH PASSWORD 'changeme' SUPERUSER;" || true
+sudo -u postgres psql -c "ALTER USER lago WITH PASSWORD 'changeme' SUPERUSER;"
+sudo -u postgres createdb -O lago lago || true
+```
+
+Aplicacao:
+
+```bash
+cp api/.env.example api/.env
+cp front/.env.example front/.env
+mkdir -p api/config/keys
+openssl genrsa 2048 > api/config/keys/private.pem
+
+cd api
+bundle install
+bundle exec rails db:prepare
+bundle exec rails server -p 3000
+```
+
+Terminais separados:
+
+```bash
+cd api && bundle exec sidekiq
+cd front && pnpm install && pnpm dev --host 127.0.0.1 --port 5173
+```
+
+## Credenciais locais
+
+Com `LAGO_CREATE_ORG=true`, o seed cria:
 
 - email: `admin@bfp.local`
 - senha: `password`
 - API key: `lago_key_bfp_local`
 
-## 8. Atualizar a partir do Lago no futuro
+## Troubleshooting
 
-Como `api/` e `front/` agora sao codigo comum dentro do `bfp-lago`, atualizar a partir do Lago original deve ser uma operacao manual e revisada:
+### `pg_partman` ou extensoes falhando no `db:prepare`
 
-1. Consulte o upstream principal:
+Confirme que o pacote da extensao esta instalado e que o usuario `lago` e `SUPERUSER` no banco local.
+
+### API tentando conectar em `db`
+
+Confirme que `api/config/database.yml` usa `DATABASE_URL` no ambiente `development` e que `api/.env` existe.
+
+### Front nao acha a API
+
+Confirme `front/.env`:
+
+```env
+API_URL=http://localhost:3000
+CODEGEN_API=http://localhost:3000/graphql
+```
+
+### Windows sem WSL configurado
+
+Rode `wsl --install -d Ubuntu`, abra o app Ubuntu uma vez e crie o usuario Linux. O setup nao termina enquanto esse primeiro usuario nao for criado.
+
+## Atualizar a partir do Lago
 
 ```powershell
 git fetch upstream
 git log --oneline main..upstream/main
 ```
 
-2. Para atualizar API ou Front, compare contra os repos originais do Lago em um clone temporario ou em uma branch separada:
-
-```powershell
-git clone https://github.com/getlago/lago-api.git C:\tmp\lago-api-upstream
-git clone https://github.com/getlago/lago-front.git C:\tmp\lago-front-upstream
-```
-
-3. Traga apenas as mudancas desejadas para `api/` e `front/`, rode testes e commite no `bfp-lago`.
-
-Evite rodar `git submodule update`, porque este repo nao usa mais submodulos.
+Traga mudancas de `getlago/lago-api` e `getlago/lago-front` manualmente para `api/` e `front/`. Nao use `git submodule update`.
