@@ -79,16 +79,19 @@ Lago supports dedicated workers for specific job types to improve performance an
 
 #### Configuration
 
-| Environment Variable | Queue Name       | Default Concurrency (Production) | Purpose              |
-|----------------------|------------------|----------------------------------|----------------------|
-| `SIDEKIQ_ANALYTICS`  | `analytics`      | 10                               | Analytics processing |
-| `SIDEKIQ_BILLING`    | `billing`        | 5                                | Billing operations   |
-| `SIDEKIQ_CLOCK`      | `clock_worker`   | 5                                | Scheduled tasks      |
-| `SIDEKIQ_EVENTS`     | `events`         | 10                               | Event processing     |
-| `SIDEKIQ_PAYMENTS`   | `payments`       | 10                               | Payment operations   |
-| `SIDEKIQ_PDF`        | `pdfs`           | 10                               | PDF generation       |
-| `SIDEKIQ_WEBHOOK`    | `webhook_worker` | 10                               | Webhook delivery     |
-| `SIDEKIQ_AI_AGENT`   | `ai_agent`       | 10                               | AI Agent             |
+| Environment Variable | Queue Name(s)                      | Default Concurrency (Production) | Purpose              |
+|----------------------|------------------------------------|----------------------------------|----------------------|
+| `SIDEKIQ_ANALYTICS`  | `analytics`, `analytics_low_priority` | 10                            | Analytics processing |
+| `SIDEKIQ_BILLING`    | `billing`, `billing_low_priority`  | 5                                | Billing operations   |
+| `SIDEKIQ_CLOCK`      | `clock_worker`                     | 5                                | Scheduled tasks      |
+| `SIDEKIQ_EVENTS`     | `events`                           | 10                               | Event processing     |
+| `SIDEKIQ_PAYMENTS`   | `payments`                         | 10                               | Payment operations   |
+| `SIDEKIQ_PDF`        | `pdfs`                             | 10                               | PDF generation       |
+| `SIDEKIQ_WEBHOOK`    | `webhook_worker`                   | 10                               | Webhook delivery     |
+| `SIDEKIQ_AI_AGENT`   | `ai_agent`                         | 10                               | AI Agent             |
+| `SIDEKIQ_ALERTS`     | `alerts_high_priority`, `alerts`   | 5                                | Usage Alerting       |
+| `SIDEKIQ_WALLETS`    | `wallets`                          | 10                               | Wallet balance refresh |
+| _(always on, no toggle)_ | `meilisearch`                  | 10                               | Meilisearch invoice indexing |
 
 #### Queue Routing Logic
 
@@ -215,6 +218,10 @@ Lago's production deployment includes multiple worker types, each handling speci
 | **Payments Worker** | `payments` | Handles payment processing operations | Recommended | Enable with `SIDEKIQ_PAYMENTS=true`; scale based on payment volume |
 | **PDF Worker** | `pdfs` | Generates PDF invoices and documents | Highly Recommended | Enable with `SIDEKIQ_PDF=true`; PDF generation is CPU-intensive |
 | **Webhook Worker** | `webhook_worker` | Delivers webhooks to customer endpoints | Highly Recommended | Enable with `SIDEKIQ_WEBHOOK=true`; isolate webhook delays from core processing |
+| **Wallet Worker** | `wallets` | Refreshes wallet ongoing balances | Optional | Enable with `SIDEKIQ_WALLETS=true`; otherwise jobs fall back to `low_priority` |
+| **Alerts Worker** | `alerts_high_priority`, `alerts` | Processes usage alerting jobs | Optional | Enable with `SIDEKIQ_ALERTS=true`; otherwise jobs fall back to `default` |
+| **AI Agent Worker** | `ai_agent` | Handles AI Agent jobs | Optional | Enable with `SIDEKIQ_AI_AGENT=true` |
+| **Meilisearch Worker** | `meilisearch` | Indexes invoices into Meilisearch | Optional | Always routes to the `meilisearch` queue (no toggle); requires this worker when Meilisearch search is used |
 
 #### Specialized Workers
 

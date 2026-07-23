@@ -70,6 +70,7 @@ x-backend-environment: &backend-env
   # - SIDEKIQ_CLOCK=true
   # - SIDEKIQ_WEBHOOK=true
   # - SIDEKIQ_AI_AGENT=true
+  # - SIDEKIQ_ALERTS=true
 x-frontend-environment: &frontend-env
   "API_URL": ${LAGO_API_URL:-http://localhost:3000}
   "APP_ENV": production
@@ -225,6 +226,20 @@ services:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.events.worker.sh"]
+  #  environment:
+  #    <<: [*backend-env, *lago-api-url]
+
+  # You can uncomment this if you want to use a dedicated Sidekiq worker for the usage monitoring & alerting jobs.
+  # It is recommended if you have a high usage of alerts to not impact the other Sidekiq Jobs.
+  # Set SIDEKIQ_ALERTS=true on the other workers so alerting jobs are routed to this worker.
+  #api-alerts-worker:
+  #  <<: *backend-image
+  #  container_name: lago-alerts-worker
+  #  restart: unless-stopped
+  #  depends_on:
+  #    api:
+  #      condition: service_healthy
+  #  command: ["./scripts/start.alerts.worker.sh"]
   #  environment:
   #    <<: [*backend-env, *lago-api-url]
 
