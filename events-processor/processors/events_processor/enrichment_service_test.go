@@ -904,6 +904,109 @@ func TestEnrichEvent(t *testing.T) {
 				assert.Equal(t, "charge_id1", *eventResult.ChargeID)
 				assert.Equal(t, map[string]string{"country": "", "type": ""}, eventResult.GroupedBy)
 			})
+
+			t.Run("With a recurring billable metric and no subscription active at the event timestamp", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+				// Event dated 2025-03-03
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              1741007009.0,
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeCount,
+					Recurring:       true,
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				// Subscription started after the event timestamp but is currently active,
+				// so it is only found when falling back on time.Now().
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &event.OrganizationID,
+					ExternalID:     event.ExternalSubscriptionID,
+					PlanID:         "plan_id",
+					StartedAt:      utils.NewNullTime(time.Unix(1751000000, 0)),
+				}
+				// First lookup (event timestamp) misses, fallback lookup (now) hits.
+				testEnv.DataStore.ExpectSubscriptionNotFound()
+				testEnv.DataStore.SetSubscription(sub)
+				testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{})
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+
+				eventResult := enrichResult.Value()[0]
+				assert.NotNil(t, eventResult.Subscription)
+				assert.Equal(t, "sub123", eventResult.SubscriptionID)
+				assert.Equal(t, "plan_id", eventResult.PlanID)
+			})
+
+			t.Run("With a non-recurring billable metric and no subscription active at the event timestamp", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "api_calls",
+					Timestamp:              1741007009.0,
+					Source:                 "SQS",
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeCount,
+					Recurring:       false,
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				// A currently active subscription exists but started after the event
+				// timestamp. Since the metric is not recurring, no fallback happens and
+				// the event is enriched without a subscription (a single lookup, at the
+				// event timestamp, that misses).
+				if mode.useCache {
+					// In cache mode the timestamp filtering excludes the subscription
+					// because it started after the event timestamp.
+					sub := &models.Subscription{
+						ID:             "sub123",
+						OrganizationID: &event.OrganizationID,
+						ExternalID:     event.ExternalSubscriptionID,
+						PlanID:         "plan_id",
+						StartedAt:      utils.NewNullTime(time.Unix(1751000000, 0)),
+					}
+					testEnv.DataStore.SetSubscription(sub)
+				} else {
+					testEnv.DataStore.ExpectSubscriptionNotFound()
+				}
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				assert.True(t, enrichResult.Success())
+				assert.Equal(t, 1, len(enrichResult.Value()))
+
+				eventResult := enrichResult.Value()[0]
+				assert.Nil(t, eventResult.Subscription)
+				assert.Equal(t, "", eventResult.SubscriptionID)
+			})
 		})
 	}
 }
