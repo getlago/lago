@@ -3,6 +3,7 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/getlago/lago-expression/expression-go"
 	"github.com/getlago/lago/events-processor/cache"
@@ -88,12 +89,52 @@ func (s *EventEnrichmentService) enrichWithBillableMetric(enrichedEvent *models.
 
 	if bm.AggregationType == models.AggregationTypeCount {
 		enrichedEvent.Value = utils.StringPtr("1")
-	} else {
-		var value = fmt.Sprintf("%v", enrichedEvent.Properties[bm.FieldName])
-		enrichedEvent.Value = &value
+		return utils.SuccessResult(enrichedEvent)
 	}
 
+	if enrichedEvent.Source == models.HTTP_RUBY {
+		// Rails has already validated the event upstream and surfaces missing
+		// field_name through the events.errors webhook; keep the legacy fallback
+		// so we do not dead-letter the same transaction twice.
+		value := fmt.Sprintf("%v", enrichedEvent.Properties[bm.FieldName])
+		enrichedEvent.Value = &value
+		return utils.SuccessResult(enrichedEvent)
+	}
+
+	rawValue, present := enrichedEvent.Properties[bm.FieldName]
+	if !present || rawValue == nil {
+		return missingAggregationPropertyResult(bm, fmt.Sprintf("Missing mandatory field %q for aggregation type %q", bm.FieldName, bm.AggregationType.String()))
+	}
+
+	value := fmt.Sprintf("%v", rawValue)
+
+	if requiresNumericField(bm.AggregationType) {
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return missingAggregationPropertyResult(bm, fmt.Sprintf("Non-numeric value %q for field %q on aggregation type %q", value, bm.FieldName, bm.AggregationType.String()))
+		}
+	}
+
+	enrichedEvent.Value = &value
 	return utils.SuccessResult(enrichedEvent)
+}
+
+func requiresNumericField(t models.AggregationType) bool {
+	switch t {
+	case models.AggregationTypeSum,
+		models.AggregationTypeMax,
+		models.AggregationTypeWeightedSum,
+		models.AggregationTypeLatest:
+		return true
+	}
+	return false
+}
+
+func missingAggregationPropertyResult(bm *models.BillableMetric, message string) utils.Result[*models.EnrichedEvent] {
+	err := fmt.Errorf("missing or invalid aggregation property %q for metric %q", bm.FieldName, bm.Code)
+	return utils.FailedResult[*models.EnrichedEvent](err).
+		AddErrorDetails("missing_aggregation_property", message).
+		NonRetryable().
+		NonCapturable()
 }
 
 func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
