@@ -53,6 +53,38 @@ func TestFetchBillableMetric(t *testing.T) {
 		assert.Equal(t, AggregationType(0), metric.AggregationType)
 		assert.Equal(t, "api_requests", metric.FieldName)
 		assert.Equal(t, "count", metric.Expression)
+		assert.False(t, metric.Recurring)
+	})
+
+	t.Run("should return recurring billable metric when found", func(t *testing.T) {
+		// Setup
+		store, mock, cleanup := setupApiStore(t)
+		defer cleanup()
+
+		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+		code := "api_calls"
+		now := time.Now()
+
+		// Define expected rows and columns, including the recurring flag
+		columns := []string{"id", "organization_id", "code", "aggregation_type", "recurring", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+		rows := sqlmock.NewRows(columns).
+			AddRow("bm123", orgID, code, 0, true, "api_requests", "count", now, now, nil)
+
+		// Expect the query
+		mock.ExpectQuery(fetchBillableMetricQuery).
+			WithArgs(orgID, code, 1).
+			WillReturnRows(rows)
+
+		// Execute
+		result := store.FetchBillableMetric(orgID, code)
+
+		// Assert
+		assert.True(t, result.Success())
+
+		metric := result.Value()
+		assert.NotNil(t, metric)
+		assert.Equal(t, "bm123", metric.ID)
+		assert.True(t, metric.Recurring)
 	})
 
 	t.Run("should return error when billable metric not found", func(t *testing.T) {

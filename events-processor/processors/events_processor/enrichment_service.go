@@ -3,6 +3,7 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
 	"github.com/getlago/lago/events-processor/cache"
@@ -48,11 +49,12 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 		}
 	}
 
-	var subResult utils.Result[*models.Subscription]
-	if s.memCache != nil {
-		subResult = s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
-	} else {
-		subResult = s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, enrichedEvent.Time)
+	subResult := s.fetchSubscription(event, enrichedEvent.Time)
+
+	// For recurring billable metrics, if no subscription is active at the event
+	// timestamp, fall back on the currently active subscription rather than failing.
+	if subResult.Failure() && !subResult.IsCapturable() && bm != nil && bm.Recurring {
+		subResult = s.fetchSubscription(event, time.Now())
 	}
 
 	if subResult.Failure() {
@@ -73,6 +75,13 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 
 	enrichedEvents := s.enrichWithChargeInfo(enrichedEvent)
 	return enrichedEvents
+}
+
+func (s *EventEnrichmentService) fetchSubscription(event *models.Event, timestamp time.Time) utils.Result[*models.Subscription] {
+	if s.memCache != nil {
+		return s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
+	}
+	return s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
 }
 
 func (s *EventEnrichmentService) enrichWithBillableMetric(enrichedEvent *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[*models.EnrichedEvent] {

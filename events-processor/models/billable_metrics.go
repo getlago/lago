@@ -48,6 +48,7 @@ type BillableMetric struct {
 	OrganizationID  string          `gorm:"->" json:"organization_id"`
 	Code            string          `gorm:"->" json:"code"`
 	AggregationType AggregationType `gorm:"->" json:"aggregation_type"`
+	Recurring       bool            `gorm:"->" json:"recurring"`
 	FieldName       string          `gorm:"->" json:"field_name"`
 	Expression      string          `gorm:"->" json:"expression"`
 	CreatedAt       utils.NullTime  `gorm:"->" json:"created_at"`
@@ -89,6 +90,7 @@ func GetAllBillableMetrics(db *gorm.DB) utils.Result[[]BillableMetric] {
 			"organization_id",
 			"code",
 			"aggregation_type",
+			"recurring",
 			"field_name",
 			"expression",
 			"created_at",
