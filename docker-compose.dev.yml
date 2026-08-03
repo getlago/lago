@@ -286,6 +286,17 @@ services:
         bundle install && ./scripts/start.ai_agent.worker.sh
       '
 
+  api-meilisearch-worker:
+    <<: *api_worker
+    container_name: lago_api_meilisearch_worker_dev
+    command: |
+      bash -c '
+        if [[ -n "$${SIDEKIQ_CONCURRENCY_MEILISEARCH}" ]]; then
+          export SIDEKIQ_CONCURRENCY=$${SIDEKIQ_CONCURRENCY_MEILISEARCH}
+        fi
+        bundle install && ./scripts/start.meilisearch.worker.sh
+      '
+
   api-clock:
     image: api_dev
     pull_policy: never
