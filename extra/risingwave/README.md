@@ -42,7 +42,8 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
 | `sql/04_enrichment.sql` | Stage 1 temporal joins (append-only), stage 2 ranking + dedup |
-| `sql/05_usage.sql` | `usage_realtime` MV (count/sum) |
+| `sql/05_usage.sql` | `usage_realtime` MV (count/sum, running totals) + `usage_hourly` MV (per-hour time series keyed on event time) |
+| `clickhouse/usage_hourly.sql` | ClickHouse serving table (ReplacingMergeTree(ver, is_deleted)) fed by the `usage_hourly` upsert sink — dashboard/analytics history; query with FINAL |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → usage row emitted) |
 | `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_realtime`* over pgwire (checkpoint visibility included) |
@@ -130,8 +131,13 @@ recently updated `usage_realtime` rows. Provisioning lives in
 **Phase 3 — serve from it**
 - Wallet ongoing balance MV (usage + credits), alert threshold-crossing MV →
   Kafka → alert worker.
-- Rails reads `usage_realtime` over pgwire (port 4566) instead of the Redis
-  charge cache; retire the refresh-flag / cache-expiry loop for count/sum.
+- Rails reads current usage from a Postgres-sunk projection of
+  `usage_realtime` (or pgwire) instead of the Redis charge cache; retire the
+  refresh-flag / cache-expiry loop for count/sum.
+- Customer-facing hourly dashboards read `default.usage_hourly` in ClickHouse
+  (validated: hours keyed on event time, backfill included, corrections
+  propagate as row replacements — 3 sinks total: Kafka=push, PG=live state,
+  CH=time-series history). Successor to the daily_usages batch computation.
 
 **Parity-diff normalization notes**
 - Go emits `"<nil>"` for a missing sum field; RW emits `null`.

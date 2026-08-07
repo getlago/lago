@@ -36,3 +36,34 @@ WHERE aggregation_type_code IN (0, 1) -- count, sum
 GROUP BY
     organization_id, subscription_id, plan_id, code,
     charge_id, charge_filter_id, grouped_by::VARCHAR, aggregation_type;
+
+-- Hourly usage time-series per charge/filter, keyed on the customer-supplied
+-- event timestamp (late/backfilled events land in the hour the customer
+-- expects). Sits downstream of dedup, so corrections update the affected
+-- hour. Sunk to ClickHouse (06_sinks.sql) which serves dashboard history;
+-- RisingWave only needs to retain recent window state.
+CREATE MATERIALIZED VIEW IF NOT EXISTS usage_hourly AS
+SELECT
+    window_start AS hour,
+    organization_id,
+    subscription_id,
+    plan_id,
+    code,
+    charge_id,
+    COALESCE(charge_filter_id, '') AS charge_filter_id,
+    grouped_by::VARCHAR AS grouped_by,
+    aggregation_type,
+    COUNT(*) AS events_count,
+    SUM(
+        CASE WHEN regexp_match(value, '^-?[0-9]+(\.[0-9]+)?$') IS NOT NULL
+             THEN value::DECIMAL
+             ELSE 0
+        END
+    ) AS units
+FROM TUMBLE(events_expanded, event_time, INTERVAL '1 hour')
+WHERE aggregation_type_code IN (0, 1) -- count, sum
+  AND subscription_id IS NOT NULL
+  AND charge_id IS NOT NULL
+GROUP BY
+    window_start, organization_id, subscription_id, plan_id, code,
+    charge_id, COALESCE(charge_filter_id, ''), grouped_by::VARCHAR, aggregation_type;

@@ -36,3 +36,33 @@ WITH (
     properties.bootstrap.server = 'redpanda:9092',
     primary_key = 'organization_id,transaction_id,charge_id'
 ) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');
+
+-- Hourly usage history -> ClickHouse (customer dashboards / analytics).
+-- Upserts into the ReplacingMergeTree created by clickhouse/usage_hourly.sql;
+-- corrections re-emit the affected hour and replace the row version.
+CREATE SINK IF NOT EXISTS usage_hourly_clickhouse_sink AS
+SELECT
+    -- event_time is naive UTC; the ClickHouse sink requires timestamptz.
+    hour AT TIME ZONE 'UTC' AS hour,
+    organization_id,
+    subscription_id,
+    plan_id,
+    code,
+    charge_id,
+    charge_filter_id,
+    grouped_by,
+    aggregation_type,
+    events_count,
+    units
+FROM usage_hourly
+WITH (
+    connector = 'clickhouse',
+    type = 'upsert',
+    primary_key = 'organization_id,subscription_id,charge_id,charge_filter_id,grouped_by,hour',
+    clickhouse.url = 'http://clickhouse:8123',
+    clickhouse.user = 'default',
+    clickhouse.password = 'default',
+    clickhouse.database = 'default',
+    clickhouse.table = 'usage_hourly',
+    clickhouse.delete.column = 'is_deleted'
+);

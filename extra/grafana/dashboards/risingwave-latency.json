@@ -127,10 +127,32 @@
       ]
     },
     {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Hourly usage (count/sum metrics, top charges)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": { "drawStyle": "bars", "fillOpacity": 60, "stacking": { "mode": "normal" } }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT hour AT TIME ZONE 'UTC' AS \"time\", code || ' / ' || COALESCE(NULLIF(charge_filter_id, ''), 'default') AS metric, units::double precision AS value FROM usage_hourly WHERE $__timeFilter(hour AT TIME ZONE 'UTC') ORDER BY 1;"
+        }
+      ]
+    },
+    {
       "id": 6,
       "type": "table",
       "title": "usage_realtime — most recently updated",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 22 },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 31 },
       "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": { "showHeader": true },

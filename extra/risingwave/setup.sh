@@ -19,6 +19,14 @@ run_psql() {
   fi
 }
 
+# ClickHouse serving tables must exist before the RisingWave sinks that
+# validate them at CREATE time.
+CH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/clickhouse"
+for file in "$CH_DIR"/*.sql; do
+  echo "==> Applying $(basename "$file") (clickhouse)"
+  docker exec -i lago_clickhouse_dev clickhouse-client --password default -n < "$file"
+done
+
 for file in "$SQL_DIR"/*.sql; do
   echo "==> Applying $(basename "$file")"
   if command -v psql >/dev/null 2>&1; then
