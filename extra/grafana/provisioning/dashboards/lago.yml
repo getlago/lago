@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: lago
+    orgId: 1
+    folder: Lago
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

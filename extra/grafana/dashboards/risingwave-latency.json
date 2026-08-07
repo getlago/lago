@@ -1,0 +1,147 @@
+{
+  "uid": "lago-rw-latency",
+  "title": "RisingWave — Events pipeline latency",
+  "tags": ["lago", "risingwave"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Last minute",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "events / min" },
+            "properties": [{ "id": "unit", "value": "none" }]
+          }
+        ]
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT e.e2e_avg_ms AS \"e2e avg\", u.usage_avg_ms AS \"usage avg\", e.events AS \"events / min\" FROM (SELECT * FROM pipeline_latency_e2e ORDER BY window_start DESC LIMIT 1) e LEFT JOIN (SELECT * FROM usage_latency ORDER BY window_start DESC LIMIT 1) u ON true;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "End-to-end: ingest → enriched event on Kafka",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", e2e_avg_ms AS \"avg\", e2e_min_ms AS \"min\", e2e_max_ms AS \"max\" FROM pipeline_latency_e2e WHERE $__timeFilter(window_start) ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Usage: ingest → usage_realtime row emitted",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", usage_avg_ms AS \"avg\", usage_min_ms AS \"min\", usage_max_ms AS \"max\" FROM usage_latency WHERE $__timeFilter(window_start) ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Ingest → raw event on Kafka",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", ingest_to_kafka_avg_ms AS \"avg\", ingest_to_kafka_max_ms AS \"max\" FROM pipeline_latency WHERE $__timeFilter(window_start) ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Throughput per minute",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": { "drawStyle": "bars", "fillOpacity": 60, "spanNulls": false }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", events AS \"raw events\" FROM pipeline_latency WHERE $__timeFilter(window_start) ORDER BY 1;"
+        },
+        {
+          "refId": "B",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start AS \"time\", usage_updates AS \"usage updates\" FROM usage_latency WHERE $__timeFilter(window_start) ORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "usage_realtime — most recently updated",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT last_ingested_at, code, aggregation_type, charge_filter_id, grouped_by, events_count, units, subscription_id FROM usage_realtime ORDER BY last_ingested_at DESC LIMIT 20;"
+        }
+      ]
+    }
+  ]
+}

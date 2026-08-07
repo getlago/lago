@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Apply the RisingWave schema (sources, CDC tables, MVs, UDFs, sinks).
+#
+# Usage: ./extra/risingwave/setup.sh
+# Requires the dev stack to be up (db, redpanda, risingwave) and the Rails
+# migrations to have run (CDC snapshots the Postgres tables).
+set -euo pipefail
+
+RW_HOST="${RW_HOST:-localhost}"
+RW_PORT="${RW_PORT:-4566}"
+SQL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sql"
+
+run_psql() {
+  if command -v psql >/dev/null 2>&1; then
+    psql -h "$RW_HOST" -p "$RW_PORT" -d dev -U root -v ON_ERROR_STOP=1 "$@"
+  else
+    # Fall back to the psql shipped in the Postgres dev container.
+    docker exec -i lago_db_dev psql -h risingwave -p 4566 -d dev -U root -v ON_ERROR_STOP=1 "$@"
+  fi
+}
+
+for file in "$SQL_DIR"/*.sql; do
+  echo "==> Applying $(basename "$file")"
+  if command -v psql >/dev/null 2>&1; then
+    run_psql -f "$file"
+  else
+    run_psql < "$file"
+  fi
+done
+
+echo "==> Done. Dashboard: http://localhost:5691 — SQL: psql -h $RW_HOST -p $RW_PORT -d dev -U root"

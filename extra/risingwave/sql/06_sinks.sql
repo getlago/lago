@@ -1,0 +1,38 @@
+-- Shadow output: enriched + expanded events, shaped like the Go processor's
+-- EnrichedEvent JSON, produced to a shadow topic for parity diffing against
+-- events_enriched_expanded.
+--
+-- force_append_only: corrections (reprocessed events) are emitted as new
+-- messages rather than retractions — same at-least-once semantics consumers
+-- already handle today.
+CREATE SINK IF NOT EXISTS events_enriched_expanded_shadow_sink AS
+SELECT
+    organization_id,
+    external_subscription_id,
+    subscription_id,
+    plan_id,
+    transaction_id,
+    code,
+    aggregation_type,
+    properties,
+    precise_total_amount_cents,
+    source,
+    value,
+    event_ts AS "timestamp",
+    charge_id,
+    charge_updated_at,
+    charge_filter_id,
+    charge_filter_updated_at,
+    grouped_by,
+    target_wallet_code,
+    -- Not part of the Go EnrichedEvent shape; carried for e2e latency
+    -- measurement (07_observability.sql). Ignore when parity-diffing.
+    ingested_at
+FROM events_expanded
+WHERE charge_id IS NOT NULL
+WITH (
+    connector = 'kafka',
+    topic = 'events_enriched_expanded_shadow',
+    properties.bootstrap.server = 'redpanda:9092',
+    primary_key = 'organization_id,transaction_id,charge_id'
+) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');
