@@ -74,7 +74,15 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 
 ## Metrics & latency
 
-**Grafana dashboard** (provisioned, zero setup): start it with
+**Grafana dashboards** (provisioned, zero setup):
+- `lago-rw-latency` — pipeline latency, throughput, hourly usage.
+- `lago-rw-serving` (http://localhost:3001/d/lago-rw-serving) — serving
+  health: projection rows/staleness in the lago Postgres DB (second
+  provisioned datasource), orphaned usage (events without a covering
+  billing period — red means the periods clock job has a gap), current +
+  upcoming period coverage, usage by period, and what the API serves.
+
+Start it with
 `docker compose -f docker-compose.dev.yml up -d grafana`, then open
 http://localhost:3001/d/lago-rw-latency (or https://grafana.lago.dev).
 Anonymous admin access in dev, auto-refreshes every 10s. Grafana queries

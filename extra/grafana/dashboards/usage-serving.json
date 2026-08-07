@@ -1,0 +1,155 @@
+{
+  "uid": "lago-rw-serving",
+  "title": "RisingWave — Usage serving health",
+  "tags": ["lago", "risingwave"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Projection rows (lago PG)",
+      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"rows\", count(DISTINCT subscription_id) AS \"subscriptions\" FROM usage_realtime_projections;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Projection staleness (since last usage write)",
+      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3600 },
+              { "color": "red", "value": 21600 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(EXTRACT(EPOCH FROM (now() - max(last_ingested_at))), 0)::bigint AS staleness FROM usage_realtime_projections;"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Orphaned usage (no billing period) — should be 0",
+      "gridPos": { "h": 5, "w": 7, "x": 10, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(SUM(events_count), 0) AS \"orphaned events\", COUNT(*) AS \"orphaned usage rows\" FROM usage_realtime WHERE billing_period_id IS NULL;"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Billing periods (CDC)",
+      "gridPos": { "h": 5, "w": 7, "x": 17, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) FILTER (WHERE charges_from AT TIME ZONE 'UTC' <= now() AND charges_to AT TIME ZONE 'UTC' >= now()) AS \"current\", COUNT(*) FILTER (WHERE charges_from AT TIME ZONE 'UTC' > now()) AS \"upcoming\" FROM subscription_billing_periods;"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Usage by billing period (RisingWave usage_realtime)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT period_charges_from::date AS period_start, period_charges_to::date AS period_end, COUNT(*) AS usage_rows, SUM(events_count) AS events, SUM(units) AS units FROM usage_realtime GROUP BY 1, 2 ORDER BY 1 DESC NULLS FIRST LIMIT 20;"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Open billing periods per subscription",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT s.external_id, bp.charges_from, bp.charges_to FROM subscription_billing_periods bp JOIN subscriptions s ON s.id = bp.subscription_id WHERE bp.charges_to AT TIME ZONE 'UTC' >= now() ORDER BY s.external_id, bp.charges_from LIMIT 30;"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "usage_realtime_projections — what the API serves (lago PG)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 14 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT last_ingested_at, code, aggregation_type, NULLIF(charge_filter_id, '') AS charge_filter_id, grouped_by, events_count, units, period_charges_from::date AS period FROM usage_realtime_projections ORDER BY last_ingested_at DESC NULLS LAST LIMIT 25;"
+        }
+      ]
+    }
+  ]
+}
