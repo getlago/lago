@@ -56,6 +56,17 @@ Branches: meta `poc/risingwave-realtime-usage`, api
 - [ ] Plain `events_enriched` + `events_charged_in_advance` sinks — only
       needed to retire the Go processor entirely.
 
+## Load-test finding (2026-08-08)
+
+At per-event trigger volume (~500 ev/s) the wallet trigger consumer is the
+bottleneck: peak lag 46k messages (drained post-run via batch-collapse).
+Enrichment/usage layers absorbed the load (e2e 14ms avg, usage rows ~145ms,
+projections 0s stale). Fix candidate that also solves the trailing-edge
+issue: emit triggers from a 1s TUMBLE window per customer with EMIT ON
+WINDOW CLOSE — append-only (eager delivery, no upsert trailing buffer) AND
+coalesced (≤1 msg/customer/second). Also: scale consumer processes across
+the 6 partitions. Full data: benchmark/load/.
+
 ## 4. Process
 
 - [ ] Split branches into reviewable PRs: billing periods (standalone,
