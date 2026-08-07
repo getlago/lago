@@ -1,0 +1,62 @@
+[
+  {
+    "case": "count / no filters",
+    "path": "clickhouse",
+    "aggregator": "BillableMetrics::Aggregations::CountService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 866,
+    "min_ms": 627,
+    "max_ms": 1037
+  },
+  {
+    "case": "count / no filters",
+    "path": "risingwave",
+    "aggregator": "BillableMetrics::Aggregations::Realtime::CountService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 377,
+    "min_ms": 209,
+    "max_ms": 1016
+  },
+  {
+    "case": "sum / charge filter (tier=gold)",
+    "path": "clickhouse",
+    "aggregator": "BillableMetrics::Aggregations::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 860,
+    "min_ms": 222,
+    "max_ms": 1117
+  },
+  {
+    "case": "sum / charge filter (tier=gold)",
+    "path": "risingwave",
+    "aggregator": "BillableMetrics::Aggregations::Realtime::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 647,
+    "min_ms": 8,
+    "max_ms": 1018
+  },
+  {
+    "case": "sum / pricing_group_keys (region)",
+    "path": "clickhouse",
+    "aggregator": "BillableMetrics::Aggregations::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 924,
+    "min_ms": 225,
+    "max_ms": 1085
+  },
+  {
+    "case": "sum / pricing_group_keys (region)",
+    "path": "risingwave",
+    "aggregator": "BillableMetrics::Aggregations::Realtime::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 1065,
+    "min_ms": 1059,
+    "max_ms": 1074
+  }
+]
