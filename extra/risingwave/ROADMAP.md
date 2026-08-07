@@ -61,12 +61,40 @@ Branches: meta `poc/risingwave-realtime-usage`, api
 - [ ] Split branches into reviewable PRs: billing periods (standalone,
       shippable independently) → projections + read path → wallet refresh.
 
+## Open issue: Postgres sink trailing-edge flush latency
+
+The `usage_projection_pg_sink` (upsert sink from an updating MV) delays the
+flush of an isolated trailing change by seconds to tens of seconds when the
+stream goes idle. Not fixed by `SET sink_decouple = false` at sink creation,
+nor `ALTER SYSTEM SET sink_decouple = false` + restart (RW v3.0.2
+single-node). Consequences and current state:
+
+- Correctness is protected: triggers carry a per-subscription
+  `last_ingested_at` watermark and `Wallets::RealtimeRefreshService` waits
+  (5s bound) for projections to catch up; on timeout it refreshes anyway and
+  the next event or reconciliation sweep corrects.
+- Wallet latency is bimodal: ~0.4–1.1s when the projection flushes promptly,
+  ~5.3s when it trails (watermark timeout). The Kafka trigger side was fixed
+  by sourcing triggers from the append-only event stream (upsert sinks from
+  updating MVs have the same trailing behavior — that was the wallet-trigger
+  30–90s bug).
+- To investigate: RW GitHub issues / newer versions for upsert-sink flush
+  pacing; whether a real multi-node cluster behaves differently; per-sink
+  flush knobs. Alternatives if unresolved: raise the watermark timeout, or
+  have the refresh read usage over pgwire from `usage_serving` directly
+  (checkpoint-consistent read, no sink in the path) for the wallet path.
+
 ## Known gotchas (hard-won, do not rediscover)
 
 - Temporal joins: append-only LHS only (enrich first, dedup second); RHS
   must be a TABLE (sink-into-table for derived relations like flat_filters).
-- Kafka sinks: `force_append_only` silently DROPS updates — use
-  `FORMAT UPSERT` when rows update in place (wallet triggers bug).
+- Kafka sinks: `force_append_only` silently DROPS updates; but upsert sinks
+  from updating MVs buffer the trailing per-key change (isolated events
+  delivered 30–90s late). For triggers, prefer per-event append-only sinks
+  from the append-only stream and coalesce in the consumer.
+- Karafka defaults `max_wait_time` to 1000ms — sparse-topic consumers add up
+  to 1s batching wait; set ~100ms per topic (no-op under load, batches fill
+  via max_messages).
 - `proctime()` is barrier-aligned (up to 1s early) — never use for latency;
   measure from Kafka broker timestamps via topic loopback.
 - JSONB can't be in a streaming group key (group on `::VARCHAR` rendering).
