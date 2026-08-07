@@ -74,13 +74,13 @@
   from Kafka broker timestamps and serving-store polling — the legacy path
   (Go events-processor → ClickHouse → refresh flag → clock sweep) against the new
   RisingWave path (streaming enrichment → incremental usage → event-driven wallet refresh).
-  Measured on the dev stack, August 07, 2026.</p>
+  Measured on the dev stack, August 08, 2026.</p>
 
   <div class="kpis">
-    <div class="tile"><div class="l">Event → wallet refreshed · before</div><div class="v">3.3 min</div><div class="d">median · flag + clock sweep (5&nbsp;min interval)</div></div>
+    <div class="tile"><div class="l">Event → wallet refreshed · before</div><div class="v">41.6 s</div><div class="d">median · flag + clock sweep (30 s interval)</div></div>
     <div class="tile"><div class="l">Event → wallet refreshed · after</div><div class="v accent">424 ms</div><div class="d">median · event-driven, no clock</div></div>
-    <div class="tile"><div class="l">Wallet freshness gain</div><div class="v good">469× faster</div><div class="d">and deterministic — no interval lottery</div></div>
-    <div class="tile"><div class="l">Usage readable · before → after</div><div class="v"><span style="color:var(--old)">942 ms</span> → <span class="accent" style="color:var(--new)">148 ms</span></div><div class="d">median · 6× faster, O(1) read</div></div>
+    <div class="tile"><div class="l">Wallet freshness gain</div><div class="v good">98× faster</div><div class="d">and deterministic — no interval lottery</div></div>
+    <div class="tile"><div class="l">Usage readable · before → after</div><div class="v"><span style="color:var(--old)">623 ms</span> → <span class="accent" style="color:var(--new)">148 ms</span></div><div class="d">median · 4× faster, O(1) read</div></div>
   </div>
 
   <h2>Latency by stage</h2>
@@ -100,7 +100,7 @@
         <li><b>Kafka</b> events-raw <em>· shared</em></li>
         <li><b>Go events-processor</b> enriches → Kafka → ClickHouse ingests</li>
         <li><b>Usage on request:</b> ClickHouse aggregation query per charge + Redis cache</li>
-        <li><b>Wallet:</b> Redis flag → clock consumes flags (10s) → refresh sweep every <b>5 min</b></li>
+        <li><b>Wallet:</b> Redis flag → clock consumes flags (10s) → refresh sweep every <b>30 s</b></li>
       </ol>
     </div>
     <div class="chain new">
@@ -117,13 +117,13 @@
   <h2>Every sample</h2>
   <p class="note">All measurements, no filtering. "timeout" = not observed within the probe window
   (legacy wallet probes bound at 7 min). The legacy wallet spread is structural: latency depends on
-  where in the 5-minute sweep interval the event lands.</p>
+  where in the 30 s sweep interval the event lands (production default: 5 min).</p>
   <div class="card chartwrap">
     <table>
       <thead><tr><th>Path</th><th>Event</th><th>Ingested</th><th>Enriched</th><th>Usage readable</th><th>Wallet refreshed</th></tr></thead>
-      <tbody><tr><td>legacy</td><td class='tx'>rwb-full-old-1915603-1</td><td>52 ms</td><td>70 ms</td><td>1.1 s</td><td>4.8 min</td></tr>
-<tr><td>legacy</td><td class='tx'>rwb-full-old-1915603-2</td><td>48 ms</td><td>59 ms</td><td>942 ms</td><td>3.3 min</td></tr>
-<tr><td>legacy</td><td class='tx'>rwb-full-old-1915603-3</td><td>50 ms</td><td>55 ms</td><td>611 ms</td><td>3.3 min</td></tr>
+      <tbody><tr><td>legacy</td><td class='tx'>rwb-full-old-2105728-1</td><td>48 ms</td><td>69 ms</td><td>623 ms</td><td>28.5 s</td></tr>
+<tr><td>legacy</td><td class='tx'>rwb-full-old-2105728-2</td><td>47 ms</td><td>51 ms</td><td>905 ms</td><td>41.6 s</td></tr>
+<tr><td>legacy</td><td class='tx'>rwb-full-old-2105728-3</td><td>47 ms</td><td>59 ms</td><td>492 ms</td><td>43.3 s</td></tr>
 <tr><td>risingwave</td><td class='tx'>rwb-full-new-1774689-1</td><td>45 ms</td><td>50 ms</td><td>227 ms</td><td>975 ms</td></tr>
 <tr><td>risingwave</td><td class='tx'>rwb-full-new-1774689-2</td><td>50 ms</td><td>54 ms</td><td>148 ms</td><td>424 ms</td></tr>
 <tr><td>risingwave</td><td class='tx'>rwb-full-new-1774689-3</td><td>50 ms</td><td>53 ms</td><td>151 ms</td><td>422 ms</td></tr>
@@ -145,7 +145,7 @@
 </main>
 <div class="tip" id="tip"></div>
 <script>
-const DATA = {"old": {"ingestion_ms": {"median": 50, "min": 48, "max": 52, "n": 3, "timeouts": 0, "samples": [48, 50, 52]}, "enriched_ms": {"median": 59, "min": 55, "max": 70, "n": 3, "timeouts": 0, "samples": [55, 59, 70]}, "usage_ms": {"median": 942, "min": 611, "max": 1057, "n": 3, "timeouts": 0, "samples": [611, 942, 1057]}, "wallet_ms": {"median": 199057, "min": 196980, "max": 289998, "n": 3, "timeouts": 0, "samples": [196980, 199057, 289998]}}, "new": {"ingestion_ms": {"median": 49, "min": 45, "max": 50, "n": 5, "timeouts": 0, "samples": [45, 47, 49, 50, 50]}, "enriched_ms": {"median": 52, "min": 50, "max": 54, "n": 5, "timeouts": 0, "samples": [50, 50, 52, 53, 54]}, "usage_ms": {"median": 148, "min": 141, "max": 227, "n": 5, "timeouts": 0, "samples": [141, 144, 148, 151, 227]}, "wallet_ms": {"median": 424, "min": 422, "max": 5435, "n": 5, "timeouts": 0, "samples": [422, 423, 424, 975, 5435]}}};
+const DATA = {"old": {"ingestion_ms": {"median": 47, "min": 47, "max": 48, "n": 3, "timeouts": 0, "samples": [47, 47, 48]}, "enriched_ms": {"median": 59, "min": 51, "max": 69, "n": 3, "timeouts": 0, "samples": [51, 59, 69]}, "usage_ms": {"median": 623, "min": 492, "max": 905, "n": 3, "timeouts": 0, "samples": [492, 623, 905]}, "wallet_ms": {"median": 41573, "min": 28498, "max": 43299, "n": 3, "timeouts": 0, "samples": [28498, 41573, 43299]}}, "new": {"ingestion_ms": {"median": 49, "min": 45, "max": 50, "n": 5, "timeouts": 0, "samples": [45, 47, 49, 50, 50]}, "enriched_ms": {"median": 52, "min": 50, "max": 54, "n": 5, "timeouts": 0, "samples": [50, 50, 52, 53, 54]}, "usage_ms": {"median": 148, "min": 141, "max": 227, "n": 5, "timeouts": 0, "samples": [141, 144, 148, 151, 227]}, "wallet_ms": {"median": 424, "min": 422, "max": 5435, "n": 5, "timeouts": 0, "samples": [422, 423, 424, 975, 5435]}}};
 const STEPS = [
   ["ingestion_ms", "Ingested"],
   ["enriched_ms", "Enriched"],

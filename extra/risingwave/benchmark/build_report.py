@@ -145,7 +145,7 @@ html = """<title>Realtime usage & wallets — pipeline latency, before / after</
   Measured on the dev stack, __DATE__.</p>
 
   <div class="kpis">
-    <div class="tile"><div class="l">Event → wallet refreshed · before</div><div class="v">__OLD_WALLET__</div><div class="d">median · flag + clock sweep (5&nbsp;min interval)</div></div>
+    <div class="tile"><div class="l">Event → wallet refreshed · before</div><div class="v">__OLD_WALLET__</div><div class="d">median · flag + clock sweep (__SWEEP__ interval)</div></div>
     <div class="tile"><div class="l">Event → wallet refreshed · after</div><div class="v accent">__NEW_WALLET__</div><div class="d">median · event-driven, no clock</div></div>
     <div class="tile"><div class="l">Wallet freshness gain</div><div class="v good">__SPEEDUP_WALLET__× faster</div><div class="d">and deterministic — no interval lottery</div></div>
     <div class="tile"><div class="l">Usage readable · before → after</div><div class="v"><span style="color:var(--old)">__OLD_USAGE__</span> → <span class="accent" style="color:var(--new)">__NEW_USAGE__</span></div><div class="d">median · __SPEEDUP_USAGE__× faster, O(1) read</div></div>
@@ -168,7 +168,7 @@ html = """<title>Realtime usage & wallets — pipeline latency, before / after</
         <li><b>Kafka</b> events-raw <em>· shared</em></li>
         <li><b>Go events-processor</b> enriches → Kafka → ClickHouse ingests</li>
         <li><b>Usage on request:</b> ClickHouse aggregation query per charge + Redis cache</li>
-        <li><b>Wallet:</b> Redis flag → clock consumes flags (10s) → refresh sweep every <b>5 min</b></li>
+        <li><b>Wallet:</b> Redis flag → clock consumes flags (10s) → refresh sweep every <b>__SWEEP__</b></li>
       </ol>
     </div>
     <div class="chain new">
@@ -185,7 +185,7 @@ html = """<title>Realtime usage & wallets — pipeline latency, before / after</
   <h2>Every sample</h2>
   <p class="note">All measurements, no filtering. "timeout" = not observed within the probe window
   (legacy wallet probes bound at 7 min). The legacy wallet spread is structural: latency depends on
-  where in the 5-minute sweep interval the event lands.</p>
+  where in the __SWEEP__ sweep interval the event lands (production default: 5 min).</p>
   <div class="card chartwrap">
     <table>
       <thead><tr><th>Path</th><th>Event</th><th>Ingested</th><th>Enriched</th><th>Usage readable</th><th>Wallet refreshed</th></tr></thead>
@@ -268,6 +268,7 @@ html = (
     .replace("__NEW_USAGE__", fmt_ms(new_usage))
     .replace("__SPEEDUP_USAGE__", f"{speedup_usage:.0f}")
     .replace("__TABLE__", table_html)
+    .replace("__SWEEP__", sys.argv[4] if len(sys.argv) > 4 else "5 min")
     .replace("__DATA__", json.dumps(data))
 )
 

@@ -1,0 +1,3 @@
+{"phase":"old","tx":"rwb-full-old-2105728-1","ingestion_ms":48,"enriched_ms":69,"usage_ms":623,"wallet_ms":28498}
+{"phase":"old","tx":"rwb-full-old-2105728-2","ingestion_ms":47,"enriched_ms":51,"usage_ms":905,"wallet_ms":41573}
+{"phase":"old","tx":"rwb-full-old-2105728-3","ingestion_ms":47,"enriched_ms":59,"usage_ms":492,"wallet_ms":43299}
