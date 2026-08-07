@@ -55,8 +55,10 @@ for i in $(seq 1 "$N"); do
   BASE_WALLET=$(wallet_val)
 
   TS=$(date +%s); NOW=$(date -u +%Y-%m-%dT%H:%M:%S.%3N); T0=$(date +%s%3N)
-  echo '{"organization_id":"'$ORG'","external_subscription_id":"'$SUB_EXT'","transaction_id":"'$TX'","timestamp":"'$TS'.000","code":"'$CODE'","precise_total_amount_cents":"0.0","properties":{"tier":"gold","amount":"10"},"ingested_at":"'$NOW'","source":"http_ruby","source_metadata":{"api_post_processed":true}}' \
+  echo '{"organization_id":"'$ORG'","external_subscription_id":"'$SUB_EXT'","transaction_id":"'$TX'","timestamp":"'$TS'.000","code":"'$CODE'","precise_total_amount_cents":"0.0","properties":{"tier":"gold","amount":"10"},"ingested_at":"'$NOW'","source":"http_ruby","source_metadata":{"api_post_processed":false}}' \
     | docker exec -i lago_redpanda_dev rpk topic produce events-raw >/dev/null
+  # api_post_processed=false so the Go processor runs its full post-processing
+  # (incl. the Redis refresh flag the legacy wallet chain depends on).
 
   # ingestion + enriched from broker timestamps
   INGEST_MS=""; ENRICH_MS=""

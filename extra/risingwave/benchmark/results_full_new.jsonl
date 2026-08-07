@@ -1,0 +1,5 @@
+{"phase":"new","tx":"rwb-full-new-1774689-1","ingestion_ms":45,"enriched_ms":50,"usage_ms":227,"wallet_ms":975}
+{"phase":"new","tx":"rwb-full-new-1774689-2","ingestion_ms":50,"enriched_ms":54,"usage_ms":148,"wallet_ms":424}
+{"phase":"new","tx":"rwb-full-new-1774689-3","ingestion_ms":50,"enriched_ms":53,"usage_ms":151,"wallet_ms":422}
+{"phase":"new","tx":"rwb-full-new-1774689-4","ingestion_ms":49,"enriched_ms":52,"usage_ms":144,"wallet_ms":423}
+{"phase":"new","tx":"rwb-full-new-1774689-5","ingestion_ms":47,"enriched_ms":50,"usage_ms":141,"wallet_ms":5435}
