@@ -45,6 +45,7 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/05_usage.sql` | `usage_realtime` MV (count/sum running totals, keyed by billing period) + `usage_hourly` MV (per-hour time series keyed on event time) |
 | `clickhouse/usage_hourly.sql` | ClickHouse serving table (ReplacingMergeTree(ver, is_deleted)) fed by the `usage_hourly` upsert sink — dashboard/analytics history; query with FINAL |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) |
+| `sql/08_serving.sql` | `usage_serving` MV (open periods, temporal-filter pruning) + Postgres sink into `usage_realtime_projections` |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → usage row emitted) |
 | `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_realtime`* over pgwire (checkpoint visibility included) |
 
@@ -133,12 +134,25 @@ recently updated `usage_realtime` rows. Provisioning lives in
 - `DENSE_RANK` in the best-subscription stage falls back to a non-TopN
   operator (planner notice); revisit if it shows up in profiles.
 
-**Phase 3 — serve from it**
+**Done — API serving path** (api branch `feat/subscription-billing-periods`)
+- `usage_serving` MV (open periods only, temporal filter auto-prunes 3 days
+  past period end) → Postgres sink into the Rails-owned
+  `usage_realtime_projections` table (api migration must run before
+  `setup.sh` creates the sink, which validates the table).
+- Realtime count/sum aggregators read the projection for current usage,
+  gated by `LAGO_RISINGWAVE_USAGE_ENABLED` + eligibility (in arrears,
+  non-prorated, non-recurring, no expression); fallback to the events store
+  on any missing row or period disagreement.
+- Hourly parity check (`LAGO_RISINGWAVE_USAGE_PARITY_CHECK_ENABLED`,
+  `UsageProjections::ParityCheckService`) compares projections vs the
+  events-store aggregation per charge. First run immediately caught a
+  synthetic-reprocess double-count in the ClickHouse path that the
+  RisingWave dedup handles correctly — the projection was the right value.
+
+**Phase 3 — remaining**
 - Wallet ongoing balance MV (usage + credits), alert threshold-crossing MV →
   Kafka → alert worker.
-- Rails reads current usage from a Postgres-sunk projection of
-  `usage_realtime` (or pgwire) instead of the Redis charge cache; retire the
-  refresh-flag / cache-expiry loop for count/sum.
+- Retire the Redis charge cache / refresh-flag loop for flag-served charges.
 - Customer-facing hourly dashboards read `default.usage_hourly` in ClickHouse
   (validated: hours keyed on event time, backfill included, corrections
   propagate as row replacements — 3 sinks total: Kafka=push, PG=live state,
