@@ -157,10 +157,26 @@ recently updated `usage_realtime` rows. Provisioning lives in
   synthetic-reprocess double-count in the ClickHouse path that the
   RisingWave dedup handles correctly — the projection was the right value.
 
+**Done — event-driven wallet refresh** (api branch, `sql/09_wallet_triggers.sql`)
+- `wallet_refresh_triggers` Kafka sink, FORMAT UPSERT (append-only sinks drop
+  updates!), keyed by (organization_id, customer_id): the refresh cascade
+  covers all of a customer's wallets, so the customer is the serialization
+  unit — one partition per customer, no concurrent refreshes, no PG lock
+  contention (validated: 10-event burst → 1 refresh, correct value, ~1.8s).
+- `WalletRefreshTriggersConsumer` batch-collapses per customer and calls
+  `Customers::RefreshWalletsService` inline (same guards as
+  `Customers::RefreshWalletJob`); `target_wallet_code` rides in the payload.
+- Realtime-eligible charges bypass the Redis charge cache in current usage —
+  the projection read is the cache; legacy invalidation caused stale reads.
+- Measured event → wallet.ongoing_balance updated: **~1.9 s** (dominated by
+  the 1 s barrier; ~1.2 s at `barrier_interval_ms=250`). Requires
+  `LAGO_RISINGWAVE_USAGE_ENABLED` on the consumer so the refresh reads
+  projections (reading ClickHouse there races the trigger).
+
 **Phase 3 — remaining**
-- Wallet ongoing balance MV (usage + credits), alert threshold-crossing MV →
-  Kafka → alert worker.
-- Retire the Redis charge cache / refresh-flag loop for flag-served charges.
+- Compute-on-read ongoing balance for display paths (wallet serializer).
+- Alert threshold-crossing actions from the same consumer.
+- Demote the wallet clock sweep to a slow reconciliation net.
 - Customer-facing hourly dashboards read `default.usage_hourly` in ClickHouse
   (validated: hours keyed on event time, backfill included, corrections
   propagate as row replacements — 3 sinks total: Kafka=push, PG=live state,
