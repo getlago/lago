@@ -42,7 +42,7 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
 | `sql/04_enrichment.sql` | Stage 1 temporal joins (append-only), stage 2 ranking + dedup |
-| `sql/05_usage.sql` | `usage_realtime` MV (count/sum, running totals) + `usage_hourly` MV (per-hour time series keyed on event time) |
+| `sql/05_usage.sql` | `usage_realtime` MV (count/sum running totals, keyed by billing period) + `usage_hourly` MV (per-hour time series keyed on event time) |
 | `clickhouse/usage_hourly.sql` | ClickHouse serving table (ReplacingMergeTree(ver, is_deleted)) fed by the `usage_hourly` upsert sink — dashboard/analytics history; query with FINAL |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → usage row emitted) |
@@ -112,12 +112,17 @@ recently updated `usage_realtime` rows. Provisioning lives in
 
 ## Known gaps / phase plan
 
+**Done — billing-period keying** (api branch `feat/subscription-billing-periods`)
+- Rails maintains `subscription_billing_periods` (current + next period per
+  active subscription, `Clock::RefreshSubscriptionBillingPeriodsJob`, dates
+  from `Subscriptions::DatesService`). CDC'd + temporal-joined in enrichment;
+  `usage_realtime` is keyed by period. Events without a covering row land on
+  a NULL period key — monitor those. Next-period pre-provisioning closes the
+  rollover gap (validated: an event dated inside the next period picked it up).
+
 **Phase 2 — parity**
 - `lago-expression` evaluation as a WASM UDF (crate is already Rust). Until
   then, BMs with a custom expression fall back to the raw `field_name` value.
-- Billing-period keying: Rails maintains a `current_billing_periods` table
-  (date logic stays in Ruby), CDC'd + temporal-joined; `usage_realtime`
-  currently aggregates everything since pipeline start.
 - Recurring-BM fallback (no sub active at event time → currently-active sub)
   is not implemented.
 - Retry semantics: events that miss a dimension (CDC race) enrich with NULLs

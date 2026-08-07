@@ -92,3 +92,21 @@ CREATE INDEX IF NOT EXISTS idx_billable_metrics_org_code
     ON billable_metrics (organization_id, code);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_org_external_id
     ON subscriptions (organization_id, external_id);
+
+-- Billing periods maintained by Rails (Clock::RefreshSubscriptionBillingPeriodsJob,
+-- current + next period per active subscription). Date logic stays in Ruby.
+-- NOTE: on a fresh Postgres the publication is created by RisingWave for the
+-- tables above; when adding this table to an existing setup run:
+--   ALTER PUBLICATION rw_publication ADD TABLE public.subscription_billing_periods;
+CREATE TABLE IF NOT EXISTS subscription_billing_periods (
+    id VARCHAR PRIMARY KEY,
+    organization_id VARCHAR,
+    subscription_id VARCHAR,
+    charges_from TIMESTAMP,
+    charges_to TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+) FROM lago_pg TABLE 'public.subscription_billing_periods';
+
+CREATE INDEX IF NOT EXISTS idx_billing_periods_subscription
+    ON subscription_billing_periods (subscription_id);

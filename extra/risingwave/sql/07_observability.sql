@@ -54,6 +54,7 @@ CREATE SINK IF NOT EXISTS usage_realtime_updates_sink AS
 SELECT
     organization_id,
     subscription_id,
+    billing_period_id,
     charge_id,
     charge_filter_id,
     grouped_by,
@@ -66,7 +67,7 @@ WITH (
     connector = 'kafka',
     topic = 'usage_realtime_updates',
     properties.bootstrap.server = 'redpanda:9092',
-    primary_key = 'organization_id,subscription_id,charge_id,charge_filter_id,grouped_by'
+    primary_key = 'organization_id,subscription_id,billing_period_id,charge_id,charge_filter_id,grouped_by'
 ) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');
 
 CREATE SOURCE IF NOT EXISTS usage_updates_loopback (

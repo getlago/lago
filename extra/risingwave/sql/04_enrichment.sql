@@ -6,8 +6,8 @@
 -- append-only left side.
 --
 -- The LEFT joins deliberately match on equality keys only; time-window
--- validity (subscription active at event timestamp) is computed as a flag and
--- resolved by ranking in stage 2.
+-- validity (subscription active / billing period covering the event
+-- timestamp) is computed as flags and resolved by ranking in stage 2.
 CREATE MATERIALIZED VIEW IF NOT EXISTS events_joined AS
 SELECT
     e.organization_id,
@@ -39,6 +39,14 @@ SELECT
             OR s.terminated_at >= to_timestamp(e."timestamp"::DOUBLE PRECISION) AT TIME ZONE 'UTC'
         )
     ) AS subscription_valid,
+    bp.id AS billing_period_id,
+    bp.charges_from AS period_charges_from,
+    bp.charges_to AS period_charges_to,
+    (
+        bp.id IS NOT NULL
+        AND bp.charges_from <= to_timestamp(e."timestamp"::DOUBLE PRECISION) AT TIME ZONE 'UTC'
+        AND bp.charges_to >= to_timestamp(e."timestamp"::DOUBLE PRECISION) AT TIME ZONE 'UTC'
+    ) AS period_valid,
     ff.charge_id,
     ff.charge_updated_at,
     ff.charge_filter_id,
@@ -59,15 +67,23 @@ JOIN billable_metrics FOR SYSTEM_TIME AS OF PROCTIME() bm
 LEFT JOIN subscriptions FOR SYSTEM_TIME AS OF PROCTIME() s
     ON s.organization_id = e.organization_id
    AND s.external_id = e.external_subscription_id
+LEFT JOIN subscription_billing_periods FOR SYSTEM_TIME AS OF PROCTIME() bp
+    ON bp.subscription_id = s.id
 LEFT JOIN flat_filters FOR SYSTEM_TIME AS OF PROCTIME() ff
     ON ff.organization_id = e.organization_id
    AND ff.plan_id = s.plan_id
    AND ff.billable_metric_code = e.code;
 
--- Stage 2: pick the best subscription per event, the best-matching filter per
--- (event, charge) with default-bucket fallback, then keep only the latest
--- delivery per (event, charge) — duplicate deliveries are no-ops and
--- reprocessed events become corrections that flow into the aggregates.
+-- Stage 2: pick the best subscription + covering billing period per event,
+-- the best-matching filter per (event, charge) with default-bucket fallback,
+-- then keep only the latest delivery per (event, charge) — duplicate
+-- deliveries are no-ops and reprocessed events become corrections that flow
+-- into the aggregates.
+--
+-- The DENSE_RANK ordering fully determines a (subscription, billing period)
+-- pair, so rank 1 keeps exactly the filter fan-out rows of the best pair:
+-- valid subscription first, then valid (covering) period, most recent as
+-- tie-breakers.
 CREATE MATERIALIZED VIEW IF NOT EXISTS events_expanded AS
 WITH best_sub AS (
     SELECT * FROM (
@@ -79,7 +95,10 @@ WITH best_sub AS (
                     subscription_valid DESC,
                     subscription_terminated_at DESC NULLS FIRST,
                     subscription_started_at DESC,
-                    subscription_id
+                    subscription_id,
+                    period_valid DESC,
+                    period_charges_from DESC NULLS LAST,
+                    billing_period_id
             ) AS sub_rank
         FROM events_joined
     ) ranked_subs
@@ -137,6 +156,9 @@ SELECT
     recurring,
     CASE WHEN subscription_valid THEN subscription_id END AS subscription_id,
     CASE WHEN subscription_valid THEN subscription_plan_id END AS plan_id,
+    CASE WHEN period_valid THEN billing_period_id END AS billing_period_id,
+    CASE WHEN period_valid THEN period_charges_from END AS period_charges_from,
+    CASE WHEN period_valid THEN period_charges_to END AS period_charges_to,
     charge_id,
     charge_updated_at,
     -- Default bucket: best candidate did not match -> attribute to the charge

@@ -4,14 +4,18 @@
 -- loop for count/sum: it is always fresh, and duplicate deliveries /
 -- reprocessed events are corrected upstream by the dedup stage.
 --
--- Phase 2: key by billing period (Rails-maintained current_billing_periods
--- table via CDC + temporal join). Until then this aggregates all events seen
--- by the pipeline since it started.
+-- Keyed by billing period (Rails-maintained subscription_billing_periods via
+-- CDC + temporal join): one row per (subscription, charge, filter, grouped_by,
+-- period). Events without a covering period land on a NULL period key —
+-- monitor those, they indicate a gap in the period-maintenance clock job.
 CREATE MATERIALIZED VIEW IF NOT EXISTS usage_realtime AS
 SELECT
     organization_id,
     subscription_id,
     plan_id,
+    billing_period_id,
+    period_charges_from,
+    period_charges_to,
     code,
     charge_id,
     charge_filter_id,
@@ -34,7 +38,8 @@ WHERE aggregation_type_code IN (0, 1) -- count, sum
   AND subscription_id IS NOT NULL
   AND charge_id IS NOT NULL
 GROUP BY
-    organization_id, subscription_id, plan_id, code,
+    organization_id, subscription_id, plan_id,
+    billing_period_id, period_charges_from, period_charges_to, code,
     charge_id, charge_filter_id, grouped_by::VARCHAR, aggregation_type;
 
 -- Hourly usage time-series per charge/filter, keyed on the customer-supplied
