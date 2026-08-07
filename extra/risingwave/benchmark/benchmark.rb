@@ -14,7 +14,8 @@
 # Run inside the api container:
 #   docker exec lago_api_dev bin/rails runner tmp/rw_benchmark/benchmark.rb
 #
-# ENV: ROUNDS (default 2), POLL_MS (default 200), TIMEOUT_S (default 90)
+# ENV: ROUNDS (default 2), POLL_MS (default 200), TIMEOUT_S (default 90),
+#      ONLY (substring filter on case key, e.g. ONLY=group)
 
 require "json"
 
@@ -133,8 +134,10 @@ sleep 15
 results = Hash.new { |h, k| h[k] = [] }
 aggregator_classes = {}
 
+active_cases = ENV["ONLY"] ? CASES.select { |c| c[:key].include?(ENV["ONLY"]) } : CASES
+
 ROUNDS.times do |round|
-  CASES.each do |kase|
+  active_cases.each do |kase|
     charge = charges.fetch(kase[:code])
     subscriptions.each do |subscription|
       [["clickhouse", "false"], ["risingwave", "true"]].each do |path, flag|

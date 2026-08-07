@@ -1,0 +1,22 @@
+[
+  {
+    "case": "sum / pricing_group_keys (region)",
+    "path": "clickhouse",
+    "aggregator": "BillableMetrics::Aggregations::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 785,
+    "min_ms": 646,
+    "max_ms": 1064
+  },
+  {
+    "case": "sum / pricing_group_keys (region)",
+    "path": "risingwave",
+    "aggregator": "BillableMetrics::Aggregations::Realtime::SumService",
+    "n": 6,
+    "timeouts": 0,
+    "avg_ms": 276,
+    "min_ms": 208,
+    "max_ms": 411
+  }
+]

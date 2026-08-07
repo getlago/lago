@@ -15,7 +15,8 @@ measurement via `LAGO_RISINGWAVE_USAGE_ENABLED`.
 | sum, charge filter (tier=gold) | ClickHouse (`Aggregations::SumService`) | 860 ms | 222 ms | 1117 ms |
 | sum, charge filter (tier=gold) | **RisingWave** (`Realtime::SumService`) | **647 ms** | **8 ms** | 1018 ms |
 | sum, pricing_group_keys (region) | ClickHouse (`Aggregations::SumService`) | 924 ms | 225 ms | 1085 ms |
-| sum, pricing_group_keys (region) | RisingWave → fallback to ClickHouse | 1065 ms | 1059 ms | 1074 ms |
+| sum, pricing_group_keys (region) | RisingWave → fallback to ClickHouse *(before grouped read)* | 1065 ms | 1059 ms | 1074 ms |
+| sum, pricing_group_keys (region) | **RisingWave** (`Realtime::SumService`, grouped read) | **276 ms** | 208 ms | 411 ms |
 
 ## Reading the numbers
 
@@ -25,9 +26,12 @@ measurement via `LAGO_RISINGWAVE_USAGE_ENABLED`.
   ceiling in dev — RisingWave's barrier/sink-commit cadence
   (`barrier_interval_ms = 1000`, tunable) vs ClickHouse's Kafka flush
   cadence. Poll resolution adds ±200 ms of noise to every figure.
-- **The grouped case correctly falls back** to the ClickHouse path on both
-  flags (grouped aggregations are outside the current realtime scope), and
-  its numbers match the ClickHouse rows — the fallback is free.
+- **The grouped case initially fell back** (matching the ClickHouse rows —
+  fallback is free). After implementing the grouped projection read
+  (`compute_grouped_by_aggregation` overrides, one result per `grouped_by`
+  row), the rerun shows it realtime: avg 276 ms vs 785 ms for the ClickHouse
+  path in the same run. Fallback still applies when group keys disagree with
+  the charge's current `pricing_group_keys` (stale attribution after edits).
 - **Dev flatters the ClickHouse path.** Zero load means idle consumers, tiny
   tables, and instant flushes; this is its best case. Under production
   volume the ClickHouse path degrades with consumer lag and per-request
