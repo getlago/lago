@@ -12,11 +12,13 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS usage_realtime AS
 SELECT
     organization_id,
     subscription_id,
+    customer_id,
     plan_id,
     billing_period_id,
     period_charges_from,
     period_charges_to,
     code,
+    target_wallet_code,
     charge_id,
     charge_filter_id,
     -- JSONB is not allowed in a streaming group key; group on its text
@@ -38,8 +40,8 @@ WHERE aggregation_type_code IN (0, 1) -- count, sum
   AND subscription_id IS NOT NULL
   AND charge_id IS NOT NULL
 GROUP BY
-    organization_id, subscription_id, plan_id,
-    billing_period_id, period_charges_from, period_charges_to, code,
+    organization_id, subscription_id, customer_id, plan_id,
+    billing_period_id, period_charges_from, period_charges_to, code, target_wallet_code,
     charge_id, charge_filter_id, grouped_by::VARCHAR, aggregation_type;
 
 -- Hourly usage time-series per charge/filter, keyed on the customer-supplied

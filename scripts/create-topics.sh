@@ -4,14 +4,17 @@
 # we need to create the topics only if they don't exist
 # this script gets the list of topics from the arguments
 # and creates them if they don't exist, creation is not invoked if the topics already exist
-rpk topic list | awk -v expected="$*" '
-BEGIN { 
-    n = split(expected, exp_array, " ")
-    for (i = 1; i <= n; i++)  expected_topics[exp_array[i]] = 1
-} NR > 1 { 
-    actual_topics[$1] = 1 
-} END {
-    for (topic in expected_topics) {
-        if (!(topic in actual_topics)) printf "%s ", topic
-    }
-}' | xargs -r rpk topic create
+#
+# A topic may be suffixed with a partition count: "my_topic:6" creates it
+# with 6 partitions (default: 1).
+existing=$(rpk topic list | awk 'NR > 1 { print $1 }')
+
+for spec in "$@"; do
+    topic=${spec%%:*}
+    partitions=${spec#*:}
+    [ "$partitions" = "$spec" ] && partitions=1
+
+    if ! echo "$existing" | grep -qx "$topic"; then
+        rpk topic create "$topic" --partitions "$partitions"
+    fi
+done

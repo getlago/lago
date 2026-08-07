@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS billable_metrics (
 CREATE TABLE IF NOT EXISTS subscriptions (
     id VARCHAR PRIMARY KEY,
     organization_id VARCHAR,
+    customer_id VARCHAR,
     external_id VARCHAR,
     plan_id VARCHAR,
     status INT,

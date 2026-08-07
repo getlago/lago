@@ -396,6 +396,7 @@ services:
       - events_enriched_expanded_shadow
       - events_dead_letter
       - usage_realtime_updates
+      - wallet_refresh_triggers:6
       - activity_logs
       - api_logs
       - security_logs
