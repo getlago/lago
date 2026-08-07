@@ -1,0 +1,155 @@
+<title>RisingWave path — load test report</title>
+<style>
+  :root { color-scheme: light;
+    --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,0.10);
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --good:#006300; --bad:#d03b3b; }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) { color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --good:#0ca30c; --bad:#d03b3b; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --good:#0ca30c; --bad:#d03b3b; }
+  * { box-sizing:border-box; } body { margin:0; background:var(--page); color:var(--ink);
+    font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:1060px; margin:0 auto; padding:44px 28px 80px; }
+  .eyebrow { font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  h1 { font-size:28px; line-height:1.2; margin:8px 0 6px; text-wrap:balance; }
+  .sub { color:var(--ink-2); max-width:70ch; margin:0 0 30px; }
+  h2 { font-size:18px; margin:40px 0 4px; }
+  .note { color:var(--ink-2); font-size:13px; max-width:78ch; margin:0 0 12px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+  .tile { background:var(--surface); border:1px solid var(--ring); border-radius:8px; padding:14px 16px; }
+  .tile .l { font-size:12px; color:var(--muted); font-weight:600; }
+  .tile .v { font-size:27px; font-weight:700; margin-top:3px; }
+  .tile .d { font-size:12.5px; color:var(--ink-2); margin-top:3px; }
+  .accent { color:var(--s1); } .good { color:var(--good); } .bad { color:var(--bad); }
+  .card { background:var(--surface); border:1px solid var(--ring); border-radius:8px; padding:18px 20px; margin-top:12px; }
+  .card h3 { margin:0 0 2px; font-size:14.5px; }
+  .card .cnote { font-size:12.5px; color:var(--muted); margin-bottom:10px; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--ink-2); margin-bottom:8px; }
+  .legend span::before { content:""; display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:6px; vertical-align:3px; }
+  .chartwrap { overflow-x:auto; }
+  svg text { font:11.5px system-ui,sans-serif; fill:var(--muted); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:860px) { .grid2 { grid-template-columns:1fr; } }
+  .verdict { display:inline-block; padding:6px 14px; border-radius:999px; font-weight:650; font-size:14px; }
+  .verdict.ok { background:color-mix(in srgb, var(--good) 12%, transparent); color:var(--good); }
+  .verdict.warn { background:color-mix(in srgb, var(--bad) 12%, transparent); color:var(--bad); }
+  table { border-collapse:collapse; font-size:13.5px; font-variant-numeric:tabular-nums; }
+  td, th { padding:6px 18px 6px 0; text-align:left; border-bottom:1px solid var(--grid); }
+  th { color:var(--muted); font-size:12px; }
+  .tip { position:fixed; pointer-events:none; background:var(--ink); color:var(--page); padding:6px 10px;
+    border-radius:6px; font-size:12px; opacity:0; z-index:10; white-space:nowrap; }
+  footer { margin-top:48px; font-size:12.5px; color:var(--muted); border-top:1px solid var(--grid); padding-top:14px; max-width:80ch; }
+</style>
+<main>
+  <div class="eyebrow">Lago billing platform · engineering · load test</div>
+  <h1>RisingWave path under load: 500 events/s × 6 min</h1>
+  <p class="sub">89,850 events across 200 subscriptions (30% count, 40% charge-filtered, 30% group-keyed;
+  20 customers with active wallets), produced at a controlled rate into the full pipeline —
+  enrichment, dedup, period-keyed usage, Postgres projections, hourly ClickHouse rollups, and
+  event-driven wallet refresh — sampled every 5 s. Dev stack (single-node RisingWave, WSL2).</p>
+
+  <div class="kpis">
+    <div class="tile"><div class="l">Delivered</div><div class="v">89,850</div><div class="d">events · avg 269/s sustained</div></div>
+    <div class="tile"><div class="l">Correctness</div><div class="v good" style="font-size:19px; padding-top:6px">PASSED</div><div class="d">produced vs aggregated, post-run audit</div></div>
+    <div class="tile"><div class="l">Enrichment latency</div><div class="v accent">39.1 s</div><div class="d">avg during run · max 185.6 s</div></div>
+    <div class="tile"><div class="l">Usage-row latency</div><div class="v accent">37.8 s</div><div class="d">avg during run · max 185.6 s</div></div>
+    <div class="tile"><div class="l">Peak enrich backlog</div><div class="v">50</div><div class="d">events queued · 0 at end</div></div>
+    <div class="tile"><div class="l">Wallet consumer lag</div><div class="v">67,925</div><div class="d">peak messages · 33,925 at end</div></div>
+  </div>
+
+  <h2>Timeline</h2>
+  <p class="note">Hover any chart for exact values. All series share the run clock (elapsed minutes).</p>
+
+  <div class="grid2">
+    <div class="card"><h3>Throughput (events/s)</h3><div class="cnote">in = produced to Kafka · out = enriched by RisingWave</div>
+      <div class="legend"><span style="--c:var(--s1)"></span></div>
+      <div class="chartwrap"><svg class="ch" data-series="in_rate:in:--s1,out_rate:out:--s2" width="480" height="200"></svg></div></div>
+    <div class="card"><h3>Backlog &amp; consumer lag (messages)</h3><div class="cnote">enrich backlog = produced − enriched · wallet lag = trigger topic behind</div>
+      <div class="chartwrap"><svg class="ch" data-series="backlog:enrich backlog:--s1,wallet_lag:wallet lag:--s2" width="480" height="200"></svg></div></div>
+    <div class="card"><h3>Latency (ms, per-minute averages)</h3><div class="cnote">from the pipeline’s own latency MVs (broker-timestamp based)</div>
+      <div class="chartwrap"><svg class="ch" data-series="e2e_avg_ms:enrich e2e:--s1,usage_avg_ms:usage row:--s2" width="480" height="200"></svg></div></div>
+    <div class="card"><h3>Projection staleness (s) &amp; wallet refreshes /5s</h3><div class="cnote">staleness = now − newest usage write visible to the API</div>
+      <div class="chartwrap"><svg class="ch" data-series="proj_stale_s:staleness s:--s1,wallets_synced:wallets synced:--s2" width="480" height="200"></svg></div></div>
+  </div>
+
+  <div class="card"><h3>Container CPU (%)</h3><div class="cnote">docker stats, sampled — RisingWave is the working core of the pipeline; &gt;100% = more than one core</div>
+    <div class="chartwrap"><svg class="ch" data-series="cpu_rw:risingwave:--s1,cpu_consumer:karafka consumer:--s2,cpu_redpanda:redpanda:--s3,cpu_pg:postgres:--s4" width="1000" height="220"></svg></div></div>
+
+  <h2>Correctness audit</h2>
+  <div class="card">
+    <p class="note" style="margin-bottom:10px"><span class="verdict ok">PASSED — zero loss, backlog drained</span></p>
+    <table>
+      <tr><th>Check</th><th>Expected</th><th>Observed</th></tr>
+      <tr><td>Events produced</td><td>—</td><td>89,850</td></tr>
+      <tr><td>Events aggregated into usage (Δ events_count)</td><td>89,850</td><td>89,850</td></tr>
+      <tr><td>Lost / duplicated</td><td>0</td><td>0</td></tr>
+      <tr><td>Usage rows without a billing period</td><td>0</td><td>0</td></tr>
+      <tr><td>Projection rows (subscription × charge × filter × group)</td><td>—</td><td>1,411</td></tr>
+    </table>
+  </div>
+
+  <footer>Method: rate-controlled producer (10 ticks/s) into <code>events-raw</code>; backlog from Kafka
+  high-watermarks (enriched output is 1:1 with events in this mix); latency from the pipeline’s
+  self-measuring MVs (Kafka broker timestamps, per-minute windows); consumer lag via
+  <code>rpk group describe</code>; audit compares the producer’s count against the delta of
+  <code>SUM(events_count)</code> in <code>usage_realtime_projections</code> — dedup and exactly-once
+  attribution are load-bearing here. Single-node RisingWave (<code>barrier_interval_ms=250</code>)
+  on a shared dev machine; treat absolute CPU as indicative, shapes as real.</footer>
+</main>
+<div class="tip" id="tip"></div>
+<script>
+const S = [{"ts": 1786141769547, "raw_hwm": 2436, "shadow_hwm": 1705, "trigger_hwm": 1407, "wallet_lag": 100, "proj_rows": 694, "proj_stale_s": 26, "wallets_synced": 0, "e2e_avg_ms": 5, "e2e_max_ms": 6, "e2e_events": 410, "usage_avg_ms": 110, "usage_max_ms": 212, "cpu": {"lago_risingwave_dev": 142.12, "lago_db_dev": 59.32, "lago_redpanda_dev": 36.83, "lago_events-processor": 42.92, "lago_api_events_consumer_dev": 91.48, "lago_clickhouse_dev": 21.35}, "t": 0, "in_rate": 0, "out_rate": 0, "backlog": 0}, {"ts": 1786141776943, "raw_hwm": 6186, "shadow_hwm": 5405, "trigger_hwm": 5107, "wallet_lag": 3629, "proj_rows": 1336, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 11, "e2e_max_ms": 61, "e2e_events": 4210, "usage_avg_ms": 144, "usage_max_ms": 298, "cpu": {"lago_risingwave_dev": 124.43, "lago_db_dev": 50.51, "lago_redpanda_dev": 33.58, "lago_events-processor": 42.46, "lago_api_events_consumer_dev": 93.24, "lago_clickhouse_dev": 70.63}, "t": 7, "in_rate": 507, "out_rate": 500, "backlog": 50}, {"ts": 1786141784345, "raw_hwm": 9886, "shadow_hwm": 9105, "trigger_hwm": 8807, "wallet_lag": 5845, "proj_rows": 1401, "proj_stale_s": 0, "wallets_synced": 18, "e2e_avg_ms": 12, "e2e_max_ms": 61, "e2e_events": 7810, "usage_avg_ms": 144, "usage_max_ms": 298, "cpu": {"lago_risingwave_dev": 131.12, "lago_db_dev": 58.82, "lago_redpanda_dev": 30.46, "lago_events-processor": 43.53, "lago_api_events_consumer_dev": 102.04, "lago_clickhouse_dev": 28.49}, "t": 15, "in_rate": 500, "out_rate": 500, "backlog": 50}, {"ts": 1786141791748, "raw_hwm": 13586, "shadow_hwm": 12805, "trigger_hwm": 12507, "wallet_lag": 8600, "proj_rows": 1410, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 12, "e2e_max_ms": 61, "e2e_events": 11560, "usage_avg_ms": 145, "usage_max_ms": 298, "cpu": {"lago_risingwave_dev": 134.65, "lago_db_dev": 60.97, "lago_redpanda_dev": 40.7, "lago_events-processor": 46.33, "lago_api_events_consumer_dev": 102.9, "lago_clickhouse_dev": 55.17}, "t": 22, "in_rate": 500, "out_rate": 500, "backlog": 50}, {"ts": 1786141799144, "raw_hwm": 17286, "shadow_hwm": 16505, "trigger_hwm": 16207, "wallet_lag": 10850, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 11, "e2e_max_ms": 61, "e2e_events": 15310, "usage_avg_ms": 145, "usage_max_ms": 298, "cpu": {"lago_risingwave_dev": 132.43, "lago_db_dev": 56.79, "lago_redpanda_dev": 33.42, "lago_events-processor": 43.27, "lago_api_events_consumer_dev": 93.41, "lago_clickhouse_dev": 61.3}, "t": 30, "in_rate": 500, "out_rate": 500, "backlog": 50}, {"ts": 1786141806563, "raw_hwm": 20986, "shadow_hwm": 20205, "trigger_hwm": 19907, "wallet_lag": 13804, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 11, "e2e_max_ms": 21, "e2e_events": 3350, "usage_avg_ms": 144, "usage_max_ms": 249, "cpu": {"lago_risingwave_dev": 134.19, "lago_db_dev": 52.52, "lago_redpanda_dev": 29.34, "lago_events-processor": 43.36, "lago_api_events_consumer_dev": 97.5, "lago_clickhouse_dev": 27.82}, "t": 37, "in_rate": 499, "out_rate": 499, "backlog": 50}, {"ts": 1786141813983, "raw_hwm": 24686, "shadow_hwm": 23955, "trigger_hwm": 23607, "wallet_lag": 16097, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 18, "e2e_avg_ms": 12, "e2e_max_ms": 21, "e2e_events": 7100, "usage_avg_ms": 145, "usage_max_ms": 249, "cpu": {"lago_risingwave_dev": 139.37, "lago_db_dev": 58.61, "lago_redpanda_dev": 26.92, "lago_events-processor": 42.18, "lago_api_events_consumer_dev": 104.91, "lago_clickhouse_dev": 17.14}, "t": 44, "in_rate": 499, "out_rate": 505, "backlog": 0}, {"ts": 1786141821438, "raw_hwm": 28386, "shadow_hwm": 27655, "trigger_hwm": 27307, "wallet_lag": 18950, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 12, "e2e_max_ms": 21, "e2e_events": 10850, "usage_avg_ms": 145, "usage_max_ms": 250, "cpu": {"lago_risingwave_dev": 147.98, "lago_db_dev": 59.41, "lago_redpanda_dev": 29.12, "lago_events-processor": 43.13, "lago_api_events_consumer_dev": 103.85, "lago_clickhouse_dev": 62.5}, "t": 52, "in_rate": 496, "out_rate": 496, "backlog": 0}, {"ts": 1786141828805, "raw_hwm": 32086, "shadow_hwm": 31355, "trigger_hwm": 31007, "wallet_lag": 21150, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 12, "e2e_max_ms": 21, "e2e_events": 14450, "usage_avg_ms": 145, "usage_max_ms": 250, "cpu": {"lago_risingwave_dev": 187.78, "lago_db_dev": 60.16, "lago_redpanda_dev": 33.92, "lago_events-processor": 45.91, "lago_api_events_consumer_dev": 79.98, "lago_clickhouse_dev": 76.87}, "t": 59, "in_rate": 502, "out_rate": 502, "backlog": 0}, {"ts": 1786141836235, "raw_hwm": 35836, "shadow_hwm": 35055, "trigger_hwm": 34757, "wallet_lag": 24049, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 18, "e2e_avg_ms": 12, "e2e_max_ms": 22, "e2e_events": 18200, "usage_avg_ms": 145, "usage_max_ms": 250, "cpu": {"lago_risingwave_dev": 152.22, "lago_db_dev": 52.97, "lago_redpanda_dev": 32.31, "lago_events-processor": 43.98, "lago_api_events_consumer_dev": 97.63, "lago_clickhouse_dev": 65.75}, "t": 67, "in_rate": 505, "out_rate": 498, "backlog": 50}, {"ts": 1786141843650, "raw_hwm": 39536, "shadow_hwm": 38755, "trigger_hwm": 38457, "wallet_lag": 26272, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 12, "e2e_max_ms": 22, "e2e_events": 21950, "usage_avg_ms": 144, "usage_max_ms": 250, "cpu": {"lago_risingwave_dev": 165.29, "lago_db_dev": 58.13, "lago_redpanda_dev": 33.0, "lago_events-processor": 44.41, "lago_api_events_consumer_dev": 101.91, "lago_clickhouse_dev": 50.06}, "t": 74, "in_rate": 499, "out_rate": 499, "backlog": 50}, {"ts": 1786141851077, "raw_hwm": 43236, "shadow_hwm": 42505, "trigger_hwm": 42157, "wallet_lag": 29300, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 12, "e2e_max_ms": 22, "e2e_events": 25600, "usage_avg_ms": 144, "usage_max_ms": 250, "cpu": {"lago_risingwave_dev": 158.57, "lago_db_dev": 59.25, "lago_redpanda_dev": 35.49, "lago_events-processor": 43.44, "lago_api_events_consumer_dev": 102.82, "lago_clickhouse_dev": 33.64}, "t": 82, "in_rate": 498, "out_rate": 505, "backlog": 0}, {"ts": 1786141858520, "raw_hwm": 47036, "shadow_hwm": 46432, "trigger_hwm": 46157, "wallet_lag": 31860, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 12, "e2e_max_ms": 163, "e2e_events": 29850, "usage_avg_ms": 145, "usage_max_ms": 313, "cpu": {"lago_risingwave_dev": 211.38, "lago_db_dev": 100.87, "lago_redpanda_dev": 86.77, "lago_events-processor": 69.39, "lago_api_events_consumer_dev": 62.15, "lago_clickhouse_dev": 60.0}, "t": 89, "in_rate": 511, "out_rate": 528, "backlog": 0}, {"ts": 1786141866182, "raw_hwm": 50886, "shadow_hwm": 50105, "trigger_hwm": 49807, "wallet_lag": 35393, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 20, "e2e_max_ms": 105, "e2e_events": 3350, "usage_avg_ms": 160, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 160.04, "lago_db_dev": 58.18, "lago_redpanda_dev": 36.1, "lago_events-processor": 55.87, "lago_api_events_consumer_dev": 85.76, "lago_clickhouse_dev": 79.99}, "t": 97, "in_rate": 502, "out_rate": 479, "backlog": 50}, {"ts": 1786141874082, "raw_hwm": 54786, "shadow_hwm": 54005, "trigger_hwm": 53707, "wallet_lag": 37800, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 17, "e2e_avg_ms": 17, "e2e_max_ms": 105, "e2e_events": 7200, "usage_avg_ms": 160, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 165.55, "lago_db_dev": 55.86, "lago_redpanda_dev": 38.79, "lago_events-processor": 48.84, "lago_api_events_consumer_dev": 93.52, "lago_clickhouse_dev": 47.32}, "t": 105, "in_rate": 494, "out_rate": 494, "backlog": 50}, {"ts": 1786141881715, "raw_hwm": 58586, "shadow_hwm": 57805, "trigger_hwm": 57507, "wallet_lag": 40992, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 19, "e2e_avg_ms": 16, "e2e_max_ms": 105, "e2e_events": 11000, "usage_avg_ms": 156, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 134.57, "lago_db_dev": 56.24, "lago_redpanda_dev": 32.59, "lago_events-processor": 45.07, "lago_api_events_consumer_dev": 98.08, "lago_clickhouse_dev": 32.54}, "t": 112, "in_rate": 498, "out_rate": 498, "backlog": 50}, {"ts": 1786141889298, "raw_hwm": 62386, "shadow_hwm": 61605, "trigger_hwm": 61307, "wallet_lag": 43401, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 15, "e2e_max_ms": 105, "e2e_events": 14850, "usage_avg_ms": 149, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 140.38, "lago_db_dev": 58.46, "lago_redpanda_dev": 31.61, "lago_events-processor": 46.33, "lago_api_events_consumer_dev": 101.3, "lago_clickhouse_dev": 58.91}, "t": 120, "in_rate": 501, "out_rate": 501, "backlog": 50}, {"ts": 1786141896889, "raw_hwm": 66186, "shadow_hwm": 65405, "trigger_hwm": 65107, "wallet_lag": 46250, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 14, "e2e_max_ms": 105, "e2e_events": 18600, "usage_avg_ms": 145, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 170.97, "lago_db_dev": 63.19, "lago_redpanda_dev": 35.01, "lago_events-processor": 49.64, "lago_api_events_consumer_dev": 103.04, "lago_clickhouse_dev": 39.0}, "t": 127, "in_rate": 501, "out_rate": 501, "backlog": 50}, {"ts": 1786141904505, "raw_hwm": 69986, "shadow_hwm": 69205, "trigger_hwm": 68907, "wallet_lag": 48752, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 14, "e2e_max_ms": 105, "e2e_events": 22350, "usage_avg_ms": 143, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 146.14, "lago_db_dev": 60.45, "lago_redpanda_dev": 26.44, "lago_events-processor": 43.4, "lago_api_events_consumer_dev": 98.59, "lago_clickhouse_dev": 70.57}, "t": 135, "in_rate": 499, "out_rate": 499, "backlog": 50}, {"ts": 1786141912080, "raw_hwm": 73786, "shadow_hwm": 73055, "trigger_hwm": 72707, "wallet_lag": 51850, "proj_rows": 1411, "proj_stale_s": 0, "wallets_synced": 20, "e2e_avg_ms": 14, "e2e_max_ms": 105, "e2e_events": 26250, "usage_avg_ms": 141, "usage_max_ms": 270, "cpu": {"lago_risingwave_dev": 166.13, "lago_db_dev": 63.23, "lago_redpanda_dev": 38.25, "lago_events-processor": 46.6, "lago_api_events_consumer_dev": 99.83, "lago_clickhouse_dev": 71.14}, "t": 143, "in_rate": 502, "out_rate": 508, "backlog": 0}, {"ts": 1786141919743, "raw_hwm": 77636, "shadow_hwm": 77848, "trigger_hwm": 78788, "wallet_lag": 56226, "proj_rows": 1411, "proj_stale_s": 177, "wallets_synced": 5, "e2e_avg_ms": 0, "e2e_max_ms": 0, "e2e_events": 0, "usage_avg_ms": 0, "usage_max_ms": 0, "cpu": {"lago_risingwave_dev": 362.98, "lago_db_dev": 3.26, "lago_redpanda_dev": 2.55, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 45.64, "lago_clickhouse_dev": 22.96}, "t": 150, "in_rate": 502, "out_rate": 625, "backlog": 0}, {"ts": 1786142111914, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 67925, "proj_rows": 1411, "proj_stale_s": 162, "wallets_synced": 5, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 74.5, "lago_db_dev": 10.07, "lago_redpanda_dev": 3.7, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 73.11, "lago_clickhouse_dev": 42.49}, "t": 342, "in_rate": 76, "out_rate": 81, "backlog": 0}, {"ts": 1786142119305, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 57425, "proj_rows": 1411, "proj_stale_s": 169, "wallets_synced": 8, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 77.96, "lago_db_dev": 9.7, "lago_redpanda_dev": 0.66, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 70.3, "lago_clickhouse_dev": 56.75}, "t": 350, "in_rate": 0, "out_rate": 0, "backlog": 0}, {"ts": 1786142126648, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 54425, "proj_rows": 1411, "proj_stale_s": 177, "wallets_synced": 7, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 68.81, "lago_db_dev": 8.66, "lago_redpanda_dev": 1.41, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 60.97, "lago_clickhouse_dev": 53.71}, "t": 357, "in_rate": 0, "out_rate": 0, "backlog": 0}, {"ts": 1786142133978, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 44925, "proj_rows": 1411, "proj_stale_s": 184, "wallets_synced": 11, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 73.54, "lago_db_dev": 8.14, "lago_redpanda_dev": 0.56, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 57.94, "lago_clickhouse_dev": 58.24}, "t": 364, "in_rate": 0, "out_rate": 0, "backlog": 0}, {"ts": 1786142141326, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 42425, "proj_rows": 1411, "proj_stale_s": 191, "wallets_synced": 11, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 76.53, "lago_db_dev": 10.44, "lago_redpanda_dev": 0.83, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 61.08, "lago_clickhouse_dev": 45.84}, "t": 372, "in_rate": 0, "out_rate": 0, "backlog": 0}, {"ts": 1786142148715, "raw_hwm": 92286, "shadow_hwm": 93367, "trigger_hwm": 92488, "wallet_lag": 33925, "proj_rows": 1411, "proj_stale_s": 199, "wallets_synced": 7, "e2e_avg_ms": 169233, "e2e_max_ms": 185645, "e2e_events": 14000, "usage_avg_ms": 163434, "usage_max_ms": 185636, "cpu": {"lago_risingwave_dev": 73.92, "lago_db_dev": 7.14, "lago_redpanda_dev": 0.71, "lago_events-processor": 0.0, "lago_api_events_consumer_dev": 74.81, "lago_clickhouse_dev": 55.2}, "t": 379, "in_rate": 0, "out_rate": 0, "backlog": 0}];
+S.forEach(s => { s.cpu_rw = s.cpu["lago_risingwave_dev"] || 0; s.cpu_consumer = s.cpu["lago_api_events_consumer_dev"] || 0;
+  s.cpu_redpanda = s.cpu["lago_redpanda_dev"] || 0; s.cpu_pg = s.cpu["lago_db_dev"] || 0; });
+const tip = document.getElementById("tip");
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function draw() {
+document.querySelectorAll("svg.ch").forEach(svg => {
+  svg.innerHTML = "";
+  const spec = svg.dataset.series.split(",").map(x => x.split(":"));
+  const W = +svg.getAttribute("width"), H = +svg.getAttribute("height"), L = 46, R = 8, T = 10, B = 24;
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (t, a, parent) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (parent || svg).appendChild(e); return e; };
+  const xs = S.map(s => s.t), xmax = Math.max(...xs);
+  let ymax = 0; spec.forEach(([k]) => S.forEach(s => { if (s[k] > ymax) ymax = s[k]; }));
+  ymax = ymax || 1; ymax *= 1.12;
+  const X = t => L + t / xmax * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  for (let g = 0; g <= 3; g++) { const v = ymax * g / 3;
+    el("line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: css("--grid") });
+    const t = el("text", { x: L - 6, y: Y(v) + 4, "text-anchor": "end" }); t.textContent = v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v); }
+  for (let m = 0; m <= Math.floor(xmax / 60); m++) { const t = el("text", { x: X(m * 60), y: H - 6, "text-anchor": "middle" }); t.textContent = m + "m"; }
+  const lgd = svg.closest(".card").querySelector(".legend");
+  if (lgd) lgd.innerHTML = "";
+  spec.forEach(([k, label, cvar]) => {
+    const pts = S.map(s => X(s.t) + "," + Y(s[k])).join(" ");
+    el("polyline", { points: pts, fill: "none", stroke: css(cvar), "stroke-width": 2, "stroke-linejoin": "round" });
+    if (lgd) { const sp = document.createElement("span"); sp.textContent = label; sp.style.setProperty("--c", css(cvar));
+      sp.setAttribute("style", "--c:" + css(cvar)); lgd.appendChild(sp);
+      const st = document.createElement("style"); }
+  });
+  const hover = el("rect", { x: L, y: T, width: W - L - R, height: H - T - B, fill: "transparent" });
+  const cross = el("line", { x1: 0, x2: 0, y1: T, y2: H - B, stroke: css("--axis"), "stroke-width": 1, opacity: 0 });
+  hover.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect();
+    const t = (ev.clientX - r.left - L) / (W - L - R) * xmax;
+    let best = S[0]; S.forEach(s => { if (Math.abs(s.t - t) < Math.abs(best.t - t)) best = s; });
+    cross.setAttribute("x1", X(best.t)); cross.setAttribute("x2", X(best.t)); cross.setAttribute("opacity", 1);
+    tip.innerHTML = "t+" + Math.floor(best.t / 60) + "m" + (best.t % 60) + "s · " + spec.map(([k, label]) => label + ": " + best[k]).join(" · ");
+    tip.style.opacity = 1; tip.style.left = Math.min(ev.clientX + 12, innerWidth - 320) + "px"; tip.style.top = (ev.clientY - 34) + "px";
+  });
+  hover.addEventListener("mouseleave", () => { tip.style.opacity = 0; cross.setAttribute("opacity", 0); });
+});
+// legend swatch colors
+document.querySelectorAll(".legend span").forEach(sp => { sp.style.cssText += ";--x:1"; });
+}
+const style = document.createElement("style");
+style.textContent = ".legend span::before{background:var(--c)!important}";
+document.head.appendChild(style);
+draw();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+</script>
