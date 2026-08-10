@@ -457,3 +457,66 @@ func TestMatchingFilter(t *testing.T) {
 		assert.Equal(t, result, flatFilter2)
 	})
 }
+
+func TestMatchingFilterTieBreak(t *testing.T) {
+	older := time.Now().Add(-time.Hour)
+	newer := time.Now()
+
+	buildFilter := func(id string, updatedAt time.Time, values FlatFilterValues) FlatFilter {
+		return FlatFilter{
+			OrganizationID:        "org_id",
+			BillableMetricCode:    "api_call",
+			PlanID:                "plan_id",
+			ChargeID:              "charge_id",
+			ChargeUpdatedAt:       updatedAt,
+			ChargeFilterID:        &id,
+			ChargeFilterUpdatedAt: &updatedAt,
+			Filters:               &values,
+		}
+	}
+
+	// NOTE: the flat_filters view expands a __ALL_FILTER_VALUES__ filter to the billable metric
+	//       filter values, so it becomes indistinguishable from an explicit filter when the metric
+	//       declares that single value. Ruby buckets the usage under the oldest of the two.
+	t.Run("it should return the oldest of two value-equivalent filters", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"model": "m1"},
+		}
+
+		allValues := buildFilter("all_values_filter_id", older, FlatFilterValues{"model": []string{"m1"}})
+		explicit := buildFilter("explicit_filter_id", newer, FlatFilterValues{"model": []string{"m1"}})
+
+		// The filters must not be picked out of the order they are read in
+		result := MatchingFilter([]FlatFilter{allValues, explicit}, &event)
+		assert.Equal(t, "all_values_filter_id", *result.ChargeFilterID)
+
+		result = MatchingFilter([]FlatFilter{explicit, allValues}, &event)
+		assert.Equal(t, "all_values_filter_id", *result.ChargeFilterID)
+	})
+
+	t.Run("it should return the smallest filter id when they share a timestamp", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"model": "m1"},
+		}
+
+		filter1 := buildFilter("filter_id1", older, FlatFilterValues{"model": []string{"m1"}})
+		filter2 := buildFilter("filter_id2", older, FlatFilterValues{"model": []string{"m1"}})
+
+		result := MatchingFilter([]FlatFilter{filter2, filter1}, &event)
+
+		assert.Equal(t, "filter_id1", *result.ChargeFilterID)
+	})
+
+	t.Run("it should return the most specific filter even when it is the newest", func(t *testing.T) {
+		event := EnrichedEvent{
+			Properties: map[string]any{"scheme": "visa", "method": "debit"},
+		}
+
+		parent := buildFilter("parent_filter_id", older, FlatFilterValues{"scheme": []string{"visa"}})
+		child := buildFilter("child_filter_id", newer, FlatFilterValues{"scheme": []string{"visa"}, "method": []string{"debit"}})
+
+		result := MatchingFilter([]FlatFilter{parent, child}, &event)
+
+		assert.Equal(t, "child_filter_id", *result.ChargeFilterID)
+	})
+}
