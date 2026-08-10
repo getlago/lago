@@ -89,10 +89,14 @@ reflects it, benchmark/load/wallet_latency_probe.sh):
    consumer lag stays bounded (~5k) and drains.
 
 Open items:
- * ~12% of QUIET probes see no refresh for 30s+ (trigger IS on the broker
-   <800ms after the event — verified via broker timestamps; the stall is in
-   the consume/refresh leg, needs instrumented debugging). Under load the
-   tail vanishes (next trigger covers it); reconciliation sweep is the net.
+ * ~16% of QUIET probes see no balance change for 30s+ (50-probe campaign:
+   bimodal — successes are tight 264-541ms, failures absolute). Narrowed:
+   trigger on broker <800ms, all 50 consume jobs ran, 0 projection-wait
+   timeouts — so the refresh EXECUTES but computes an unchanged balance.
+   Prime suspect: CustomerUsageService serving cached charge usage (the
+   realtime-eligible cache bypass has a hole at ~2s probe cadence). Under
+   load the tail vanishes (14/14, next trigger covers it). Next: instrument
+   the bypass path in CustomerUsageService.
  * Under-load cycle latency scales with active wallet customers per
    consumer: parallelize across the 6 partitions (customer keying already
    guarantees per-customer ordering) and/or make the refresh itself cheaper.
