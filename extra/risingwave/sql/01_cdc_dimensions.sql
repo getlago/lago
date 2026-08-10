@@ -29,6 +29,22 @@ CREATE TABLE IF NOT EXISTS billable_metrics (
     deleted_at TIMESTAMP
 ) FROM lago_pg TABLE 'public.billable_metrics';
 
+-- Wallets: used only to filter wallet-refresh triggers to customers that
+-- actually hold a wallet (09_wallet_triggers.sql). status: 0=active,
+-- 1=terminated. Remember: new CDC tables must also be added to the
+-- publication: ALTER PUBLICATION rw_publication ADD TABLE wallets;
+CREATE TABLE IF NOT EXISTS wallets (
+    id VARCHAR PRIMARY KEY,
+    organization_id VARCHAR,
+    customer_id VARCHAR,
+    status INT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+) FROM lago_pg TABLE 'public.wallets';
+
+-- Temporal joins look rows up by key; triggers join wallets by customer.
+CREATE INDEX IF NOT EXISTS wallets_by_customer ON wallets (customer_id);
+
 CREATE TABLE IF NOT EXISTS subscriptions (
     id VARCHAR PRIMARY KEY,
     organization_id VARCHAR,

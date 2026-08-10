@@ -56,16 +56,30 @@ Branches: meta `poc/risingwave-realtime-usage`, api
 - [ ] Plain `events_enriched` + `events_charged_in_advance` sinks — only
       needed to retire the Go processor entirely.
 
-## Load-test finding (2026-08-08)
+## Load-test finding (2026-08-08) — FIXED 2026-08-10
 
 At per-event trigger volume (~500 ev/s) the wallet trigger consumer is the
-bottleneck: peak lag 46k messages (drained post-run via batch-collapse).
-Enrichment/usage layers absorbed the load (e2e 14ms avg, usage rows ~145ms,
-projections 0s stale). Fix candidate that also solves the trailing-edge
-issue: emit triggers from a 1s TUMBLE window per customer with EMIT ON
-WINDOW CLOSE — append-only (eager delivery, no upsert trailing buffer) AND
-coalesced (≤1 msg/customer/second). Also: scale consumer processes across
-the 6 partitions. Full data: benchmark/load/.
+bottleneck: peak lag 46k messages on 2026-08-08 (RAM-swap tainted), 98k on
+the clean 2026-08-10 rerun — structural, not a swap artifact. Enrichment
+and usage layers absorbed the load both times (e2e 14ms avg, usage rows
+~145ms, projections 0s stale).
+
+Fix shipped (09_wallet_triggers.sql v2), two multiplying cuts:
+ 1. Coalescing via streaming dedup — ROW_NUMBER()=1 per (customer_id, 1s
+    ingested_at bucket). Chosen over the original TUMBLE + EMIT ON WINDOW
+    CLOSE candidate: EOWC needs a watermark (absent on events_raw, not
+    addable without rebuilding the MV cascade) and stalls the final window
+    when the stream goes idle (watermark stops advancing — the trailing
+    edge problem again). First-event-wins dedup emits immediately instead.
+ 2. Wallet filter — temporal join against CDC'd `wallets` (new table +
+    `wallets_by_customer` index, 01_cdc_dimensions.sql): customers without
+    an active wallet emit no trigger.
+
+Measured: 15k events @500/s → 561 triggers (27× cut), consumer lag ≤16.
+Dedup state grows one small row per (customer, active second) with no
+watermark cleanup — fold into the state-TTL item in §1. If trigger volume
+ever outgrows one consumer again: scale processes across the 6 partitions.
+Full data: benchmark/load/.
 
 ## 4. Process
 
