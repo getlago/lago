@@ -60,6 +60,7 @@
     <div class="tile"><div class="l">Usage-row latency</div><div class="v accent">136 ms</div><div class="d">avg during run · max 266 ms</div></div>
     <div class="tile"><div class="l">Peak enrich backlog</div><div class="v">0</div><div class="d">events queued · 0 at end</div></div>
     <div class="tile"><div class="l">Wallet consumer lag</div><div class="v">253</div><div class="d">peak messages · 0 at end</div></div>
+    <div class="tile"><div class="l">Event → wallet refreshed</div><div class="v accent">7.2 s</div><div class="d">median under load · p95 8.2 s · 14 probes</div></div>
   </div>
 
   <h2>Timeline</h2>
@@ -98,8 +99,12 @@
   self-measuring MVs (Kafka broker timestamps, per-minute windows); consumer lag via
   <code>rpk group describe</code>; audit compares the producer’s count against the delta of
   <code>SUM(events_count)</code> in <code>usage_realtime_projections</code> — dedup and exactly-once
-  attribution are load-bearing here. Single-node RisingWave (<code>barrier_interval_ms=250</code>)
-  on a shared dev machine; treat absolute CPU as indicative, shapes as real.</footer>
+  attribution are load-bearing here. Wallet latency (when shown) from
+  <code>wallet_latency_probe.sh</code>: probe events against a quiet wallet customer while the load
+  runs, polling <code>ongoing_usage_balance_cents</code> every 50&nbsp;ms until the probe’s usage is
+  reflected — end-to-end through enrichment, projections, trigger, and inline refresh. Single-node
+  RisingWave (<code>barrier_interval_ms=250</code>) on a shared dev machine; treat absolute CPU as
+  indicative, shapes as real.</footer>
 </main>
 <div class="tip" id="tip"></div>
 <script>

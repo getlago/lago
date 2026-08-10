@@ -56,29 +56,52 @@ Branches: meta `poc/risingwave-realtime-usage`, api
 - [ ] Plain `events_enriched` + `events_charged_in_advance` sinks — only
       needed to retire the Go processor entirely.
 
-## Load-test finding (2026-08-08) — FIXED 2026-08-10
+## Load-test finding (2026-08-08) — RESOLVED 2026-08-10 (consumer side)
 
-At per-event trigger volume (~500 ev/s) the wallet trigger consumer is the
-bottleneck: peak lag 46k messages on 2026-08-08 (RAM-swap tainted), 98k on
-the clean 2026-08-10 rerun — structural, not a swap artifact. Enrichment
-and usage layers absorbed the load both times (e2e 14ms avg, usage rows
-~145ms, projections 0s stale).
+At per-event trigger volume (~500 ev/s) the wallet trigger consumer fell
+behind: peak lag 46k on 2026-08-08 (RAM-swap tainted), 98k on the clean
+2026-08-10 rerun — structural. Enrichment and usage layers absorbed the
+load both times (e2e ~15ms avg, usage rows ~140ms, projections 0s stale).
 
-Fix shipped (09_wallet_triggers.sql v2), two multiplying cuts:
- 1. Coalescing via streaming dedup — ROW_NUMBER()=1 per (customer_id, 1s
-    ingested_at bucket). Chosen over the original TUMBLE + EMIT ON WINDOW
-    CLOSE candidate: EOWC needs a watermark (absent on events_raw, not
-    addable without rebuilding the MV cascade) and stalls the final window
-    when the stream goes idle (watermark stops advancing — the trailing
-    edge problem again). First-event-wins dedup emits immediately instead.
- 2. Wallet filter — temporal join against CDC'd `wallets` (new table +
-    `wallets_by_customer` index, 01_cdc_dimensions.sql): customers without
-    an active wallet emit no trigger.
+The sink stays PER-EVENT; the fixes are consumer-side (see
+09_wallet_triggers.sql header for why RW-side coalescing was tried and
+reverted — GroupTopN over the updating events_expanded, temporal-join
+wallet filter, and TUMBLE+EOWC are all unusable here):
+ 1. karafka.rb max_messages 500 → 10_000 — batch-collapse costs O(distinct
+    customers), so the batch must scale with the backlog or each poll pays
+    a full refresh cycle for a thin slice of stream and the consumer can
+    never catch up.
+ 2. WalletRefreshTriggersConsumer skips customers without an active wallet
+    (one indexed exists-check per distinct customer per batch) — in the
+    load population 90% of triggers are for wallet-less customers.
+ 3. Wallets::RealtimeRefreshService projection wait wrapped in `uncached`:
+    Karafka consumes inside the Rails executor (AR query cache ON), so the
+    identical wait query was replayed from cache and could only time out
+    unless the projection won the race to the FIRST check. This was the
+    real cause of the "bimodal" wallet latency (0.4-1.1s vs ~5.3s) — not
+    the PG sink trailing flush, which measures ~300ms for isolated rows.
 
-Measured: 15k events @500/s → 561 triggers (27× cut), consumer lag ≤16.
-Dedup state grows one small row per (customer, active second) with no
-watermark cleanup — fold into the state-TTL item in §1. If trigger volume
-ever outgrows one consumer again: scale processes across the 6 partitions.
+Measured after fixes (probe = event -> ongoing_usage_balance_cents
+reflects it, benchmark/load/wallet_latency_probe.sh):
+ * quiet: median 886ms (14/16 probes 0.5-1.8s)
+ * under 500 ev/s: median 7.2s, p95 8.2s, 14/14 — pure cycle time
+   (~21 wallet customers × ~300ms inline refresh per collapse cycle);
+   consumer lag stays bounded (~5k) and drains.
+
+Open items:
+ * ~12% of QUIET probes see no refresh for 30s+ (trigger IS on the broker
+   <800ms after the event — verified via broker timestamps; the stall is in
+   the consume/refresh leg, needs instrumented debugging). Under load the
+   tail vanishes (next trigger covers it); reconciliation sweep is the net.
+ * Under-load cycle latency scales with active wallet customers per
+   consumer: parallelize across the 6 partitions (customer keying already
+   guarantees per-customer ordering) and/or make the refresh itself cheaper.
+ * Gotcha: replacing the sink replays the full events_expanded snapshot
+   into the topic (~390k stale triggers) — seek the consumer group to end
+   after any sink recreation.
+ * Measurement gotcha: `timeout N docker exec rpk consume | grep -m1`
+   reports its own timeout, not arrival (the pipeline only exits when rpk
+   dies). Use broker timestamps (%d) vs payload watermark instead.
 Full data: benchmark/load/.
 
 ## 4. Process

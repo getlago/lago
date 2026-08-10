@@ -34,6 +34,20 @@ peak_stale = max(s["proj_stale_s"] for s in samples)
 verdict_ok = audit["lost"] == 0 and end_backlog < 100
 verdict = "PASSED — zero loss, backlog drained" if verdict_ok else f"REVIEW — lost={audit['lost']}, end backlog={end_backlog}"
 
+# Optional: event -> wallet-refreshed probe results (wallet_latency_probe.sh),
+# a list of ms values under audit["wallet_ms"]. Rendered as a KPI tile when present.
+wallet_ms = sorted(v for v in audit.get("wallet_ms", []) if isinstance(v, (int, float)))
+if wallet_ms:
+    w_median = wallet_ms[len(wallet_ms) // 2]
+    w_p95 = wallet_ms[min(len(wallet_ms) - 1, int(len(wallet_ms) * 0.95))]
+    wallet_tile = (
+        '<div class="tile"><div class="l">Event → wallet refreshed</div>'
+        f'<div class="v accent">{w_median / 1000:.1f} s</div>'
+        f'<div class="d">median under load · p95 {w_p95 / 1000:.1f} s · {len(wallet_ms)} probes</div></div>'
+    )
+else:
+    wallet_tile = ""
+
 def fmt(ms):
     return f"{ms:.0f} ms" if ms < 1000 else f"{ms / 1000:.1f} s"
 
@@ -99,6 +113,7 @@ html = """<title>RisingWave path — load test report</title>
     <div class="tile"><div class="l">Usage-row latency</div><div class="v accent">__U_AVG__</div><div class="d">avg during run · max __U_MAX__</div></div>
     <div class="tile"><div class="l">Peak enrich backlog</div><div class="v">__PEAK_BACKLOG__</div><div class="d">events queued · __END_BACKLOG__ at end</div></div>
     <div class="tile"><div class="l">Wallet consumer lag</div><div class="v">__PEAK_WLAG__</div><div class="d">peak messages · __END_WLAG__ at end</div></div>
+    __WALLET_TILE__
   </div>
 
   <h2>Timeline</h2>
@@ -137,8 +152,12 @@ html = """<title>RisingWave path — load test report</title>
   self-measuring MVs (Kafka broker timestamps, per-minute windows); consumer lag via
   <code>rpk group describe</code>; audit compares the producer’s count against the delta of
   <code>SUM(events_count)</code> in <code>usage_realtime_projections</code> — dedup and exactly-once
-  attribution are load-bearing here. Single-node RisingWave (<code>barrier_interval_ms=250</code>)
-  on a shared dev machine; treat absolute CPU as indicative, shapes as real.</footer>
+  attribution are load-bearing here. Wallet latency (when shown) from
+  <code>wallet_latency_probe.sh</code>: probe events against a quiet wallet customer while the load
+  runs, polling <code>ongoing_usage_balance_cents</code> every 50&nbsp;ms until the probe’s usage is
+  reflected — end-to-end through enrichment, projections, trigger, and inline refresh. Single-node
+  RisingWave (<code>barrier_interval_ms=250</code>) on a shared dev machine; treat absolute CPU as
+  indicative, shapes as real.</footer>
 </main>
 <div class="tip" id="tip"></div>
 <script>
@@ -211,6 +230,7 @@ reps = {
     "__END_BACKLOG__": f"{end_backlog:,}",
     "__PEAK_WLAG__": f"{peak_wlag:,}",
     "__END_WLAG__": f"{end_wlag:,}",
+    "__WALLET_TILE__": wallet_tile,
     "__COUNTED__": f"{audit['counted']:,}",
     "__LOST__": str(audit["lost"]),
     "__ORPHANS__": str(audit["orphans"]),
