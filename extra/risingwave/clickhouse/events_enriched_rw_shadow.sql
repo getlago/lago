@@ -25,10 +25,11 @@ CREATE TABLE IF NOT EXISTS default.events_enriched_rw_shadow (
     decimal_value Nullable(Decimal(38, 26)) MATERIALIZED toDecimal128OrZero(value, 26),
     enriched_at DateTime64(3) DEFAULT now64(3),
     precise_total_amount_cents Nullable(Decimal(40, 15)),
-    -- Shadow-only: Kafka broker arrival of the raw event, carried through
-    -- RisingWave. Latency = enriched_at - rw_ingested_at (RW processing +
-    -- sink flush + CH insert); join events_enriched on transaction_id to
-    -- compare enriched_at against the Go path per event.
+    -- Shadow-only: proctime() when RisingWave picked the event up for
+    -- enrichment (barrier-aligned: up to one barrier interval early).
+    -- enriched_at - rw_ingested_at ~= RW enrichment + sink flush + CH
+    -- insert; join events_enriched on transaction_id to compare
+    -- enriched_at against the Go path per event.
     rw_ingested_at DateTime64(3)
 )
 ENGINE = MergeTree

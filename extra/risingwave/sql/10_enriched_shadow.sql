@@ -50,7 +50,8 @@ WITH joined AS (
         END AS value,
         NULLIF(e.precise_total_amount_cents, '')::DECIMAL AS precise_total_amount_cents,
         e.ingested_at,
-        e.kafka_timestamp
+        e.kafka_timestamp,
+        e.rw_received_at
     FROM events_raw e
     JOIN billable_metrics FOR SYSTEM_TIME AS OF PROCTIME() bm
         ON bm.organization_id = e.organization_id
@@ -72,12 +73,14 @@ SELECT
     value,
     precise_total_amount_cents,
     -- Latency instrumentation, not part of the events_enriched shape:
-    -- rw_ingested_at = Kafka broker arrival (the moment the event became
-    -- available to both the Go and RW pipelines — proctime() would be
-    -- barrier-aligned and unusable for latency math). Compare against
+    -- rw_ingested_at = proctime() at the source, i.e. when RisingWave picked
+    -- the event up for enrichment. CAVEAT: barrier-aligned, reads up to one
+    -- barrier interval EARLY (250ms dev / 1s default) — fine as an "RW is
+    -- enriching now" marker, don't trust it below that resolution (broker
+    -- time stays available as kafka_timestamp on events_raw). Compare against
     -- enriched_at stamped by ClickHouse at insert. ingested_at (Lago API
     -- ingest) is kept RW-side only.
-    kafka_timestamp AS rw_ingested_at,
+    rw_received_at AS rw_ingested_at,
     ingested_at
 FROM (
     SELECT
