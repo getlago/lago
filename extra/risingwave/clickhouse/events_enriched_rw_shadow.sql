@@ -24,7 +24,10 @@ CREATE TABLE IF NOT EXISTS default.events_enriched_rw_shadow (
     value Nullable(String),
     decimal_value Nullable(Decimal(38, 26)) MATERIALIZED toDecimal128OrZero(value, 26),
     enriched_at DateTime64(3) DEFAULT now64(3),
-    precise_total_amount_cents Nullable(Decimal(40, 15)),
+    -- Prod uses Decimal(40,15) (Decimal256), which the RisingWave ClickHouse
+    -- sink cannot write. Decimal(38,15) (Decimal128) is lossless here anyway:
+    -- RisingWave decimals cap at 28 significant digits.
+    precise_total_amount_cents Nullable(Decimal(38, 15)),
     -- Shadow-only: proctime() when RisingWave picked the event up for
     -- enrichment (barrier-aligned: up to one barrier interval early).
     -- enriched_at - rw_ingested_at ~= RW enrichment + sink flush + CH
