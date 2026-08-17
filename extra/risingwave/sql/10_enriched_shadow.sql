@@ -73,14 +73,14 @@ SELECT
     value,
     precise_total_amount_cents,
     -- Latency instrumentation, not part of the events_enriched shape:
-    -- rw_ingested_at = proctime() at the source, i.e. when RisingWave picked
+    -- rw_enriched_at = proctime() at the source, i.e. when RisingWave picked
     -- the event up for enrichment. CAVEAT: barrier-aligned, reads up to one
     -- barrier interval EARLY (250ms dev / 1s default) — fine as an "RW is
     -- enriching now" marker, don't trust it below that resolution (broker
     -- time stays available as kafka_timestamp on events_raw). Compare against
     -- enriched_at stamped by ClickHouse at insert. ingested_at (Lago API
     -- ingest) is kept RW-side only.
-    rw_received_at AS rw_ingested_at,
+    rw_received_at AS rw_enriched_at,
     ingested_at
 FROM (
     SELECT
@@ -109,12 +109,17 @@ SELECT
     properties_json,
     value,
     precise_total_amount_cents,
-    rw_ingested_at
+    rw_enriched_at
 FROM events_enriched
 WITH (
     connector = 'clickhouse',
     type = 'append-only',
     force_append_only = 'true',
+    -- With sink decoupling on (cloud default), a ClickHouse sink only commits
+    -- every N checkpoints — N defaults to 10, i.e. 10 x barrier_interval_ms
+    -- between flushes (the "5s batches" observed on cloud at 500ms barriers).
+    -- Commit every checkpoint instead; flush cadence = barrier interval.
+    commit_checkpoint_interval = 1,
     clickhouse.url = 'http://clickhouse:8123',
     clickhouse.user = 'default',
     clickhouse.password = 'default',
