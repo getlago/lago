@@ -71,8 +71,13 @@ SELECT
     properties_json,
     value,
     precise_total_amount_cents,
-    -- Not part of the events_enriched shape; kept for latency probes (compare
-    -- against enriched_at stamped by ClickHouse at insert). Not sunk.
+    -- Latency instrumentation, not part of the events_enriched shape:
+    -- rw_ingested_at = Kafka broker arrival (the moment the event became
+    -- available to both the Go and RW pipelines — proctime() would be
+    -- barrier-aligned and unusable for latency math). Compare against
+    -- enriched_at stamped by ClickHouse at insert. ingested_at (Lago API
+    -- ingest) is kept RW-side only.
+    kafka_timestamp AS rw_ingested_at,
     ingested_at
 FROM (
     SELECT
@@ -100,7 +105,8 @@ SELECT
     transaction_id,
     properties_json,
     value,
-    precise_total_amount_cents
+    precise_total_amount_cents,
+    rw_ingested_at
 FROM events_enriched
 WITH (
     connector = 'clickhouse',
