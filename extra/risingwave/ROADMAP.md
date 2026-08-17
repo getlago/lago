@@ -53,8 +53,16 @@ Branches: meta `poc/risingwave-realtime-usage`, api
       of ClickHouse `usage_hourly`.
 - [ ] Remaining eligibility: pay-in-advance, prorated; `unique_count` is the
       natural next aggregation (RW does exact incremental distinct).
-- [ ] Plain `events_enriched` + `events_charged_in_advance` sinks — only
-      needed to retire the Go processor entirely.
+- [x] Plain `events_enriched` shadow (2026-08-17): `sql/10_enriched_shadow.sql`
+      (`events_enriched` MV: BM-only inner temporal join, NOT-reprocess filter,
+      first-delivery dedup on the prod ReplacingMergeTree key, 32-day state
+      retention via temporal filter on `kafka_timestamp`) sinking append-only
+      into plain-MergeTree CH `events_enriched_rw_shadow`
+      (`clickhouse/events_enriched_rw_shadow.sql` — dedup lives in RW, CH keeps
+      full history). NOT YET APPLIED locally — pending validation (notably
+      RW decimal → CH `Decimal(40,15)` and jsonb→String sink mapping).
+- [ ] `events_charged_in_advance` sink — with the above, what remains to
+      retire the Go processor entirely.
 
 ## Load-test finding (2026-08-08) — RESOLVED 2026-08-10 (consumer side)
 
@@ -107,6 +115,14 @@ Open items:
    reports its own timeout, not arrival (the pipeline only exits when rpk
    dies). Use broker timestamps (%d) vs payload watermark instead.
 Full data: benchmark/load/.
+
+## Local env note (2026-08-17)
+
+The local RisingWave catalog is EMPTY (no sources/tables/MVs/sinks) despite
+`risingwave_data_dev` being expected to persist — state was lost at some
+restart. Nothing is deployed locally right now; re-run `./extra/risingwave/
+setup.sh` (idempotent, applies clickhouse/ then sql/ in order) to rebuild,
+and remember `rw_publication` re-adds + consumer-group seek gotchas below.
 
 ## 4. Process
 
