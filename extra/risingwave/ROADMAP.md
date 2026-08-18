@@ -97,14 +97,21 @@ reflects it, benchmark/load/wallet_latency_probe.sh):
    consumer lag stays bounded (~5k) and drains.
 
 Open items:
- * ~16% of QUIET probes see no balance change for 30s+ (50-probe campaign:
-   bimodal — successes are tight 264-541ms, failures absolute). Narrowed:
-   trigger on broker <800ms, all 50 consume jobs ran, 0 projection-wait
-   timeouts — so the refresh EXECUTES but computes an unchanged balance.
-   Prime suspect: CustomerUsageService serving cached charge usage (the
-   realtime-eligible cache bypass has a hole at ~2s probe cadence). Under
-   load the tail vanishes (14/14, next trigger covers it). Next: instrument
-   the bypass path in CustomerUsageService.
+ * RESOLVED 2026-08-18: the quiet-stall (~16% of probes, no balance change
+   for 30s+) was NOT a cache hole — the realtime projection read path never
+   engaged through the production flow at all. Fees::ChargeService#aggregator
+   hands aggregators a boundaries hash keyed :from_datetime (already the
+   charges window start), but ProjectionLookup#boundaries_agree? only read
+   :charges_from_datetime → nil → every lookup silently fell back to the
+   ClickHouse events store. The benchmark (and the realtime specs) passed
+   :charges_from_datetime in their own hashes, masking the bug: benchmarked
+   numbers measured the projection path, production always read ClickHouse.
+   The stall = trigger-driven refresh racing the CH Kafka-consumer flush
+   (event not yet CH-visible → unchanged balance; next trigger covers it
+   under load, which is why the tail vanished at 500 ev/s). Fixed in
+   projection_lookup.rb (accept :from_datetime), spec updated to use the
+   production hash shape. Verified live: event -> wallet 806ms with the
+   balance computed from projections.
  * Under-load cycle latency scales with active wallet customers per
    consumer: parallelize across the 6 partitions (customer keying already
    guarantees per-customer ordering) and/or make the refresh itself cheaper.
@@ -116,13 +123,24 @@ Open items:
    dies). Use broker timestamps (%d) vs payload watermark instead.
 Full data: benchmark/load/.
 
-## Local env note (2026-08-17)
+## Local env note (2026-08-17, resolved 2026-08-18)
 
-The local RisingWave catalog is EMPTY (no sources/tables/MVs/sinks) despite
-`risingwave_data_dev` being expected to persist — state was lost at some
-restart. Nothing is deployed locally right now; re-run `./extra/risingwave/
-setup.sh` (idempotent, applies clickhouse/ then sql/ in order) to rebuild,
-and remember `rw_publication` re-adds + consumer-group seek gotchas below.
+The local RisingWave catalog was found EMPTY (state lost at some restart).
+Rebuilt 2026-08-18 via `setup.sh` (all 34 streaming jobs CREATED, CDC
+snapshots verified, enriched shadow applied and validated). Volume loss also
+reset the persisted system params — re-applied `ALTER SYSTEM SET
+barrier_interval_ms TO 250` and `sink_decouple TO false`, and recreated all
+external sinks (sink_decouple is captured at CREATE SINK time). Safe because
+the events-raw source starts at `latest` and all event-derived MVs were
+empty (no snapshot replay). `usage_realtime_projections` was truncated: its
+pre-wipe rows would otherwise serve values RisingWave no longer backs (the
+missing-row fallback to ClickHouse is the designed recovery). Consequence of
+`latest` + wipe: projections only cover post-rebuild events, so wallet
+balances computed from projections dropped to post-rebuild usage — expected
+in dev. Related dev fix: events-processor `.air.toml` now sets `rerun =
+true` — after a Docker daemon restart (`restart: unless-stopped` ignores
+depends_on ordering) the Go processor could panic on an unreachable
+Redpanda and air left a dead process behind a healthy-looking container.
 
 ## 4. Process
 

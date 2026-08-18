@@ -3,6 +3,13 @@
 
 send_interrupt = true
 kill_delay = "10s"
+# The processor panics if Kafka/Postgres aren't reachable yet. After a Docker
+# daemon restart, `restart: unless-stopped` brings containers up in arbitrary
+# order (depends_on only applies to `compose up`), so the first run can crash
+# before redpanda accepts connections. Rerun instead of leaving a dead process
+# behind a healthy-looking container.
+rerun = true
+rerun_delay = 2000
 
 [log]
 
