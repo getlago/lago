@@ -1,0 +1,92 @@
+<svg width="1800" height="920" viewBox="0 0 1800 920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0L10 5L0 10Z" fill="#8C95A6"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#19212E" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect x="1" y="1" width="1798" height="918" rx="16" fill="#FBFBF9" stroke="#D9DEE7" stroke-width="2"/>
+
+  <text x="70" y="55" fill="#66758F" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" letter-spacing="1.3">INPUTS AND OPERATORS</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <g>
+      <rect x="70" y="82" width="370" height="142" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="98" y="127" fill="#19212E" font-size="25" font-weight="600">AI products</text>
+      <text x="98" y="164" fill="#66758F" font-size="18">Tokens, compute, API calls,</text>
+      <text x="98" y="193" fill="#66758F" font-size="18">transactions, or custom usage</text>
+    </g>
+    <g>
+      <rect x="500" y="82" width="370" height="142" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="528" y="127" fill="#19212E" font-size="25" font-weight="600">Coding agents</text>
+      <text x="528" y="164" fill="#66758F" font-size="18">Claude Code, Codex, Cursor,</text>
+      <text x="528" y="193" fill="#66758F" font-size="18">or another MCP client</text>
+    </g>
+    <g>
+      <rect x="930" y="82" width="370" height="142" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="958" y="127" fill="#19212E" font-size="25" font-weight="600">Product, finance, ops</text>
+      <text x="958" y="164" fill="#66758F" font-size="18">Human workflows, controls,</text>
+      <text x="958" y="193" fill="#66758F" font-size="18">and reporting</text>
+    </g>
+    <g>
+      <rect x="1360" y="82" width="370" height="142" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="1388" y="127" fill="#19212E" font-size="25" font-weight="600">Platforms &amp; marketplaces</text>
+      <text x="1388" y="164" fill="#66758F" font-size="18">Offer monetization inside</text>
+      <text x="1388" y="193" fill="#66758F" font-size="18">your own product</text>
+    </g>
+
+    <path d="M255 224V270" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M685 224V270" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M1115 224V270" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M1545 224V270" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+    <g>
+      <rect x="70" y="284" width="1230" height="70" rx="8" fill="#F3F4F6" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="98" y="316" fill="#19212E" font-size="20" font-weight="600">Lago Direct</text>
+      <text x="98" y="341" fill="#66758F" font-size="15">Events API + Agent SDK · MCP server · Lago UI</text>
+    </g>
+    <g>
+      <rect x="1395" y="284" width="300" height="70" rx="8" fill="#F3F4F6" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="1545" y="316" text-anchor="middle" fill="#19212E" font-size="20" font-weight="600">Lago Embedded</text>
+      <text x="1545" y="341" text-anchor="middle" fill="#66758F" font-size="15">APIs + white-label UI</text>
+    </g>
+
+    <path d="M685 354V420" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M1545 354C1545 405 1265 392 1175 435" stroke="#8C95A6" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+    <g filter="url(#shadow)">
+      <rect x="500" y="430" width="800" height="118" rx="16" fill="#006CFA"/>
+      <text x="900" y="480" text-anchor="middle" fill="white" font-size="30" font-weight="700">Lago platform</text>
+      <text x="900" y="519" text-anchor="middle" fill="#DDEBFF" font-size="19">One programmable source of truth for monetization</text>
+    </g>
+
+    <path d="M900 548V614" stroke="#8C95A6" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M900 590H330V624" stroke="#8C95A6" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+    <path d="M900 590H1470V624" stroke="#8C95A6" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+    <g>
+      <rect x="70" y="638" width="520" height="205" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="100" y="691" fill="#19212E" font-size="26" font-weight="600">Meter usage</text>
+      <text x="100" y="731" fill="#66758F" font-size="18">Real-time and batch events</text>
+      <text x="100" y="764" fill="#66758F" font-size="18">Filters, dimensions, aggregations</text>
+      <text x="100" y="797" fill="#66758F" font-size="18">Idempotent ingestion</text>
+    </g>
+    <g>
+      <rect x="640" y="638" width="520" height="205" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="670" y="691" fill="#19212E" font-size="26" font-weight="600">Price and control</text>
+      <text x="670" y="731" fill="#66758F" font-size="18">Plans and negotiated pricing</text>
+      <text x="670" y="764" fill="#66758F" font-size="18">Credits, wallets, entitlements</text>
+      <text x="670" y="797" fill="#66758F" font-size="18">Allowances and usage alerts</text>
+    </g>
+    <g>
+      <rect x="1210" y="638" width="520" height="205" rx="12" fill="white" stroke="#D9DEE7" stroke-width="2"/>
+      <text x="1240" y="691" fill="#19212E" font-size="26" font-weight="600">Bill and collect</text>
+      <text x="1240" y="731" fill="#66758F" font-size="18">Invoices and credit notes</text>
+      <text x="1240" y="764" fill="#66758F" font-size="18">Payment orchestration</text>
+      <text x="1240" y="797" fill="#66758F" font-size="18">Revenue and customer analytics</text>
+    </g>
+  </g>
+</svg>
