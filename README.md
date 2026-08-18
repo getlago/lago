@@ -61,9 +61,9 @@ It starts the Lago version that matches this checkout, creates a disposable loca
 Lago usage total                   = $0.02
 ```
 
-The script retrieves Lago's current usage and independently reconciles the result. It also retries one transaction and verifies that usage does not increase. Everything stays on your machine; the demo does not access Lago Cloud.
+Docker Compose starts an isolated Lago service, then a small script seeds and verifies the example through Lago's API. It retrieves current usage, independently reconciles the result, and retries one transaction to confirm that usage does not increase. Everything stays on your machine; the demo does not access Lago Cloud.
 
-Requirements: Docker, `curl`, `jq`, and OpenSSL. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its dedicated container, volume, and protected local credentials when you are done:
+Requirements: Docker, `curl`, and `jq`. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its isolated Compose project and data volume when you are done:
 
 ```bash
 ./examples/agentic-ai-demo/run.sh --cleanup
@@ -78,10 +78,10 @@ Open this repository in your coding agent and paste:
 Run and verify Lago's maintained Agentic AI demo at
 examples/agentic-ai-demo/run.sh.
 
-Inspect the script before running it. Keep the work local and do not alter or
-remove any existing Lago containers, data, credentials, environment files, or
-occupied ports. If the default ports conflict, choose available alternatives
-through the script's documented flags.
+Inspect the demo's Compose file and seed-and-verify script before running it.
+Keep the work local and do not alter or remove unrelated Docker resources. If
+the default ports conflict, set LAGO_DEMO_UI_PORT and LAGO_DEMO_API_PORT to
+available alternatives.
 
 When the demo passes, show me the Lago UI URL, the objects created, the token
 usage, Lago's calculated charges, the independent calculation, the idempotency
