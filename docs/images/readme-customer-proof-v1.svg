@@ -1,0 +1,13 @@
+<svg width="1800" height="210" viewBox="0 0 1800 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="1798" height="208" rx="16" fill="#FBFBF9" stroke="#D9DEE7" stroke-width="2"/>
+  <text x="70" y="58" fill="#66758F" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" letter-spacing="1.4">TRUSTED BY TEAMS BUILDING AT SCALE</text>
+  <image href="readme-hero-assets/mistral-ai.svg" x="70" y="98" width="210" height="50" preserveAspectRatio="xMinYMid meet"/>
+  <image href="readme-hero-assets/groq.svg" x="370" y="98" width="105" height="50" preserveAspectRatio="xMinYMid meet"/>
+  <image href="readme-hero-assets/paypal.svg" x="575" y="98" width="130" height="50" preserveAspectRatio="xMinYMid meet"/>
+  <image href="readme-hero-assets/synthesia.svg" x="810" y="98" width="205" height="50" preserveAspectRatio="xMinYMid meet"/>
+  <image href="readme-hero-assets/blacksmith.svg" x="1120" y="98" width="285" height="50" preserveAspectRatio="xMinYMid meet"/>
+  <line x1="1505" y1="63" x2="1505" y2="157" stroke="#D9DEE7" stroke-width="2"/>
+  <text x="1550" y="103" fill="#006CFA" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="700">$829M</text>
+  <text x="1550" y="133" fill="#19212E" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600">invoices issued</text>
+  <text x="1550" y="158" fill="#66758F" font-family="Inter, Arial, sans-serif" font-size="17">each month</text>
+</svg>

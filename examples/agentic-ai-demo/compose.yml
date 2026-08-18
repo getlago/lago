@@ -1,0 +1,22 @@
+services:
+  lago:
+    image: getlago/lago:${LAGO_VERSION:-v1.51.0}
+    environment:
+      LAGO_CREATE_ORG: "true"
+      LAGO_ORG_USER_EMAIL: agentic-ai-demo@example.local
+      LAGO_ORG_USER_PASSWORD: agentic-ai-demo-local-password
+      LAGO_ORG_NAME: Agentic AI Demo
+      LAGO_ORG_API_KEY: d3d08c5a7c5944c7b54120921f2fcb77f9c1aa43c78217d9
+      API_URL: http://localhost:${LAGO_DEMO_API_PORT:-3001}
+      LAGO_API_URL: http://localhost:${LAGO_DEMO_API_PORT:-3001}
+      LAGO_FRONT_URL: http://localhost:${LAGO_DEMO_UI_PORT:-8080}
+      LAGO_DISABLE_PDF_GENERATION: "true"
+      LAGO_DISABLE_SEGMENT: "true"
+    ports:
+      - "127.0.0.1:${LAGO_DEMO_UI_PORT:-8080}:80"
+      - "127.0.0.1:${LAGO_DEMO_API_PORT:-3001}:3000"
+    volumes:
+      - data:/data
+
+volumes:
+  data:
