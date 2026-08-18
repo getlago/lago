@@ -52,7 +52,7 @@ Run the maintained demo from this repository:
 ./examples/agentic-ai-demo/run.sh
 ```
 
-It starts the Lago version that matches this checkout, creates a disposable local organization, and prices three illustrative AI requests:
+It starts the Lago version that matches this checkout, creates a disposable local organization, and prices three illustrative AI requests. Each request sends one input-token event and one output-token event:
 
 ```text
 3 AI requests
@@ -61,9 +61,11 @@ It starts the Lago version that matches this checkout, creates a disposable loca
 Lago usage total                   = $0.02
 ```
 
-Docker Compose starts an isolated Lago service, then a small script seeds and verifies the example through Lago's API. It retrieves current usage, independently reconciles the result, and retries one transaction to confirm that usage does not increase. Everything stays on your machine; the demo does not access Lago Cloud.
+Docker Compose starts an isolated Lago service, then a small script seeds and verifies the example through Lago's API. It retrieves current usage, independently reconciles the result, and retries one transaction to confirm that usage does not increase. Everything stays on your machine; the demo does not access Lago Cloud. The bundled credentials and API key are disposable and only intended for this local demo.
 
-Requirements: Docker, `curl`, and `jq`. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its isolated Compose project and data volume when you are done:
+Log into [http://localhost:8080](http://localhost:8080) with `agentic-ai-demo@example.local` / `agentic-ai-demo-local-password`, then open **Customers → Agentic AI Demo Customer → Agentic AI Demo subscription → Usage**.
+
+Requirements: Docker, `curl`, and `jq`. If ports 8080 or 3001 are occupied, set `LAGO_DEMO_UI_PORT` and `LAGO_DEMO_API_PORT` before running. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its isolated Compose project and data volume when you are done:
 
 ```bash
 ./examples/agentic-ai-demo/run.sh --cleanup
@@ -75,19 +77,10 @@ Requirements: Docker, `curl`, and `jq`. The demo keeps Lago running so you can i
 Open this repository in your coding agent and paste:
 
 ```text
-Run and verify Lago's maintained Agentic AI demo at
-examples/agentic-ai-demo/run.sh.
-
-Inspect the demo's Compose file and seed-and-verify script before running it.
-Keep the work local and do not alter or remove unrelated Docker resources. If
-the default ports conflict, set LAGO_DEMO_UI_PORT and LAGO_DEMO_API_PORT to
-available alternatives.
-
-When the demo passes, show me the Lago UI URL, the objects created, the token
-usage, Lago's calculated charges, the independent calculation, the idempotency
-evidence, and the exact cleanup command. Do not access Lago Cloud or modify
-global agent settings. Then offer to connect this agent to the local Lago MCP
-server as a separate next step.
+Run Lago's maintained Agentic AI demo by following this README. Keep it local;
+do not modify source files or unrelated Docker resources. When it passes, give
+me the UI URL, token usage and charges, idempotency evidence, and cleanup
+command. Then offer to connect this agent to Lago's local MCP server.
 ```
 
 </details>

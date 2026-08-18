@@ -42,14 +42,19 @@ require_api() {
   fi
 }
 
-printf 'Waiting for the Lago API...\n'
+printf 'Waiting for the Lago API'
 attempt=1
 while [ "$attempt" -le 45 ]; do
-  call_api GET /billable_metrics >/dev/null 2>&1 && break
+  if call_api GET /billable_metrics >/dev/null 2>&1; then
+    printf ' ready\n'
+    break
+  fi
+  printf '.'
   attempt=$((attempt + 1))
   sleep 1
 done
 [ "$attempt" -le 45 ] || {
+  printf '\n' >&2
   printf 'Lago did not become ready within 45 seconds.\n' >&2
   exit 1
 }
@@ -126,6 +131,7 @@ EVENTS
 send_event agentic-ai-demo-r1-input agentic-ai-demo-input-tokens 1000
 
 usage_path='/customers/agentic-ai-demo-customer/current_usage?external_subscription_id=agentic-ai-demo-subscription&apply_taxes=false'
+printf 'Reconciling usage'
 attempt=1
 while [ "$attempt" -le 30 ]; do
   usage=$(require_api GET "$usage_path")
@@ -133,13 +139,16 @@ while [ "$attempt" -le 30 ]; do
   output_units=$(printf '%s' "$usage" | jq -r '[.customer_usage.charges_usage[] | select(.billable_metric.code=="agentic-ai-demo-output-tokens") | .units] | first // "0"')
   amount_cents=$(printf '%s' "$usage" | jq -r '.customer_usage.amount_cents // 0')
   if [ "$input_units" = "5000.0" ] && [ "$output_units" = "1250.0" ] && [ "$amount_cents" = "2" ]; then
+    printf ' verified\n'
     break
   fi
+  printf '.'
   attempt=$((attempt + 1))
   sleep 1
 done
 
 [ "$attempt" -le 30 ] || {
+  printf '\n' >&2
   printf 'Usage did not reconcile within 30 seconds.\n' >&2
   printf '%s\n' "$usage" | jq . >&2
   exit 1
