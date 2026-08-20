@@ -177,51 +177,68 @@ func (ff *FlatFilter) ToDefaultFilter() *FlatFilter {
 	return defaultFilter
 }
 
+// MatchingFilter returns the filter the event belongs to, the charge's default bucket when none
+// matches.
+//
+// NOTE: This must return the same filter as the Ruby ChargeFilters::EventMatchingService, which
+// does the same job for organizations on the Postgres events store. Both the usage cache key and
+// the enriched event are built from it, so picking another one leaves the usage cache expiring a
+// key the usage reader never wrote to.
 func MatchingFilter(filters []FlatFilter, event *EnrichedEvent) *FlatFilter {
-	// Multiple filters are present, identify the best match
-	if len(filters) > 1 {
-		// First select all matching filters
-		matchingFilters := make([]FlatFilter, 0)
-		for _, filter := range filters {
-			if filter.HasFilters() && filter.IsMatchingEvent(event).Value() {
-				matchingFilters = append(matchingFilters, filter)
-			}
+	var bestFilter *FlatFilter
+
+	for i := range filters {
+		filter := &filters[i]
+		if !filter.HasFilters() || !filter.IsMatchingEvent(event).Value() {
+			continue
 		}
 
-		// No filters matches the event
-		if len(matchingFilters) == 0 {
-			// Return the charge's default bucket
-			return filters[0].ToDefaultFilter()
-
-		} else {
-			// NOTE: Multiple filters match the event (parent/child filters),
-			//       We must take only the one matching the most properties
-			var bestFilter *FlatFilter
-			for _, filter := range matchingFilters {
-				if bestFilter == nil {
-					bestFilter = &filter
-					continue
-				}
-
-				if len(filter.Filters.Keys()) > len(bestFilter.Filters.Keys()) {
-					bestFilter = &filter
-				}
-			}
-
-			// Return the best match
-			return bestFilter
-		}
-
-	} else {
-		filter := filters[0]
-
-		// Check if the only filter is matching the event
-		if filter.HasFilters() && filter.IsMatchingEvent(event).Value() {
-			// Return the only matching filter
-			return &filter
-		} else {
-			// Otherwise, return the charge's default bucket
-			return filter.ToDefaultFilter()
+		if bestFilter == nil || filter.isBetterMatchThan(bestFilter) {
+			bestFilter = filter
 		}
 	}
+
+	// No filter matches the event, it falls into the charge's default bucket
+	if bestFilter == nil {
+		return filters[0].ToDefaultFilter()
+	}
+
+	return bestFilter
+}
+
+// isBetterMatchThan reports whether ff must be preferred over other: it matches more of the event
+// properties, or as many but is older.
+//
+// NOTE: Ruby takes the first filter matching the most properties out of charge.filters, ordered by
+// the ChargeFilter default scope (order(updated_at: :asc)), hence the tie-break on
+// ChargeFilterUpdatedAt. The one on ChargeFilterID has no Ruby counterpart (Postgres resolves an
+// ORDER BY tie arbitrarily), it only keeps us deterministic when two filters share a timestamp,
+// rather than falling back to the order the filters were read in.
+func (ff *FlatFilter) isBetterMatchThan(other *FlatFilter) bool {
+	if keys, otherKeys := len(ff.Filters.Keys()), len(other.Filters.Keys()); keys != otherKeys {
+		return keys > otherKeys
+	}
+
+	updatedAt, otherUpdatedAt := ff.chargeFilterUpdatedAt(), other.chargeFilterUpdatedAt()
+	if !updatedAt.Equal(otherUpdatedAt) {
+		return updatedAt.Before(otherUpdatedAt)
+	}
+
+	return ff.chargeFilterID() < other.chargeFilterID()
+}
+
+func (ff *FlatFilter) chargeFilterUpdatedAt() time.Time {
+	if ff.ChargeFilterUpdatedAt == nil {
+		return time.Time{}
+	}
+
+	return *ff.ChargeFilterUpdatedAt
+}
+
+func (ff *FlatFilter) chargeFilterID() string {
+	if ff.ChargeFilterID == nil {
+		return ""
+	}
+
+	return *ff.ChargeFilterID
 }

@@ -1056,3 +1056,79 @@ func TestEvaluateExpression(t *testing.T) {
 		assert.Equal(t, "36", event.Properties["total_value"])
 	})
 }
+
+func TestEnrichEventWithOverlappingFilters(t *testing.T) {
+	// NOTE: the flat_filters view expands a __ALL_FILTER_VALUES__ filter to the billable metric
+	//       filter values, so it becomes indistinguishable from an explicit filter when the metric
+	//       declares that single value. The event must be enriched with the same filter the Ruby
+	//       usage reader buckets the usage under, the oldest one, otherwise the usage cache is
+	//       expired on a key that is never written to.
+	t.Run("With two value-equivalent filters on the same charge", func(t *testing.T) {
+		testEnv := setupEnrichmentTestEnv(t, false)
+		defer testEnv.Cleanup()
+
+		event := models.Event{
+			OrganizationID:         "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalSubscriptionID: "sub_id",
+			Code:                   "api_calls",
+			Timestamp:              1741007009.0,
+			Properties:             map[string]any{"value": "12.12", "model": "m1"},
+			Source:                 "SQS",
+		}
+
+		bm := &models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "value",
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
+		}
+		testEnv.DataStore.SetBillableMetric(bm)
+
+		sub := &models.Subscription{
+			ID:             "sub123",
+			OrganizationID: &event.OrganizationID,
+			ExternalID:     event.ExternalSubscriptionID,
+			PlanID:         "plan_id",
+			StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+		}
+		testEnv.DataStore.SetSubscription(sub)
+
+		older := time.Now().Add(-time.Hour)
+		newer := time.Now()
+
+		// The newest filter comes first, so reading the filters in order picks the wrong one
+		testEnv.DataStore.SetFlatFilters([]*models.FlatFilter{
+			{
+				OrganizationID:        event.OrganizationID,
+				BillableMetricCode:    event.Code,
+				PlanID:                "plan_id",
+				ChargeID:              "charge1",
+				ChargeUpdatedAt:       newer,
+				ChargeFilterID:        utils.StringPtr("explicit_filter_id"),
+				ChargeFilterUpdatedAt: &newer,
+				Filters:               &models.FlatFilterValues{"model": []string{"m1"}},
+			},
+			{
+				OrganizationID:        event.OrganizationID,
+				BillableMetricCode:    event.Code,
+				PlanID:                "plan_id",
+				ChargeID:              "charge1",
+				ChargeUpdatedAt:       newer,
+				ChargeFilterID:        utils.StringPtr("all_values_filter_id"),
+				ChargeFilterUpdatedAt: &older,
+				Filters:               &models.FlatFilterValues{"model": []string{"m1"}},
+			},
+		})
+
+		enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+		assert.True(t, enrichResult.Success())
+		assert.Equal(t, 1, len(enrichResult.Value()))
+
+		eventResult := enrichResult.Value()[0]
+		assert.Equal(t, "all_values_filter_id", *eventResult.ChargeFilterID)
+		assert.Equal(t, older.UTC(), eventResult.ChargeFilterUpdatedAt.UTC())
+	})
+}
