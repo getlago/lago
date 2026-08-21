@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Measure ingest -> QUERYABLE-in-usage_realtime latency (what a pgwire reader
+# Measure ingest -> QUERYABLE-in-usage_buckets_15m latency (what a pgwire reader
 # like Rails actually experiences, including checkpoint visibility).
 #
-# Produces one event at a time to events-raw and polls usage_realtime until
+# Produces one event at a time to events-raw and polls usage_buckets_15m until
 # events_count increments. Poll resolution is one psql round-trip (~15-30ms).
 #
 # Usage: ./extra/risingwave/usage_latency_probe.sh [iterations]
@@ -19,7 +19,7 @@ CODE="bench_bm_20_8bf23869"
 
 q() { psql -h "$RW_HOST" -p "$RW_PORT" -d dev -U root -tA -c "$1"; }
 
-count_query="SELECT COALESCE(SUM(events_count), 0) FROM usage_realtime
+count_query="SELECT COALESCE(SUM(events_count), 0) FROM usage_buckets_15m
              WHERE organization_id = '$ORG' AND code = '$CODE';"
 
 total=0
@@ -42,7 +42,7 @@ for i in $(seq 1 "$ITERATIONS"); do
   done
   ms=$(( $(date +%s%3N) - t0 ))
   total=$((total + ms))
-  echo "iter $i: visible in usage_realtime after ${ms}ms"
+  echo "iter $i: visible in usage_buckets_15m after ${ms}ms"
 done
 
 echo "avg over $ITERATIONS: $((total / ITERATIONS))ms (poll resolution ~1 psql round-trip)"

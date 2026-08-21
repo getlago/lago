@@ -31,12 +31,12 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
         │             event-derived relation
         ├──► events_enriched_rw_shadow ──► ClickHouse events_enriched_rw_shadow
         ▼
-   events_joined      temporal joins (subscription candidates, billing periods,
-        │              flat_filters) — append-only, lookups frozen at arrival time
+   events_joined      temporal joins (subscription candidates, flat_filters) —
+        │              append-only, lookups frozen at arrival time
         ▼
    events_expanded    best subscription → best filter per charge (default-bucket
-        │             fallback) → keep latest ingestion per (org, tx, charge)
-        ├──► usage_realtime            count/sum per (sub, charge, filter, grouped_by)
+        │             fallback)
+        ├──► usage_buckets_15m ──► ClickHouse usage_buckets_15m (API reads)
         └──► events_enriched_expanded_shadow (Kafka)   parity diffing vs Go output
 ```
 
@@ -46,13 +46,11 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/01_cdc_dimensions.sql` | Native Postgres CDC source + dimension tables + lookup indexes (replaces BadgerDB cache + Debezium) |
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
-| `sql/04_enrichment.sql` | Stage 0 `events_enriched` (BM temporal join + delivery dedup), stage 1 temporal joins (append-only), stage 2 ranking + corrections |
-| `sql/05_usage.sql` | `usage_realtime` MV (count/sum running totals, keyed by billing period) + `usage_hourly` MV (per-hour time series keyed on event time) |
-| `clickhouse/usage_hourly.sql` | ClickHouse serving table (ReplacingMergeTree(ver, is_deleted)) fed by the `usage_hourly` upsert sink — dashboard/analytics history; query with FINAL |
-| `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) |
-| `sql/08_serving.sql` | `usage_serving` MV (open periods, temporal-filter pruning) + Postgres sink into `usage_realtime_projections` |
-| `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → usage row emitted) |
-| `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_realtime`* over pgwire (checkpoint visibility included) |
+| `sql/04_enrichment.sql` | Stage 0 `events_enriched` (BM temporal join + first-wins dedup), stage 1 temporal joins (append-only), stage 2 ranking |
+| `sql/05_usage.sql` | `usage_buckets_15m` MV: count/sum per (sub, charge, filter, grouped_by) on 15-minute buckets of the event timestamp — serves current usage AND dashboard history; the API sums buckets over the Rails-computed period window (no period rows anywhere) |
+| `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted), query with FINAL) |
+| `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → bucket row emitted) |
+| `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_buckets_15m`* over pgwire (checkpoint visibility included) |
 
 ## Design invariants
 
@@ -84,11 +82,11 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 
 **Grafana dashboards** (provisioned, zero setup):
 - `lago-rw-latency` — pipeline latency, throughput, hourly usage.
-- `lago-rw-serving` (http://localhost:3001/d/lago-rw-serving) — serving
-  health: projection rows/staleness in the lago Postgres DB (second
-  provisioned datasource), orphaned usage (events without a covering
-  billing period — red means the periods clock job has a gap), current +
-  upcoming period coverage, usage by period, and what the API serves.
+- `lago-rw-serving` (http://localhost:3001/d/lago-rw-serving) — STALE since
+  the 2026-08-21 bucket rework: its panels still query the removed
+  `usage_realtime` MV / Postgres projections and need a rebuild against
+  `usage_buckets_15m` + the ClickHouse serving table (ROADMAP §1
+  observability).
 
 Start it with
 `docker compose -f docker-compose.dev.yml up -d grafana`, then open
@@ -96,9 +94,8 @@ http://localhost:3001/d/lago-rw-latency (or https://grafana.lago.dev).
 Anonymous admin access in dev, auto-refreshes every 10s. Grafana queries
 RisingWave directly over pgwire (Postgres datasource → `risingwave:4566`) —
 no Prometheus needed for the pipeline metrics. Panels: end-to-end latency,
-usage-emit latency, ingest→Kafka, per-minute throughput, and the most
-recently updated `usage_realtime` rows. Provisioning lives in
-`extra/grafana/` (datasource + dashboard JSON, editable in the UI).
+usage-emit latency, ingest→Kafka, per-minute throughput. Provisioning lives
+in `extra/grafana/` (datasource + dashboard JSON, editable in the UI).
 
 
 - **End-to-end latency** is self-measured from broker timestamps:
@@ -129,13 +126,16 @@ recently updated `usage_realtime` rows. Provisioning lives in
 
 ## Known gaps / phase plan
 
-**Done — billing-period keying** (api branch `feat/subscription-billing-periods`)
-- Rails maintains `subscription_billing_periods` (current + next period per
-  active subscription, `Clock::RefreshSubscriptionBillingPeriodsJob`, dates
-  from `Subscriptions::DatesService`). CDC'd + temporal-joined in enrichment;
-  `usage_realtime` is keyed by period. Events without a covering row land on
-  a NULL period key — monitor those. Next-period pre-provisioning closes the
-  rollover gap (validated: an event dated inside the next period picked it up).
+**Done — 15-minute bucket keying** (2026-08-21; replaced billing-period keying)
+- Usage is keyed by 15-minute buckets of the event timestamp, NOT by billing
+  period: the API sums buckets over the window it computes at read time
+  (`Subscriptions::DatesService`), so no period rows are maintained, CDC'd or
+  pre-provisioned anywhere — the whole `subscription_billing_periods` layer
+  (table, model, upsert service, clock job) was deleted. 15 minutes makes
+  every timezone's day boundary land on a bucket wall (all real UTC offsets
+  are multiples of 15 min). Known sliver: a subscription starting/terminating
+  at a mid-bucket time shares its first/last bucket with the neighbour
+  period — at most 15 min of events on the first/last day.
 
 **Phase 2 — parity**
 - `lago-expression` evaluation as a WASM UDF (crate is already Rust). Until
@@ -150,20 +150,22 @@ recently updated `usage_realtime` rows. Provisioning lives in
 - `DENSE_RANK` in the best-subscription stage falls back to a non-TopN
   operator (planner notice); revisit if it shows up in profiles.
 
-**Done — API serving path** (api branch `feat/subscription-billing-periods`)
-- `usage_serving` MV (open periods only, temporal filter auto-prunes 3 days
-  past period end) → Postgres sink into the Rails-owned
-  `usage_realtime_projections` table (api migration must run before
-  `setup.sh` creates the sink, which validates the table).
-- Realtime count/sum aggregators read the projection for current usage,
-  gated by `LAGO_RISINGWAVE_USAGE_ENABLED` + eligibility (in arrears,
-  non-prorated, non-recurring, no expression); fallback to the events store
-  on any missing row or period disagreement.
+**Done — API serving path** (api branch `feat/subscription-billing-periods`,
+reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
+- `usage_buckets_15m` MV → ClickHouse upsert sink into `usage_buckets_15m`
+  (table owned by api clickhouse migration; api migrations must run before
+  `setup.sh` creates the sink, which validates the table). Quiet-tail flush
+  measured ~300ms — the CH upsert sink is NOT in the trailing-flush class.
+- Realtime count/sum aggregators (`BucketLookup`) sum buckets over the
+  Rails-computed charges window, gated by `LAGO_RISINGWAVE_USAGE_ENABLED` +
+  eligibility (in arrears, non-prorated, non-recurring, no expression);
+  fallback to the events store when no buckets cover the window. NOTE: a
+  partially-covered period (pipeline enabled mid-period without topic
+  replay) serves a partial total WITHOUT fallback — cut over at a period
+  rollover or replay the events topic from period start.
 - Hourly parity check (`LAGO_RISINGWAVE_USAGE_PARITY_CHECK_ENABLED`,
-  `UsageProjections::ParityCheckService`) compares projections vs the
-  events-store aggregation per charge. First run immediately caught a
-  synthetic-reprocess double-count in the ClickHouse path that the
-  RisingWave dedup handles correctly — the projection was the right value.
+  `RealtimeUsage::ParityCheckService`) compares bucket sums vs the
+  events-store aggregation per charge over the current Rails-computed period.
 
 **Done — event-driven wallet refresh** (api branch, `sql/09_wallet_triggers.sql`)
 - `wallet_refresh_triggers` Kafka sink, FORMAT UPSERT (append-only sinks drop
@@ -175,28 +177,28 @@ recently updated `usage_realtime` rows. Provisioning lives in
   `Customers::RefreshWalletsService` inline (same guards as
   `Customers::RefreshWalletJob`); `target_wallet_code` rides in the payload.
 - Realtime-eligible charges bypass the Redis charge cache in current usage —
-  the projection read is the cache; legacy invalidation caused stale reads.
-- Measured event → wallet.ongoing_balance updated: **~1.9 s** (dominated by
-  the 1 s barrier; ~1.2 s at `barrier_interval_ms=250`). Requires
+  the bucket read is the cache; legacy invalidation caused stale reads.
+- The consumer waits (bounded 5s) for ClickHouse `usage_buckets_15m` to reach
+  the trigger's `last_ingested_at` watermark before refreshing (the Kafka
+  trigger races the CH sink of the same epoch). Requires
   `LAGO_RISINGWAVE_USAGE_ENABLED` on the consumer so the refresh reads
-  projections (reading ClickHouse there races the trigger).
+  buckets. Measured event → wallet.ongoing_balance updated: **~400 ms** median warm (351–502 ms; bucket visible in ClickHouse ~250 ms — the floor is barrier_interval_ms, keep 250 ms in prod).
 
 **Phase 3 — remaining**
 - Compute-on-read ongoing balance for display paths (wallet serializer).
 - Alert threshold-crossing actions from the same consumer.
 - Demote the wallet clock sweep to a slow reconciliation net.
-- Customer-facing hourly dashboards read `default.usage_hourly` in ClickHouse
-  (validated: hours keyed on event time, backfill included, corrections
-  propagate as row replacements — 3 sinks total: Kafka=push, PG=live state,
-  CH=time-series history). Successor to the daily_usages batch computation.
+- Customer-facing usage dashboards read `default.usage_buckets_15m` in
+  ClickHouse (any granularity ≥ 15 min recomposes by summing buckets).
+  Successor to the daily_usages batch computation.
 
 **Parity-diff normalization notes**
 - Go emits `"<nil>"` for a missing sum field; RW emits `null`.
 - RW sink serializes timestamps as epoch millis; Go emits RFC3339 strings.
 - Go's `events_enriched` (non-expanded) message carries an arbitrary charge's
   info (map iteration order); don't diff those fields.
-- `usage_realtime.grouped_by` is the JSONB's text rendering (JSONB can't be a
-  streaming group key); cast back with `::jsonb` when reading.
+- `usage_buckets_15m.grouped_by` is the JSONB's text rendering (JSONB can't be
+  a streaming group key); cast back with `::jsonb` when reading.
 
 **Ops notes**
 - The CDC source owns Postgres replication slot `risingwave_dev`

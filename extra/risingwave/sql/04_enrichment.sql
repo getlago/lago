@@ -123,18 +123,6 @@ SELECT
             OR s.terminated_at >= e.event_time
         )
     ) AS subscription_valid,
-    bp.id AS billing_period_id,
-    -- Column names downstream stay period_charges_from/period_charges_to:
-    -- they are the column names of the Rails-owned
-    -- usage_realtime_projections table the Postgres sink writes into
-    -- (08_serving.sql), which the CDC-side rename does not touch.
-    bp.period_from AS period_charges_from,
-    bp.period_to AS period_charges_to,
-    (
-        bp.id IS NOT NULL
-        AND bp.period_from <= e.event_time
-        AND bp.period_to >= e.event_time
-    ) AS period_valid,
     ff.charge_id,
     ff.charge_updated_at,
     ff.charge_filter_id,
@@ -151,28 +139,23 @@ FROM events_enriched e
 LEFT JOIN subscriptions FOR SYSTEM_TIME AS OF PROCTIME() s
     ON s.organization_id = e.organization_id
    AND s.external_id = e.external_subscription_id
--- Periods are matched on the subscription only; `scope_type` / `scope_id` are
--- carried on the CDC table but not yet used to pick a scope-specific grid.
-LEFT JOIN subscription_billing_periods FOR SYSTEM_TIME AS OF PROCTIME() bp
-    ON bp.subscription_id = s.id
 LEFT JOIN flat_filters FOR SYSTEM_TIME AS OF PROCTIME() ff
     ON ff.organization_id = e.organization_id
    AND ff.plan_id = s.plan_id
    AND ff.billable_metric_code = e.code;
 
--- Stage 2: pick the best subscription + covering billing period per event,
--- then the best-matching filter per (event, charge) with default-bucket
--- fallback.
+-- Stage 2: pick the best subscription per event, then the best-matching
+-- filter per (event, charge) with default-bucket fallback.
 --
 -- Stage 0 guarantees exactly one enriched row per event (first ingestion
 -- wins, no corrections), so ranking here only resolves the dimension
--- fan-out: multiple candidate subscriptions/periods from the temporal
--- joins, and the filter candidates per charge.
+-- fan-out: multiple candidate subscriptions from the temporal join, and the
+-- filter candidates per charge.
 --
--- The DENSE_RANK ordering fully determines a (subscription, billing period)
--- pair, so rank 1 keeps exactly the filter fan-out rows of the best pair:
--- valid subscription first, then valid (covering) period, most recent as
--- tie-breakers.
+-- The DENSE_RANK ordering fully determines a subscription, so rank 1 keeps
+-- exactly the filter fan-out rows of the best one: valid subscription
+-- first, most recent as tie-breakers (mirrors the Go FetchSubscription
+-- ordering).
 CREATE MATERIALIZED VIEW IF NOT EXISTS events_expanded AS
 WITH best_sub AS (
     SELECT * FROM (
@@ -184,10 +167,7 @@ WITH best_sub AS (
                     subscription_valid DESC,
                     subscription_terminated_at DESC NULLS FIRST,
                     subscription_started_at DESC,
-                    subscription_id,
-                    period_valid DESC,
-                    period_charges_from DESC NULLS LAST,
-                    billing_period_id
+                    subscription_id
             ) AS sub_rank
         FROM events_joined
     ) ranked_subs
@@ -233,9 +213,6 @@ SELECT
     CASE WHEN subscription_valid THEN subscription_id END AS subscription_id,
     CASE WHEN subscription_valid THEN subscription_customer_id END AS customer_id,
     CASE WHEN subscription_valid THEN subscription_plan_id END AS plan_id,
-    CASE WHEN period_valid THEN billing_period_id END AS billing_period_id,
-    CASE WHEN period_valid THEN period_charges_from END AS period_charges_from,
-    CASE WHEN period_valid THEN period_charges_to END AS period_charges_to,
     charge_id,
     charge_updated_at,
     -- Default bucket: best candidate did not match -> attribute to the charge

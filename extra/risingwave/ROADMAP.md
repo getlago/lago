@@ -1,21 +1,49 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-07: enrichment + dedup/correction pipeline in shadow,
-billing periods, period-keyed `usage_realtime` + Postgres projections, API
-read path (count/sum incl. charge filters and pricing_group_keys), hourly
-usage → ClickHouse, event-driven wallet refresh, Grafana dashboards
-(`lago-rw-latency`, `lago-rw-serving`), latency benchmarks, parity checker.
-Branches: meta `poc/risingwave-realtime-usage`, api
-`feat/subscription-billing-periods`. Details in `README.md`, numbers in
-`benchmark/RESULTS.md`.
+State as of 2026-08-21: enrichment with first-wins dedup on the prod RMT key
+(events immutable, reprocess removed), usage on 15-minute buckets of the
+event timestamp → ClickHouse `usage_buckets_15m` serving table (billing
+periods, the period-keyed `usage_realtime` and the Postgres projections were
+all DELETED — the API sums buckets over the Rails-computed period window),
+API read path (count/sum incl. charge filters and pricing_group_keys),
+event-driven wallet refresh with a CH watermark wait, Grafana dashboards,
+latency benchmarks, parity checker over the current period. Branches: meta
+`poc/risingwave-realtime-usage`, api `feat/subscription-billing-periods`.
+Details in `README.md`, numbers in `benchmark/RESULTS.md`.
+
+### Bucket rework 2026-08-21 (Jeremy's call: periods out, 15-min buckets in)
+
+Go/no-go was the CH upsert sink's quiet-tail behavior — measured live:
+single event with zero follow-up lands in ~335ms, an update to an existing
+bucket after 60s of silence in ~288ms (sink_decouple=disable). The trailing
+flush class that killed the RW-side wallet refinements does NOT apply to the
+ClickHouse upsert sink. Validated e2e: wallet updated ~400ms median warm after produce (bucket in CH ~250ms; floor = barrier_interval_ms),
+aggregator provably reads buckets via the production call path.
+
+Consequences / follow-ups:
+- [ ] Prod cutover strategy: buckets covering only part of a period serve a
+      PARTIAL total without triggering fallback (no missing-row signal).
+      Enable at a period rollover, or replay `events-raw` from period start
+      (`scan.startup.mode = 'earliest'` variant), or gate per-organization.
+      (Same artifact visible in dev: parity check correctly flags post-wipe
+      bucket totals vs full events-store history.)
+- [ ] `lago-rw-serving` Grafana dashboard is stale (queried `usage_realtime`
+      + PG projections) — rebuild against `usage_buckets_15m` + CH.
+- [ ] Boundary sliver (≤15min of events when a subscription starts or
+      terminates at a mid-bucket time): accepted for now; if it ever
+      matters, query raw events for the two boundary buckets only.
+- unique_count cannot recompose across buckets (distinct ≠ sum of per-bucket
+  distincts) — needs its own structure when its turn comes (§3).
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
-- [ ] **State TTL** on dedup/TopN state, bounded to period end + late-event
-      tolerance (events carry periods now). Blocking for prod volume —
-      without it, RisingWave state grows with all-time transactions.
-      Bound by BILLING PERIOD, not by rolling days: the rolling-window
-      mechanisms were all measured and rejected (see below).
+- [ ] **State TTL** on dedup/TopN/bucket-agg state. Blocking for prod
+      volume — without it, RisingWave state grows with all-time
+      transactions. The rolling-window mechanisms were all measured and
+      rejected (see below); note the bucket MV's agg state is time-keyed by
+      design, but a temporal filter on it would emit expiry DELETEs into the
+      CH upsert sink (is_deleted rows destroying history) — bounding it
+      needs the sink to drop deletes or a different retention mechanism.
 - [ ] **Orphaned-event re-injection**: sink NULL-enriched rows (no BM /
       no subscription at enrichment time), re-inject into `events-raw` after
       a delay, alert on second orphaning. Replaces the Go processor's
@@ -85,37 +113,18 @@ projection + 32-day temporal filter, no collapse of its own.
       credit notes). Consequence for state TTL below: the dedup state is
       key-only lookups now, but still unbounded.
 
-### Pending apply (2026-08-20) — NOT live yet
+### Applied live 2026-08-21 (stage-0 restructure, then bucket rework, same day)
 
-The stage-0 restructure is committed SQL only; the running dev instance still
-has the old topology. Applying it needs, in order:
-
-1. Postgres must match the `subscription_billing_periods` shape Jeremy chose
-   (`period_from`, `period_to`, `customer_id`, `scope_type`, `scope_id`
-   instead of `charges_from`/`charges_to`). Jeremy's call (2026-08-21): do it
-   ON `feat/subscription-billing-periods` — drop the old shape and use the
-   new one there (branch is local/unpushed, so reshape the existing
-   migration in place and update `Subscriptions::BillingPeriods::
-   UpsertService` + the clock job). `scope_type`/`scope_id` are carried on
-   the CDC table but not yet used to select a scope-specific period grid —
-   semantics still to be defined.
-2. Tear down the event chain (see the IF NOT EXISTS gotcha below): drop
-   `usage_projection_pg_sink`, `usage_realtime_updates_sink`,
-   `usage_hourly_clickhouse_sink`, `events_enriched_expanded_shadow_sink`,
-   `wallet_refresh_triggers_sink`, `events_enriched_rw_shadow_sink`, then
-   `usage_serving`, `usage_hourly`, `usage_realtime`, `events_expanded`,
-   `events_joined`, `events_enriched`, and the old-shaped
-   `subscription_billing_periods` CDC table.
-3. `./setup.sh`, then `TRUNCATE usage_realtime_projections` (the source is
-   `scan.startup.mode = 'latest'`, so everything rebuilds empty and the
-   pre-existing projection rows would serve values RW no longer backs;
-   missing-row → ClickHouse fallback is the designed recovery).
-
-Validated by EXPLAIN + scratch MVs against the live instance (2026-08-20,
-pre-reprocess-removal): all three stage-1 temporal joins plan
-`append_only: true` off the deduped stage 0, stage 2 keeps the same operator
-classes as today, 3 duplicate deliveries collapse to 1 row. (The reprocess
-correction test passed then but the path has since been removed by design.)
+Everything above is LIVE in dev. History of the day, compressed: the
+shared-stage-0 + reprocess-removal topology was applied first (full teardown,
+PG reshaped to the scoped `subscription_billing_periods`, validated e2e with
+dup/re-ingest collapse and an 806ms→619ms wallet path); the 15-minute bucket
+rework then REPLACED the period machinery entirely the same day (periods
+table/model/service/clock job deleted on the api branch, Postgres
+projections table deleted, `usage_realtime`/`usage_hourly`/`usage_serving`
+MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
+(2026-08-20) still holds for what remains: stage-1 temporal joins plan
+`append_only: true` off the deduped stage 0.
 
 ## 2. Prod shadow
 
@@ -136,10 +145,10 @@ correction test passed then but the path has since been removed by design.)
 - [ ] **Alerts/threshold crossings** from the trigger consumer (same pattern
       as wallets) — kills the alert polling loop.
 - [ ] **Compute-on-read wallet display** (`Wallets::OngoingBalanceCalculator`
-      from projections) — display freshness without waiting for the consumer.
+      from CH buckets) — display freshness without waiting for the consumer.
 - [ ] Demote clock sweeps (wallet refresh, daily usage) to slow
       reconciliation nets; `daily_usages` batch job replaceable by a rollup
-      of ClickHouse `usage_hourly`.
+      of ClickHouse `usage_buckets_15m`.
 - [ ] Remaining eligibility: pay-in-advance, prorated; `unique_count` is the
       natural next aggregation (RW does exact incremental distinct).
 - [x] Plain `events_enriched` shadow (2026-08-17, restructured 2026-08-20):
@@ -234,31 +243,19 @@ Redpanda and air left a dead process behind a healthy-looking container.
 
 ## 4. Process
 
-- [ ] Split branches into reviewable PRs: billing periods (standalone,
-      shippable independently) → projections + read path → wallet refresh.
+- [ ] Split branches into reviewable PRs: CH buckets table + read path →
+      wallet refresh (the billing-periods PR is obsolete — deleted).
 
-## Open issue: Postgres sink trailing-edge flush latency
+## Resolved 2026-08-21: Postgres sink trailing-edge flush latency
 
-The `usage_projection_pg_sink` (upsert sink from an updating MV) delays the
+OBSOLETE — the `usage_projection_pg_sink` was deleted with the bucket rework.
+Kept for the record: the PG upsert sink (from an updating MV) delayed the
 flush of an isolated trailing change by seconds to tens of seconds when the
-stream goes idle. Not fixed by `SET sink_decouple = false` at sink creation,
-nor `ALTER SYSTEM SET sink_decouple = false` + restart (RW v3.0.2
-single-node). Consequences and current state:
-
-- Correctness is protected: triggers carry a per-subscription
-  `last_ingested_at` watermark and `Wallets::RealtimeRefreshService` waits
-  (5s bound) for projections to catch up; on timeout it refreshes anyway and
-  the next event or reconciliation sweep corrects.
-- Wallet latency is bimodal: ~0.4–1.1s when the projection flushes promptly,
-  ~5.3s when it trails (watermark timeout). The Kafka trigger side was fixed
-  by sourcing triggers from the append-only event stream (upsert sinks from
-  updating MVs have the same trailing behavior — that was the wallet-trigger
-  30–90s bug).
-- To investigate: RW GitHub issues / newer versions for upsert-sink flush
-  pacing; whether a real multi-node cluster behaves differently; per-sink
-  flush knobs. Alternatives if unresolved: raise the watermark timeout, or
-  have the refresh read usage over pgwire from `usage_serving` directly
-  (checkpoint-consistent read, no sink in the path) for the wallet path.
+stream went idle (not fixed by `sink_decouple = false`, RW v3.0.2). The
+ClickHouse upsert sink that replaced it does NOT exhibit this (measured:
+~300ms trailing flush after 60s of silence); the watermark wait in
+`Wallets::RealtimeRefreshService` now polls ClickHouse and exists only to
+cover cross-sink epoch ordering, not trailing-flush stalls.
 
 ## Known gotchas (hard-won, do not rediscover)
 

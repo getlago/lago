@@ -43,18 +43,17 @@ SELECT
 FROM TUMBLE(events_enriched_shadow_loopback, enriched_at, INTERVAL '1 minute')
 GROUP BY window_start;
 
--- Usage-path latency: every event updates one usage_realtime row; sink those
--- updates to a debug topic and loop them back to compare the broker append
--- time with the event's ingested_at.
+-- Usage-path latency: every event updates one usage_buckets_15m row; sink
+-- those updates to a debug topic and loop them back to compare the broker
+-- append time with the event's ingested_at.
 --
--- This measures ingest -> usage row COMPUTED AND EMITTED. Reading the MV over
--- pgwire is checkpoint-consistent, so *visibility* adds up to one barrier
--- interval (default 1s) on top — measure that with usage_latency_probe.sh.
+-- This measures ingest -> bucket row COMPUTED AND EMITTED. Serving adds the
+-- ClickHouse sink flush on top (~0.3s quiet, measured 2026-08-21).
 CREATE SINK IF NOT EXISTS usage_realtime_updates_sink AS
 SELECT
     organization_id,
     subscription_id,
-    billing_period_id,
+    bucket,
     charge_id,
     charge_filter_id,
     grouped_by,
@@ -62,12 +61,12 @@ SELECT
     events_count,
     units,
     last_ingested_at
-FROM usage_realtime
+FROM usage_buckets_15m
 WITH (
     connector = 'kafka',
     topic = 'usage_realtime_updates',
     properties.bootstrap.server = 'redpanda:9092',
-    primary_key = 'organization_id,subscription_id,billing_period_id,charge_id,charge_filter_id,grouped_by'
+    primary_key = 'organization_id,subscription_id,bucket,charge_id,charge_filter_id,grouped_by'
 ) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');
 
 CREATE SOURCE IF NOT EXISTS usage_updates_loopback (

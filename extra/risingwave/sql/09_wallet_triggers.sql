@@ -30,8 +30,8 @@
 -- intent, while the refresh itself still covers every wallet of the customer.
 --
 -- last_ingested_at is the event's ingestion watermark: the consumer waits
--- for usage_realtime_projections to reach it before refreshing (the Kafka
--- trigger otherwise races the Postgres projection sink of the same epoch).
+-- for the ClickHouse usage_buckets_15m table to reach it before refreshing
+-- (the Kafka trigger otherwise races the ClickHouse sink of the same epoch).
 --
 -- Known trade-off of force_append_only here: updates in events_expanded
 -- (ranking flips) do not re-trigger a refresh; those are picked up by the
@@ -46,9 +46,8 @@ SELECT
     ingested_at AS last_ingested_at
 FROM events_expanded
 WHERE customer_id IS NOT NULL
-  AND billing_period_id IS NOT NULL
   AND charge_id IS NOT NULL
-  AND aggregation_type_code IN (0, 1) -- count, sum: what usage_realtime serves
+  AND aggregation_type_code IN (0, 1) -- count, sum: what usage_buckets_15m serves
 WITH (
     connector = 'kafka',
     topic = 'wallet_refresh_triggers',
