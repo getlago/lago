@@ -204,10 +204,25 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
 
 - [ ] **lago-expression WASM UDF** (crate is already Rust) — biggest
       eligibility widener; until then expression BMs fall back.
-- [ ] **Alerts/threshold crossings** from the trigger consumer (same pattern
-      as wallets) — kills the alert polling loop.
+- [ ] **Alerts/threshold crossings detected IN RisingWave**, not the trigger
+      consumer: CDC the wallet balances/ledger, join against the running
+      bucket aggregation, emit a trigger ONLY on a crossing. Trigger volume
+      becomes ∝ crossings/s instead of events/s.
 - [ ] **Compute-on-read wallet display** (`Wallets::OngoingBalanceCalculator`
-      from CH buckets) — display freshness without waiting for the consumer.
+      from CH buckets) — display freshness without waiting for the consumer;
+      per-event wallet work drops to zero.
+
+  ^ These two together ARE the high-scale wallet plan (discussed 2026-08-21,
+  Jeremy's 100K RPS / 100K distinct customers scenario): the per-event
+  trigger consumer is the only per-event Ruby component left, and inline
+  refresh (~300ms/customer, serialized per partition) caps out at ~20
+  distinct customers/s per 6 partitions — partitioning cannot cover a
+  100K-distinct-customers/s regime (~30K consumer-cores). At that scale the
+  materialized-balance-refresh model is retired: balance = compute-on-read
+  over buckets, push = RW-side threshold crossings, and the per-event
+  consumer demotes to a debounced reconciliation net (it remains correct and
+  load-tested for shadow/early-prod volumes, scaling linearly with
+  partitions until then).
 - [ ] Demote clock sweeps (wallet refresh, daily usage) to slow
       reconciliation nets; `daily_usages` batch job replaceable by a rollup
       of ClickHouse `usage_buckets_15m`.
