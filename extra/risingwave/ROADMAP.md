@@ -57,6 +57,39 @@ Consequences / follow-ups:
       Act only if these move. Note the bucket MV's agg state is small
       (keys × buckets) and the temporal-filter option stays off the table
       (expiry DELETEs would corrupt CH history through the upsert sink).
+      UPDATE 2026-08-21 (later): a bounded design IS now available — see
+      "Bounded stage 0" below; implementing it supersedes this
+      accept-and-monitor stance for the dedup/enrichment state.
+
+### Bounded stage 0 — Jeremy's design, measured VIABLE 2026-08-21
+
+Pipeline: `events_raw` → [BM temporal join (append-only) → 32-day dynamic
+filter on `kafka_timestamp` (`cleaned_by_watermark: true` — state bounded)
+→ `GroupTopN` dedup on the prod RMT key] → `force_append_only` SINK INTO an
+**APPEND ONLY TABLE** `events_enriched` holding full history. Downstream
+(joined/expanded/buckets, CH shadow) reads the table; temporal joins off an
+append-only table plan `append_only: true` (verified by EXPLAIN).
+
+Measured on the live dev instance (probe sink + table, since removed):
+- isolated event → visible in table: **131ms**; after 60s of total
+  silence: **321ms** — the 18–90s trailing-flush rejection of 2026-08-20
+  was WRONG for internal-table sinks (it is real for Kafka sinks).
+- dedup correctness through the path: 2 byte-identical deliveries + 1
+  re-ingest with new value/ingested_at → **1 row** in the table.
+- expiry retractions from the bounded MV are dropped by force_append_only:
+  the table keeps full history while the MV/dedup state stays ≤32 days.
+
+Semantics: a re-send of a transaction_id >32 days after first ingestion
+passes dedup and lands as a duplicate row in the history table and CH —
+the agreed 32-day window contract. If the same pattern is later applied to
+joined/expanded (bounded MV → append-only table hop before the buckets),
+every event-level store in RW becomes bounded except pure history tables
+(which accept `retention_seconds` if we ever want to trim them, since
+history lives in ClickHouse anyway).
+
+- [ ] Implement: restructure stage 0 as sink-into-table, re-point
+      downstream, teardown/rebuild, re-validate (dedup, buckets, wallet,
+      CH parity, state-cleaning under load).
 - [ ] **Orphaned-event re-injection**: sink NULL-enriched rows (no BM /
       no subscription at enrichment time), re-inject into `events-raw` after
       a delay, alert on second orphaning. Replaces the Go processor's
@@ -86,7 +119,7 @@ four mechanisms were measured live, not reasoned about:
 | `DISTINCT ON` → `StreamAppendOnlyDedup` | **no** | output stays append-only (joins keep `append_only: true`), but state is never cleaned |
 | event-time `WATERMARK` on the source | **no** | compiles to `StreamWatermarkFilter`, which silently DISCARDS late events |
 | temporal filter on `kafka_timestamp` before the dedup | **yes** | dedup becomes `StreamGroupTopN`: demotes the stage-1 temporal joins AND leaks expiry DELETEs downstream |
-| bounded dedup + `SINK … force_append_only INTO` append-only table | yes | reintroduces the trailing-flush buffer (18–90s idle) — same class as the reverted wallet-trigger refinements |
+| bounded dedup + `SINK … force_append_only INTO` append-only table | **yes** | ~~trailing-flush buffer~~ FALSIFIED 2026-08-21: measured 131ms cold / 321ms after 60s of silence — the trailing-flush class applies to Kafka sinks, NOT internal-table sinks. **This is the viable design (Jeremy's proposal, see below).** |
 
 Measurements behind those rows:
 
