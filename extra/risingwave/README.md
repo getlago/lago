@@ -26,19 +26,29 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
                                  │
               flat_filters_mv ──sink-into-table──► flat_filters (temporal-joinable)
                                  │
-   events_enriched    BM temporal join + delivery dedup (append-only,
-        │             StreamAppendOnlyDedup) — single entry point for every
-        │             event-derived relation
+   [BM join → 32d filter → first-wins dedup]  (bounded: expiry retractions
+        │                                      sweep the operator state)
+        ▼ force_append_only sink (drops the retractions)
+   events_enriched    APPEND ONLY TABLE, retention 33d — retraction firewall,
+        │             single entry point for every event-derived relation
         ├──► events_enriched_rw_shadow ──► ClickHouse events_enriched_rw_shadow
         ▼
-   events_joined      temporal joins (subscription candidates, flat_filters) —
-        │              append-only, lookups frozen at arrival time
-        ▼
-   events_expanded    best subscription → best filter per charge (default-bucket
-        │             fallback)
+   [subscriptions + flat_filters temporal joins → 32d filter → ranking]
+        ▼ force_append_only sink
+   events_expanded    APPEND ONLY TABLE, retention 33d — one row per
+        │             (event, best charge/filter), default-bucket fallback
         ├──► usage_buckets_15m ──► ClickHouse usage_buckets_15m (API reads)
         └──► events_enriched_expanded_shadow (Kafka)   parity diffing vs Go output
 ```
+
+RisingWave holds a ~32-33 day working set everywhere (dedup answers "already
+ingested?" over 32 days); ClickHouse keeps the forever-history. The tables
+are retraction FIREWALLS: each stage's 32-day temporal filter emits expiry
+DELETEs that clean that stage's own operator state (retraction-driven), and
+the force_append_only sink drops them so downstream never decrements. Table
+retention_seconds reclaims old rows physically WITHOUT emitting changelog
+events (canary-verified: a counting MV over a retention table never
+decrements when rows are reclaimed).
 
 | File | Contents |
 |---|---|
@@ -46,7 +56,7 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/01_cdc_dimensions.sql` | Native Postgres CDC source + dimension tables + lookup indexes (replaces BadgerDB cache + Debezium) |
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
-| `sql/04_enrichment.sql` | Stage 0 `events_enriched` (BM temporal join + first-wins dedup), stage 1 temporal joins (append-only), stage 2 ranking |
+| `sql/04_enrichment.sql` | Bounded pipeline: sink (BM join → 32d filter → first-wins dedup) INTO append-only TABLE `events_enriched` (retention 33d) → sink (temporal joins → 32d filter → ranking) INTO append-only TABLE `events_expanded` (retention 33d) |
 | `sql/05_usage.sql` | `usage_buckets_15m` MV: count/sum per (sub, charge, filter, grouped_by) on 15-minute buckets of the event timestamp — serves current usage AND dashboard history; the API sums buckets over the Rails-computed period window (no period rows anywhere) |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted), query with FINAL) |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → bucket row emitted) |
@@ -54,18 +64,21 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 
 ## Design invariants
 
-- **Events are immutable — first ingestion wins.** `events_enriched` (stage 0)
-  dedups on exactly the production ReplacingMergeTree key
+- **Events are immutable — first ingestion wins, over a 32-day window.**
+  Stage 0 dedups on exactly the production ReplacingMergeTree key
   `(org, code, external_subscription_id, timestamp, transaction_id)`: any
   re-send of the same transaction — Kafka redelivery, client retry — is
-  dropped. RisingWave is the single source of truth for "already ingested?".
-  There is deliberately no in-stream correction path (`source_metadata.
-  reprocess` is not carried); corrections are business objects.
-- **Dedup must preserve append-only.** The stage-1 temporal joins need an
-  append-only left side, so stage 0 dedups with `SELECT DISTINCT ON`
-  (plans `StreamAppendOnlyDedup`, append-only in/out) — never
-  `ROW_NUMBER()=1` (plans `StreamGroupTopN`, demotes everything downstream
-  into the trailing-flush buffering class).
+  dropped for 32 days (a re-send later than that lands as a new row; the
+  window is the contract). RisingWave is the single source of truth for
+  "already ingested?". There is deliberately no in-stream correction path
+  (`source_metadata.reprocess` is not carried); corrections are business
+  objects.
+- **Retractions stop at the firewall tables.** Inside each bounded stage,
+  the 32-day temporal filter's expiry DELETEs are the state TTL (they sweep
+  dedup/ranking/join state); the `force_append_only` sink INTO the
+  append-only table drops them, so every consumer (temporal joins, buckets,
+  ClickHouse) sees a pure append-only stream and history never decrements.
+  Temporal joins read the tables with `append_only: true` plans.
 - **Time-window predicates stay out of join conditions.** Subscription
   validity at the event timestamp is computed as a flag and resolved by
   ranking, mirroring the Go `FetchSubscription` ordering.

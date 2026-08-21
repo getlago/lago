@@ -87,9 +87,25 @@ every event-level store in RW becomes bounded except pure history tables
 (which accept `retention_seconds` if we ever want to trim them, since
 history lives in ClickHouse anyway).
 
-- [ ] Implement: restructure stage 0 as sink-into-table, re-point
-      downstream, teardown/rebuild, re-validate (dedup, buckets, wallet,
-      CH parity, state-cleaning under load).
+- [x] IMPLEMENTED + APPLIED LIVE (2026-08-21, same day): `04_enrichment.sql`
+      is now two bounded sink queries into append-only firewall TABLES
+      `events_enriched` and `events_expanded` (retention_seconds 33 days,
+      names preserved so every downstream file was untouched;
+      `events_joined` folded into the expanded sink). Plans verified: both
+      dynamic filters `cleaned_by_watermark: true`, ALL temporal joins
+      `append_only: true` (the optimizer keeps the filter above the joins),
+      dedup + ranking state swept by the retraction wave, sinks drop it.
+      Canary-verified: table `retention_seconds` cleanup is PHYSICAL — a
+      counting MV over a 60s-retention table stayed at n=1000 while the
+      table itself went to 0 rows. Validated e2e: 3 sends → 1 row in both
+      tables, CH shadow 1 row, buckets exact, wallet 664ms.
+      GOTCHA (prod-relevant, cuts both ways): recreating jobs over the
+      SHARED Kafka source replays retained topic history — the new chain
+      backfilled today's events (bucket totals stayed exact through the
+      rebuild, wallet math matched to the cent), but the plain-MergeTree CH
+      shadow received the replayed uniques a second time (truncated in
+      dev). At prod cutover this replay IS the partial-period fix — plan
+      the CH-side dedup/truncation accordingly.
 - [ ] **Orphaned-event re-injection**: sink NULL-enriched rows (no BM /
       no subscription at enrichment time), re-inject into `events-raw` after
       a delay, alert on second orphaning. Replaces the Go processor's
