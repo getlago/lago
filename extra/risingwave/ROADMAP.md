@@ -8,7 +8,7 @@ all DELETED — the API sums buckets over the Rails-computed period window),
 API read path (count/sum incl. charge filters and pricing_group_keys),
 event-driven wallet refresh with a CH watermark wait, Grafana dashboards,
 latency benchmarks, parity checker over the current period. Branches: meta
-`poc/risingwave-realtime-usage`, api `feat/subscription-billing-periods`.
+`poc/risingwave-realtime-usage`, api `feat/realtime-usage`.
 Details in `README.md`, numbers in `benchmark/RESULTS.md`.
 
 ### Bucket rework 2026-08-21 (Jeremy's call: periods out, 15-min buckets in)

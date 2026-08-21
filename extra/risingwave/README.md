@@ -150,7 +150,7 @@ in `extra/grafana/` (datasource + dashboard JSON, editable in the UI).
 - `DENSE_RANK` in the best-subscription stage falls back to a non-TopN
   operator (planner notice); revisit if it shows up in profiles.
 
-**Done — API serving path** (api branch `feat/subscription-billing-periods`,
+**Done — API serving path** (api branch `feat/realtime-usage`,
 reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
 - `usage_buckets_15m` MV → ClickHouse upsert sink into `usage_buckets_15m`
   (table owned by api clickhouse migration; api migrations must run before
