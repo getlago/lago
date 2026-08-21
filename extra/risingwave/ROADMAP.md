@@ -37,13 +37,26 @@ Consequences / follow-ups:
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
-- [ ] **State TTL** on dedup/TopN/bucket-agg state. Blocking for prod
-      volume — without it, RisingWave state grows with all-time
-      transactions. The rolling-window mechanisms were all measured and
-      rejected (see below); note the bucket MV's agg state is time-keyed by
-      design, but a temporal filter on it would emit expiry DELETEs into the
-      CH upsert sink (is_deleted rows destroying history) — bounding it
-      needs the sink to drop deletes or a different retention mechanism.
+- [ ] **State growth: accepted + monitored** (downgraded from "blocking",
+      2026-08-21, Jeremy's call). Dedup/event-MV state grows linearly with
+      all-time events, but it lives on object store (S3) behind an LSM:
+      the per-event dedup lookup is answered by in-memory bloom filters
+      for new keys and block cache for recent ones — cold state is never
+      on the hot path, so growth degrades cost, not correctness, and only
+      slowly latency. Re-measured on v3.2.0-alpha.20260821 (throwaway
+      single-node): `StreamAppendOnlyDedup` STILL does not clean state by
+      watermark (5 expired keys resident in both key shapes) — no upgrade
+      rescue; the rolling-window mechanisms below remain rejected. What to
+      monitor in prod shadow before the flip:
+      - state size growth/day per internal table (`rw_table_stats`)
+      - compactor CPU + S3 GET/PUT rate (write amplification grows ~log
+        with state; dedup keys are hash-distributed so old levels keep
+        participating in compaction forever)
+      - enrich p99 (bloom false positives force occasional S3 reads on
+        the hot path; SST metadata cache pressure grows with SST count)
+      Act only if these move. Note the bucket MV's agg state is small
+      (keys × buckets) and the temporal-filter option stays off the table
+      (expiry DELETEs would corrupt CH history through the upsert sink).
 - [ ] **Orphaned-event re-injection**: sink NULL-enriched rows (no BM /
       no subscription at enrichment time), re-inject into `events-raw` after
       a delay, alert on second orphaning. Replaces the Go processor's
