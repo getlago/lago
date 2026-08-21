@@ -1,12 +1,16 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-21: enrichment with first-wins dedup on the prod RMT key
-(events immutable, reprocess removed), usage on 15-minute buckets of the
-event timestamp → ClickHouse `usage_buckets_15m` serving table (billing
-periods, the period-keyed `usage_realtime` and the Postgres projections were
-all DELETED — the API sums buckets over the Rails-computed period window),
-API read path (count/sum incl. charge filters and pricing_group_keys),
-event-driven wallet refresh with a CH watermark wait, Grafana dashboards,
+State as of 2026-08-21: BOUNDED 32-day pipeline — enrichment runs as two
+bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
+window; events immutable, reprocess removed) into append-only firewall
+TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
+cleanup); usage on 15-minute buckets of the event timestamp → ClickHouse
+`usage_buckets_15m` serving table (billing periods, the period-keyed
+`usage_realtime` and the Postgres projections were all DELETED — the API
+sums buckets over the Rails-computed period window). RisingWave holds a
+~32-33 day working set everywhere; ClickHouse keeps forever-history. API
+read path (count/sum incl. charge filters and pricing_group_keys),
+event-driven wallet refresh with a CH watermark wait (~0.7s e2e),
 latency benchmarks, parity checker over the current period. Branches: meta
 `poc/risingwave-realtime-usage`, api `feat/realtime-usage`.
 Details in `README.md`, numbers in `benchmark/RESULTS.md`.
