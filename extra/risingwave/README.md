@@ -26,11 +26,16 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
                                  │
               flat_filters_mv ──sink-into-table──► flat_filters (temporal-joinable)
                                  │
-   events_joined      temporal joins (BM, subscription candidates, flat_filters)
-        │              — append-only, lookups frozen at event arrival time
+   events_enriched    BM temporal join + delivery dedup (append-only,
+        │             StreamAppendOnlyDedup) — single entry point for every
+        │             event-derived relation
+        ├──► events_enriched_rw_shadow ──► ClickHouse events_enriched_rw_shadow
+        ▼
+   events_joined      temporal joins (subscription candidates, billing periods,
+        │              flat_filters) — append-only, lookups frozen at arrival time
         ▼
    events_expanded    best subscription → best filter per charge (default-bucket
-        │             fallback) → keep latest delivery per (org, tx, charge)
+        │             fallback) → keep latest ingestion per (org, tx, charge)
         ├──► usage_realtime            count/sum per (sub, charge, filter, grouped_by)
         └──► events_enriched_expanded_shadow (Kafka)   parity diffing vs Go output
 ```
@@ -41,7 +46,7 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 | `sql/01_cdc_dimensions.sql` | Native Postgres CDC source + dimension tables + lookup indexes (replaces BadgerDB cache + Debezium) |
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
-| `sql/04_enrichment.sql` | Stage 1 temporal joins (append-only), stage 2 ranking + dedup |
+| `sql/04_enrichment.sql` | Stage 0 `events_enriched` (BM temporal join + delivery dedup), stage 1 temporal joins (append-only), stage 2 ranking + corrections |
 | `sql/05_usage.sql` | `usage_realtime` MV (count/sum running totals, keyed by billing period) + `usage_hourly` MV (per-hour time series keyed on event time) |
 | `clickhouse/usage_hourly.sql` | ClickHouse serving table (ReplacingMergeTree(ver, is_deleted)) fed by the `usage_hourly` upsert sink — dashboard/analytics history; query with FINAL |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) |
@@ -51,15 +56,18 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 
 ## Design invariants
 
-- **Enrich first, dedup second.** Temporal joins require an append-only left
-  side, so all lookups happen on the raw stream; ranking/dedup (updating
-  streams) come after. This also gives reprocessing the right semantics: a
-  reprocessed event re-enriches against *current* dimensions, then replaces
-  its old row, and aggregates retract-and-reapply automatically.
-- **Duplicates are no-ops, reprocesses are corrections** — both handled by the
-  keep-latest-per-`(org, transaction_id, charge)` stage, verified live:
-  resending a transaction with a new value moved `usage_realtime.units` from
-  42.5 to 100 with `events_count` still 1.
+- **Events are immutable — first ingestion wins.** `events_enriched` (stage 0)
+  dedups on exactly the production ReplacingMergeTree key
+  `(org, code, external_subscription_id, timestamp, transaction_id)`: any
+  re-send of the same transaction — Kafka redelivery, client retry — is
+  dropped. RisingWave is the single source of truth for "already ingested?".
+  There is deliberately no in-stream correction path (`source_metadata.
+  reprocess` is not carried); corrections are business objects.
+- **Dedup must preserve append-only.** The stage-1 temporal joins need an
+  append-only left side, so stage 0 dedups with `SELECT DISTINCT ON`
+  (plans `StreamAppendOnlyDedup`, append-only in/out) — never
+  `ROW_NUMBER()=1` (plans `StreamGroupTopN`, demotes everything downstream
+  into the trailing-flush buffering class).
 - **Time-window predicates stay out of join conditions.** Subscription
   validity at the event timestamp is computed as a flag and resolved by
   ranking, mirroring the Go `FetchSubscription` ordering.
@@ -69,7 +77,7 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
 - CDC snapshot + live replication of all six dimension tables.
 - `flat_filters` parity with the Postgres view (incl. `__ALL_FILTER_VALUES__`).
 - Filter best-match, default-bucket fallback, subscription+plan attachment.
-- Dedup of duplicate deliveries; correction on reprocess.
+- Dedup of duplicate deliveries and re-ingestions (first ingestion wins).
 - Shadow topic receives Go-shaped enriched JSON.
 
 ## Metrics & latency
@@ -137,7 +145,7 @@ recently updated `usage_realtime` rows. Provisioning lives in
 - Retry semantics: events that miss a dimension (CDC race) enrich with NULLs
   instead of retrying for 12h. Plan: route NULL-enriched rows to an
   `orphaned_events` sink and re-inject after a delay.
-- `events_charged_in_advance` + plain `events_enriched` sinks.
+- `events_charged_in_advance` sink.
 - Dedup/TopN state TTL (bound state to period end + late-event tolerance).
 - `DENSE_RANK` in the best-subscription stage falls back to a non-TopN
   operator (planner notice); revisit if it shows up in profiles.

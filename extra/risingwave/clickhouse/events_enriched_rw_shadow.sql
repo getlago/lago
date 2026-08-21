@@ -2,7 +2,8 @@
 -- events-processor (see sql/10_enriched_shadow.sql).
 --
 -- Plain MergeTree, NOT ReplacingMergeTree: deduplication happens upstream in
--- the RisingWave `events_enriched` MV (first delivery per event wins), so this
+-- the RisingWave `events_enriched_rw_shadow` MV (first delivery per event wins,
+-- on top of the shared `events_enriched` delivery dedup), so this
 -- table only ever receives unique rows and duplicate counting works without
 -- FINAL. Same PRIMARY KEY / ORDER BY as the real table so parity queries scan
 -- the same way. RisingWave expires its own state after 32 days; ClickHouse

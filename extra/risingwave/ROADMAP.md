@@ -14,6 +14,8 @@ Branches: meta `poc/risingwave-realtime-usage`, api
 - [ ] **State TTL** on dedup/TopN state, bounded to period end + late-event
       tolerance (events carry periods now). Blocking for prod volume —
       without it, RisingWave state grows with all-time transactions.
+      Bound by BILLING PERIOD, not by rolling days: the rolling-window
+      mechanisms were all measured and rejected (see below).
 - [ ] **Orphaned-event re-injection**: sink NULL-enriched rows (no BM /
       no subscription at enrichment time), re-inject into `events-raw` after
       a delay, alert on second orphaning. Replaces the Go processor's
@@ -27,6 +29,93 @@ Branches: meta `poc/risingwave-realtime-usage`, api
       - wallet-balance parity check
       - realtime-vs-fallback counters in the realtime aggregators
       - consumer-lag panel for `wallet_refresh_triggers`
+
+### Dedup retention: "is this event already ingested?" — mechanisms measured 2026-08-20
+
+Goal discussed with Jeremy: RisingWave is the single source of truth for
+event deduplication (ClickHouse stays a plain MergeTree receiving unique rows
+only), answering yes/no on the production ReplacingMergeTree key
+(organization_id, code, external_subscription_id, timestamp, transaction_id)
+over a 32-day window. Verdict: the yes/no part is easy; **a bounded 32-day
+dedup is not expressible in v3.0.2 without paying one of three costs.** All
+four mechanisms were measured live, not reasoned about:
+
+| mechanism | bounds state? | cost |
+|---|---|---|
+| `DISTINCT ON` → `StreamAppendOnlyDedup` | **no** | output stays append-only (joins keep `append_only: true`), but state is never cleaned |
+| event-time `WATERMARK` on the source | **no** | compiles to `StreamWatermarkFilter`, which silently DISCARDS late events |
+| temporal filter on `kafka_timestamp` before the dedup | **yes** | dedup becomes `StreamGroupTopN`: demotes the stage-1 temporal joins AND leaks expiry DELETEs downstream |
+| bounded dedup + `SINK … force_append_only INTO` append-only table | yes | reintroduces the trailing-flush buffer (18–90s idle) — same class as the reverted wallet-trigger refinements |
+
+Measurements behind those rows:
+
+- `StreamAppendOnlyDedup` does **not** clean state by watermark, even with the
+  watermark column as the LEADING column of its state table (the structural
+  precondition for range cleaning). Test: 1-minute watermark, watermark
+  advanced to 15:37:48, oldest dedup key still 15:22:48, 5/5 keys resident
+  after 25s. Its internal state table also stores the **full row**
+  (`$expr1, organization_id, code, external_subscription_id, transaction_id,
+  properties, ingested_at, _row_id, …`), not just the key — so "unbounded
+  dedup" means retaining every event ever seen, in state.
+- The event-time watermark is an input **filter**, not a state bound: two late
+  events (1 min and 30 min behind the watermark) never reached the MV
+  (`late_rows_kept = 0`). It is also driven by CUSTOMER-SUPPLIED timestamps,
+  so a single future-dated event advances the watermark and starts discarding
+  legitimate traffic. Unusable for billing.
+- The temporal-filter form does bound state (`StreamDynamicFilter …
+  cleaned_by_watermark: true`) but its expiry DELETEs propagate into
+  `usage_realtime` (units decrement) and into `usage_hourly`'s ClickHouse
+  upsert sink (deletes dashboard history) — the reason the 32-day filter
+  currently lives only in the CH shadow branch, where `force_append_only`
+  drops the retractions.
+
+Current shape on the branch (2026-08-21): one shared append-only dedup in
+stage 0 keyed on **exactly the prod RMT key** — the CH branch is a bare
+projection + 32-day temporal filter, no collapse of its own.
+
+- [x] **Decision — dedup key (2026-08-21).** Jeremy: events are immutable,
+      `reprocess` is unused and will stay unused — "it does not make sense to
+      reprocess an event". So: bare RMT key, first ingestion wins forever,
+      RisingWave is the single source of truth on event identity, and
+      `reprocess` is stripped everywhere (source struct, enrichment,
+      events_expanded's whole `latest_delivery` correction stage, the
+      shadow's `NOT reprocess` filter + first-delivery collapse). There is NO
+      in-stream correction path anymore — a re-sent transaction_id is
+      silently dropped; corrections are business objects (void + new event,
+      credit notes). Consequence for state TTL below: the dedup state is
+      key-only lookups now, but still unbounded.
+
+### Pending apply (2026-08-20) — NOT live yet
+
+The stage-0 restructure is committed SQL only; the running dev instance still
+has the old topology. Applying it needs, in order:
+
+1. Postgres must match the `subscription_billing_periods` shape Jeremy chose
+   (`period_from`, `period_to`, `customer_id`, `scope_type`, `scope_id`
+   instead of `charges_from`/`charges_to`). Jeremy's call (2026-08-21): do it
+   ON `feat/subscription-billing-periods` — drop the old shape and use the
+   new one there (branch is local/unpushed, so reshape the existing
+   migration in place and update `Subscriptions::BillingPeriods::
+   UpsertService` + the clock job). `scope_type`/`scope_id` are carried on
+   the CDC table but not yet used to select a scope-specific period grid —
+   semantics still to be defined.
+2. Tear down the event chain (see the IF NOT EXISTS gotcha below): drop
+   `usage_projection_pg_sink`, `usage_realtime_updates_sink`,
+   `usage_hourly_clickhouse_sink`, `events_enriched_expanded_shadow_sink`,
+   `wallet_refresh_triggers_sink`, `events_enriched_rw_shadow_sink`, then
+   `usage_serving`, `usage_hourly`, `usage_realtime`, `events_expanded`,
+   `events_joined`, `events_enriched`, and the old-shaped
+   `subscription_billing_periods` CDC table.
+3. `./setup.sh`, then `TRUNCATE usage_realtime_projections` (the source is
+   `scan.startup.mode = 'latest'`, so everything rebuilds empty and the
+   pre-existing projection rows would serve values RW no longer backs;
+   missing-row → ClickHouse fallback is the designed recovery).
+
+Validated by EXPLAIN + scratch MVs against the live instance (2026-08-20,
+pre-reprocess-removal): all three stage-1 temporal joins plan
+`append_only: true` off the deduped stage 0, stage 2 keeps the same operator
+classes as today, 3 duplicate deliveries collapse to 1 row. (The reprocess
+correction test passed then but the path has since been removed by design.)
 
 ## 2. Prod shadow
 
@@ -53,14 +142,15 @@ Branches: meta `poc/risingwave-realtime-usage`, api
       of ClickHouse `usage_hourly`.
 - [ ] Remaining eligibility: pay-in-advance, prorated; `unique_count` is the
       natural next aggregation (RW does exact incremental distinct).
-- [x] Plain `events_enriched` shadow (2026-08-17): `sql/10_enriched_shadow.sql`
-      (`events_enriched` MV: BM-only inner temporal join, NOT-reprocess filter,
-      first-delivery dedup on the prod ReplacingMergeTree key, 32-day state
-      retention via temporal filter on `kafka_timestamp`) sinking append-only
-      into plain-MergeTree CH `events_enriched_rw_shadow`
+- [x] Plain `events_enriched` shadow (2026-08-17, restructured 2026-08-20):
+      `events_enriched` is now the SHARED stage 0 in `sql/04_enrichment.sql`
+      (BM-only inner temporal join + delivery dedup) feeding both the expanded
+      path and `events_enriched_rw_shadow` in `sql/10_enriched_shadow.sql`
+      (NOT-reprocess filter, 32-day temporal filter on `kafka_timestamp`,
+      first-delivery collapse on the prod ReplacingMergeTree key) sinking
+      append-only into plain-MergeTree CH `events_enriched_rw_shadow`
       (`clickhouse/events_enriched_rw_shadow.sql` — dedup lives in RW, CH keeps
-      full history). NOT YET APPLIED locally — pending validation (notably
-      RW decimal → CH `Decimal(40,15)` and jsonb→String sink mapping).
+      full history). Validated 2026-08-18 (parity, dedup, ~318ms).
 - [ ] `events_charged_in_advance` sink — with the above, what remains to
       retire the Go processor entirely.
 
@@ -172,8 +262,35 @@ single-node). Consequences and current state:
 
 ## Known gotchas (hard-won, do not rediscover)
 
-- Temporal joins: append-only LHS only (enrich first, dedup second); RHS
-  must be a TABLE (sink-into-table for derived relations like flat_filters).
+- `CREATE MATERIALIZED VIEW ... IF NOT EXISTS` **binds the query first**: RisingWave
+  binds before honoring IF NOT EXISTS, so re-running `setup.sh` after
+  reshaping an MV fails on the OLD catalog entry instead of no-op'ing.
+  Symptom when `events_enriched` changed shape: `Failed to bind expression:
+  e.properties` / `missing FROM-clause entry for table "e"` — which means the
+  qualified column did not resolve, NOT that the alias is unbound. Fix: tear
+  the chain down (sinks first, then MVs leaves→root) before re-applying.
+- CDC table column mismatch reports as `The publication 'rw_publication' does
+  not cover all columns of the table` even when the publication covers every
+  column (`pg_publication_rel.prattrs` IS NULL). It really means the columns
+  you DECLARED do not exist upstream — check `information_schema.columns`
+  before blaming the publication.
+- Internal state tables are introspectable, which is how state growth /
+  cleaning claims should be verified: `SELECT name FROM rw_internal_tables`
+  then `SELECT count(*) FROM __internal_<mv>_<id>_<executor>_<n>` (quote
+  generated columns as `"$expr1"`).
+- `psql` is NOT in the RisingWave image — use the Postgres dev container:
+  `docker exec -i lago_db_dev psql -h risingwave -p 4566 -U root -d dev`
+  (this is what `setup.sh` falls back to). `\d` fails there on a COLLATE
+  feature gap; use `information_schema.columns` instead.
+- Temporal joins: RHS must be a TABLE (sink-into-table for derived relations
+  like flat_filters). A non-append-only LHS is *accepted* by v3.0.2 but plans
+  `append_only: false` with an extra memo table, and lands in the same
+  trailing-flush buffering class as the reverted wallet-trigger refinements —
+  keep the LHS append-only. `SELECT DISTINCT ON (...)` plans as
+  StreamAppendOnlyDedup and PRESERVES append-only across the MV boundary;
+  `ROW_NUMBER() OVER (...) = 1` plans as StreamGroupTopN and does not (verified
+  by EXPLAIN, 2026-08-20). So dedup can precede a temporal join only in the
+  DISTINCT ON form.
 - Kafka sinks: `force_append_only` silently DROPS updates; but upsert sinks
   from updating MVs buffer the trailing per-key change (isolated events
   delivered 30–90s late). For triggers, prefer per-event append-only sinks

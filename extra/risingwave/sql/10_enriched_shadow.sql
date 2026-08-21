@@ -7,27 +7,27 @@
 -- transaction_id, properties, value, precise_total_amount_cents).
 -- Subscription/charge enrichment never reaches that table.
 --
--- Faithful semantics mirrored here:
---  * INNER join on billable_metrics: a missing/deleted BM dead-letters the
---    event in Go (FetchBillableMetric not-found is a failure), so no enriched
---    row is produced.
---  * reprocessed events skip the enriched topic (Go only re-emits expanded),
---    hence the NOT reprocess filter.
---  * deduplication lives HERE (not in ClickHouse): the shadow CH table is a
---    plain MergeTree, so duplicate deliveries are collapsed in this MV —
---    first delivery wins, keyed exactly like the production
---    ReplacingMergeTree key (org, code, external_subscription_id, timestamp,
---    transaction_id).
+-- This is a bare projection over the shared `events_enriched` stage
+-- (04_enrichment.sql), which already applies the INNER billable_metrics
+-- temporal join (a missing/deleted BM dead-letters the event in Go, so no
+-- enriched row is produced) and dedups on exactly the production
+-- ReplacingMergeTree key (org, code, external_subscription_id, timestamp,
+-- transaction_id) — first ingestion wins, so every row arriving here is
+-- unique on that key and the shadow CH table can stay a plain MergeTree
+-- with no deduplication of its own.
+--
+-- What stays specific to this shadow:
 --  * value: '1' for count, else fmt.Sprintf("%v", properties[field_name]) —
 --    including Go's quirk of emitting the literal string "<nil>" when the
 --    property is absent or JSON null, mirrored so parity diffs stay quiet.
 --
 -- State retention: events older than 32 days (by Kafka broker arrival time)
--- are expired from this MV by the temporal filter, which also cleans the
--- dedup state. The filter sits AFTER the temporal join (append-only left side
--- required) and BEFORE the dedup (so its state is what gets cleaned). Expiry
--- deletes are dropped at the sink (force_append_only) — ClickHouse keeps the
--- full history.
+-- are expired from this MV by the temporal filter. Expiry deletes are
+-- dropped at the sink (force_append_only) — ClickHouse keeps the full
+-- history. NOTE: the shared dedup state in 04's `events_enriched` is NOT
+-- bounded by this filter (a retracting operator upstream of the stage-1
+-- temporal joins would demote them to non-append-only); bounding it is
+-- ROADMAP section 1 "State TTL".
 --
 -- Known parity gaps (same as the expanded shadow):
 --  * custom expressions (billable_metrics.expression) are not evaluated
@@ -35,43 +35,19 @@
 --    will diff on value/properties.
 --  * Go formats numbers via %v (float64), so exotic cases like 1e+21 render
 --    differently than JSONB ->> text extraction.
-CREATE MATERIALIZED VIEW IF NOT EXISTS events_enriched AS
-WITH joined AS (
-    SELECT
-        e.organization_id,
-        e.external_subscription_id,
-        e.code,
-        -- already timestamptz; the ClickHouse sink rejects naive timestamps
-        to_timestamp(e."timestamp"::DOUBLE PRECISION) AS "timestamp",
-        e.transaction_id,
-        e.properties::VARCHAR AS properties_json,
-        CASE WHEN bm.aggregation_type = 0 THEN '1'
-             ELSE COALESCE(e.properties ->> bm.field_name, '<nil>')
-        END AS value,
-        NULLIF(e.precise_total_amount_cents, '')::DECIMAL AS precise_total_amount_cents,
-        e.ingested_at,
-        e.kafka_timestamp,
-        e.rw_received_at
-    FROM events_raw e
-    JOIN billable_metrics FOR SYSTEM_TIME AS OF PROCTIME() bm
-        ON bm.organization_id = e.organization_id
-       AND bm.code = e.code
-       AND bm.deleted_at IS NULL
-    WHERE NOT COALESCE((e.source_metadata).reprocess, false)
-),
-recent AS (
-    SELECT * FROM joined
-    WHERE kafka_timestamp > now() - INTERVAL '32 days'
-)
+CREATE MATERIALIZED VIEW IF NOT EXISTS events_enriched_rw_shadow AS
 SELECT
     organization_id,
     external_subscription_id,
     code,
-    "timestamp",
+    -- already timestamptz; the ClickHouse sink rejects naive timestamps
+    to_timestamp(event_ts) AS "timestamp",
     transaction_id,
-    properties_json,
-    value,
-    precise_total_amount_cents,
+    properties::VARCHAR AS properties_json,
+    CASE WHEN aggregation_type_code = 0 THEN '1'
+         ELSE COALESCE(properties ->> field_name, '<nil>')
+    END AS value,
+    NULLIF(precise_total_amount_cents, '')::DECIMAL AS precise_total_amount_cents,
     -- Latency instrumentation, not part of the events_enriched shape:
     -- rw_enriched_at = proctime() at the source, i.e. when RisingWave picked
     -- the event up for enrichment. CAVEAT: barrier-aligned, reads up to one
@@ -82,16 +58,8 @@ SELECT
     -- ingest) is kept RW-side only.
     rw_received_at AS rw_enriched_at,
     ingested_at
-FROM (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (
-            PARTITION BY organization_id, code, external_subscription_id, "timestamp", transaction_id
-            ORDER BY ingested_at
-        ) AS delivery_rank
-    FROM recent
-) deduped
-WHERE delivery_rank = 1;
+FROM events_enriched
+WHERE kafka_timestamp > now() - INTERVAL '32 days';
 
 -- Insert-only sink into the plain MergeTree created by
 -- clickhouse/events_enriched_rw_shadow.sql. force_append_only drops the
@@ -110,7 +78,7 @@ SELECT
     value,
     precise_total_amount_cents,
     rw_enriched_at
-FROM events_enriched
+FROM events_enriched_rw_shadow
 WITH (
     connector = 'clickhouse',
     type = 'append-only',

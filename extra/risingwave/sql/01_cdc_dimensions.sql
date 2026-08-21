@@ -96,6 +96,13 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_org_external_id
 
 -- Billing periods maintained by Rails (Clock::RefreshSubscriptionBillingPeriodsJob,
 -- current + next period per active subscription). Date logic stays in Ruby.
+--
+-- Scoped shape: a period belongs to a subscription and carries the scope it
+-- was computed for (`scope_type` / `scope_id`), so charge-level or
+-- plan-level period grids can coexist with the subscription-level one.
+-- `customer_id` is denormalized here so period rows can be read without a
+-- second lookup.
+--
 -- NOTE: on a fresh Postgres the publication is created by RisingWave for the
 -- tables above; when adding this table to an existing setup run:
 --   ALTER PUBLICATION rw_publication ADD TABLE public.subscription_billing_periods;
@@ -103,8 +110,11 @@ CREATE TABLE IF NOT EXISTS subscription_billing_periods (
     id VARCHAR PRIMARY KEY,
     organization_id VARCHAR,
     subscription_id VARCHAR,
-    charges_from TIMESTAMP,
-    charges_to TIMESTAMP,
+    customer_id VARCHAR,
+    scope_type VARCHAR,
+    scope_id VARCHAR,
+    period_from TIMESTAMP,
+    period_to TIMESTAMP,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 ) FROM lago_pg TABLE 'public.subscription_billing_periods';

@@ -2,7 +2,7 @@
 --
 -- This is the view that replaces the expire-cache -> recompute-in-ClickHouse
 -- loop for count/sum: it is always fresh, and duplicate deliveries /
--- reprocessed events are corrected upstream by the dedup stage.
+-- re-ingestions are collapsed upstream by the dedup stage (first wins).
 --
 -- Keyed by billing period (Rails-maintained subscription_billing_periods via
 -- CDC + temporal join): one row per (subscription, charge, filter, grouped_by,

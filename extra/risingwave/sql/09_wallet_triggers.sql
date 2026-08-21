@@ -8,8 +8,8 @@
 -- trailing-flush buffer (an isolated event's trigger is held 18s+ until new
 -- data flows — measured 2026-08-10, v3.0.2):
 --  * coalescing via streaming dedup (ROW_NUMBER()=1 per customer+second):
---    events_expanded is an UPDATING MV (reprocess corrections update rows),
---    so the planner picks retractable StreamGroupTopN, and its output through
+--    events_expanded is an UPDATING MV (its ranking stages can retract), so
+--    the planner picks retractable StreamGroupTopN, and its output through
 --    the force-append-only conversion buffers the trailing per-key change;
 --  * wallet filter via temporal join on a CDC'd wallets table: planned as a
 --    non-append-only temporal join — same buffering class.
@@ -33,9 +33,9 @@
 -- for usage_realtime_projections to reach it before refreshing (the Kafka
 -- trigger otherwise races the Postgres projection sink of the same epoch).
 --
--- Known trade-off of force_append_only here: reprocessed events (updates in
--- events_expanded) do not re-trigger a refresh; corrections are picked up by
--- the next event or the reconciliation sweep.
+-- Known trade-off of force_append_only here: updates in events_expanded
+-- (ranking flips) do not re-trigger a refresh; those are picked up by the
+-- next event or the reconciliation sweep.
 CREATE SINK IF NOT EXISTS wallet_refresh_triggers_sink AS
 SELECT
     organization_id,

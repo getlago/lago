@@ -14,7 +14,9 @@ CREATE SOURCE IF NOT EXISTS events_raw (
     precise_total_amount_cents VARCHAR,
     source VARCHAR,
     "timestamp" VARCHAR,
-    source_metadata STRUCT<api_post_processed BOOLEAN, reprocess BOOLEAN>,
+    -- The payload also carries source_metadata.reprocess; deliberately not
+    -- declared — events are immutable, there is no in-stream correction path.
+    source_metadata STRUCT<api_post_processed BOOLEAN>,
     ingested_at TIMESTAMP,
     -- proctime() is BARRIER-ALIGNED (0-1s early bias) — fine for temporal
     -- filters / future state TTL, do not use for latency math; latency uses

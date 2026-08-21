@@ -2,9 +2,9 @@
 -- EnrichedEvent JSON, produced to a shadow topic for parity diffing against
 -- events_enriched_expanded.
 --
--- force_append_only: corrections (reprocessed events) are emitted as new
--- messages rather than retractions — same at-least-once semantics consumers
--- already handle today.
+-- force_append_only: the rare retractions events_expanded can emit (a
+-- ranking flip while a partition's fan-out rows are still arriving) are
+-- dropped — same at-least-once semantics consumers already handle today.
 CREATE SINK IF NOT EXISTS events_enriched_expanded_shadow_sink AS
 SELECT
     organization_id,
