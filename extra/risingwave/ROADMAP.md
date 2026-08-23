@@ -1,6 +1,6 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-21: BOUNDED 32-day pipeline — enrichment runs as two
+State as of 2026-08-23 (see §0 — ranking partition-key fix): BOUNDED 32-day pipeline — enrichment runs as two
 bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
 window; events immutable, reprocess removed) into append-only firewall
 TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
@@ -38,6 +38,89 @@ Consequences / follow-ups:
       matters, query raw events for the two boundary buckets only.
 - unique_count cannot recompose across buckets (distinct ≠ sum of per-bucket
   distincts) — needs its own structure when its turn comes (§3).
+
+## 0. FIXED 2026-08-23 — ranking partition keys narrower than event identity
+
+**Billing-correctness bug, found and fixed 2026-08-23.** Both ranking stages
+in `sql/04_enrichment.sql` partitioned on `(organization_id, transaction_id)`
+(and `+ COALESCE(charge_id,'')` for the filter stage) — NARROWER than event
+identity, which is the stage-0 dedup key `(organization_id, code,
+external_subscription_id, event_ts, transaction_id)`. Rails'
+`index_unique_transaction_id` is `(organization_id, external_subscription_id,
+transaction_id)`, so the SAME `transaction_id` on two different
+subscriptions is LEGAL input — and two such events then shared a single rank
+partition and competed for its one top-1 slot.
+
+Root cause is what `force_append_only` actually does. It is not a
+"drop the expiry retractions" filter: per `src/stream/src/executor/sink.rs`
+(v3.0.2) it drops `Delete`/`UpdateDelete` **and rewrites `UpdateInsert` into
+`Insert`**. So a rank change is laundered into an *extra appended row*, and a
+rank loss is laundered into a *silently missing row*.
+
+Both failure modes reproduced on a faithful replica of the stage-1+2 plan
+(same operator chain: append-only LHS -> 2 temporal-join fan-outs ->
+32d dynamic filter -> `dense_rank` OverWindow -> `ROW_NUMBER` GroupTopN ->
+`force_append_only` sink INTO an APPEND ONLY table):
+
+| case | before fix | after fix |
+|---|---|---|
+| single event, 3-filter fan-out | 1 row, correct filter | 1 row, correct filter |
+| same txn + same code, two subscriptions on one plan | **1 row for 2 billable events** (silent loss) | 2 rows, correct per-subscription attribution |
+| out-of-order outranking event, then window expiry | **3 rows for 2 events** (one event twice) | 2 rows, stable across the whole expiry window |
+
+- **Silent event loss (under-billing)** needs only the shared
+  `transaction_id`, so it is the LIKELIER of the two: the event whose
+  subscription lost the `DENSE_RANK` was discarded outright. There is no
+  missing-row signal, so the realtime read path serves the short total
+  without falling back.
+- **Double counting (over-billing)** needs one more coincidence: event A is
+  appended as top-1; event B arrives out of order (older `kafka_timestamp`,
+  outranking subscription) so A's retraction is dropped but B is appended;
+  when B leaves the 32-day window, **A is re-promoted to top-1 and appended a
+  second time**. `usage_buckets_15m` is a plain `COUNT(*)`/`SUM()` over the
+  table, so A is billed twice and the ClickHouse upsert overwrites the bucket
+  with the inflated value. In prod the second append lands ~32 days after the
+  first, into the tumble bucket of A's original `event_time` — i.e. it can
+  rewrite a bucket in a period that is still open.
+
+**Fix**: both partition keys widened to the full event identity, so one
+partition holds exactly one event's fan-out. No cross-event rank
+interference, and expiry empties a partition in one go (all its rows share
+one `kafka_timestamp`), so nothing is ever re-promoted and re-appended.
+Plan re-verified by EXPLAIN: both temporal joins still `append_only: true`,
+dynamic filter still `cleaned_by_watermark: true` (state stays bounded),
+sink still append-only.
+
+- [ ] **Follow-up: make this a monitored invariant, not just a comment.**
+      Add both directions to `RealtimeUsage::ParityCheckService` (and a
+      Grafana panel) — a regression here is silent by construction:
+      ```sql
+      -- over-count: more than one row per (event identity, charge)
+      SELECT count(*) AS dup_groups, coalesce(sum(n - 1), 0) AS extra_rows
+      FROM (SELECT organization_id, code, external_subscription_id, event_ts,
+                   transaction_id, coalesce(charge_id,'') AS cid, count(*) AS n
+            FROM events_expanded GROUP BY 1,2,3,4,5,6 HAVING count(*) > 1) d;
+
+      -- under-count: enriched events that produced ZERO expanded rows
+      SELECT count(*) AS dropped_events
+      FROM events_enriched e
+      WHERE NOT EXISTS (
+        SELECT 1 FROM events_expanded x
+        WHERE x.organization_id = e.organization_id AND x.code = e.code
+          AND x.external_subscription_id = e.external_subscription_id
+          AND x.event_ts = e.event_ts AND x.transaction_id = e.transaction_id);
+      ```
+      Note the dup query MUST key on full event identity — keying on
+      `(organization_id, transaction_id, charge_id)` reports legitimate
+      multi-subscription events as duplicates.
+- [x] Audited every other rank/dedup construct in `sql/` against event
+      identity (2026-08-23): the two stages fixed here are the ONLY ranking
+      operators in the tree. Stage 0's `DISTINCT ON` already uses the full
+      RMT key (correct — keep it that way); `10_enriched_shadow.sql` is a
+      bare projection + 32-day filter with no collapse of its own; the
+      `force_append_only` Kafka sinks in `06_sinks.sql`, `07_observability.sql`
+      and `09_wallet_triggers.sql` carry no ranking. Their stale
+      "ranking flip" comments were corrected in the same change.
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
@@ -369,6 +452,13 @@ cover cross-sink epoch ordering, not trailing-flush stalls.
   `ROW_NUMBER() OVER (...) = 1` plans as StreamGroupTopN and does not (verified
   by EXPLAIN, 2026-08-20). So dedup can precede a temporal join only in the
   DISTINCT ON form.
+- `force_append_only` does NOT just drop updates — `src/stream/src/executor/
+  sink.rs` drops `Delete`/`UpdateDelete` and **rewrites `UpdateInsert` into
+  `Insert`**. Laundering an updating stream through it therefore turns every
+  rank/aggregate change into an EXTRA APPENDED ROW, and every rank loss into
+  a silently missing row. Only ever point it at a stream whose only
+  retractions are whole-partition expiries (see §0 — this cost a
+  double-billing and a silent-event-loss bug on 2026-08-23).
 - Kafka sinks: `force_append_only` silently DROPS updates; but upsert sinks
   from updating MVs buffer the trailing per-key change (isolated events
   delivered 30–90s late). For triggers, prefer per-event append-only sinks

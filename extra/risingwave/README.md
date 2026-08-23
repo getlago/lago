@@ -79,9 +79,83 @@ decrements when rows are reclaimed).
   append-only table drops them, so every consumer (temporal joins, buckets,
   ClickHouse) sees a pure append-only stream and history never decrements.
   Temporal joins read the tables with `append_only: true` plans.
+- **Every ranking partition key must carry the FULL event identity**
+  (`organization_id, code, external_subscription_id, event_ts,
+  transaction_id` — the stage-0 dedup key). This is a BILLING-CORRECTNESS
+  invariant, not a style choice. `force_append_only` does not merely drop
+  retractions: per `src/stream/src/executor/sink.rs`, it drops
+  `Delete`/`UpdateDelete` **and rewrites `UpdateInsert` into `Insert`**. So
+  any rank change inside a partition is laundered into an extra appended
+  row, and any rank loss is laundered into a silently missing row. If a
+  partition key is narrower than event identity, two distinct events share
+  one top-1 slot and both failure modes become reachable on legal input —
+  `index_unique_transaction_id` is `(organization_id,
+  external_subscription_id, transaction_id)`, so one `transaction_id` across
+  two subscriptions is allowed. Measured consequences before the
+  2026-08-23 fix are documented in `ROADMAP.md`; the header of
+  `sql/04_enrichment.sql` carries the full reproduction.
 - **Time-window predicates stay out of join conditions.** Subscription
   validity at the event timestamp is computed as a flag and resolved by
   ranking, mirroring the Go `FetchSubscription` ordering.
+
+## Changing the pipeline (recreating MVs, sinks, tables)
+
+Nothing here is a live-edit: RisingWave has no `ALTER MATERIALIZED VIEW` and
+no way to alter a sink's query, so any reshape is a drop + recreate — and a
+recreated job BACKFILLS. What it backfills from decides whether that is safe.
+
+| you recreate | backfills from | result |
+|---|---|---|
+| MV over `events_expanded` / `events_enriched` | only the rows still retained (≤33d) | aggregate recomputed from a **trimmed** window — see the `ver` trap below |
+| sink INTO an append-only table | its full upstream | **every row re-appended.** Measured on a probe: 3 rows in, sink recreated, 6 rows out |
+| sink to ClickHouse / Kafka | full upstream MV snapshot | CH upsert is idempotent (same key, new `ver`); Kafka sinks flood their consumers (~390k stale triggers measured once) |
+| MV/sink over the shared `events_raw` Kafka source | retained topic history | replays real events through the new chain (this is also the prod-cutover partial-period fix — see ROADMAP) |
+| CDC dimension table | Postgres snapshot | safe, full state |
+
+Two traps that are easy to miss:
+
+- **`usage_buckets_15m.ver` is `MATERIALIZED now64(3)`** — wall clock, so the
+  LAST write wins regardless of whether it is correct. A rebuilt MV that
+  recomputes a bucket from a retention-trimmed `events_expanded` emits a
+  *lower* `events_count`/`units` with a *newer* `ver`, and silently
+  overwrites correct ClickHouse history. Under-billing, no signal.
+- **`ALTER TABLE ... ADD COLUMN` DOES work** on an append-only table that
+  already has a sink into it (verified on v3.0.2 — the column is NULL for
+  existing rows). But you cannot alter the sink's query, so *populating* the
+  new column still requires the sink drop + recreate, i.e. the backfill.
+
+### Playbook: add a field to `usage_buckets_15m` (MV only — no teardown)
+
+```
+1. CH   ALTER TABLE usage_buckets_15m ADD COLUMN <new> ...   -- sink ignores it until step 4
+2. RW   CREATE MATERIALIZED VIEW usage_buckets_15m_v2 AS ... -- backfills alongside v1, zero downtime
+3.      parity-check v1 vs v2 over buckets INSIDE the retention window
+4. RW   DROP SINK usage_buckets_clickhouse_sink;
+        CREATE SINK ... AS SELECT ... FROM usage_buckets_15m_v2
+        WHERE bucket > now() - INTERVAL '30 days';           -- the important bit
+5. RW   DROP MATERIALIZED VIEW usage_buckets_15m;
+```
+
+Step 4's `bucket` floor is what stops the rebuild from rewriting older
+ClickHouse rows with partial recomputes. 30 days sits inside the 32-day
+filter / 33-day retention with margin.
+
+### Playbook: add a field to `events_expanded` or `events_enriched`
+
+No shortcut — use `reapply_enrichment.sh`, which drops the target table with
+its sink so the recreated sink backfills into an EMPTY append-only table.
+Recreating the sink alone would double-count the whole 32-day window.
+
+### Not done yet — hardening worth doing before prod
+
+Deliberately NOT applied (2026-08-23, Jeremy's call: document now, change
+later):
+
+- [ ] Make the `WHERE bucket > now() - INTERVAL '30 days'` floor a permanent
+      part of `usage_buckets_clickhouse_sink`, not just a migration step.
+- [ ] Change CH `usage_buckets_15m.ver` from `now64(3)` to the data-derived
+      `last_ingested_at`, so a partial recompute LOSES to the correct row
+      instead of winning it.
 
 ## Validated end-to-end (dev)
 

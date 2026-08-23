@@ -33,9 +33,11 @@
 -- for the ClickHouse usage_buckets_15m table to reach it before refreshing
 -- (the Kafka trigger otherwise races the ClickHouse sink of the same epoch).
 --
--- Known trade-off of force_append_only here: updates in events_expanded
--- (ranking flips) do not re-trigger a refresh; those are picked up by the
--- next event or the reconciliation sweep.
+-- force_append_only here: events_expanded no longer emits ranking-flip
+-- updates (2026-08-23 partition-key fix, ROADMAP §0) — one rank partition is
+-- one event's fan-out. Any update that DID reach this sink would be
+-- rewritten UpdateInsert -> Insert, i.e. an extra trigger, which the
+-- consumer's per-customer batch collapse absorbs idempotently.
 CREATE SINK IF NOT EXISTS wallet_refresh_triggers_sink AS
 SELECT
     organization_id,

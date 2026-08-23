@@ -158,6 +158,32 @@ CREATE TABLE IF NOT EXISTS events_expanded (
 -- only resolves the dimension fan-out. The DENSE_RANK ordering fully
 -- determines a subscription: valid first, most recent as tie-breakers
 -- (mirrors the Go FetchSubscription ordering).
+--
+-- CRITICAL (fixed 2026-08-23): both ranking partitions MUST carry the FULL
+-- event identity — the stage-0 dedup key (organization_id, code,
+-- external_subscription_id, event_ts, transaction_id). They previously
+-- partitioned on (organization_id, transaction_id) only, which is NARROWER
+-- than event identity: `index_unique_transaction_id` in Rails is
+-- (organization_id, external_subscription_id, transaction_id), so the SAME
+-- transaction_id on two different subscriptions is legal input. Two such
+-- events then shared one rank partition and competed for its single top-1
+-- slot, with two measured failure modes (both reproduced on a replica of
+-- this plan, 2026-08-23):
+--   * SILENT EVENT LOSS (under-billing): the event whose subscription lost
+--     the DENSE_RANK was discarded outright — 1 row for 2 billable events,
+--     no missing-row signal, so the read path serves the short total.
+--   * DOUBLE COUNTING (over-billing): event A appended as top-1; event B
+--     arrives out of order (older kafka_timestamp, outranking subscription)
+--     -> A's retraction is DROPPED by force_append_only but B is appended;
+--     when B leaves the 32-day window A is RE-PROMOTED to top-1 and
+--     appended a SECOND time. 3 rows for 2 events. usage_buckets_15m is a
+--     plain COUNT(*)/SUM() over this table, so A is billed twice and the
+--     ClickHouse upsert overwrites the bucket with the inflated value.
+-- With the full event identity in the partition key, one partition holds
+-- exactly one event's fan-out: no cross-event rank interference, and expiry
+-- empties a partition in one go (all its rows share one kafka_timestamp),
+-- so nothing is ever re-promoted and re-appended.
+-- DO NOT narrow these partition keys again.
 CREATE SINK IF NOT EXISTS events_expanded_load INTO events_expanded AS
 WITH joined AS (
     SELECT
@@ -202,7 +228,8 @@ best_sub AS (
         SELECT
             *,
             DENSE_RANK() OVER (
-                PARTITION BY organization_id, transaction_id
+                PARTITION BY organization_id, code, external_subscription_id,
+                             event_ts, transaction_id
                 ORDER BY
                     subscription_valid DESC,
                     subscription_terminated_at DESC NULLS FIRST,
@@ -218,7 +245,8 @@ best_filter AS (
         SELECT
             *,
             ROW_NUMBER() OVER (
-                PARTITION BY organization_id, transaction_id, COALESCE(charge_id, '')
+                PARTITION BY organization_id, code, external_subscription_id,
+                             event_ts, transaction_id, COALESCE(charge_id, '')
                 ORDER BY match_score DESC, charge_filter_key
             ) AS filter_rank
         FROM best_sub

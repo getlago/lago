@@ -2,9 +2,14 @@
 -- EnrichedEvent JSON, produced to a shadow topic for parity diffing against
 -- events_enriched_expanded.
 --
--- force_append_only: the rare retractions events_expanded can emit (a
--- ranking flip while a partition's fan-out rows are still arriving) are
--- dropped — same at-least-once semantics consumers already handle today.
+-- force_append_only: kept as belt-and-braces for consumers that already
+-- handle at-least-once. Since the 2026-08-23 partition-key fix
+-- (04_enrichment.sql header, ROADMAP §0) a rank partition holds exactly one
+-- event's fan-out, which arrives atomically, so the "ranking flip mid
+-- fan-out" retractions this note used to describe no longer occur. Do NOT
+-- treat force_append_only as a safety net for ranking flips: it rewrites
+-- UpdateInsert into Insert, so a flip would be laundered into a DUPLICATE
+-- row, not suppressed.
 CREATE SINK IF NOT EXISTS events_enriched_expanded_shadow_sink AS
 SELECT
     organization_id,
