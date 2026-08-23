@@ -115,10 +115,10 @@ touch ./api/config/master.key
 
 ## Running the app
 
-Start the dependencies (DB, Redis, Traefik, Mailhog, Clickhouse) via:
+Start the dependencies (DB, Redis, Traefik, Clickhouse) via:
 
 ```shell
-lago up -d --wait db redis traefik mailhog clickhouse webhook
+lago up -d --wait db redis traefik clickhouse webhook
 ```
 
 Then start the default services (Front, API, API worker, Clock (CRON)):
@@ -287,9 +287,19 @@ git pull --recurse-submodules
 
 ### Emails
 
-We rely on [Mailhog](https://github.com/mailhog/MailHog) to test emails locally.
+We rely on [Mailpit](https://github.com/axllent/mailpit) to test emails locally.
 
-To access the Mailhog web interface, you can use the following URL: <https://mail.lago.dev>.
+It is **not started by default**. When you need to test emails, start it explicitly:
+
+```shell
+lago up -d --wait mailpit
+```
+
+To access the Mailpit web interface, you can use the following URL: <https://mail.lago.dev>.
+
+> [!NOTE]
+> While Mailpit is not running, sending an email from the API raises a delivery error
+> (`raise_delivery_errors` is enabled in development).
 
 ### Webhooks
 
