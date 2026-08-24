@@ -58,7 +58,21 @@ CREATE TABLE IF NOT EXISTS default.events_enriched_expanded_rw_shadow (
     -- instrumentation, so an absent value must stay absent — substituting a
     -- fake timestamp would silently poison the e2e figures. Non-nullable here
     -- costs a sink crash loop per such event.
-    ingested_at Nullable(DateTime64(3))
+    ingested_at Nullable(DateTime64(3)),
+    -- RisingWave's own clocks, carried so stage timings are queryable HERE and
+    -- not only through the load-test app:
+    --   rw_enriched_at = proctime() at the source (stage 0 pickup)
+    --   rw_expanded_at = barrier at which stage 1+2 emitted the row
+    -- Both are barrier-aligned (resolution = barrier_interval_ms), so
+    -- rw_expanded_at - rw_enriched_at is the enrich→expand cost measured on ONE
+    -- clock, and enriched_at - rw_expanded_at is the sink+insert cost.
+    --
+    -- Existing table? ALTER TABLE default.events_enriched_expanded_rw_shadow
+    --   ADD COLUMN rw_enriched_at Nullable(DateTime64(3)),
+    --   ADD COLUMN rw_expanded_at Nullable(DateTime64(3));
+    -- (Nullable so rows written before the columns existed stay readable.)
+    rw_enriched_at Nullable(DateTime64(3)),
+    rw_expanded_at Nullable(DateTime64(3))
 )
 ENGINE = MergeTree
 PRIMARY KEY (organization_id, code, external_subscription_id, charge_id, charge_filter_id, toDate(timestamp))

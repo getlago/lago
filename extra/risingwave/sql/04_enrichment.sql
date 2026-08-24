@@ -142,7 +142,24 @@ CREATE TABLE IF NOT EXISTS events_expanded (
     pay_in_advance BOOLEAN,
     value VARCHAR,
     grouped_by JSONB,
-    target_wallet_code VARCHAR
+    target_wallet_code VARCHAR,
+    -- Clocks carried through from stage 0, so the expanded row alone can account
+    -- for its own latency: broker append time and the source pickup proctime.
+    kafka_timestamp TIMESTAMPTZ,
+    rw_received_at TIMESTAMPTZ,
+    -- Stage-1+2 stamp, and the reason the sink below lists its target columns
+    -- explicitly: the sink does NOT write this one, so the DEFAULT applies at
+    -- insert and records when the ranking stage actually emitted the row.
+    --
+    -- It has to be a column DEFAULT. `proctime()` is rejected outside
+    -- CREATE TABLE/SOURCE, and a bare `now()` in a streaming projection is
+    -- rejected too ("only allowed in WHERE, HAVING, ON and FROM") — a table
+    -- default is the one position where RisingWave will evaluate it per row.
+    --
+    -- CAVEAT, same class as rw_received_at: now() is the BARRIER timestamp, so
+    -- rows emitted in one barrier share a stamp and the resolution is
+    -- barrier_interval_ms (250ms dev / 1s default). Do not read it below that.
+    rw_expanded_at TIMESTAMPTZ DEFAULT now()
 ) APPEND ONLY WITH (retention_seconds = 2851200); -- 33 days
 
 -- Stage 1+2 load: temporal joins against the *current* state of the CDC
@@ -184,7 +201,37 @@ CREATE TABLE IF NOT EXISTS events_expanded (
 -- empties a partition in one go (all its rows share one kafka_timestamp),
 -- so nothing is ever re-promoted and re-appended.
 -- DO NOT narrow these partition keys again.
-CREATE SINK IF NOT EXISTS events_expanded_load INTO events_expanded AS
+CREATE SINK IF NOT EXISTS events_expanded_load INTO events_expanded (
+    organization_id,
+    external_subscription_id,
+    transaction_id,
+    code,
+    properties,
+    precise_total_amount_cents,
+    source,
+    event_ts,
+    event_time,
+    ingested_at,
+    api_post_processed,
+    billable_metric_id,
+    aggregation_type_code,
+    aggregation_type,
+    recurring,
+    subscription_id,
+    customer_id,
+    plan_id,
+    charge_id,
+    charge_updated_at,
+    charge_filter_id,
+    charge_filter_updated_at,
+    filters,
+    pay_in_advance,
+    value,
+    grouped_by,
+    target_wallet_code,
+    kafka_timestamp,
+    rw_received_at
+) AS
 WITH joined AS (
     SELECT
         e.*,
@@ -295,6 +342,8 @@ SELECT
          ELSE properties ->> field_name
     END AS value,
     extract_grouped_by(pricing_group_keys, properties, COALESCE(accepts_target_wallet, false)) AS grouped_by,
-    CASE WHEN COALESCE(accepts_target_wallet, false) THEN properties ->> 'target_wallet_code' END AS target_wallet_code
+    CASE WHEN COALESCE(accepts_target_wallet, false) THEN properties ->> 'target_wallet_code' END AS target_wallet_code,
+    kafka_timestamp,
+    rw_received_at
 FROM best_filter
 WITH (type = 'append-only', force_append_only = 'true');

@@ -61,7 +61,12 @@ SELECT
     COALESCE(grouped_by::VARCHAR, '{}') AS grouped_by_json,
     -- Not part of the production shape; carried so e2e latency
     -- (ingest -> queryable in ClickHouse) is a single query against this table.
-    ingested_at AT TIME ZONE 'UTC' AS ingested_at
+    ingested_at AT TIME ZONE 'UTC' AS ingested_at,
+    -- RisingWave's stage clocks, so "how long did enrich→expand take, and how
+    -- long did the sink take" is answerable in ClickHouse without the load-test
+    -- app. Already timestamptz, so no AT TIME ZONE needed.
+    rw_received_at AS rw_enriched_at,
+    rw_expanded_at
 FROM events_expanded
 WHERE charge_id IS NOT NULL
 WITH (

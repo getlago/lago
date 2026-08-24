@@ -11,7 +11,10 @@ sums buckets over the Rails-computed period window). RisingWave holds a
 ~32-33 day working set everywhere; ClickHouse keeps forever-history. API
 read path (count/sum incl. charge filters and pricing_group_keys),
 event-driven wallet refresh with a CH watermark wait (~0.7s e2e),
-latency benchmarks, parity checker over the current period. Branches: meta
+latency benchmarks, parity checker over the current period. A load-test +
+latency service lives in `loadtest/` (§1) and measures every stage end to end
+against a real Lago instance; its first staging run surfaced the
+`current_usage` charge-cache cutover blocker recorded in §2. Branches: meta
 `poc/risingwave-realtime-usage`, api `feat/realtime-usage`.
 Details in `README.md`, numbers in `benchmark/RESULTS.md`.
 
@@ -242,6 +245,68 @@ history lives in ClickHouse anyway).
 - [ ] **Recurring-BM fallback** (no active sub at event time → currently
       active sub) in the subscription ranking stage — last enrichment
       difference vs the Go processor.
+- [x] **Load-test + latency app for the POC** (2026-08-24): `loadtest/` — a
+      local service (Fastify + React, `npm run dev`) that sends events to the
+      Lago API for existing customers/active subscriptions and reports
+      P50/P95/P99 for every stage, live: RisingWave `events_enriched` and
+      `events_expanded`, the ClickHouse RW shadows, the ClickHouse Go-path
+      tables as the baseline, and `GET /current_usage`. Details and caveats in
+      `loadtest/README.md`.
+
+      Measurement design — two mechanisms deliberately kept apart:
+      - POLLED end-to-end: both endpoints read from the app's own clock, so no
+        cross-cloud skew enters. Probes are polled as a COHORT (one query per
+        stage per tick for the whole in-flight set), because there is no index
+        on `transaction_id` in the RisingWave tables. ClickHouse lookups are
+        narrowed to the run's subscriptions/codes/time window so they use the
+        primary key — without that, the 240M-row production
+        `events_enriched_expanded` times out and the stage silently reports
+        nothing. No `FINAL` anywhere in the measurement path (existence is
+        existence, `min(enriched_at)` is the first insert, `uniqExact` dedupes).
+      - STAMPED per-hop: `ingested_at` → `kafka_timestamp` → `rw_received_at` →
+        `enriched_at`, covering every event. Spans machine clocks, so the
+        measured offsets are DISPLAYED and negative durations flagged as
+        artifacts rather than silently corrected.
+
+      Events are spread across every charge filter value, the default bucket
+      (no-match properties) and each pricing-group-key value, so
+      `filter_match_score`, the default-bucket fallback and `extract_grouped_by`
+      are all exercised. Verified: 120 events over 7 shapes resolved into
+      exactly 7 distinct `(code, charge_filter_id, grouped_by)` rows in
+      `events_expanded` and 7 matching `usage_buckets_15m` rows.
+
+      First local comparison, same events: RisingWave path ingest→ClickHouse
+      **224 ms p50** vs the Go events-processor **4279 ms p50**.
+
+      Configuration lives in the app's Setup screen, stored in local SQLite
+      (`node:sqlite` — no dotfile, no native module); an existing `.env` is
+      imported once and renamed.
+
+- [x] **Stage-1+2 clock added to `events_expanded`** (2026-08-24), closing the
+      last gap in the per-hop breakdown. The table now carries `kafka_timestamp`
+      and `rw_received_at` through from stage 0, plus `rw_expanded_at` — and
+      both are sunk into the ClickHouse expanded shadow (`rw_enriched_at`,
+      `rw_expanded_at`), so stage timings are queryable in ClickHouse directly,
+      not only through the load-test app.
+      - HOW, because the obvious routes are closed: `proctime()` is rejected
+        outside CREATE TABLE/SOURCE, and a bare `now()` in a streaming
+        projection is rejected too ("only allowed in WHERE, HAVING, ON and
+        FROM"). The one position RisingWave will evaluate it per row is a COLUMN
+        DEFAULT — so `rw_expanded_at TIMESTAMPTZ DEFAULT now()` on the table,
+        with `events_expanded_load` listing its target columns explicitly and
+        omitting that one. Adding the column needs the events_expanded subtree
+        rebuilt (drop + reapply, re-backfills from `events_enriched`).
+      - FIRST RESULT: for live events `rw_received_at == rw_expanded_at` on every
+        row (60 events across 25 distinct barriers, zero differing) — the
+        billable-metric join, subscription/charge/filter resolution and ranking
+        all complete WITHIN ONE BARRIER. The RisingWave leg's cost is the sink +
+        ClickHouse insert (p50 362 ms, p95 466 ms), not the compute. Falsified
+        that the two columns are not an echo of each other: backfilled rows show
+        `rw_enriched_at` from 08-21 against `rw_expanded_at` from the rebuild.
+      - CAVEAT: `now()` is the BARRIER timestamp, so the resolution is
+        `barrier_interval_ms` (250 ms dev / 1 s default). A 0 on the
+        enrich→expand leg means "same barrier", not "instant".
+
 - [ ] **Observability for the flip decision**:
       - persist parity-check results to a table + Grafana panel (logs today)
       - parity at per-filter/per-group granularity (charge totals today)
@@ -326,6 +391,39 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
       rollover per billing_time flavor. Deployment ordering: api migrations
       before `setup.sh` (sinks validate target tables); add new CDC tables to
       `rw_publication`; consumer needs `LAGO_RISINGWAVE_USAGE_ENABLED`.
+- [ ] **`current_usage` is served from the charge cache unless the charge is
+      realtime-eligible — found 2026-08-24 on the staging load test, and it is a
+      CUTOVER blocker, not an app problem.** `app/services/realtime_usage.rb`
+      requires `LAGO_RISINGWAVE_USAGE_ENABLED=true` plus count/sum, in arrears,
+      non-prorated, non-recurring, no custom expression; otherwise
+      `customer_usage_service.rb:138` leaves the per-charge cache ON, and its
+      invalidation is driven by the LEGACY events consumer. Consequence measured
+      on staging: 1000 events at 45/s, and `current_usage` did not move for the
+      whole 36 s run, then jumped once — every "usage latency" in that run was
+      one cache refresh, which reads as a perfectly linear ramp (min 10 s, p50
+      20 s, max 30 s). So the pipeline can serve buckets in ~200 ms while a
+      customer still sees minutes-old usage, because the read path in front of
+      it is cached and invalidated by the component being replaced.
+      - What to decide before prod: which charges are realtime-eligible (the
+        gate is narrow), and what invalidates the cache for the ones that are
+        not once the Go processor is retired.
+      - The load-test app now refuses to misreport this: a preflight CANARY
+        sends one event and fails the run if `current_usage` does not move
+        within 15 s (naming this cause), and a reading-advance verdict
+        (`incremental` / `coarse` / `batched`) banners the numbers when one
+        reading accounted for many events. Falsification-tested both ways
+        against a stub: frozen reads → canary FAIL + `batched` (100 events in
+        one reading); live reads → canary PASS (`units 0 → 1 in 263 ms`) +
+        `coarse`, usage p50 14 ms.
+      - Usage attribution keys on `units` against the exact unit total the run
+        has sent (exact for count/sum), with EXACT mode when the probe target is
+        free of bulk traffic and WATERMARK mode when it is not — the latter is
+        what makes the measurement possible at all on an instance with a single
+        subscription and metric. Polling is pipelined and the crossing is
+        bracketed between the last "not yet" request and the first "seen"
+        response: measured uncertainty ±974 ms → **±174 ms** against a ~1.1 s
+        `current_usage`.
+
 - [ ] Flip order after clean parity: current usage reads → wallet trigger
       consumer → alerts.
 

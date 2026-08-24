@@ -1,0 +1,15 @@
+node_modules/
+dist/
+runs/
+
+# Settings live in SQLite, written by the Setup screen.
+loadtest.db
+loadtest.db-wal
+loadtest.db-shm
+
+# Legacy, imported once into SQLite then renamed .imported
+config.json*
+.env*
+
+# build artefact
+web/tsconfig.tsbuildinfo

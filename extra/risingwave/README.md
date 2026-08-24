@@ -58,11 +58,12 @@ decrements when rows are reclaimed).
 | `sql/01_cdc_dimensions.sql` | Native Postgres CDC source + dimension tables + lookup indexes (replaces BadgerDB cache + Debezium) |
 | `sql/02_flat_filters.sql` | Rebuild of the Postgres `flat_filters` view; MV → sink-into-table so it can be temporal-joined |
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
-| `sql/04_enrichment.sql` | Bounded pipeline: sink (BM join → 32d filter → first-wins dedup) INTO append-only TABLE `events_enriched` (retention 33d) → sink (temporal joins → 32d filter → ranking) INTO append-only TABLE `events_expanded` (retention 33d) |
+| `sql/04_enrichment.sql` | Bounded pipeline: sink (BM join → 32d filter → first-wins dedup) INTO append-only TABLE `events_enriched` (retention 33d) → sink (temporal joins → 32d filter → ranking) INTO append-only TABLE `events_expanded` (retention 33d). Both tables carry the clocks (`kafka_timestamp`, `rw_received_at`); `events_expanded` adds `rw_expanded_at DEFAULT now()`, stamped at insert because the sink omits that column — `proctime()` and bare `now()` are both rejected in a streaming projection |
 | `sql/05_usage.sql` | `usage_buckets_15m` MV: count/sum per (sub, charge, filter, grouped_by) on 15-minute buckets of the event timestamp — serves current usage AND dashboard history; the API sums buckets over the Rails-computed period window (no period rows anywhere) |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted), query with FINAL) |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `usage_latency` (ingest → bucket row emitted). e2e (ingest → enriched row queryable) is a ClickHouse query over `events_enriched_expanded_rw_shadow` — the query is in the file |
 | `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_buckets_15m`* over pgwire (checkpoint visibility included) |
+| `loadtest/` | Load-test + latency service (Fastify + React): sends events to the Lago API and reports P50/P95/P99 for every stage — RisingWave, both ClickHouse paths, and `current_usage`. See `loadtest/README.md` |
 
 ## Design invariants
 
