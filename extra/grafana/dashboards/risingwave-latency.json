@@ -1,69 +1,150 @@
 {
   "uid": "lago-rw-latency",
-  "title": "RisingWave — Events pipeline latency",
-  "tags": ["lago", "risingwave"],
+  "title": "RisingWave \u2014 Events pipeline latency",
+  "tags": [
+    "lago",
+    "risingwave",
+    "clickhouse"
+  ],
   "timezone": "utc",
   "schemaVersion": 39,
   "refresh": "10s",
-  "time": { "from": "now-30m", "to": "now" },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
       "title": "Last minute",
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Mixed --"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "events / min" },
-            "properties": [{ "id": "unit", "value": "none" }]
+            "matcher": {
+              "id": "byName",
+              "options": "events / min"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
           }
         ]
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "graphMode": "area" },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area"
+      },
       "targets": [
         {
           "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT round(avg(dateDiff('millisecond', ingested_at, enriched_at))) AS \"e2e avg\", count() AS \"events / min\" FROM default.events_enriched_expanded_rw_shadow WHERE enriched_at > now() - INTERVAL 1 MINUTE",
+          "format": 1,
+          "queryType": "table"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "risingwave"
+          },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT e.e2e_avg_ms AS \"e2e avg\", u.usage_avg_ms AS \"usage avg\", e.events AS \"events / min\" FROM (SELECT * FROM pipeline_latency_e2e ORDER BY window_start DESC LIMIT 1) e LEFT JOIN (SELECT * FROM usage_latency ORDER BY window_start DESC LIMIT 1) u ON true;"
+          "rawSql": "SELECT usage_avg_ms AS \"usage avg\" FROM usage_latency ORDER BY window_start DESC LIMIT 1;"
         }
-      ]
+      ],
+      "description": "e2e = ingest -> enriched row QUERYABLE in ClickHouse (payload ingested_at vs ClickHouse insert stamp). usage = ingest -> usage bucket row emitted, from the RisingWave usage_latency MV."
     },
     {
       "id": 2,
       "type": "timeseries",
-      "title": "End-to-end: ingest → enriched event on Kafka",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "title": "End-to-end: ingest \u2192 enriched row queryable in ClickHouse",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "spanNulls": true
+          }
         },
         "overrides": []
       },
       "targets": [
         {
           "refId": "A",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT window_start AS \"time\", e2e_avg_ms AS \"avg\", e2e_min_ms AS \"min\", e2e_max_ms AS \"max\" FROM pipeline_latency_e2e WHERE $__timeFilter(window_start) ORDER BY 1;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT toStartOfMinute(enriched_at) AS time, round(avg(dateDiff('millisecond', ingested_at, enriched_at))) AS \"avg\", min(dateDiff('millisecond', ingested_at, enriched_at)) AS \"min\", max(dateDiff('millisecond', ingested_at, enriched_at)) AS \"max\" FROM default.events_enriched_expanded_rw_shadow WHERE $__timeFilter(enriched_at) GROUP BY time ORDER BY time",
+          "format": 0,
+          "queryType": "timeseries"
         }
-      ]
+      ],
+      "description": "Rows delivered by a sink BACKFILL carry a meaningless e2e (ingested whenever, inserted now) and will spike this panel \u2014 ignore the minute a sink was recreated. Events with no ingested_at in the payload contribute nothing (avg skips NULLs)."
     },
     {
       "id": 3,
       "type": "timeseries",
-      "title": "Usage: ingest → usage_realtime row emitted",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "title": "Usage: ingest \u2192 usage bucket row emitted",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "risingwave"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "spanNulls": true
+          }
         },
         "overrides": []
       },
@@ -79,13 +160,25 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "Ingest → raw event on Kafka",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "title": "Ingest \u2192 raw event on Kafka",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "risingwave"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "drawStyle": "line", "fillOpacity": 12, "spanNulls": true }
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "spanNulls": true
+          }
         },
         "overrides": []
       },
@@ -102,12 +195,24 @@
       "id": 5,
       "type": "timeseries",
       "title": "Throughput per minute",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "risingwave"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "custom": { "drawStyle": "bars", "fillOpacity": 60, "spanNulls": false }
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "spanNulls": false
+          }
         },
         "overrides": []
       },
@@ -129,39 +234,76 @@
     {
       "id": 7,
       "type": "timeseries",
-      "title": "Hourly usage (count/sum metrics, top charges)",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 22 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "title": "Hourly usage from ClickHouse buckets (count/sum metrics)",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "custom": { "drawStyle": "bars", "fillOpacity": 60, "stacking": { "mode": "normal" } }
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
         },
         "overrides": []
       },
       "targets": [
         {
           "refId": "A",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT hour AT TIME ZONE 'UTC' AS \"time\", code || ' / ' || COALESCE(NULLIF(charge_filter_id, ''), 'default') AS metric, units::double precision AS value FROM usage_hourly WHERE $__timeFilter(hour AT TIME ZONE 'UTC') ORDER BY 1;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT toStartOfHour(bucket) AS time, concat(code, ' / ', if(charge_filter_id = '', 'default', charge_filter_id)) AS metric, toFloat64(sum(units)) AS value FROM default.usage_buckets_15m FINAL WHERE $__timeFilter(bucket) GROUP BY time, metric ORDER BY time",
+          "format": 1,
+          "queryType": "table"
         }
       ]
     },
     {
       "id": 6,
       "type": "table",
-      "title": "usage_realtime — most recently updated",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 31 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "options": { "showHeader": true },
+      "title": "usage_buckets_15m \u2014 most recently updated",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
       "targets": [
         {
           "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT last_ingested_at, code, aggregation_type, charge_filter_id, grouped_by, events_count, units, subscription_id FROM usage_realtime ORDER BY last_ingested_at DESC LIMIT 20;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT last_ingested_at, bucket, code, aggregation_type, if(charge_filter_id = '', 'default', charge_filter_id) AS charge_filter, grouped_by, events_count, toFloat64(units) AS units, subscription_id FROM default.usage_buckets_15m FINAL ORDER BY last_ingested_at DESC LIMIT 20",
+          "format": 1,
+          "queryType": "table"
         }
       ]
     }

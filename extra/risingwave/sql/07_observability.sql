@@ -1,17 +1,23 @@
 -- Pipeline latency, per minute, from broker-stamped timestamps.
 --
 -- Kafka append times are the only trustworthy per-event clocks here:
--- RisingWave's proctime() is barrier-aligned (0-1s early bias), so the
--- end-to-end figure is measured by reading the shadow output topic back and
--- comparing its broker timestamp with the original Ruby `ingested_at`.
+-- RisingWave's proctime() is barrier-aligned (0-1s early bias), so nothing
+-- below is measured from proctime.
 --
+-- What this file provides:
 --   ingest_to_kafka_*  : Ruby `ingested_at` -> raw event appended to Kafka
---   e2e_*              : Ruby `ingested_at` -> enriched event appended to the
---                        shadow topic (source read + joins + ranking + sink,
---                        including barrier/checkpoint overhead)
+--                        (`pipeline_latency`)
+--   usage_*            : Ruby `ingested_at` -> usage bucket row COMPUTED AND
+--                        EMITTED (`usage_latency`, via a debug topic loopback)
+--
+-- The end-to-end figure (ingest -> enriched row QUERYABLE) is NOT here: it is
+-- a ClickHouse query since 2026-08-24, see the block above `usage_latency`.
 --
 -- `ingested_at` is a naive UTC timestamp; it is pinned to UTC before being
--- compared with the timestamptz broker stamps.
+-- compared with the timestamptz broker stamps. It is also OPTIONAL in the
+-- payload (see sql/05_usage.sql): an event without it counts toward `events`
+-- but contributes NULL to the latency aggregates, which AVG/MIN/MAX skip — a
+-- window can therefore report events with empty latencies rather than zero.
 CREATE MATERIALIZED VIEW IF NOT EXISTS pipeline_latency AS
 SELECT
     window_start,

@@ -502,6 +502,10 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_NEWS_NEWS_FEED_ENABLED=false
       - GF_ANALYTICS_REPORTING_ENABLED=false
+      # The realtime-usage serving store and the e2e latency clock both live in
+      # ClickHouse (extra/risingwave/clickhouse/*.sql), which no postgres-type
+      # datasource can reach. Downloaded on first start; cached in grafana_data_dev.
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
     volumes:
       - grafana_data_dev:/var/lib/grafana
       - ./extra/grafana/provisioning:/etc/grafana/provisioning

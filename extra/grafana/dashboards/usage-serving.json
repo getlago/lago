@@ -1,153 +1,276 @@
 {
   "uid": "lago-rw-serving",
-  "title": "RisingWave — Usage serving health",
-  "tags": ["lago", "risingwave"],
+  "title": "RisingWave \u2014 Usage serving health",
+  "tags": [
+    "lago",
+    "risingwave",
+    "clickhouse"
+  ],
   "timezone": "utc",
   "schemaVersion": 39,
   "refresh": "10s",
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
-      "title": "Projection rows (lago PG)",
-      "gridPos": { "h": 5, "w": 5, "x": 0, "y": 0 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
-      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "What the API serves (ClickHouse buckets)",
+      "description": "usage_buckets_15m with FINAL, i.e. after ReplacingMergeTree collapses row versions. This is the table Clickhouse::UsageBucket reads for current usage and wallet refresh.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT count(*) AS \"rows\", count(DISTINCT subscription_id) AS \"subscriptions\" FROM usage_realtime_projections;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT count() AS \"bucket rows\", uniqExact(subscription_id) AS \"subscriptions\", uniqExact(organization_id) AS \"orgs\" FROM default.usage_buckets_15m FINAL",
+          "format": 1,
+          "queryType": "table"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "none"
+      }
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "Projection staleness (since last usage write)",
-      "gridPos": { "h": 5, "w": 5, "x": 5, "y": 0 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
+      "title": "Serving staleness (since last bucket write)",
+      "description": "now() - max(last_ingested_at). The wallet refresh waits (bounded) for this watermark to reach the trigger's ingested_at, so sustained growth here means the serving store is behind. Events whose payload omits ingested_at fall back to event_time (sql/05_usage.sql).",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT dateDiff('second', max(last_ingested_at), now()) AS staleness FROM default.usage_buckets_15m FINAL",
+          "format": 1,
+          "queryType": "table"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 3600 },
-              { "color": "red", "value": 21600 }
-            ]
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(EXTRACT(EPOCH FROM (now() - max(last_ingested_at))), 0)::bigint AS staleness FROM usage_realtime_projections;"
-        }
-      ]
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "none"
+      }
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "Orphaned usage (no billing period) — should be 0",
-      "gridPos": { "h": 5, "w": 7, "x": 10, "y": 0 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
+      "title": "Correctness invariants (RisingWave) \u2014 both MUST be 0",
+      "description": "ROADMAP \u00a70. over-count: more than one expanded row per (event identity, charge) \u2014 double billing. under-count: an enriched event that produced NO expanded row \u2014 silent event loss. Both are invisible in the served totals, which is why they are monitored here. A non-zero under-count can also be the known CDC-race gap (event with no subscription/charge yet).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "risingwave"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "risingwave"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (SELECT COALESCE(SUM(n - 1), 0) FROM (\n     SELECT COUNT(*) AS n FROM events_expanded\n     GROUP BY organization_id, code, external_subscription_id, event_ts, transaction_id,\n              COALESCE(charge_id, '')\n     HAVING COUNT(*) > 1) d) AS \"over-count: extra rows\",\n  (SELECT COUNT(*) FROM events_enriched e WHERE NOT EXISTS (\n     SELECT 1 FROM events_expanded x\n     WHERE x.organization_id = e.organization_id AND x.code = e.code\n       AND x.external_subscription_id = e.external_subscription_id\n       AND x.event_ts = e.event_ts AND x.transaction_id = e.transaction_id))\n     AS \"under-count: dropped events\";"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 1 }
-            ]
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
       },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(events_count), 0) AS \"orphaned events\", COUNT(*) AS \"orphaned usage rows\" FROM usage_realtime WHERE billing_period_id IS NULL;"
-        }
-      ]
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "none"
+      }
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Billing periods (CDC)",
-      "gridPos": { "h": 5, "w": 7, "x": 17, "y": 0 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
-      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "RisingWave working set (32-day window)",
+      "description": "The bounded firewall tables. Both are APPEND ONLY with retention_seconds = 33 days, so these counts plateau rather than grow forever; ClickHouse keeps the full history.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "risingwave"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
       "targets": [
         {
           "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "risingwave"
+          },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) FILTER (WHERE charges_from AT TIME ZONE 'UTC' <= now() AND charges_to AT TIME ZONE 'UTC' >= now()) AS \"current\", COUNT(*) FILTER (WHERE charges_from AT TIME ZONE 'UTC' > now()) AS \"upcoming\" FROM subscription_billing_periods;"
+          "rawSql": "SELECT (SELECT count(*) FROM events_enriched) AS \"events_enriched\", (SELECT count(*) FROM events_expanded) AS \"events_expanded\", (SELECT count(*) FROM usage_buckets_15m) AS \"buckets (RW)\";"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "none"
+      }
     },
     {
       "id": 5,
-      "type": "table",
-      "title": "Usage by billing period (RisingWave usage_realtime)",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "options": { "showHeader": true },
+      "type": "timeseries",
+      "title": "Usage per 15-minute bucket (ClickHouse)",
+      "description": "Event timestamp buckets, not write time \u2014 a late event updates an older bucket.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
       "targets": [
         {
           "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT period_charges_from::date AS period_start, period_charges_to::date AS period_end, COUNT(*) AS usage_rows, SUM(events_count) AS events, SUM(units) AS units FROM usage_realtime GROUP BY 1, 2 ORDER BY 1 DESC NULLS FIRST LIMIT 20;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT bucket AS time, concat(code, ' / ', if(charge_filter_id = '', 'default', charge_filter_id)) AS metric, toFloat64(sum(units)) AS units FROM default.usage_buckets_15m FINAL WHERE $__timeFilter(bucket) GROUP BY time, metric ORDER BY time",
+          "format": 1,
+          "queryType": "table"
         }
       ]
     },
     {
       "id": 6,
       "type": "table",
-      "title": "Open billing periods per subscription",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "risingwave" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "options": { "showHeader": true },
+      "title": "Per-subscription serving state (ClickHouse buckets)",
+      "description": "Summed across the buckets in the dashboard time range \u2014 NOT a billing-period total; the API sums buckets over the period window Rails computes at read time.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
       "targets": [
         {
           "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT s.external_id, bp.charges_from, bp.charges_to FROM subscription_billing_periods bp JOIN subscriptions s ON s.id = bp.subscription_id WHERE bp.charges_to AT TIME ZONE 'UTC' >= now() ORDER BY s.external_id, bp.charges_from LIMIT 30;"
-        }
-      ]
-    },
-    {
-      "id": 7,
-      "type": "table",
-      "title": "usage_realtime_projections — what the API serves (lago PG)",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 14 },
-      "datasource": { "type": "grafana-postgresql-datasource", "uid": "lagopg" },
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "options": { "showHeader": true },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT last_ingested_at, code, aggregation_type, NULLIF(charge_filter_id, '') AS charge_filter_id, grouped_by, events_count, units, period_charges_from::date AS period FROM usage_realtime_projections ORDER BY last_ingested_at DESC NULLS LAST LIMIT 25;"
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT subscription_id, code, aggregation_type, if(charge_filter_id = '', 'default', charge_filter_id) AS charge_filter, grouped_by, sum(events_count) AS events, toFloat64(sum(units)) AS units, max(last_event_at) AS last_event, max(last_ingested_at) AS last_write, dateDiff('second', max(last_ingested_at), now()) AS staleness_s FROM default.usage_buckets_15m FINAL WHERE $__timeFilter(bucket) GROUP BY subscription_id, code, aggregation_type, charge_filter, grouped_by ORDER BY last_write DESC LIMIT 50",
+          "format": 1,
+          "queryType": "table"
         }
       ]
     }

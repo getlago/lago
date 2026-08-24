@@ -184,7 +184,11 @@ Anonymous admin access in dev, auto-refreshes every 10s. Grafana queries
 RisingWave directly over pgwire (Postgres datasource → `risingwave:4566`) —
 no Prometheus needed for the pipeline metrics. Panels: end-to-end latency,
 usage-emit latency, ingest→Kafka, per-minute throughput. Provisioning lives
-in `extra/grafana/` (datasource + dashboard JSON, editable in the UI).
+in `extra/grafana/` (datasources + dashboard JSON, editable in the UI). Three
+datasources: `RisingWave` and `LagoPostgres` (both pgwire) and `ClickHouse`
+(the `grafana-clickhouse-datasource` plugin, installed via `GF_INSTALL_PLUGINS`
+in `docker-compose.dev.yml`) — the serving store and the e2e latency clock both
+live in ClickHouse, which no pgwire datasource can reach.
 
 
 - **End-to-end latency** is measured in ClickHouse since 2026-08-24 (the

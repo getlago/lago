@@ -20,7 +20,8 @@ CREATE SOURCE IF NOT EXISTS events_raw (
     ingested_at TIMESTAMP,
     -- proctime() is BARRIER-ALIGNED (0-1s early bias) — fine for temporal
     -- filters / future state TTL, do not use for latency math; latency uses
-    -- broker timestamps (kafka_timestamp + shadow-topic loopback, see 07).
+    -- broker timestamps (kafka_timestamp, see 07) and the ClickHouse insert
+    -- stamp (events_enriched_expanded_rw_shadow.enriched_at).
     rw_received_at TIMESTAMPTZ AS proctime()
 ) INCLUDE timestamp AS kafka_timestamp
 WITH (

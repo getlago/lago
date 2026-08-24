@@ -31,8 +31,16 @@ Consequences / follow-ups:
       (`scan.startup.mode = 'earliest'` variant), or gate per-organization.
       (Same artifact visible in dev: parity check correctly flags post-wipe
       bucket totals vs full events-store history.)
-- [ ] `lago-rw-serving` Grafana dashboard is stale (queried `usage_realtime`
-      + PG projections) — rebuild against `usage_buckets_15m` + CH.
+- [x] `lago-rw-serving` Grafana dashboard REBUILT 2026-08-24 against
+      ClickHouse `usage_buckets_15m` (all 7 panels had queried the deleted
+      `usage_realtime` / `usage_realtime_projections` /
+      `subscription_billing_periods`). Grafana had no way to reach ClickHouse
+      at all, so this also added the `grafana-clickhouse-datasource` plugin
+      (`GF_INSTALL_PLUGINS` in docker-compose.dev.yml) and
+      `extra/grafana/provisioning/datasources/clickhouse.yml`. Same pass fixed
+      `lago-rw-latency`, whose e2e panels queried the retired
+      `pipeline_latency_e2e`. Every panel query in both dashboards was
+      replayed through `/api/ds/query` and returns 200 with rows.
 - [ ] Boundary sliver (≤15min of events when a subscription starts or
       terminates at a mid-bucket time): accepted for now; if it ever
       matters, query raw events for the two boundary buckets only.
@@ -91,9 +99,13 @@ Plan re-verified by EXPLAIN: both temporal joins still `append_only: true`,
 dynamic filter still `cleaned_by_watermark: true` (state stays bounded),
 sink still append-only.
 
-- [ ] **Follow-up: make this a monitored invariant, not just a comment.**
-      Add both directions to `RealtimeUsage::ParityCheckService` (and a
-      Grafana panel) — a regression here is silent by construction:
+- [~] **Follow-up: make this a monitored invariant, not just a comment.**
+      The Grafana half is DONE (2026-08-24): the `lago-rw-serving` dashboard
+      has a "Correctness invariants — both MUST be 0" panel running exactly
+      the two queries below against RisingWave. Still to do: the same two
+      directions inside `RealtimeUsage::ParityCheckService`, so a regression
+      trips in code and not only on a dashboard someone has to look at.
+      A regression here is silent by construction:
       ```sql
       -- over-count: more than one row per (event identity, charge)
       SELECT count(*) AS dup_groups, coalesce(sum(n - 1), 0) AS extra_rows

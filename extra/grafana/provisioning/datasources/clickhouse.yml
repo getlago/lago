@@ -1,0 +1,25 @@
+# ClickHouse serving store: usage_buckets_15m (what the API reads for current
+# usage and wallet refresh) and the RisingWave shadow tables, whose
+# ClickHouse-stamped `enriched_at` is the e2e latency endpoint. Requires the
+# grafana-clickhouse-datasource plugin (GF_INSTALL_PLUGINS in
+# docker-compose.dev.yml).
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    uid: clickhouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    isDefault: false
+    editable: true
+    jsonData:
+      host: clickhouse
+      port: 8123
+      protocol: http
+      secure: false
+      username: default
+      defaultDatabase: default
+      # Dev ClickHouse answers on HTTP without TLS; no tunnelling.
+      tlsSkipVerify: true
+    secureJsonData:
+      password: default
