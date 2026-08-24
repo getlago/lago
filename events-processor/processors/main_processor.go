@@ -19,10 +19,9 @@ import (
 )
 
 var (
-	processor        *events_processor.EventProcessor
-	apiStore         *models.ApiStore
-	kafkaConfig      kafka.ServerConfig
-	chargeCacheStore *models.ChargeCache
+	processor   *events_processor.EventProcessor
+	apiStore    *models.ApiStore
+	kafkaConfig kafka.ServerConfig
 )
 
 const (
@@ -101,31 +100,6 @@ func initFlagStore(ctx context.Context, name string) (*models.FlagStore, error) 
 	return models.NewFlagStore(ctx, db, name), nil
 }
 
-func initChargeCacheStore(ctx context.Context) (*models.ChargeCache, error) {
-	redisDb, err := utils.GetEnvAsInt(envLagoRedisCacheDB, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	redisConfig := redis.RedisConfig{
-		Address:  os.Getenv(envLagoRedisCacheURL),
-		Password: os.Getenv(envLagoRedisCachePassword),
-		DB:       redisDb,
-		UseTLS:   utils.GetEnvAsBool(envLagoRedisCacheTLS, false),
-	}
-
-	db, err := redis.NewRedisDB(ctx, redisConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	cacheStore := models.NewCacheStore(ctx, db)
-	var store models.Cacher = cacheStore
-	chargeStore := models.NewChargeCache(&store)
-
-	return chargeStore, nil
-}
-
 func StartProcessingEvents(ctx context.Context, config *Config) {
 	serverBrokers := utils.ParseBrokersEnv(os.Getenv(envLagoKafkaBootstrapServers))
 	if len(serverBrokers) == 0 {
@@ -187,13 +161,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	}
 	defer flagger.Close()
 
-	cacher, err := initChargeCacheStore(ctx)
-	if err != nil {
-		utils.LogAndPanic(err, "Error connecting to the charge cache store")
-	}
-	chargeCacheStore = cacher
-	defer chargeCacheStore.CacheStore.Close()
-
 	processor = events_processor.NewEventProcessor(
 		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
 		events_processor.NewEventProducerService(
@@ -203,7 +170,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 			eventsDeadLetterQueue,
 		),
 		events_processor.NewSubscriptionRefreshService(flagger),
-		events_processor.NewCacheService(chargeCacheStore),
 	)
 
 	cg, err := kafka.NewConsumerGroup(
