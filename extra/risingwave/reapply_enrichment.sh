@@ -43,12 +43,13 @@ Before running, be aware of the replay side effects:
   * ClickHouse `usage_buckets_15m` is a ReplacingMergeTree fed by an UPSERT
     sink keyed on (bucket, dimensions) — replay is idempotent, values are
     replaced, not added. Safe.
-  * ClickHouse `events_enriched_rw_shadow` is a PLAIN MergeTree — replay
-    DUPLICATES rows. Truncate it (dev) or plan CH-side dedup (prod) before
+  * ClickHouse `events_enriched_rw_shadow` and
+    `events_enriched_expanded_rw_shadow` are PLAIN MergeTrees — replay
+    DUPLICATES rows. Truncate them (dev) or plan CH-side dedup (prod) before
     the rebuild; this script only warns.
-  * `wallet_refresh_triggers` and the shadow topics get the full replay
-    (~1 trigger per event in the window). Seek the consumer groups to the
-    end after the rebuild, or expect a long catch-up.
+  * `wallet_refresh_triggers` and `usage_realtime_updates` get the full
+    replay (~1 trigger per event in the window). Seek the consumer groups to
+    the end after the rebuild, or expect a long catch-up.
   * While the chain is down the realtime read path finds no covering
     buckets and falls back to the events store — correct, just slower.
 
@@ -69,10 +70,14 @@ run_psql <<'SQL'
 DROP SINK IF EXISTS usage_realtime_updates_sink;
 DROP SINK IF EXISTS usage_buckets_clickhouse_sink;
 DROP SINK IF EXISTS wallet_refresh_triggers_sink;
+DROP SINK IF EXISTS events_enriched_expanded_rw_shadow_sink;
+-- Legacy names, for an instance last set up before 2026-08-24 (the expanded
+-- shadow was a Kafka sink looped back in to compute pipeline_latency_e2e).
 DROP SINK IF EXISTS events_enriched_expanded_shadow_sink;
 
 DROP MATERIALIZED VIEW IF EXISTS usage_latency;
 DROP MATERIALIZED VIEW IF EXISTS pipeline_latency_e2e;
+DROP SOURCE IF EXISTS events_enriched_shadow_loopback;
 DROP MATERIALIZED VIEW IF EXISTS pipeline_latency;
 DROP MATERIALIZED VIEW IF EXISTS usage_buckets_15m;
 
@@ -113,7 +118,7 @@ cat <<'DONE'
 ==> Done.
 
 Remaining manual steps after a rebuild:
-  * seek the wallet_refresh_triggers and shadow consumer groups to the end
+  * seek the wallet_refresh_triggers consumer group to the end
   * re-apply persisted system params if the volume was also wiped:
       ALTER SYSTEM SET barrier_interval_ms TO 250;
       ALTER SYSTEM SET sink_decouple TO false;

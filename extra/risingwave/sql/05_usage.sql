@@ -49,7 +49,18 @@ SELECT
         END
     ) AS units,
     MAX(event_time) AS last_event_at,
-    MAX(ingested_at) AS last_ingested_at
+    -- COALESCE: `ingested_at` comes from the event payload and the topic
+    -- contract does not guarantee it (the Lago API always sets it —
+    -- Events::KafkaProducerService — but a direct producer, a load generator
+    -- or a replayed message may not). MAX() already ignores NULLs in a mixed
+    -- bucket; without the fallback a bucket where EVERY event lacks it
+    -- watermarks NULL, and the ClickHouse column is non-nullable, so the
+    -- serving sink dies and takes the whole streaming database into a
+    -- recovery loop with it (measured 2026-08-24). event_time is the right
+    -- fallback: it is <= the real ingestion time, so the wallet refresh's
+    -- `last_ingested_at >= watermark` wait errs toward waiting (bounded),
+    -- never toward reading early.
+    MAX(COALESCE(ingested_at, event_time)) AS last_ingested_at
 FROM TUMBLE(events_expanded, event_time, INTERVAL '15 minutes')
 WHERE aggregation_type_code IN (0, 1) -- count, sum
   AND subscription_id IS NOT NULL

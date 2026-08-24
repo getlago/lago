@@ -31,14 +31,16 @@ Postgres ──CDC──► billable_metrics / subscriptions / charges / charge_
         ▼ force_append_only sink (drops the retractions)
    events_enriched    APPEND ONLY TABLE, retention 33d — retraction firewall,
         │             single entry point for every event-derived relation
-        ├──► events_enriched_rw_shadow ──► ClickHouse events_enriched_rw_shadow
+        ├──sink──► ClickHouse events_enriched_rw_shadow   (bare projection,
+        │                                                  no MV, no filter)
         ▼
    [subscriptions + flat_filters temporal joins → 32d filter → ranking]
         ▼ force_append_only sink
    events_expanded    APPEND ONLY TABLE, retention 33d — one row per
         │             (event, best charge/filter), default-bucket fallback
         ├──► usage_buckets_15m ──► ClickHouse usage_buckets_15m (API reads)
-        └──► events_enriched_expanded_shadow (Kafka)   parity diffing vs Go output
+        └──sink──► ClickHouse events_enriched_expanded_rw_shadow
+                                          parity diffing vs Go output (SQL join)
 ```
 
 RisingWave holds a ~32-33 day working set everywhere (dedup answers "already
@@ -59,7 +61,7 @@ decrements when rows are reclaimed).
 | `sql/04_enrichment.sql` | Bounded pipeline: sink (BM join → 32d filter → first-wins dedup) INTO append-only TABLE `events_enriched` (retention 33d) → sink (temporal joins → 32d filter → ranking) INTO append-only TABLE `events_expanded` (retention 33d) |
 | `sql/05_usage.sql` | `usage_buckets_15m` MV: count/sum per (sub, charge, filter, grouped_by) on 15-minute buckets of the event timestamp — serves current usage AND dashboard history; the API sums buckets over the Rails-computed period window (no period rows anywhere) |
 | `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted), query with FINAL) |
-| `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `pipeline_latency_e2e` (ingest → enriched event back on Kafka), `usage_latency` (ingest → bucket row emitted) |
+| `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `usage_latency` (ingest → bucket row emitted). e2e (ingest → enriched row queryable) is a ClickHouse query over `events_enriched_expanded_rw_shadow` — the query is in the file |
 | `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_buckets_15m`* over pgwire (checkpoint visibility included) |
 
 ## Design invariants
@@ -185,11 +187,16 @@ usage-emit latency, ingest→Kafka, per-minute throughput. Provisioning lives
 in `extra/grafana/` (datasource + dashboard JSON, editable in the UI).
 
 
-- **End-to-end latency** is self-measured from broker timestamps:
-  `select * from pipeline_latency_e2e order by window_start desc;` gives
-  ingest → enriched-event-published per minute. Measured in dev:
-  **~3–6 ms** of RisingWave processing (Kafka read → temporal joins → UDF →
-  ranking → sink → Kafka append).
+- **End-to-end latency** is measured in ClickHouse since 2026-08-24 (the
+  expanded shadow sinks there, not to Kafka): every shadow row carries Ruby's
+  `ingested_at` and a ClickHouse-stamped `enriched_at`, so
+  `dateDiff('millisecond', ingested_at, enriched_at)` over
+  `events_enriched_expanded_rw_shadow` gives ingest → enriched-row-QUERYABLE.
+  The per-minute query is in `sql/07_observability.sql`; ignore rows inserted
+  by a sink backfill. The retired `pipeline_latency_e2e` MV measured ingest →
+  topic append instead: **~3–6 ms** of RisingWave processing (Kafka read →
+  temporal joins → UDF → ranking → sink), to which the ClickHouse figure adds
+  the sink flush (~0.3 s quiet, barrier-bound).
 - **Usage latency** has two distinct numbers (both measured in dev):
   - `usage_latency` MV: ingest → updated usage row *emitted* — aggregation
     updates coalesce and flush per epoch, ~65–625 ms observed. Multiple

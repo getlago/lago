@@ -1,46 +1,81 @@
--- Shadow output: enriched + expanded events, shaped like the Go processor's
--- EnrichedEvent JSON, produced to a shadow topic for parity diffing against
--- events_enriched_expanded.
+-- Shadow output: enriched + expanded events, shaped like the production
+-- ClickHouse table `events_enriched_expanded`, for parity diffing against the
+-- Go processor's output with plain SQL.
 --
--- force_append_only: kept as belt-and-braces for consumers that already
--- handle at-least-once. Since the 2026-08-23 partition-key fix
--- (04_enrichment.sql header, ROADMAP §0) a rank partition holds exactly one
--- event's fan-out, which arrives atomically, so the "ranking flip mid
--- fan-out" retractions this note used to describe no longer occur. Do NOT
--- treat force_append_only as a safety net for ranking flips: it rewrites
--- UpdateInsert into Insert, so a flip would be laundered into a DUPLICATE
--- row, not suppressed.
-CREATE SINK IF NOT EXISTS events_enriched_expanded_shadow_sink AS
+-- Sinks to ClickHouse, not Kafka (changed 2026-08-24). It previously produced
+-- the Go `EnrichedEvent` JSON to an `events_enriched_expanded_shadow` topic,
+-- which meant parity diffing had to consume and re-shape a topic. Writing the
+-- production table's own shape into a shadow table makes a diff a join, and
+-- `enriched_at` (stamped ClickHouse-side at insert) replaces the topic's
+-- broker timestamp as the e2e latency endpoint — see 07_observability.sql,
+-- whose `pipeline_latency_e2e` loopback MV went away with the topic.
+--
+-- No force_append_only. The upstream is an APPEND ONLY table read by a
+-- projection + filter, so the changelog is insert-only and `type =
+-- 'append-only'` binds on its own. Do NOT add it back as belt-and-braces: per
+-- ROADMAP §0 it rewrites UpdateInsert into Insert, so it would launder a
+-- future retracting operator (a ranking flip) into DUPLICATE rows in a plain
+-- MergeTree instead of failing loudly at CREATE SINK.
+--
+-- CAVEAT on rebuilds: a sink BACKFILLS its upstream snapshot at CREATE time,
+-- and the target is a plain MergeTree that counts duplicates. Truncate it
+-- (dev) or plan CH-side dedup (prod) before recreating this sink against a
+-- populated table — reapply_enrichment.sh warns about the same thing.
+--
+-- charge_id IS NOT NULL: an event with no charge attribution produces no row
+-- in the production expanded table either (it is billable-metric enrichment
+-- only), so those rows stay RisingWave-side on `events_expanded`.
+--
+-- Columns that exist RisingWave-side but NOT in the production table (source,
+-- target_wallet_code, filters, pay_in_advance, api_post_processed, recurring,
+-- billable_metric_id, customer_id) are deliberately not sunk: query
+-- `events_expanded` directly for those.
+CREATE SINK IF NOT EXISTS events_enriched_expanded_rw_shadow_sink AS
 SELECT
     organization_id,
     external_subscription_id,
-    subscription_id,
-    plan_id,
-    transaction_id,
     code,
-    aggregation_type,
-    properties,
-    precise_total_amount_cents,
-    source,
+    -- already timestamptz; the ClickHouse sink rejects naive timestamps
+    to_timestamp(event_ts) AS "timestamp",
+    transaction_id,
+    -- COALESCE: an event with no `properties` key at all is legal input and
+    -- would otherwise NULL a non-nullable ClickHouse column; '{}' is what the
+    -- production path stores for it.
+    COALESCE(properties::VARCHAR, '{}') AS properties_json,
+    -- NOTE: unlike the enriched shadow, stage 1+2 does NOT mirror Go's
+    -- "<nil>" rendering of a missing property — `value` is NULL there and the
+    -- production MV writes it as NULL too, so the shapes already agree.
     value,
-    event_ts AS "timestamp",
+    NULLIF(precise_total_amount_cents, '')::DECIMAL AS precise_total_amount_cents,
+    -- Production defaults these to '' rather than NULL (an invalid
+    -- subscription/plan is an empty string in events_enriched_expanded).
+    COALESCE(subscription_id, '') AS subscription_id,
+    COALESCE(plan_id, '') AS plan_id,
     charge_id,
-    charge_updated_at,
-    charge_filter_id,
-    charge_filter_updated_at,
-    grouped_by,
-    target_wallet_code,
-    -- Not part of the Go EnrichedEvent shape; carried for e2e latency
-    -- measurement (07_observability.sql). Ignore when parity-diffing.
-    ingested_at
+    -- Production derives charge_version/charge_filter_version from the same
+    -- updated_at values (parseDateTimeBestEffort in events_enriched_expanded_mv).
+    charge_updated_at AT TIME ZONE 'UTC' AS charge_version,
+    COALESCE(charge_filter_id, '') AS charge_filter_id,
+    charge_filter_updated_at AT TIME ZONE 'UTC' AS charge_filter_version,
+    aggregation_type,
+    COALESCE(grouped_by::VARCHAR, '{}') AS grouped_by_json,
+    -- Not part of the production shape; carried so e2e latency
+    -- (ingest -> queryable in ClickHouse) is a single query against this table.
+    ingested_at AT TIME ZONE 'UTC' AS ingested_at
 FROM events_expanded
 WHERE charge_id IS NOT NULL
 WITH (
-    connector = 'kafka',
-    topic = 'events_enriched_expanded_shadow',
-    properties.bootstrap.server = 'redpanda:9092',
-    primary_key = 'organization_id,transaction_id,charge_id'
-) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');
+    connector = 'clickhouse',
+    type = 'append-only',
+    -- Commit every checkpoint (cloud defaults to every 10) so shadow freshness
+    -- stays at the barrier interval.
+    commit_checkpoint_interval = 1,
+    clickhouse.url = 'http://clickhouse:8123',
+    clickhouse.user = 'default',
+    clickhouse.password = 'default',
+    clickhouse.database = 'default',
+    clickhouse.table = 'events_enriched_expanded_rw_shadow'
+);
 
 -- Realtime usage buckets -> ClickHouse (API current usage + wallet refresh +
 -- dashboard history). Upserts into the ReplacingMergeTree created by

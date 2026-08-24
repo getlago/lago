@@ -21,27 +21,28 @@ SELECT
 FROM TUMBLE(events_raw, kafka_timestamp, INTERVAL '1 minute')
 GROUP BY window_start;
 
--- Loop the shadow topic back in; only the fields needed for latency.
-CREATE SOURCE IF NOT EXISTS events_enriched_shadow_loopback (
-    transaction_id VARCHAR,
-    ingested_at TIMESTAMP
-) INCLUDE timestamp AS enriched_at
-WITH (
-    connector = 'kafka',
-    topic = 'events_enriched_expanded_shadow',
-    properties.bootstrap.server = 'redpanda:9092',
-    scan.startup.mode = 'latest'
-) FORMAT PLAIN ENCODE JSON;
-
-CREATE MATERIALIZED VIEW IF NOT EXISTS pipeline_latency_e2e AS
-SELECT
-    window_start,
-    COUNT(*) AS events,
-    ROUND(AVG(EXTRACT(EPOCH FROM (enriched_at - ingested_at AT TIME ZONE 'UTC'))) * 1000) AS e2e_avg_ms,
-    ROUND(MIN(EXTRACT(EPOCH FROM (enriched_at - ingested_at AT TIME ZONE 'UTC'))) * 1000) AS e2e_min_ms,
-    ROUND(MAX(EXTRACT(EPOCH FROM (enriched_at - ingested_at AT TIME ZONE 'UTC'))) * 1000) AS e2e_max_ms
-FROM TUMBLE(events_enriched_shadow_loopback, enriched_at, INTERVAL '1 minute')
-GROUP BY window_start;
+-- e2e latency (ingest -> enriched event QUERYABLE) is measured in ClickHouse
+-- since 2026-08-24, not here. The expanded shadow used to be produced to an
+-- `events_enriched_expanded_shadow` Kafka topic, which this file looped back
+-- in as `events_enriched_shadow_loopback` to compare the broker append time
+-- against Ruby's `ingested_at` in a `pipeline_latency_e2e` MV. That sink now
+-- writes ClickHouse (06_sinks.sql), so both clocks live on the shadow row:
+-- `ingested_at` carried from the API, `enriched_at` stamped by ClickHouse at
+-- insert. The equivalent query, and a strictly better endpoint (it measures
+-- SERVING visibility, not topic arrival):
+--
+--   SELECT toStartOfMinute(enriched_at) AS minute,
+--          count() AS events,
+--          round(avg(dateDiff('millisecond', ingested_at, enriched_at))) AS e2e_avg_ms,
+--          min(dateDiff('millisecond', ingested_at, enriched_at)) AS e2e_min_ms,
+--          max(dateDiff('millisecond', ingested_at, enriched_at)) AS e2e_max_ms
+--   FROM default.events_enriched_expanded_rw_shadow
+--   WHERE enriched_at > now() - INTERVAL 15 MINUTE
+--   GROUP BY minute ORDER BY minute DESC;
+--
+-- CAVEAT: rows delivered by a sink BACKFILL carry a meaningless e2e (they were
+-- ingested whenever, inserted now). Filter to `enriched_at` after the backfill
+-- completed, or to events produced live.
 
 -- Usage-path latency: every event updates one usage_buckets_15m row; sink
 -- those updates to a debug topic and loop them back to compare the broker

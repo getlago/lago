@@ -124,6 +124,36 @@ sink still append-only.
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
+- [x] **NULL `ingested_at` wedged the whole streaming database** (found and
+      fixed 2026-08-24, while moving the expanded shadow to ClickHouse).
+      `ingested_at` comes from the event payload; the Lago API always sets it
+      (`Events::KafkaProducerService`) but the TOPIC CONTRACT does not, so a
+      direct producer, load generator or replayed message can omit it.
+      Consequences measured on a single such event produced to `events-raw`:
+      `usage_buckets_15m`'s `MAX(ingested_at)` watermarked NULL, ClickHouse
+      `last_ingested_at` is non-nullable, `usage_buckets_clickhouse_sink` died,
+      and because `DatabaseFailureIsolation` is license-gated (the dev license
+      caps at 4 cores, this box has 32) the failure escalated to a FULL
+      DATABASE recovery loop: the offending epoch never committed, so the
+      source re-read the same event forever and NOTHING advanced — not the
+      shadows, not the buckets, not the wallet triggers. One malformed event is
+      a total serving outage, with no bad-row quarantine.
+      Fixed in two places: `sql/05_usage.sql` watermarks
+      `MAX(COALESCE(ingested_at, event_time))` (event_time is <= real ingestion
+      time, so the wallet refresh's `last_ingested_at >= watermark` wait errs
+      toward waiting, never toward reading early), and the expanded shadow's
+      ClickHouse `ingested_at` is Nullable (pure instrumentation — an absent
+      value must stay absent, not become a fake timestamp). Both shadow sinks
+      also `COALESCE(properties::VARCHAR, '{}')`, the same failure one column
+      over.
+      - [ ] The general problem is unfixed: ANY non-nullable ClickHouse column
+            reachable by a NULL kills a sink, and on a license without
+            `DatabaseFailureIsolation` that stops the entire pipeline. Before
+            prod, either audit every sunk column against what the topic
+            actually guarantees (not what the API happens to send), or put a
+            validation/quarantine stage between `events_raw` and stage 0.
+            A shadow sink in particular must never be able to stop serving.
+
 - [ ] **State growth: accepted + monitored** (downgraded from "blocking",
       2026-08-21, Jeremy's call). Dedup/event-MV state grows linearly with
       all-time events, but it lives on object store (S3) behind an LSM:
@@ -324,6 +354,33 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
       append-only into plain-MergeTree CH `events_enriched_rw_shadow`
       (`clickhouse/events_enriched_rw_shadow.sql` — dedup lives in RW, CH keeps
       full history). Validated 2026-08-18 (parity, dedup, ~318ms).
+      SIMPLIFIED 2026-08-24: the intermediate `events_enriched_rw_shadow` MV
+      (a residue of the pre-firewall topology, where `events_enriched` was
+      itself that file's MV) is GONE — the sink is a bare projection read
+      straight off the `events_enriched` table, with no temporal filter (no
+      operator state to sweep; `retention_seconds` bounds the table) and no
+      `force_append_only` (an append-only upstream binds on its own, so a
+      future retracting operator now fails loudly at CREATE SINK instead of
+      being laundered into duplicate rows). Parity re-verified 20/20 rows.
+- [x] Expanded shadow moved from Kafka to ClickHouse (2026-08-24). The
+      `events_enriched_expanded_shadow` topic and its Go-`EnrichedEvent`-shaped
+      JSON are gone; `events_enriched_expanded_rw_shadow_sink` writes
+      `clickhouse/events_enriched_expanded_rw_shadow.sql` instead — production
+      `events_enriched_expanded`'s own column names, PRIMARY KEY and ORDER BY,
+      as a plain MergeTree (dedup is upstream, so duplicates must show, not
+      collapse). Parity diffing is now a SQL join instead of a topic diff, and
+      it immediately showed the expected first-wins/last-wins split: the three
+      08-21 dedup probes hold RisingWave's FIRST ingestion while prod
+      ReplacingMergeTree + FINAL serves the LAST (`999`). Fallout handled:
+      `pipeline_latency_e2e` and the `events_enriched_shadow_loopback` source
+      are deleted — e2e latency is now `dateDiff(ingested_at, enriched_at)` in
+      ClickHouse (query in `sql/07_observability.sql`), which measures serving
+      visibility rather than topic append.
+      - [ ] `benchmark/load/sampler.sh` and `benchmark/full_path_benchmark.sh`
+            still read the retired topic's high-watermark and
+            `pipeline_latency_e2e`. Both were ALREADY stale from the bucket
+            rework (they query the deleted `usage_realtime_projections`), so
+            they need one pass together, not a patch each.
 - [ ] `events_charged_in_advance` sink — with the above, what remains to
       retire the Go processor entirely.
 
