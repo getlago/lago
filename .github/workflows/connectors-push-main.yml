@@ -1,0 +1,20 @@
+name: "Connectors Push Main"
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "connectors/**"
+  workflow_dispatch:
+jobs:
+  dispatch:
+    name: Dispatch Connectors Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          repository: getlago/lago-deploy
+          event-type: connectors-push-main
+          client-payload: '{"ref": "${{ github.sha }}"}'
