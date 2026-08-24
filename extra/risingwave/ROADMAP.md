@@ -1,6 +1,6 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-23 (see §0 — ranking partition-key fix): BOUNDED 32-day pipeline — enrichment runs as two
+State as of 2026-08-24 (no pipeline change since 08-23 — the day's api work, compute-on-read wallet balance, was built and reverted; see §3): BOUNDED 32-day pipeline — enrichment runs as two
 bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
 window; events immutable, reprocess removed) into append-only firewall
 TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
@@ -438,6 +438,33 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
 - [ ] **Compute-on-read wallet display** (`Wallets::OngoingBalanceCalculator`
       from CH buckets) — display freshness without waiting for the consumer;
       per-event wallet work drops to zero.
+      - BUILT AND REVERTED 2026-08-24. It works (verified live: computed ==
+        persisted exactly, 511 ms cold / 0 ms memoized per customer per
+        request, nothing written on read) but it solves the wrong half. The
+        `UPDATE` is microseconds; the cost is `Invoices::CustomerUsageService`
+        over every subscription, and that is paid by the CONSUMER deciding to
+        refresh, not by the write. Moving display off the columns therefore
+        removes no per-event Ruby work at all — it only strands the columns,
+        whose only remaining readers are the three PUSH side effects
+        (`Wallets::ThresholdTopUpService`, the two ongoing-balance alerts, the
+        `wallet.depleted_ongoing_balance` transition). None of those can move
+        to read time: nobody is reading, and a threshold top-up that fires
+        when someone opens the wallet page is not a top-up.
+      - So the lever is CADENCE, not persistence. In order of work:
+        (1) skip customers with no side effect to fire — but the depletion
+        webhook nominally applies to every wallet, which is what forces
+        refreshing everyone, so this needs a product call first;
+        (2) debounce per customer on `last_ongoing_balance_sync_at` — makes
+        cost O(distinct wallet customers / N) instead of O(events), fully
+        decoupled from event rate (at the measured ~20 refreshes/s per 6
+        partitions, N=30 s sustains ~600 distinct wallet customers at ANY
+        event rate); N is then the worst-case lateness of a top-up;
+        (3) the RW-side crossings below — the real fix.
+      - If it is ever revived: the computed values MUST be cast the way the
+        columns cast them (bigint `.to_i`, decimal(30,5) `.round(5)`), or the
+        flag silently flips `credits_ongoing_balance` from a JSON string to a
+        number. And `Types::CustomerPortal::Wallets::Object` is a second
+        display path that is easy to miss.
 
   ^ These two together ARE the high-scale wallet plan (discussed 2026-08-21,
   Jeremy's 100K RPS / 100K distinct customers scenario): the per-event
@@ -450,6 +477,16 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
   consumer demotes to a debounced reconciliation net (it remains correct and
   load-tested for shadow/early-prod volumes, scaling linearly with
   partitions until then).
+
+  ORDERING, corrected 2026-08-24 by building the compute-on-read half and
+  reverting it (see its entry above): the two are NOT interchangeable halves.
+  The crossings + debounce are the load-bearing part — they are what removes
+  per-event Ruby work. Compute-on-read is a DISPLAY concern only: on its own
+  it removes zero per-event work, because the cost lives in the consumer's
+  decision to refresh, not in the write. It becomes necessary only once the
+  refresh cadence is already decoupled from the event rate and the columns
+  are consequently too stale to display. So: crossings/debounce FIRST,
+  compute-on-read only if display freshness then demands it.
 - [ ] Demote clock sweeps (wallet refresh, daily usage) to slow
       reconciliation nets; `daily_usages` batch job replaceable by a rollup
       of ClickHouse `usage_buckets_15m`.
