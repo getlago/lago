@@ -1,0 +1,28 @@
+name: "Build Connectors Image"
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "connectors/**"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build (SHA, tag, or branch). Defaults to main."
+        required: false
+        default: "main"
+jobs:
+  build-connectors-image:
+    name: Build Connectors Image
+    uses: ./.github/workflows/docker-build-multi-arch.yaml
+    with:
+      image-name: 201661579678.dkr.ecr.us-east-1.amazonaws.com/lago-connectors
+      registry: ecr
+      aws-region: us-east-1
+      ref: ${{ inputs.ref }}
+      platforms: amd64,arm64
+      context: connectors
+      dockerfile: connectors/Dockerfile
+    secrets:
+      registry-user: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      registry-token: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
