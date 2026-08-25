@@ -81,6 +81,12 @@ on:
         type: string
         default: ''
 
+      push:
+        description: 'Push the built image(s) to the registry. Set false for PR-only validation builds.'
+        required: false
+        type: boolean
+        default: true
+
     secrets:
       registry-user:
         description: 'Registry username or AWS Access Key ID'
@@ -277,7 +283,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           build-args: ${{ inputs.build-args }}
           secrets: ${{ secrets.build-secrets }}
-          outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ inputs.image-name }},push-by-digest=true,name-canonical=true,push=${{ inputs.push }}
           cache-from: ${{ inputs.cache-type != 'disabled' && format('type=registry,ref={0}:buildcache-{1}', inputs.image-name, matrix.arch) || '' }}
           cache-to: ${{ inputs.cache-type != 'disabled' && format('type=registry,ref={0}:buildcache-{1},mode=max', inputs.image-name, matrix.arch) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -299,6 +305,7 @@ jobs:
   merge:
     runs-on: ubuntu-latest
     needs: [build]
+    if: ${{ inputs.push }}
     outputs:
       image-tag: ${{ steps.summary.outputs.image-tag }}
       digest: ${{ steps.inspect.outputs.digest }}
