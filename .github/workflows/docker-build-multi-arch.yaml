@@ -87,6 +87,12 @@ on:
         type: boolean
         default: true
 
+      role-to-assume:
+        description: 'ARN of an IAM role to assume via OIDC (registry: ecr). Preferred over registry-user/registry-token.'
+        required: false
+        type: string
+        default: ''
+
     secrets:
       registry-user:
         description: 'Registry username or AWS Access Key ID'
@@ -116,6 +122,11 @@ on:
       tag:
         description: 'The primary tag (sha-<short_sha> or combined tag if build args provided)'
         value: ${{ jobs.merge.outputs.tag }}
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write # ghcr.io push falls back to GITHUB_TOKEN when no registry-token secret is given
 
 jobs:
   prepare:
@@ -186,6 +197,7 @@ jobs:
         if: inputs.registry == 'ecr'
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: ${{ inputs.role-to-assume }}
           aws-access-key-id: ${{ secrets.registry-user }}
           aws-secret-access-key: ${{ secrets.registry-token }}
           aws-region: ${{ inputs.aws-region }}
@@ -326,6 +338,7 @@ jobs:
         if: inputs.registry == 'ecr'
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: ${{ inputs.role-to-assume }}
           aws-access-key-id: ${{ secrets.registry-user }}
           aws-secret-access-key: ${{ secrets.registry-token }}
           aws-region: ${{ inputs.aws-region }}
