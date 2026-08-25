@@ -60,9 +60,10 @@ decrements when rows are reclaimed).
 | `sql/03_functions.sql` | Embedded JS UDFs: `filter_match_score` (mirrors `MatchingFilter`/`IsMatchingEvent`), `extract_grouped_by` |
 | `sql/04_enrichment.sql` | Bounded pipeline: sink (BM join → 32d filter → first-wins dedup) INTO append-only TABLE `events_enriched` (retention 33d) → sink (temporal joins → 32d filter → ranking) INTO append-only TABLE `events_expanded` (retention 33d). Both tables carry the clocks (`kafka_timestamp`, `rw_received_at`); `events_expanded` adds `rw_expanded_at DEFAULT now()`, stamped at insert because the sink omits that column — `proctime()` and bare `now()` are both rejected in a streaming projection |
 | `sql/05_usage.sql` | `usage_buckets_15m` MV: count/sum per (sub, charge, filter, grouped_by) on 15-minute buckets of the event timestamp — serves current usage AND dashboard history; the API sums buckets over the Rails-computed period window (no period rows anywhere) |
-| `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted), query with FINAL) |
+| `sql/06_sinks.sql` | Shadow Kafka sink shaped like the Go `EnrichedEvent` JSON (+ `ingested_at` for latency measurement) + `usage_buckets_clickhouse_sink` upsert into ClickHouse `usage_buckets_15m` (table owned by an api clickhouse migration; ReplacingMergeTree(ver, is_deleted) PARTITION BY toYYYYMM(bucket), query with FINAL, and always filter on `organization_id` first — see "Reading the buckets") |
 | `sql/07_observability.sql` | Per-minute latency MVs: `pipeline_latency` (ingest → Kafka), `usage_latency` (ingest → bucket row emitted). e2e (ingest → enriched row queryable) is a ClickHouse query over `events_enriched_expanded_rw_shadow` — the query is in the file |
 | `usage_latency_probe.sh` | Measures ingest → *queryable in `usage_buckets_15m`* over pgwire (checkpoint visibility included) |
+| `benchmark/serving_cost/` | ClickHouse serving-cost benchmark: bucket reads vs `events_enriched`, the `organization_id` key prefix, merge cost at the prod commit cadence, `FINAL` vs part count, monthly partitioning |
 | `loadtest/` | Load-test + latency service (Fastify + React): sends events to the Lago API and reports P50/P95/P99 for every stage — RisingWave, both ClickHouse paths, and `current_usage`. See `loadtest/README.md` |
 
 ## Design invariants
@@ -126,6 +127,31 @@ Two traps that are easy to miss:
   already has a sink into it (verified on v3.0.2 — the column is NULL for
   existing rows). But you cannot alter the sink's query, so *populating* the
   new column still requires the sink drop + recreate, i.e. the backfill.
+
+### Reading the buckets (ClickHouse serving contract)
+
+Benchmarked 2026-08-25 against 172.8M bucket rows over 500 orgs. Full numbers,
+method and re-runnable scripts in `benchmark/serving_cost/`; the decisions they
+drove are in ROADMAP §0b.
+
+- **Always filter on `organization_id`.** It is the first column of
+  `ORDER BY (organization_id, subscription_id, charge_id, charge_filter_id,
+  grouped_by, bucket)`, so a query scoped only by `subscription_id` uses no
+  index at all: 3.65M rows scanned versus 8.2k for the same wallet watermark
+  poll. Dev hides this completely — one org owns every row there.
+- **The bucket read is cheap and stays cheap.** A 30-day current-usage read is
+  20.6 ms of CPU against 86 ms for the equivalent `events_enriched` query on a
+  quiet subscription and 10.1 s on a busy one (2.6M events/month). The bucket
+  cost is flat in event volume — bounded at 2,880 rows per charge per month —
+  while the events path is linear in events.
+- **`FINAL` costs about 4.6 ms of CPU per active part** overlapping the key, so
+  serving latency tracks part count rather than table size. Watch the active
+  part count on `usage_buckets_15m`, not its row count.
+- **Partitioned by month of the bucket**, which keeps merges inside one month,
+  prunes any bucket-window query to one or two partitions, and makes retention
+  a `DROP PARTITION` rather than a TTL mutation. Note a partition key cannot be
+  ALTERed in: changing it means CREATE new + `INSERT SELECT ... FINAL` +
+  `EXCHANGE TABLES` + DROP. The sink survives that untouched.
 
 ### Playbook: add a field to `usage_buckets_15m` (MV only — no teardown)
 
@@ -279,7 +305,9 @@ reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
   the bucket read is the cache; legacy invalidation caused stale reads.
 - The consumer waits (bounded 5s) for ClickHouse `usage_buckets_15m` to reach
   the trigger's `last_ingested_at` watermark before refreshing (the Kafka
-  trigger races the CH sink of the same epoch). Requires
+  trigger races the CH sink of the same epoch). That poll runs every 100ms for
+  as long as the wait lasts, so it MUST carry `organization_id` — see "Reading
+  the buckets" (fixed 2026-08-25; it was 53x more expensive without it). Requires
   `LAGO_RISINGWAVE_USAGE_ENABLED` on the consumer so the refresh reads
   buckets. Measured event → wallet.ongoing_balance updated: **~400 ms** median warm (351–502 ms; bucket visible in ClickHouse ~250 ms — the floor is barrier_interval_ms, keep 250 ms in prod).
 

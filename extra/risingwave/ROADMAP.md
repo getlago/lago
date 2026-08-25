@@ -1,6 +1,6 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-24 (no pipeline change since 08-23 — the day's api work, compute-on-read wallet balance, was built and reverted; see §3): BOUNDED 32-day pipeline — enrichment runs as two
+State as of 2026-08-25 (no pipeline change since 08-23; 08-24 built and reverted compute-on-read wallet balance, see §3; 08-25 was ClickHouse serving cost — org key prefix + monthly partitioning, see §0b): BOUNDED 32-day pipeline — enrichment runs as two
 bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
 window; events immutable, reprocess removed) into append-only firewall
 TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
@@ -136,6 +136,108 @@ sink still append-only.
       `force_append_only` Kafka sinks in `06_sinks.sql`, `07_observability.sql`
       and `09_wallet_triggers.sql` carry no ranking. Their stale
       "ranking flip" comments were corrected in the same change.
+
+## 0b. FIXED 2026-08-25 — ClickHouse serving cost: key prefix + partitioning
+
+Jeremy's question — does `usage_buckets_15m` cost a lot of ClickHouse CPU
+compared to the old `events_enriched` current-usage queries? — answered by
+benchmark rather than argument. Synthetic `bench` database on the dev
+ClickHouse: 172.8M bucket rows across 500 orgs with UUID-shaped ids (20k subs
+x 3 charges x 2,880 buckets = one full month), plus 30.2M `events_enriched`
+rows. Median of 5 runs, CPU from `system.query_log`. Full method, every
+table, and the generator/query scripts are in `benchmark/serving_cost/` —
+re-runnable end to end.
+
+**The design holds, by a wide margin.** One subscription+charge, 30-day window:
+
+| path | CPU | rows read |
+|---|---|---|
+| buckets FINAL, org prefix | 20.6 ms | 74k |
+| `events_enriched` dedup CTE, sub at 86k events/mo | 85.9 ms | 180k |
+| `events_enriched` dedup CTE, sub at 2.6M events/mo | 10,091 ms (1.05 GiB) | 5.2M |
+
+4x cheaper for a quiet subscription, 490x for a busy one — and the bucket cost
+is FLAT in event volume (bounded at 2,880 rows per charge per month) while the
+`latest_enriched` GROUP BY + `INNER ANY JOIN` is linear in events.
+`events_enriched_expanded` (the feature-flagged `ClickhouseEnrichedStore`) is
+worse still: it fans out per charge x filter (240M rows vs 738k for
+`events_enriched` in dev).
+
+Write side is a non-issue. At `barrier_interval_ms = 250` +
+`commit_checkpoint_interval = 1` (4 commits/s), 120s of sustained writes gave
+475 inserts, 116 merges, **0.23 CPU-seconds of merge total**, active parts held
+at 3. Storage ~14 bytes/row compressed (172.8M rows = 2.33 GiB).
+
+**What the benchmark actually found: three queries omitted `organization_id`**,
+which leads `ORDER BY (organization_id, subscription_id, charge_id,
+charge_filter_id, grouped_by, bucket)`. Without it the primary key cannot be
+used at all:
+
+| query | as written | with org prefix |
+|---|---|---|
+| `RealtimeRefreshService#wait_for_buckets` | 100.6 ms / 3.65M rows | 1.9 ms / 8.2k rows |
+| `ParityCheckService` per-sub totals | 3,792 ms / 10M rows | ~20 ms / 74k rows |
+
+The wallet poll is the dangerous one: it runs every
+`BUCKET_WAIT_INTERVAL = 0.1s` for up to 5s PER WALLET REFRESH. At 200
+refreshes/s averaging 3 polls each that is ~60 cores of ClickHouse answering
+"did the bucket land yet", against ~1 core with the prefix — the difference
+between fine and melting the cluster. `organization_id` was already an
+initializer argument on the service. Both queries fixed, each with a comment
+saying why the column is not redundant with `subscription_id`. `BucketLookup`
+and `HourlyBreakdownService` already scanned the org prefix and were fine.
+
+The third query — `ParityCheckService`'s `DISTINCT subscription_id` sweep —
+genuinely has no organization to scope by (it samples across every org on
+purpose). Left as is, commented; it leans on partition pruning instead.
+
+**`PARTITION BY toYYYYMM(bucket)` added** (Jeremy's call: easier to maintain).
+Applied to all three DDL copies — the Rails migration edited IN PLACE
+(`feat/realtime-usage` has no upstream branch, so the migration has never
+shipped), `db/clickhouse_migrate/cloud/10_usage_buckets_15m.sql`, and
+`clickhouse/usage_buckets_15m.sql`. Measured afterwards on 6 months of history
+(83M rows), the parity sweep:
+
+| | rows read | CPU |
+|---|---|---|
+| flat | 8.98M | 3,141 ms |
+| partitioned | 3.72M | 1,079 ms |
+
+2.9x at six months and widening: the partitioned cost stays flat as history
+accumulates, the flat one grows linearly. Retention also becomes a
+`DROP PARTITION` instead of a TTL mutation, which matters because ClickHouse
+keeps forever-history here while RisingWave holds only ~32 days.
+
+**Second-order caveat, worth an alert in prod shadow: `FINAL` point-read CPU
+scales linearly with the number of ACTIVE PARTS overlapping the key**, not with
+table size. Measured with merges stopped: 15 parts 28 ms, 24 parts 57 ms,
+33 parts 151 ms, 42 parts 192 ms, 51 parts 236 ms (~4.6 ms per part). Merges
+kept up easily under the 4 commits/s write test, so this is a metric to watch
+(active part count on `usage_buckets_15m` in `system.parts`), not a known
+problem.
+
+Also fixed: `wait_for_buckets` had NO spec coverage — the existing examples
+never passed `expected_ingested_at`, so every one of them took the early
+return. New `describe "the bucket wait"` block covers the path and pins the
+org scoping with an "another org holds a bucket for that subscription id"
+case. Falsification-checked: it fails when the org filter is removed.
+
+Dev and test ClickHouse tables were rebuilt via create-copy-EXCHANGE, since a
+partition key cannot be ALTERed in. `usage_buckets_clickhouse_sink` survived
+the swap untouched (it inserts by table name over HTTP, and EXCHANGE is
+atomic) — verified end to end: one event produced to `events-raw` landed in
+ClickHouse in 234 ms, in line with the `barrier_interval_ms` floor.
+
+- [ ] Three Grafana panels run `FINAL` over the WHOLE table with no time
+      bound, so they scan all of forever-history every refresh: the overview
+      counts and the staleness stat in `usage-serving.json`, and
+      "most recently updated" (`ORDER BY last_ingested_at DESC LIMIT 20`) in
+      `risingwave-latency.json`. Not touched here because bounding them
+      changes what the panels report (totals become windowed totals) — decide
+      the semantics, then fix. Every other bucket panel already carries
+      `$__timeFilter(bucket)` and now prunes to partitions for free.
+- [ ] The `bench` database (~8.8 GiB of synthetic data) is still on the dev
+      ClickHouse — `DROP DATABASE bench` when it is no longer wanted.
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
@@ -673,6 +775,15 @@ cover cross-sink epoch ordering, not trailing-flush stalls.
 - `proctime()` is barrier-aligned (up to 1s early) — never use for latency;
   measure from Kafka broker timestamps via topic loopback.
 - JSONB can't be in a streaming group key (group on `::VARCHAR` rendering).
+- Every ClickHouse `usage_buckets_15m` query must lead with
+  `organization_id` — it is the first ORDER BY column, so filtering on
+  `subscription_id` alone uses no index at all (3.65M rows vs 8.2k for the
+  same wallet watermark poll). Cost is invisible in dev, where one org owns
+  every row. See §0b.
+- A ClickHouse partition key cannot be ALTERed in. Changing it means
+  CREATE new + INSERT SELECT ... FINAL + `EXCHANGE TABLES` + DROP. The
+  RisingWave ClickHouse sink survives that (it inserts by name over HTTP,
+  and EXCHANGE is atomic) — no sink teardown needed.
 - Charge cache must stay bypassed for realtime-eligible charges — legacy
   invalidation races the trigger (stale-cache bug found live).
 - Wallet refresh serialization unit is the CUSTOMER (cascade covers all

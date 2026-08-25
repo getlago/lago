@@ -10,6 +10,9 @@
 -- ver is stamped at insert so ReplacingMergeTree keeps the newest version per
 -- key. Query with FINAL for exact reads.
 --
+-- Partitioned by month of the bucket: merges stay inside one month and
+-- retention is a DROP PARTITION instead of a TTL mutation.
+--
 -- DUPLICATED DDL — keep in sync with the Rails ClickHouse migration, which is
 -- the source of truth for prod:
 --   api/db/clickhouse_migrate/20260821165440_create_usage_buckets15m.rb
@@ -39,4 +42,5 @@ CREATE TABLE IF NOT EXISTS default.usage_buckets_15m
     ver DateTime64(3) MATERIALIZED now64(3)
 )
 ENGINE = ReplacingMergeTree(ver, is_deleted)
+PARTITION BY toYYYYMM(bucket)
 ORDER BY (organization_id, subscription_id, charge_id, charge_filter_id, grouped_by, bucket);
