@@ -23,11 +23,12 @@ export type Segment = {
   label: string;
   kind: "polled" | "stamped";
   stage?: StageKey;
-  group: "api" | "risingwave" | "clickhouse-rw" | "clickhouse-go" | "usage" | "breakdown";
+  group: "api" | "risingwave" | "clickhouse-rw" | "clickhouse-go" | "usage" | "wallet" | "breakdown";
   from: string;
   to: string;
   clocks: string[];
   note?: string;
+  whenDirectProduce?: { label?: string; from?: string; to?: string; clocks?: string[]; note?: string };
 };
 
 export type RunSpec = {
@@ -35,8 +36,10 @@ export type RunSpec = {
   totalEvents: number;
   ramp: { enabled: boolean; fromEps: number; overSec: number };
   probeEvery: number;
+  send: { transport: "api" | "kafka"; batchSize: number; maxInFlight: number };
   targetIds: string[];
   probeTargetId: string | null;
+  walletProbeTargetId: string | null;
   stages: Record<StageKey, boolean>;
   guards: { maxErrorRatePct: number; hardCap: number };
   spread: { groupKeyValues: number; includeDefaultBucket: boolean; maxVariantsPerTarget: number };
@@ -59,6 +62,8 @@ export type Snapshot = {
     probes: number;
     usageProbes: number;
     usageTimeouts: number;
+    walletProbes: number;
+    walletTimeouts: number;
     pendingProbes: number;
   };
   stageCounts?: Partial<Record<StageKey, number>>;
@@ -97,6 +102,42 @@ export type Snapshot = {
     expected: number;
     attributed?: number;
   } | null;
+  walletMode?: "exact" | "watermark" | "refresh" | "off";
+  walletFreshness?: {
+    staleAtStart: boolean;
+    worstBatch: number;
+    batches: number;
+    batchShare: number;
+    stalePolls: number;
+    verdict: "unknown" | "incremental" | "coarse" | "batched";
+  };
+  walletPoll?: {
+    issued: number;
+    completed: number;
+    failed: number;
+    inFlight: number;
+    perSecond: number;
+    rttP50: number | null;
+    rttP95: number | null;
+    resolutionMs: number | null;
+    bracketP95Ms?: number | null;
+  };
+  walletProbe?: {
+    customer: string;
+    subscription: string;
+    metric: string;
+    wallets: number;
+    baselineCents: number;
+    aligned: boolean;
+    centsFactor: number;
+    perEventCents: number | null;
+    canary: string;
+    refreshes: number;
+    eventsPerRefresh: number | null;
+    refreshesExact: boolean;
+    expected: number;
+    attributed: number;
+  } | null;
   targets?: { id: string; subscription: string; metric: string; aggregation: string; filters: number; groupKeys: string[] }[];
   spread?: {
     target: string;
@@ -119,9 +160,23 @@ export type Target = {
   aggregationType: string;
   fieldName: string | null;
   chargeModel: string;
-  filters: { id: string; label: string | null; values: Record<string, string[]>; groupKeys: string[] }[];
+  filters: { id: string; label: string | null; values: Record<string, string[]>; groupKeys: string[]; amount: number | null }[];
+  amount: number | null;
   groupKeys: string[];
   servedByRealtimeBuckets: boolean;
+  wallets: WalletInfo[];
+};
+
+export type WalletInfo = {
+  customerExternalId: string;
+  code: string | null;
+  name: string | null;
+  currency: string;
+  balanceCents: number;
+  ongoingUsageCents: number;
+  metricCodes: string[];
+  feeTypes: string[];
+  exposesSyncStamp: boolean;
 };
 
 export type Discovery = {
@@ -134,6 +189,7 @@ export type Discovery = {
     status: string;
     metricCount: number;
   }[];
+  wallets: WalletInfo[];
   warnings: string[];
   scannedAt: number;
 };
@@ -142,6 +198,15 @@ export type Health = {
   lago: { ok: boolean; error?: string; metrics?: number };
   risingwave: { ok: boolean; version?: string; error?: string };
   clickhouse: { ok: boolean; version?: string; error?: string };
+  redpanda: {
+    ok: boolean;
+    error?: string;
+    brokers?: string;
+    clusterId?: string;
+    topic?: string;
+    partitions?: number;
+    topicExists?: boolean;
+  };
   checkedAt: number;
 };
 
@@ -159,12 +224,31 @@ export type ConfigView = {
     goExpandedTable: string;
     passwordSet?: boolean;
   };
+  kafka: {
+    brokers: string;
+    topic: string;
+    clientId: string;
+    acks: number;
+    compression: "none" | "gzip";
+    ssl: boolean;
+    sasl: {
+      mechanism: "" | "plain" | "scram-sha-256" | "scram-sha-512";
+      username: string;
+      password: string;
+      passwordSet?: boolean;
+    };
+    organizationId: string;
+    source: string;
+  };
+  http: { connections: number; h2: boolean };
   measurement: {
     pollTickMs: number;
     sweepMs: number;
     probeTimeoutMs: number;
     usagePollMs: number;
     usagePollConcurrency: number;
+    walletPollMs: number;
+    walletPollConcurrency: number;
   };
 };
 

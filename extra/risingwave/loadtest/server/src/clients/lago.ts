@@ -1,6 +1,41 @@
+import { Agent, fetch } from "undici";
 import { getConfig } from "../config.js";
 
 export type LagoError = { status: number; body: string };
+
+/**
+ * One tuned connection pool for every call to Lago, instead of Node's built-in
+ * fetch pool.
+ *
+ * At a high send rate the number of requests a sender can have outstanding IS
+ * its throughput ceiling (rate = in-flight / round trip), so the pool has to
+ * hold hundreds of concurrent requests against a remote API without opening one
+ * TLS connection per request. HTTP/2 is what makes that cheap — hundreds of
+ * streams over a handful of sockets — and it is negotiated by ALPN, so a Lago
+ * that only speaks HTTP/1.1 transparently falls back to `connections` sockets.
+ *
+ * Node's own fetch cannot be pointed at this pool (its undici is a separate
+ * module instance), which is why the client imports undici's fetch directly.
+ */
+let pool: Agent | null = null;
+let poolKey = "";
+
+function dispatcher(): Agent {
+  const { connections, h2 } = getConfig().http;
+  const key = `${connections}:${h2}`;
+  if (pool && poolKey === key) return pool;
+  const previous = pool;
+  pool = new Agent({
+    connections: Math.max(1, connections),
+    allowH2: h2,
+    keepAliveTimeout: 60_000,
+    keepAliveMaxTimeout: 600_000,
+    connect: { timeout: 15_000 },
+  });
+  poolKey = key;
+  void previous?.close().catch(() => {});
+  return pool;
+}
 
 /**
  * Node's fetch throws a bare "fetch failed" and hides the real reason in
@@ -57,9 +92,9 @@ function headers() {
 
 async function get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
   const target = url(path, params);
-  let res: Response;
+  let res: Awaited<ReturnType<typeof fetch>>;
   try {
-    res = await fetch(target, { headers: headers() });
+    res = await fetch(target, { headers: headers(), dispatcher: dispatcher() });
   } catch (e) {
     throw new Error(`GET ${path} — ${describeFetchError(e, target)}`);
   }
@@ -100,11 +135,18 @@ export type LagoSubscription = {
   name?: string | null;
 };
 
+/** `amount` is the per-unit price of a standard charge, in currency units. */
+export type LagoChargeProperties = {
+  pricing_group_keys?: string[];
+  grouped_by?: string[];
+  amount?: string | number;
+};
+
 export type LagoChargeFilter = {
   values?: Record<string, string[]>;
   invoice_display_name?: string | null;
-  /** Per-filter pricing group keys override the charge's. */
-  properties?: { pricing_group_keys?: string[]; grouped_by?: string[] };
+  /** Per-filter pricing group keys and price override the charge's. */
+  properties?: LagoChargeProperties;
 };
 
 export type LagoCharge = {
@@ -112,12 +154,18 @@ export type LagoCharge = {
   billable_metric_code: string;
   charge_model: string;
   filters?: LagoChargeFilter[];
-  properties?: { pricing_group_keys?: string[]; grouped_by?: string[] };
+  properties?: LagoChargeProperties;
 };
 
 /** pricing_group_keys, tolerating the deprecated grouped_by alias. */
 export const groupKeysOf = (p?: { pricing_group_keys?: string[]; grouped_by?: string[] }): string[] =>
   (p?.pricing_group_keys ?? p?.grouped_by ?? []).filter((k) => typeof k === "string" && k.length > 0);
+
+/** Per-unit price in currency units, or null when this charge has none declared. */
+export const amountOf = (p?: LagoChargeProperties): number | null => {
+  const n = Number(p?.amount);
+  return Number.isFinite(n) ? n : null;
+};
 
 export type LagoPlan = { lago_id: string; code: string; name: string; interval: string; charges?: LagoCharge[] };
 
@@ -134,6 +182,23 @@ export const listSubscriptions = () =>
   getAll<LagoSubscription>("/api/v1/subscriptions", "subscriptions");
 export const listPlans = () => getAll<LagoPlan>("/api/v1/plans", "plans");
 export const listBillableMetrics = () => getAll<LagoBillableMetric>("/api/v1/billable_metrics", "billable_metrics");
+
+export type LagoOrganization = {
+  lago_id: string;
+  name: string;
+  /** "postgres" or "clickhouse" — decides `source_metadata.api_post_processed`
+   * and, more importantly, whether the API is doing anything a direct produce
+   * would skip (the Postgres events row and PostProcessJob). */
+  events_store?: string;
+};
+
+/**
+ * The organization behind the API key. Direct produce needs its UUID, because
+ * `organization_id` is the join key the whole pipeline resolves subscriptions,
+ * charges and filters on — the API stamps it, so a Kafka producer has to too.
+ */
+export const fetchOrganization = async (): Promise<LagoOrganization> =>
+  (await get<{ organization: LagoOrganization }>("/api/v1/organizations")).organization;
 
 export async function lagoHealth(): Promise<{ ok: boolean; error?: string; metrics?: number }> {
   try {
@@ -162,20 +227,35 @@ export type SendResult = {
   error?: string;
 };
 
-export async function postEvent(payload: EventPayload): Promise<SendResult> {
+/** Lago refuses a batch longer than this (LAGO_EVENTS_BATCH_MAX_LENGTH). */
+export const MAX_EVENT_BATCH = 100;
+
+/**
+ * One HTTP request carrying one or many events.
+ *
+ * A single event goes to POST /events and many to POST /events/batch, so a
+ * batch of one is byte-for-byte the request a customer's integration sends —
+ * batching changes how many requests carry the load, never what the API is
+ * asked to do with each event.
+ */
+export async function postEvents(payloads: EventPayload[]): Promise<SendResult> {
+  const batched = payloads.length > 1;
+  const path = batched ? "/api/v1/events/batch" : "/api/v1/events";
+  const body = batched ? { events: payloads } : { event: payloads[0] };
   const sentAt = Date.now();
   const t0 = performance.now();
-  const target = url("/api/v1/events");
+  const target = url(path);
   try {
     const res = await fetch(target, {
       method: "POST",
       headers: headers(),
-      body: JSON.stringify({ event: payload }),
+      body: JSON.stringify(body),
+      dispatcher: dispatcher(),
     });
     const apiMs = performance.now() - t0;
     if (!res.ok) {
-      const body = await res.text();
-      return { ok: false, status: res.status, sentAt, apiMs, error: body.slice(0, 200) };
+      const text = await res.text();
+      return { ok: false, status: res.status, sentAt, apiMs, error: text.slice(0, 200) };
     }
     // Drain the body so the connection is reusable by keep-alive.
     await res.arrayBuffer();
@@ -184,6 +264,8 @@ export async function postEvent(payload: EventPayload): Promise<SendResult> {
     return { ok: false, status: 0, sentAt, apiMs: performance.now() - t0, error: describeFetchError(e, target) };
   }
 }
+
+export const postEvent = (payload: EventPayload): Promise<SendResult> => postEvents([payload]);
 
 export type ChargeUsage = {
   units: string;
@@ -230,11 +312,87 @@ export function usageValue(usage: CurrentUsage, metricCode: string): { units: nu
   };
 }
 
+export type LagoWallet = {
+  lago_id: string;
+  external_customer_id: string;
+  code: string | null;
+  name: string | null;
+  status: string;
+  currency: string;
+  balance_cents: number;
+  ongoing_balance_cents: number;
+  ongoing_usage_balance_cents: number;
+  credits_ongoing_usage_balance: string | number;
+  rate_amount: string | number;
+  /** Touched on EVERY refresh, so it moves even when the amount does not.
+   * Present only on a Lago that serializes it (added for this POC). */
+  last_ongoing_balance_sync_at?: string | null;
+  applies_to?: { fee_types?: string[] | null; billable_metric_codes?: string[] | null };
+};
+
+/** Every wallet of the organization, so discovery can say who holds one. */
+export const listWallets = () => getAll<LagoWallet>("/api/v1/wallets", "wallets");
+
+/**
+ * The wallets of ONE customer. This is the read path the "reflected in the
+ * customer's wallet" latency measures: `ongoing_usage_balance_cents` is a plain
+ * column, written by the wallet refresh the pipeline triggers, so this GET is a
+ * cheap row read and never recomputes anything itself.
+ */
+export async function customerWallets(
+  customerExternalId: string,
+): Promise<{ wallets: LagoWallet[]; apiMs: number }> {
+  const t0 = performance.now();
+  const body = await get<{ wallets: LagoWallet[] }>("/api/v1/wallets", {
+    external_customer_id: customerExternalId,
+    per_page: 100,
+  });
+  return { wallets: body.wallets ?? [], apiMs: performance.now() - t0 };
+}
+
+export type WalletReading = {
+  /** Ongoing (unbilled) usage allocated across the customer's active wallets. */
+  ongoingUsageCents: number;
+  /** balance - ongoing usage: what the customer is shown as remaining. */
+  ongoingBalanceCents: number;
+  credits: number;
+  /** Latest refresh stamp across those wallets, if this Lago exposes it. */
+  syncedAtMs: number | null;
+  wallets: number;
+};
+
+/**
+ * One number per reading, summed over the customer's ACTIVE wallets.
+ *
+ * Summing is the correct aggregation rather than a convenience: ongoing usage is
+ * distributed across wallets in priority order and the last applicable wallet
+ * absorbs the overflow (it is allowed to go negative), so the total tracks total
+ * ongoing usage even when an individual wallet's credits run out mid-run.
+ */
+export function walletReading(wallets: LagoWallet[]): WalletReading {
+  const active = wallets.filter((w) => w.status === "active");
+  let syncedAtMs: number | null = null;
+  for (const w of active) {
+    const t = w.last_ongoing_balance_sync_at ? new Date(w.last_ongoing_balance_sync_at).getTime() : NaN;
+    if (Number.isFinite(t)) syncedAtMs = Math.max(syncedAtMs ?? 0, t);
+  }
+  return {
+    ongoingUsageCents: active.reduce((n, w) => n + (Number(w.ongoing_usage_balance_cents) || 0), 0),
+    ongoingBalanceCents: active.reduce((n, w) => n + (Number(w.ongoing_balance_cents) || 0), 0),
+    credits: active.reduce((n, w) => n + (Number(w.credits_ongoing_usage_balance) || 0), 0),
+    syncedAtMs,
+    wallets: active.length,
+  };
+}
+
 /** Server-clock reading from the Date response header, for the skew panel. */
 export async function lagoServerTimeMs(): Promise<{ serverMs: number; rttMs: number } | null> {
   const t0 = performance.now();
   try {
-    const res = await fetch(url("/api/v1/billable_metrics", { per_page: 1 }), { headers: headers() });
+    const res = await fetch(url("/api/v1/billable_metrics", { per_page: 1 }), {
+      headers: headers(),
+      dispatcher: dispatcher(),
+    });
     const rttMs = performance.now() - t0;
     await res.arrayBuffer();
     const date = res.headers.get("date");

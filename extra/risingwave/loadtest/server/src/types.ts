@@ -15,13 +15,20 @@ export type Segment = {
   kind: SegmentKind;
   /** Which stage's arrival closes this segment (polled segments only). */
   stage?: StageKey;
-  group: "api" | "risingwave" | "clickhouse-rw" | "clickhouse-go" | "usage" | "breakdown";
+  group: "api" | "risingwave" | "clickhouse-rw" | "clickhouse-go" | "usage" | "wallet" | "breakdown";
   /** Plain-language statement of exactly what the two endpoints are. */
   from: string;
   to: string;
   /** Clocks the two endpoints are read from — one clock means skew-free. */
   clocks: string[];
   note?: string;
+  /**
+   * What this segment means when the run produced straight to Redpanda instead
+   * of POSTing to Lago. Two segments stop describing the API at all, and saying
+   * so here rather than in the UI keeps the catalog the single source of truth
+   * for what the dashboard is allowed to claim.
+   */
+  whenDirectProduce?: { label?: string; from?: string; to?: string; clocks?: string[]; note?: string };
 };
 
 /**
@@ -47,6 +54,14 @@ export const SEGMENTS: Segment[] = [
     to: "Lago answered 200",
     clocks: ["loadtest"],
     note: "Pure ingest cost. Included in every end-to-end number below.",
+    whenDirectProduce: {
+      label: "Produce ack (Redpanda)",
+      from: "produce request left this app",
+      to: "the broker acked the batch",
+      note:
+        "Direct produce: the Lago API is not in the send path at all, so this is the broker ack, not an HTTP round " +
+        "trip. With acks=0 it is only the local write and cannot report a rejection.",
+    },
   },
   {
     key: "rw_enriched_visible",
@@ -124,6 +139,36 @@ export const SEGMENTS: Segment[] = [
       "What a customer actually sees. current_usage has no per-event handle, so attribution uses the metric's monotonic events_count: EXACT mode (probe target free of bulk traffic) sends one probe at a time; WATERMARK mode (probe target shares traffic, e.g. an instance with a single subscription) attributes the k-th count increment to the k-th event sent to that pair. Which mode ran is shown on the run.",
   },
 
+  {
+    key: "wallet_visible",
+    label: "→ reflected in the customer's wallet ongoing balance",
+    kind: "polled",
+    group: "wallet",
+    from: "request left this app",
+    to: "GET /wallets counted it in ongoing_usage_balance_cents",
+    clocks: ["loadtest"],
+    note:
+      "The whole wallet path: RisingWave emits a refresh trigger per event, the consumer collapses them per customer, " +
+      "waits for the ClickHouse usage buckets to reach the event's ingestion watermark, and rewrites the wallet rows. " +
+      "Attribution mirrors current_usage: EXACT mode (wallet customer free of bulk traffic) sends one probe at a time so " +
+      "each increase is unambiguous; WATERMARK mode predicts the cents the reading must reach after k events, calibrated " +
+      "on a real event by the preflight canary; REFRESH mode (unpriceable charge) times each observed refresh against the " +
+      "oldest outstanding event and is therefore an upper bound. Which mode ran is shown on the run.",
+  },
+  {
+    key: "usage_to_wallet",
+    label: "current usage → wallet caught up",
+    kind: "polled",
+    group: "wallet",
+    from: "the poll that first saw this event in current_usage",
+    to: "the poll that first saw it in the wallet balance",
+    clocks: ["loadtest"],
+    note:
+      "What the wallet hop costs ON TOP of usage already being fresh — the trigger, the Kafka hop, the consumer's " +
+      "bucket wait and the refresh itself. Per-event, so it needs the wallet probe and the usage probe to be the same " +
+      "target; otherwise the two measurements describe different events and only their percentiles are comparable.",
+  },
+
   // ---- stamped breakdown (all events, cross-clock) ----
   {
     key: "ingest_to_broker",
@@ -133,6 +178,14 @@ export const SEGMENTS: Segment[] = [
     from: "ingested_at (stamped by Lago)",
     to: "kafka_timestamp (broker append time)",
     clocks: ["lago", "redpanda"],
+    whenDirectProduce: {
+      label: "This app's ingest stamp → Redpanda append",
+      from: "ingested_at (stamped by THIS app, standing in for Lago)",
+      clocks: ["loadtest", "redpanda"],
+      note:
+        "Direct produce writes its own ingested_at, so this leg no longer contains any Lago cost — it is the " +
+        "producer's own hand-off to the broker, and its clock offset is this app's, not Lago's.",
+    },
   },
   {
     key: "broker_to_rw",
@@ -218,9 +271,39 @@ export type RunSpec = {
   ramp: { enabled: boolean; fromEps: number; overSec: number };
   /** Every Nth event becomes a visibility probe. 0 disables probing. */
   probeEvery: number;
+  /**
+   * How the bulk stream is put on the wire. Throughput is in-flight requests
+   * divided by round trip, so these two knobs — not the target rate — are what
+   * decides whether the requested rate is reachable at all.
+   */
+  send: {
+    /**
+     * How events enter the pipeline. `api` POSTs to Lago, which is what a
+     * customer's integration does and what every published latency includes.
+     * `kafka` produces the identical message straight to the raw events topic,
+     * which takes the API's round trip out of the send path — the only way to
+     * push the pipeline past what Lago itself can ingest.
+     */
+    transport: "api" | "kafka";
+    /** Events per request. 1 = one request per event (POST /events); above that
+     * the bulk stream uses POST /events/batch, capped at Lago's limit of 100.
+     * On the kafka transport this is messages per produce request instead, where
+     * hundreds are normal and the cap is 2 000 — the broker limits a request by
+     * bytes (1MB), not by count. */
+    batchSize: number;
+    /** Max requests outstanding at once. 0 = derive it from the target rate and
+     * the round trip actually being measured. */
+    maxInFlight: number;
+  };
   targetIds: string[];
   /** Target whose current_usage is polled. May also be in targetIds (watermark mode). */
   probeTargetId: string | null;
+  /**
+   * Target whose customer's wallets are polled. Its customer must hold an active
+   * wallet. Set it to the same target as probeTargetId to get the per-event
+   * `usage_to_wallet` split as well.
+   */
+  walletProbeTargetId: string | null;
   stages: Record<StageKey, boolean>;
   guards: { maxErrorRatePct: number; hardCap: number };
   /** How widely to spread events across charge filters and pricing group keys. */

@@ -19,8 +19,23 @@ type Draft = {
   pollTickMs: number;
   sweepMs: number;
   probeTimeoutMs: number;
+  kafkaBrokers: string;
+  kafkaTopic: string;
+  kafkaClientId: string;
+  kafkaAcks: number;
+  kafkaCompression: "none" | "gzip";
+  kafkaSsl: boolean;
+  kafkaSaslMechanism: "" | "plain" | "scram-sha-256" | "scram-sha-512";
+  kafkaSaslUsername: string;
+  kafkaSaslPassword: string;
+  kafkaOrganizationId: string;
+  kafkaSource: string;
+  httpConnections: number;
+  httpH2: boolean;
   usagePollMs: number;
   usagePollConcurrency: number;
+  walletPollMs: number;
+  walletPollConcurrency: number;
 };
 
 const toDraft = (c: ConfigView): Draft => ({
@@ -37,11 +52,26 @@ const toDraft = (c: ConfigView): Draft => ({
   chRwExpanded: c.clickhouse.rwExpandedTable,
   chGoEnriched: c.clickhouse.goEnrichedTable,
   chGoExpanded: c.clickhouse.goExpandedTable,
+  kafkaBrokers: c.kafka.brokers,
+  kafkaTopic: c.kafka.topic,
+  kafkaClientId: c.kafka.clientId,
+  kafkaAcks: c.kafka.acks,
+  kafkaCompression: c.kafka.compression,
+  kafkaSsl: c.kafka.ssl,
+  kafkaSaslMechanism: c.kafka.sasl.mechanism,
+  kafkaSaslUsername: c.kafka.sasl.username,
+  kafkaSaslPassword: "",
+  kafkaOrganizationId: c.kafka.organizationId,
+  kafkaSource: c.kafka.source,
+  httpConnections: c.http.connections,
+  httpH2: c.http.h2,
   pollTickMs: c.measurement.pollTickMs,
   sweepMs: c.measurement.sweepMs,
   probeTimeoutMs: c.measurement.probeTimeoutMs,
   usagePollMs: c.measurement.usagePollMs,
   usagePollConcurrency: c.measurement.usagePollConcurrency,
+  walletPollMs: c.measurement.walletPollMs,
+  walletPollConcurrency: c.measurement.walletPollConcurrency,
 });
 
 export function Setup({
@@ -89,12 +119,30 @@ export function Setup({
           goEnrichedTable: d.chGoEnriched,
           goExpandedTable: d.chGoExpanded,
         },
+        kafka: {
+          brokers: d.kafkaBrokers,
+          topic: d.kafkaTopic,
+          clientId: d.kafkaClientId,
+          acks: Number(d.kafkaAcks),
+          compression: d.kafkaCompression,
+          ssl: d.kafkaSsl,
+          sasl: {
+            mechanism: d.kafkaSaslMechanism,
+            username: d.kafkaSaslUsername,
+            ...(d.kafkaSaslPassword ? { password: d.kafkaSaslPassword } : {}),
+          },
+          organizationId: d.kafkaOrganizationId.trim(),
+          source: d.kafkaSource,
+        },
+        http: { connections: Number(d.httpConnections), h2: d.httpH2 },
         measurement: {
           pollTickMs: Number(d.pollTickMs),
           sweepMs: Number(d.sweepMs),
           probeTimeoutMs: Number(d.probeTimeoutMs),
           usagePollMs: Number(d.usagePollMs),
           usagePollConcurrency: Number(d.usagePollConcurrency),
+          walletPollMs: Number(d.walletPollMs),
+          walletPollConcurrency: Number(d.walletPollConcurrency),
         },
       };
       const { config: saved, store: savedStore } = await api.putConfig(patch);
@@ -228,6 +276,130 @@ export function Setup({
         </p>
       </Card>
 
+      <Card
+        title="Direct produce to Redpanda"
+        hint="bypasses the Lago API on the send path — the only way to push the pipeline past what Lago itself can ingest"
+      >
+        <div className="grid cols-3">
+          {T({
+            label: "Brokers",
+            value: d.kafkaBrokers,
+            onChange: set("kafkaBrokers"),
+            placeholder: "localhost:19092",
+            note: "comma-separated. From outside Docker this is the EXTERNAL listener (19092 in the dev stack), not redpanda:9092",
+          })}
+          {T({
+            label: "Raw events topic",
+            value: d.kafkaTopic,
+            onChange: set("kafkaTopic"),
+            note: "must equal LAGO_KAFKA_RAW_EVENTS_TOPIC — auto-creation is off, so a typo fails preflight instead of writing into a topic nobody reads",
+          })}
+          {T({
+            label: "Organization id",
+            value: d.kafkaOrganizationId,
+            onChange: set("kafkaOrganizationId"),
+            placeholder: "read from GET /organizations",
+            note: "the join key the whole pipeline resolves subscriptions and charges on. Blank = read it from Lago",
+          })}
+          <label className="field">
+            acks
+            <select
+              value={String(d.kafkaAcks)}
+              onChange={(e) => set("kafkaAcks")(Number(e.target.value))}
+            >
+              <option value="1">1 — leader ack</option>
+              <option value="-1">-1 — all replicas</option>
+              <option value="0">0 — fire and forget</option>
+            </select>
+            <span className="note">
+              this is what "API response" measures on a direct-produce run; acks=0 reports no rejection at all
+            </span>
+          </label>
+          <label className="field">
+            Compression
+            <select
+              value={d.kafkaCompression}
+              onChange={(e) => set("kafkaCompression")(e.target.value as Draft["kafkaCompression"])}
+            >
+              <option value="none">none</option>
+              <option value="gzip">gzip</option>
+            </select>
+            <span className="note">gzip trades sender CPU for network; none is the faithful default</span>
+          </label>
+          {T({
+            label: "source",
+            value: d.kafkaSource,
+            onChange: set("kafkaSource"),
+            note: "both consumers read http_ruby as \"custom expressions already evaluated\" — changing it measures a different code path",
+          })}
+          {T({ label: "Client id", value: d.kafkaClientId, onChange: set("kafkaClientId") })}
+          <label className="field">
+            TLS
+            <div className="row" style={{ gap: 8, alignItems: "center", height: 32 }}>
+              <input type="checkbox" checked={d.kafkaSsl} onChange={(e) => set("kafkaSsl")(e.target.checked)} />
+              <span style={{ fontSize: 12 }}>connect over TLS</span>
+            </div>
+            <span className="note">off for the local dev stack, on for Redpanda Cloud</span>
+          </label>
+          <label className="field">
+            SASL
+            <select
+              value={d.kafkaSaslMechanism}
+              onChange={(e) => set("kafkaSaslMechanism")(e.target.value as Draft["kafkaSaslMechanism"])}
+            >
+              <option value="">none</option>
+              <option value="plain">plain</option>
+              <option value="scram-sha-256">scram-sha-256</option>
+              <option value="scram-sha-512">scram-sha-512</option>
+            </select>
+            <span className="note">left as none for the dev stack</span>
+          </label>
+          {d.kafkaSaslMechanism !== "" && (
+            <>
+              {T({ label: "SASL username", value: d.kafkaSaslUsername, onChange: set("kafkaSaslUsername") })}
+              {T({
+                label: "SASL password",
+                value: d.kafkaSaslPassword,
+                onChange: set("kafkaSaslPassword"),
+                type: "password",
+                note: config.kafka.sasl.passwordSet ? "leave blank to keep the stored password" : "no password stored yet",
+              })}
+            </>
+          )}
+        </div>
+        <p style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)" }}>
+          The message produced is byte-shape identical to what <code>Events::KafkaProducerService</code> writes —
+          <code>timestamp</code> as a JSON string of float seconds, <code>ingested_at</code> without the trailing{" "}
+          <code>Z</code>, <code>precise_total_amount_cents</code> defaulting to <code>"0.0"</code>, keyed by{" "}
+          <code>&lt;organization_id&gt;-&lt;external_subscription_id&gt;</code>. What it cannot reproduce is what the API
+          does <em>besides</em> producing: for an organization whose events store is Postgres, the <code>events</code> row
+          and <code>PostProcessJob</code> never happen, so any usage read not served by the realtime 15-minute buckets has
+          nothing to read. Preflight says which case this organization is in.
+        </p>
+      </Card>
+
+      <Card
+        title="HTTP to Lago"
+        hint="the send path's own limits — throughput is in-flight requests divided by round trip, and these decide what in-flight can be"
+      >
+        <div className="grid cols-4">
+          {N({
+            label: "Connections to Lago",
+            value: d.httpConnections,
+            onChange: set("httpConnections"),
+            note: "with HTTP/2 a handful multiplex everything; without it this is a hard ceiling on requests in flight",
+          })}
+          <label className="field">
+            HTTP/2
+            <div className="row" style={{ gap: 8, alignItems: "center", height: 32 }}>
+              <input type="checkbox" checked={d.httpH2} onChange={(e) => set("httpH2")(e.target.checked)} />
+              <span style={{ fontSize: 12 }}>offer h2 in the TLS handshake</span>
+            </div>
+            <span className="note">negotiated by ALPN — a Lago that only speaks 1.1 falls back silently</span>
+          </label>
+        </div>
+      </Card>
+
       <Card title="Measurement" hint="how visibility is polled — these numbers decide the resolution of every latency">
         <div className="grid cols-4">
           {N({
@@ -249,6 +421,18 @@ export function Setup({
             value: d.usagePollConcurrency,
             onChange: set("usagePollConcurrency"),
             note: "pipelined; raising it tightens the bound but slows current_usage itself — watch the RTT on the run",
+          })}
+          {N({
+            label: "Wallet poll interval (ms)",
+            value: d.walletPollMs,
+            onChange: set("walletPollMs"),
+            note: "gap between GET /wallets requests — the reading is a stored column, so polling never triggers the refresh it times",
+          })}
+          {N({
+            label: "Wallet polls in flight",
+            value: d.walletPollConcurrency,
+            onChange: set("walletPollConcurrency"),
+            note: "pipelined; the wallets index serves the full payload, so its RTT can rival current_usage — watch it on the run",
           })}
         </div>
         <div className="row" style={{ marginTop: 14 }}>

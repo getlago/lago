@@ -50,8 +50,24 @@ export function Run({
   const stats = snap?.stats ?? {};
   const unavailable = snap?.unavailable ?? [];
 
-  const polled = segments.filter((s) => s.kind === "polled");
-  const stamped = segments.filter((s) => s.kind === "stamped");
+  // The run being displayed decides what its segments mean: on a direct-produce
+  // run two of them stop describing Lago at all. The override lives in the
+  // server's catalog, so the dashboard still cannot claim more than the catalog
+  // says — it only picks which of the two statements applies.
+  // A snapshot is authoritative about its own run — including a run persisted
+  // before this transport existed, whose spec carries no transport at all and is
+  // therefore an API run, whatever the form is currently set to.
+  const direct = snap?.spec ? snap.spec.send.transport === "kafka" : spec.send.transport === "kafka";
+  const shown = useMemo(
+    () =>
+      direct
+        ? segments.map((seg) => (seg.whenDirectProduce ? { ...seg, ...seg.whenDirectProduce } : seg))
+        : segments,
+    [segments, direct],
+  );
+
+  const polled = shown.filter((s) => s.kind === "polled");
+  const stamped = shown.filter((s) => s.kind === "stamped");
 
   const start = async () => {
     setStarting(true);
@@ -83,32 +99,45 @@ export function Run({
         if (!p) return [];
         const row: PercentileRow = { key: s.key, label: s.label, p50: p.p50, p95: p.p95, p99: p.p99, count: p.count };
         if (s.key === "usage_visible") row.note = snap?.usageMode === "watermark" ? "watermark attribution" : "exact probe";
+        if (s.key === "wallet_visible")
+          row.note =
+            snap?.walletMode === "refresh"
+              ? "per refresh — upper bound"
+              : snap?.walletMode === "watermark"
+                ? "watermark attribution"
+                : "exact probe";
+        if (s.key === "usage_to_wallet") row.note = "the wallet hop alone";
         return [row];
       }),
-    [polled, stats],
+    [polled, stats, snap?.usageMode, snap?.walletMode],
   );
 
   const hops = useMemo(
     () =>
       [
-        { key: "ingest_to_broker", label: "Lago → Redpanda" },
+        { key: "ingest_to_broker", label: direct ? "this app → Redpanda" : "Lago → Redpanda" },
         { key: "broker_to_rw", label: "Redpanda → RisingWave" },
         { key: "rw_to_ch", label: "RisingWave → ClickHouse" },
       ]
         .map((h) => ({ ...h, value: stats[h.key]?.p50 ?? NaN }))
         .filter((h) => Number.isFinite(h.value)),
-    [stats],
+    [stats, direct],
   );
 
   const funnel: FunnelStage[] = useMemo(() => {
     const out: FunnelStage[] = [];
-    if (snap?.counters) out.push({ key: "accepted", label: "Accepted by the Lago API", count: snap.counters.accepted });
+    if (snap?.counters)
+      out.push({
+        key: "accepted",
+        label: direct ? "Acked by Redpanda" : "Accepted by the Lago API",
+        count: snap.counters.accepted,
+      });
     for (const s of ALL_STAGES) {
       const c = snap?.stageCounts?.[s];
       if (c != null) out.push({ key: s, label: STAGE_LABELS[s], count: c });
     }
     return out;
-  }, [snap]);
+  }, [snap, direct]);
 
   /** A negative duration cannot happen physically: it means the two clocks disagree. */
   const skewed = useMemo(
@@ -127,6 +156,14 @@ export function Run({
     <>
       {error && <Banner kind="bad">{error}</Banner>}
       {!connected && <Banner kind="warn">Live stream disconnected — retrying. The server keeps running the test.</Banner>}
+      {direct && (
+        <Banner kind="info">
+          <b>Direct produce.</b> Events are written straight to the raw events topic, byte-shape identical to what the
+          API produces — so the Lago API is not in the send path and its ingest cost is <em>not</em> part of any number
+          below. "Produce ack" replaces "API response", and <code>ingested_at</code> is stamped by this app rather than
+          by Lago. The read paths measured here (current usage, wallets) still go through the API.
+        </Banner>
+      )}
 
       <Card
         title="Launch"
@@ -161,7 +198,13 @@ export function Run({
               disabled={!!live}
               onChange={(e) => setSpec({ ...spec, rateEps: Number(e.target.value) })}
             />
-            <span className="note">one POST per event, bounded worker pool</span>
+            <span className="note">
+              {spec.send.transport === "kafka"
+                ? `${Math.ceil(spec.rateEps / Math.max(1, spec.send.batchSize))} produce/s of ${spec.send.batchSize} events`
+                : spec.send.batchSize > 1
+                  ? `${Math.ceil(spec.rateEps / spec.send.batchSize)} POST/s of ${spec.send.batchSize} events`
+                  : "one POST per event"}
+            </span>
           </label>
           <label className="field">
             Total events
@@ -196,6 +239,58 @@ export function Run({
             />
             <span className="note">hard cap {num(spec.guards.hardCap)} events</span>
           </label>
+        </div>
+
+        <div className="row" style={{ marginTop: 12, gap: 18 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Send:</span>
+          <label className="row" style={{ fontSize: 12, gap: 6 }}>
+            transport
+            <select
+              style={{ width: 190 }}
+              value={spec.send.transport}
+              disabled={!!live}
+              onChange={(e) => {
+                const transport = e.target.value as RunSpec["send"]["transport"];
+                // The two transports have completely different useful batch
+                // sizes (Lago caps at 100, a produce request does not), so
+                // switching without moving the batch would either leave 5 000
+                // events on a POST or 1 event on a produce request.
+                const batchSize = transport === "kafka" ? Math.max(spec.send.batchSize, 500) : 1;
+                setSpec({ ...spec, send: { ...spec.send, transport, batchSize } });
+              }}
+            >
+              <option value="api">Lago API (POST /events)</option>
+              <option value="kafka">Redpanda (direct produce)</option>
+            </select>
+          </label>
+          <label className="row" style={{ fontSize: 12, gap: 6 }}>
+            events per {spec.send.transport === "kafka" ? "produce" : "POST"}
+            <input
+              type="number"
+              min={1}
+              max={spec.send.transport === "kafka" ? 2000 : 100}
+              style={{ width: 80 }}
+              value={spec.send.batchSize}
+              disabled={!!live}
+              onChange={(e) => setSpec({ ...spec, send: { ...spec.send, batchSize: Number(e.target.value) } })}
+            />
+          </label>
+          <label className="row" style={{ fontSize: 12, gap: 6 }}>
+            requests in flight
+            <input
+              type="number"
+              min={0}
+              style={{ width: 70 }}
+              value={spec.send.maxInFlight}
+              disabled={!!live}
+              onChange={(e) => setSpec({ ...spec, send: { ...spec.send, maxInFlight: Number(e.target.value) } })}
+            />
+          </label>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            {spec.send.transport === "kafka"
+              ? "Direct produce writes the API's own message to the raw events topic, so the send rate is no longer capped by Lago's round trip. The read paths (usage, wallets) still go through the API. 0 in flight = sized from the target rate and the ack latency being measured."
+              : "0 = sized from the target rate and the round trip being measured. 1 event per POST is what a per-event integration sends; up to 100 is POST /events/batch."}
+          </span>
         </div>
 
         <div className="row" style={{ marginTop: 12, gap: 18 }}>
@@ -328,6 +423,8 @@ export function Run({
                 }
                 sub={`${num(snap.counters?.probes)} visibility probe(s) · ${num(snap.counters?.usageProbes)} usage sample(s)${
                   snap.counters?.usageTimeouts ? ` · ${snap.counters.usageTimeouts} never counted` : ""
+                }${snap.walletMode !== "off" ? ` · ${num(snap.counters?.walletProbes)} wallet sample(s)` : ""}${
+                  snap.counters?.walletTimeouts ? ` · ${snap.counters.walletTimeouts} never reached the wallet` : ""
                 }`}
               />
             </div>
@@ -405,6 +502,103 @@ export function Run({
             </Card>
           )}
 
+          {snap.walletFreshness?.staleAtStart && (
+            <Banner kind="bad">
+              <b>The wallet numbers below are not latency.</b> Preflight sent one event and the ongoing balance never
+              moved, so the refresh path was not running when this run started. Check that karafka is consuming{" "}
+              <code>wallet_refresh_triggers</code> (<code>LAGO_KAFKA_WALLET_REFRESH_TRIGGERS_TOPIC</code>), that the
+              RisingWave <code>wallet_refresh_triggers_sink</code> exists, and that <code>current_usage</code> itself is
+              live — the refresh reads usage, so a dead usage path is a dead wallet path.
+            </Banner>
+          )}
+          {snap.walletMode === "refresh" && (
+            <Banner kind="warn">
+              <b>Wallet latency is an upper bound in this run.</b> The wallet's customer carries bulk traffic and at least
+              one shape is not a <code>standard</code> charge, so per-event cents are not predictable and each refresh is
+              timed against the oldest outstanding event. A refresh covers every event whose bucket had landed, so the
+              events behind it are charged to the next refresh rather than to the one that actually included them. Point
+              both probes at the same standard charge for per-event truth.
+            </Banner>
+          )}
+          {snap.walletMode !== "off" && snap.walletFreshness?.verdict === "batched" && !snap.walletFreshness.staleAtStart && (
+            <Banner kind="warn">
+              One wallet reading accounted for {num(snap.walletFreshness.worstBatch)} events at once (
+              {Math.round(snap.walletFreshness.batchShare * 100)}% of the run). That is the consumer's batch collapse
+              doing its job — N triggers for one customer cost one refresh — but it means the wallet percentiles describe
+              refresh cadence rather than per-event work. Lower the rate to separate the two.
+            </Banner>
+          )}
+
+          {snap.walletMode !== "off" && snap.walletPoll && (
+            <Card
+              title="Wallet sampling"
+              hint={`${snap.walletMode} attribution · ${snap.walletProbe?.customer ?? "—"} · ${num(
+                snap.walletProbe?.wallets,
+              )} active wallet(s)`}
+            >
+              <div className="grid cols-4">
+                <Stat
+                  label="Polls / second"
+                  value={snap.walletPoll.perSecond.toFixed(1)}
+                  sub={`${num(snap.walletPoll.completed)} completed · ${num(snap.walletPoll.inFlight)} in flight${
+                    snap.walletPoll.failed ? ` · ${num(snap.walletPoll.failed)} failed` : ""
+                  }`}
+                />
+                <Stat
+                  label="GET /wallets RTT"
+                  value={ms(snap.walletPoll.rttP50)}
+                  sub={`p95 ${ms(snap.walletPoll.rttP95)} — the reading is a stored column, so polling never triggers the refresh it times`}
+                />
+                <Stat
+                  label="Uncertainty"
+                  value={`±${ms(snap.walletPoll.resolutionMs)}`}
+                  sub={`half the window each crossing was pinned inside (p95 window ${ms(snap.walletPoll.bracketP95Ms)})`}
+                />
+                <Stat
+                  label="Attributed"
+                  value={`${num(snap.walletProbe?.attributed)} / ${num(snap.walletProbe?.expected)}`}
+                  sub={
+                    snap.walletMode === "watermark"
+                      ? `by predicted cents × ${snap.walletProbe?.centsFactor ?? 1} calibration`
+                      : "by observed increase of the ongoing balance"
+                  }
+                />
+                <Stat
+                  label="Refreshes"
+                  value={num(snap.walletProbe?.refreshes)}
+                  sub={
+                    snap.walletProbe?.eventsPerRefresh != null
+                      ? `${snap.walletProbe.eventsPerRefresh} event(s) per refresh — the consumer's batch collapse${
+                          snap.walletProbe.refreshesExact ? "" : " (lower bound: counted from amount changes only)"
+                        }`
+                      : "none observed yet"
+                  }
+                />
+                <Stat
+                  label="Reading advance"
+                  value={snap.walletFreshness?.verdict ?? "unknown"}
+                  sub={`largest single step ${num(snap.walletFreshness?.worstBatch)} event(s)${
+                    snap.walletFreshness?.batches ? ` · ${num(snap.walletFreshness.batches)} multi-event step(s)` : ""
+                  }`}
+                />
+                <Stat
+                  label="Calibration"
+                  value={snap.walletProbe?.canary || "—"}
+                  sub="one real event, measured at preflight — absorbs taxes, currency subunit and the wallet rate"
+                />
+                <Stat
+                  label="Usage → wallet split"
+                  value={snap.walletProbe?.aligned ? "per event" : "not measurable"}
+                  sub={
+                    snap.walletProbe?.aligned
+                      ? "both probes cover the same events, so the gap is one event compared with itself"
+                      : "the probes cover different traffic — only the two distributions are comparable"
+                  }
+                />
+              </div>
+            </Card>
+          )}
+
           <Card
             title="End-to-end latency, by stage"
             hint="from the moment the POST left this app until a reader could see the row — single clock, no skew"
@@ -438,7 +632,7 @@ export function Run({
             hint="the shape behind the percentiles — a long right tail and a shifted bulk mean different things"
             right={
               <select value={histSeg} onChange={(e) => setHistSeg(e.target.value)} style={{ width: 340 }}>
-                {segments
+                {shown
                   .filter((s) => snap.histograms?.[s.key])
                   .map((s) => (
                     <option key={s.key} value={s.key}>
@@ -453,7 +647,7 @@ export function Run({
               p50={stats[histSeg]?.p50}
               p95={stats[histSeg]?.p95}
               p99={stats[histSeg]?.p99}
-              label={segments.find((s) => s.key === histSeg)?.label ?? histSeg}
+              label={shown.find((s) => s.key === histSeg)?.label ?? histSeg}
             />
           </Card>
 

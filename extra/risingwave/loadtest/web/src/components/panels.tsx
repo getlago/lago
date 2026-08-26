@@ -36,8 +36,8 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
 }
 
 export function HealthPills({ health, onRefresh }: { health: Health | null; onRefresh: () => void }) {
-  const item = (name: string, s?: { ok: boolean; error?: string; version?: string }) => (
-    <span className="pill" title={s?.error ?? s?.version ?? "not checked"}>
+  const item = (name: string, s?: { ok: boolean; error?: string; version?: string; brokers?: string }) => (
+    <span className="pill" title={s?.error ?? s?.version ?? s?.brokers ?? "not checked"}>
       <span className={`dot ${s ? (s.ok ? "ok" : "bad") : ""}`} />
       {name}
     </span>
@@ -47,6 +47,7 @@ export function HealthPills({ health, onRefresh }: { health: Health | null; onRe
       {item("Lago", health?.lago)}
       {item("RisingWave", health?.risingwave)}
       {item("ClickHouse", health?.clickhouse)}
+      {item("Redpanda", health?.redpanda)}
       <button className="btn" onClick={onRefresh} style={{ padding: "3px 10px", fontSize: 12 }}>
         Test
       </button>

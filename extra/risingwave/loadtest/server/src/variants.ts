@@ -144,3 +144,26 @@ export function unitsOfVariant(t: Target, v: EventVariant): number {
   const n = Number(field ? v.properties[field] : undefined);
   return Number.isFinite(n) ? n : 1;
 }
+
+/**
+ * What one event of this variant is worth, in cents BEFORE tax — the quantity a
+ * wallet's ongoing usage balance moves by.
+ *
+ * Only `standard` charges are priced here, and deliberately so: for a standard
+ * charge the amount is linear in units, so the run can predict the exact wallet
+ * reading after k events the same way it predicts usage units. Graduated,
+ * package, percentage and volume charges are not linear in units, and guessing
+ * them would silently mis-attribute every wallet sample — so they return null
+ * and the wallet measurement falls back to a mode that needs no price at all.
+ *
+ * Taxes, currency subunits and the wallet's rate_amount are NOT modelled: the
+ * preflight canary measures the real movement of one event and calibrates the
+ * whole prediction by a single factor, which absorbs all three.
+ */
+export function centsOfVariant(t: Target, v: EventVariant): number | null {
+  if (t.chargeModel !== "standard") return null;
+  const filterAmount = v.chargeFilterId ? t.filters.find((f) => f.id === v.chargeFilterId)?.amount ?? null : null;
+  const amount = filterAmount ?? t.amount;
+  if (amount == null) return null;
+  return unitsOfVariant(t, v) * amount * 100;
+}

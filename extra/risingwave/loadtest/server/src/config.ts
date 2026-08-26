@@ -26,6 +26,39 @@ export type Config = {
     goEnrichedTable: string;
     goExpandedTable: string;
   };
+  /**
+   * Direct produce to Redpanda, for when the Lago API is the throughput ceiling
+   * rather than the thing being measured. Only used when a run's transport is
+   * `kafka`; the read paths (usage, wallets, discovery) always go through Lago.
+   */
+  kafka: {
+    /** Comma-separated host:port. From outside Docker this is the EXTERNAL
+     * listener (localhost:19092 in the dev stack), not redpanda:9092. */
+    brokers: string;
+    /** Must be the topic the pipeline consumes — LAGO_KAFKA_RAW_EVENTS_TOPIC. */
+    topic: string;
+    clientId: string;
+    /** -1 all replicas, 1 leader only, 0 fire-and-forget (no ack, so no round
+     * trip to measure and no error to report — throughput only). */
+    acks: number;
+    compression: "none" | "gzip";
+    ssl: boolean;
+    sasl: { mechanism: "" | "plain" | "scram-sha-256" | "scram-sha-512"; username: string; password: string };
+    /** Blank = read the UUID from GET /api/v1/organizations at preflight. */
+    organizationId: string;
+    /** The `source` the API stamps. Both consumers read `http_ruby` as "custom
+     * expressions already evaluated", so changing it measures another path. */
+    source: string;
+  };
+  /** How the sender talks HTTP to Lago. Shared by every request the app makes. */
+  http: {
+    /** Max TCP connections to the Lago origin. With h2 each one multiplexes
+     * many requests, so a handful is plenty; without it this IS the in-flight
+     * ceiling, whatever the run asks for. */
+    connections: number;
+    /** Offer HTTP/2 in the TLS handshake. Falls back to 1.1 when not offered. */
+    h2: boolean;
+  };
   measurement: {
     /** Visibility poll tick. This IS the resolution of every polled latency. */
     pollTickMs: number;
@@ -38,6 +71,12 @@ export type Config = {
     usagePollMs: number;
     /** How many current_usage requests may be in flight at once. */
     usagePollConcurrency: number;
+    /** GET /wallets poll interval. The reading is a stored column, so polling
+     * never triggers the refresh being timed — but the index endpoint serves the
+     * whole wallet payload, so measured RTT can rival current_usage. */
+    walletPollMs: number;
+    /** How many /wallets requests may be in flight at once. */
+    walletPollConcurrency: number;
   };
 };
 
@@ -61,13 +100,35 @@ const DEFAULTS: Config = {
     goEnrichedTable: "events_enriched",
     goExpandedTable: "events_enriched_expanded",
   },
-  measurement: { pollTickMs: 200, sweepMs: 2000, probeTimeoutMs: 120_000, usagePollMs: 100, usagePollConcurrency: 4 },
+  kafka: {
+    brokers: "localhost:19092",
+    topic: "events-raw",
+    clientId: "lago-rw-loadtest",
+    acks: 1,
+    compression: "none",
+    ssl: false,
+    sasl: { mechanism: "", username: "", password: "" },
+    organizationId: "",
+    source: "http_ruby",
+  },
+  http: { connections: 64, h2: true },
+  measurement: {
+    pollTickMs: 200,
+    sweepMs: 2000,
+    probeTimeoutMs: 120_000,
+    usagePollMs: 100,
+    usagePollConcurrency: 4,
+    walletPollMs: 100,
+    walletPollConcurrency: 4,
+  },
 };
 
 const merge = (base: Config, patch: Partial<Config> | null): Config => ({
   lago: { ...base.lago, ...patch?.lago },
   risingwave: { ...base.risingwave, ...patch?.risingwave },
   clickhouse: { ...base.clickhouse, ...patch?.clickhouse },
+  kafka: { ...base.kafka, ...patch?.kafka, sasl: { ...base.kafka.sasl, ...patch?.kafka?.sasl } },
+  http: { ...base.http, ...patch?.http },
   measurement: { ...base.measurement, ...patch?.measurement },
 });
 
@@ -173,5 +234,13 @@ export function redact(c: Config) {
     lago: { ...c.lago, apiKey: mask(c.lago.apiKey), apiKeySet: Boolean(c.lago.apiKey) },
     risingwave: { ...c.risingwave, url: c.risingwave.url.replace(/\/\/([^:]+):[^@]*@/, "//$1:***@") },
     clickhouse: { ...c.clickhouse, password: mask(c.clickhouse.password), passwordSet: Boolean(c.clickhouse.password) },
+    kafka: {
+      ...c.kafka,
+      sasl: {
+        ...c.kafka.sasl,
+        password: mask(c.kafka.sasl.password),
+        passwordSet: Boolean(c.kafka.sasl.password),
+      },
+    },
   };
 }

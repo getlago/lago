@@ -3,7 +3,9 @@ import { resolve } from "node:path";
 import type { FastifyInstance } from "fastify";
 import { getConfig, isConfigured, redact, saveConfig, storeInfo, RUNS_DIR, type Config } from "./config.js";
 import { discover, type DiscoveryResult, type Target } from "./discovery.js";
-import { lagoHealth } from "./clients/lago.js";
+import { lagoHealth, MAX_EVENT_BATCH } from "./clients/lago.js";
+import { MAX_KAFKA_BATCH } from "./clients/events.js";
+import { redpandaHealth } from "./clients/redpanda.js";
 import { rwHealth } from "./clients/risingwave.js";
 import { chHealth } from "./clients/clickhouse.js";
 import { Run } from "./run/runner.js";
@@ -21,8 +23,10 @@ function defaultSpec(): RunSpec {
     totalEvents: 1000,
     ramp: { enabled: false, fromEps: 10, overSec: 30 },
     probeEvery: 20,
+    send: { transport: "api", batchSize: 1, maxInFlight: 0 },
     targetIds: [],
     probeTargetId: null,
+    walletProbeTargetId: null,
     stages: Object.fromEntries(ALL_STAGES.map((s) => [s, true])) as Record<StageKey, boolean>,
     guards: { maxErrorRatePct: 5, hardCap: 100_000 },
     spread: { ...DEFAULT_SPREAD },
@@ -44,8 +48,8 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   app.get("/api/health", async () => {
-    const [lago, rw, ch] = await Promise.all([lagoHealth(), rwHealth(), chHealth()]);
-    return { lago, risingwave: rw, clickhouse: ch, checkedAt: Date.now() };
+    const [lago, rw, ch, rp] = await Promise.all([lagoHealth(), rwHealth(), chHealth(), redpandaHealth()]);
+    return { lago, risingwave: rw, clickhouse: ch, redpanda: rp, checkedAt: Date.now() };
   });
 
   app.post("/api/discover", async (_req, reply) => {
@@ -59,7 +63,10 @@ export async function registerRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get("/api/discover", async () => lastDiscovery ?? { targets: [], subscriptions: [], warnings: [], scannedAt: 0 });
+  app.get(
+    "/api/discover",
+    async () => lastDiscovery ?? { targets: [], subscriptions: [], wallets: [], warnings: [], scannedAt: 0 },
+  );
 
   app.post<{ Body: Partial<RunSpec> }>("/api/runs", async (req, reply) => {
     if (!isConfigured())
@@ -74,14 +81,28 @@ export async function registerRoutes(app: FastifyInstance) {
       ...req.body,
       stages: { ...defaultSpec().stages, ...req.body?.stages },
       spread: { ...DEFAULT_SPREAD, ...req.body?.spread },
+      send: { ...defaultSpec().send, ...req.body?.send },
     };
+    spec.send.transport = spec.send.transport === "kafka" ? "kafka" : "api";
+    // The API refuses a batch over 100; a produce request has no such limit, so
+    // the two transports cannot share one clamp.
+    const maxBatch = spec.send.transport === "kafka" ? MAX_KAFKA_BATCH : MAX_EVENT_BATCH;
+    spec.send.batchSize = Math.max(1, Math.min(maxBatch, Math.floor(spec.send.batchSize) || 1));
+    if (spec.send.transport === "kafka" && !getConfig().kafka.brokers.trim())
+      return reply
+        .code(400)
+        .send({ error: "direct produce needs a Redpanda broker — set it on the Setup screen (Direct produce)" });
+    spec.send.maxInFlight = Math.max(0, Math.min(4096, Math.floor(spec.send.maxInFlight) || 0));
     const byId = new Map(lastDiscovery.targets.map((t) => [t.id, t]));
     const targets = spec.targetIds.map((id) => byId.get(id)).filter((t): t is Target => Boolean(t));
     if (targets.length === 0) return reply.code(400).send({ error: "no valid target selected" });
     const probeTarget = spec.probeTargetId ? byId.get(spec.probeTargetId) ?? null : null;
     if (spec.probeTargetId && !probeTarget) return reply.code(400).send({ error: "probe target not found" });
+    const walletTarget = spec.walletProbeTargetId ? byId.get(spec.walletProbeTargetId) ?? null : null;
+    if (spec.walletProbeTargetId && !walletTarget)
+      return reply.code(400).send({ error: "wallet probe target not found" });
 
-    const run = new Run(spec, targets, probeTarget);
+    const run = new Run(spec, targets, probeTarget, walletTarget);
     currentRun = run;
     const ok = await run.runPreflight();
     if (!ok) return reply.code(422).send({ error: "preflight failed", run: run.snapshot() });

@@ -28,6 +28,7 @@ export default function App() {
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [probeTargetId, setProbeTargetId] = useState<string | null>(null);
+  const [walletProbeTargetId, setWalletProbeTargetId] = useState<string | null>(null);
   const [theme, setTheme] = useState<"system" | "light" | "dark">(
     () => (localStorage.getItem(THEME_KEY) as "system" | "light" | "dark" | null) ?? "system",
   );
@@ -63,8 +64,8 @@ export default function App() {
 
   // The spec the server receives always reflects the current picker state.
   const effectiveSpec: RunSpec | null = useMemo(
-    () => (spec ? { ...spec, targetIds: [...selected], probeTargetId } : null),
-    [spec, selected, probeTargetId],
+    () => (spec ? { ...spec, targetIds: [...selected], probeTargetId, walletProbeTargetId } : null),
+    [spec, selected, probeTargetId, walletProbeTargetId],
   );
 
   const phase = snap?.phase ?? "idle";
@@ -133,13 +134,16 @@ export default function App() {
             discovery={discovery}
             selected={selected}
             probeTargetId={probeTargetId}
+            walletProbeTargetId={walletProbeTargetId}
             onDiscovered={(d) => {
               setDiscovery(d);
               setSelected(new Set());
               setProbeTargetId(null);
+              setWalletProbeTargetId(null);
             }}
             onSelect={setSelected}
             onProbe={setProbeTargetId}
+            onWalletProbe={setWalletProbeTargetId}
           />
         )}
         {tab === "run" && effectiveSpec && (
