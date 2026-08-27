@@ -30,9 +30,8 @@ func setupFlagStore(t *testing.T, name string) (*FlagStore, *miniredis.Miniredis
 	s := miniredis.RunT(t)
 	client := goredis.NewClient(&goredis.Options{Addr: s.Addr()})
 	store := &FlagStore{
-		name:    name,
-		context: context.Background(),
-		db:      &redis.RedisDB{Client: client},
+		name: name,
+		db:   &redis.RedisDB{Client: client},
 	}
 	return store, s
 }
@@ -41,7 +40,7 @@ func TestFlag(t *testing.T) {
 	t.Run("adds member to sorted set with correct format", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
 
 		members, err := s.ZMembers("test_flags")
@@ -60,7 +59,7 @@ func TestFlag(t *testing.T) {
 	t.Run("bucket follows SUBSCRIPTION_BUCKET_DURATION intervals", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
 
 		members, err := s.ZMembers("test_flags")
@@ -77,9 +76,9 @@ func TestFlag(t *testing.T) {
 	t.Run("two calls in same window produce one member", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
-		err = store.Flag("org1:sub1")
+		err = store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
 
 		members, err := s.ZMembers("test_flags")
@@ -90,9 +89,9 @@ func TestFlag(t *testing.T) {
 	t.Run("different values produce separate members", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
-		err = store.Flag("org2:sub2")
+		err = store.Flag(context.Background(), "org2:sub2")
 		assert.NoError(t, err)
 
 		members, err := s.ZMembers("test_flags")
@@ -103,7 +102,7 @@ func TestFlag(t *testing.T) {
 	t.Run("new bucket after time window advances", func(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.NoError(t, err)
 
 		// Fast-forward miniredis past the merge delay window
@@ -124,7 +123,7 @@ func TestFlag(t *testing.T) {
 		store, s := setupFlagStore(t, "test_flags")
 
 		s.SetError("forced error")
-		err := store.Flag("org1:sub1")
+		err := store.Flag(context.Background(), "org1:sub1")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "forced error")
 	})

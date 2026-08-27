@@ -153,13 +153,13 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 			})
 		}
 
-		flagResult := processor.RefreshService.FlagSubscriptionRefresh(enrichedEvent)
+		flagResult := processor.RefreshService.FlagSubscriptionRefresh(ctx, enrichedEvent)
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
 		}
 
 		// Expire cache at charge and charge filter level
-		processor.CacheService.ExpireCache(enrichedEvents)
+		processor.CacheService.ExpireCache(ctx, enrichedEvents)
 	}
 
 	return utils.SuccessResult(enrichedEvent)

@@ -1,6 +1,7 @@
 package events_processor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -46,7 +47,7 @@ func TestExpireCache(t *testing.T) {
 			FlatFilter:             flatFilter,
 		}
 
-		cacheService.ExpireCache([]*models.EnrichedEvent{&event})
+		cacheService.ExpireCache(context.Background(), []*models.EnrichedEvent{&event})
 
 		assert.Equal(t, 1, cacheStore.ExecutionCount)
 	})
@@ -62,7 +63,7 @@ func TestExpireCache(t *testing.T) {
 			SubscriptionID:         "sub123",
 		}
 
-		cacheService.ExpireCache([]*models.EnrichedEvent{&event})
+		cacheService.ExpireCache(context.Background(), []*models.EnrichedEvent{&event})
 
 		assert.Equal(t, 0, cacheStore.ExecutionCount)
 	})
@@ -93,7 +94,7 @@ func TestExpireCache(t *testing.T) {
 			FlatFilter:             flatFilter,
 		}
 
-		cacheService.ExpireCache([]*models.EnrichedEvent{&event})
+		cacheService.ExpireCache(context.Background(), []*models.EnrichedEvent{&event})
 
 		assert.Equal(t, 1, cacheStore.ExecutionCount)
 	})
@@ -145,7 +146,7 @@ func TestExpireCache(t *testing.T) {
 			FlatFilter:             flatFilter2,
 		}
 
-		cacheService.ExpireCache([]*models.EnrichedEvent{&event1, &event2})
+		cacheService.ExpireCache(context.Background(), []*models.EnrichedEvent{&event1, &event2})
 
 		assert.Equal(t, 2, cacheStore.ExecutionCount)
 	})
@@ -184,7 +185,7 @@ func TestExpireCache(t *testing.T) {
 			SubscriptionID:         "sub123",
 		}
 
-		cacheService.ExpireCache([]*models.EnrichedEvent{&event1, &event2})
+		cacheService.ExpireCache(context.Background(), []*models.EnrichedEvent{&event1, &event2})
 
 		assert.Equal(t, 1, cacheStore.ExecutionCount)
 	})

@@ -1,6 +1,7 @@
 package events_processor
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/getlago/lago/events-processor/models"
@@ -17,8 +18,8 @@ func NewSubscriptionRefreshService(flagStore models.Flagger) *SubscriptionRefres
 	}
 }
 
-func (s *SubscriptionRefreshService) FlagSubscriptionRefresh(event *models.EnrichedEvent) utils.Result[bool] {
-	err := s.flagStore.Flag(fmt.Sprintf("%s:%s", event.OrganizationID, event.SubscriptionID))
+func (s *SubscriptionRefreshService) FlagSubscriptionRefresh(ctx context.Context, event *models.EnrichedEvent) utils.Result[bool] {
+	err := s.flagStore.Flag(ctx, fmt.Sprintf("%s:%s", event.OrganizationID, event.SubscriptionID))
 	if err != nil {
 		return utils.FailedBoolResult(err)
 	}

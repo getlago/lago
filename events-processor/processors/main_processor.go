@@ -98,7 +98,7 @@ func initFlagStore(ctx context.Context, name string) (*models.FlagStore, error) 
 		return nil, err
 	}
 
-	return models.NewFlagStore(ctx, db, name), nil
+	return models.NewFlagStore(db, name), nil
 }
 
 func initChargeCacheStore(ctx context.Context) (*models.ChargeCache, error) {
@@ -119,7 +119,7 @@ func initChargeCacheStore(ctx context.Context) (*models.ChargeCache, error) {
 		return nil, err
 	}
 
-	cacheStore := models.NewCacheStore(ctx, db)
+	cacheStore := models.NewCacheStore(db)
 	var store models.Cacher = cacheStore
 	chargeStore := models.NewChargeCache(&store)
 

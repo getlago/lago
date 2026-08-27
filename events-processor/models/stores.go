@@ -26,20 +26,18 @@ func NewApiStore(db *database.DB) *ApiStore {
 }
 
 type FlagStore struct {
-	name    string
-	context context.Context
-	db      *redis.RedisDB
+	name string
+	db   *redis.RedisDB
 }
 
 type Flagger interface {
-	Flag(value string) error
+	Flag(ctx context.Context, value string) error
 }
 
-func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagStore {
+func NewFlagStore(redis *redis.RedisDB, name string) *FlagStore {
 	return &FlagStore{
-		name:    name,
-		context: ctx,
-		db:      redis,
+		name: name,
+		db:   redis,
 	}
 }
 
@@ -49,13 +47,17 @@ func NewFlagStore(ctx context.Context, redis *redis.RedisDB, name string) *FlagS
 // score to the latest event, waiting after the last event in that window.
 // Once the window elapses, new events create a new member, ensuring the
 // previous one ages out and gets picked up by the consumer (no starvation).
-func (store *FlagStore) Flag(value string) error {
+//
+// The context must be scoped to the record being processed, never to the
+// process lifetime: a process-wide context is canceled on shutdown, which
+// would fail the write for every event still in flight.
+func (store *FlagStore) Flag(ctx context.Context, value string) error {
 	now := time.Now().Unix()
 
 	// Calculate the bucket (time window) for the event
 	bucket := (now / SUBSCRIPTION_BUCKET_DURATION) * SUBSCRIPTION_BUCKET_DURATION
 
-	result := store.db.Client.ZAdd(store.context, store.name, goredis.Z{
+	result := store.db.Client.ZAdd(ctx, store.name, goredis.Z{
 		Score:  float64(now),
 		Member: fmt.Sprintf("%s|%d", value, bucket),
 	})
@@ -72,18 +74,16 @@ func (store *FlagStore) Close() error {
 
 type Cacher interface {
 	Close() error
-	ExpireKey(key string) utils.Result[bool]
+	ExpireKey(ctx context.Context, key string) utils.Result[bool]
 }
 
 type CacheStore struct {
-	context context.Context
-	db      *redis.RedisDB
+	db *redis.RedisDB
 }
 
-func NewCacheStore(ctx context.Context, redis *redis.RedisDB) *CacheStore {
+func NewCacheStore(redis *redis.RedisDB) *CacheStore {
 	return &CacheStore{
-		context: ctx,
-		db:      redis,
+		db: redis,
 	}
 }
 
@@ -91,9 +91,11 @@ func (store *CacheStore) Close() error {
 	return store.db.Client.Close()
 }
 
-func (store *CacheStore) ExpireKey(key string) utils.Result[bool] {
+// ExpireKey schedules the removal of a cache key. As for FlagStore.Flag, the
+// context must be scoped to the record being processed, not to the process.
+func (store *CacheStore) ExpireKey(ctx context.Context, key string) utils.Result[bool] {
 	// Uses Expire command rather than Del to take clickhouse propagation time into account
-	res := store.db.Client.Expire(store.context, key, EXPIRATION_TIME)
+	res := store.db.Client.Expire(ctx, key, EXPIRATION_TIME)
 	if err := res.Err(); err != nil {
 		return utils.FailedBoolResult(err)
 	}
