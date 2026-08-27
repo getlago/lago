@@ -1,6 +1,7 @@
 package events_processor
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -28,13 +29,13 @@ func TestFlagSubscriptionRefresh(t *testing.T) {
 		SubscriptionID: "sub_id",
 	}
 
-	result := refreshService.FlagSubscriptionRefresh(&event)
+	result := refreshService.FlagSubscriptionRefresh(context.Background(), &event)
 	assert.Equal(t, 1, flagStore.ExecutionCount)
 	assert.True(t, result.Success())
 	assert.True(t, result.Value())
 
 	flagStore.ReturnedError = fmt.Errorf("Failed to flag subscription")
-	result = refreshService.FlagSubscriptionRefresh(&event)
+	result = refreshService.FlagSubscriptionRefresh(context.Background(), &event)
 	assert.Equal(t, 2, flagStore.ExecutionCount)
 	assert.True(t, result.Failure())
 	assert.Error(t, result.Error())

@@ -1,6 +1,10 @@
 package tests
 
-import "github.com/getlago/lago/events-processor/utils"
+import (
+	"context"
+
+	"github.com/getlago/lago/events-processor/utils"
+)
 
 type MockCacheStore struct {
 	LastKey        string
@@ -12,7 +16,7 @@ func (mcs *MockCacheStore) Close() error {
 	return nil
 }
 
-func (mcs *MockCacheStore) ExpireKey(key string) utils.Result[bool] {
+func (mcs *MockCacheStore) ExpireKey(_ context.Context, key string) utils.Result[bool] {
 	mcs.LastKey = key
 	mcs.ExecutionCount++
 

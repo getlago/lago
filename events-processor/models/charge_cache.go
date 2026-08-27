@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -19,7 +20,7 @@ func NewChargeCache(cacheStore *Cacher) *ChargeCache {
 	}
 }
 
-func (cache *ChargeCache) Expire(ff *FlatFilter, subID string) utils.Result[bool] {
+func (cache *ChargeCache) Expire(ctx context.Context, ff *FlatFilter, subID string) utils.Result[bool] {
 	// Build cache key components
 	keyParts := []string{
 		"charge-usage",
@@ -40,5 +41,5 @@ func (cache *ChargeCache) Expire(ff *FlatFilter, subID string) utils.Result[bool
 	cacheKey := strings.Join(keyParts, "/")
 
 	// Remove the cache entry
-	return cache.CacheStore.ExpireKey(cacheKey)
+	return cache.CacheStore.ExpireKey(ctx, cacheKey)
 }

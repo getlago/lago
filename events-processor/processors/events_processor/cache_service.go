@@ -1,6 +1,8 @@
 package events_processor
 
 import (
+	"context"
+
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
@@ -15,13 +17,13 @@ func NewCacheService(chargeCacheStore *models.ChargeCache) *CacheService {
 	}
 }
 
-func (s *CacheService) ExpireCache(events []*models.EnrichedEvent) {
+func (s *CacheService) ExpireCache(ctx context.Context, events []*models.EnrichedEvent) {
 	for _, event := range events {
 		if event.FlatFilter == nil {
 			continue
 		}
 
-		cacheResult := s.chargeCacheStore.Expire(event.FlatFilter, event.SubscriptionID)
+		cacheResult := s.chargeCacheStore.Expire(ctx, event.FlatFilter, event.SubscriptionID)
 		if cacheResult.Failure() {
 			utils.CaptureError(cacheResult.Error())
 		}
