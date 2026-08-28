@@ -28,7 +28,7 @@ function defaultSpec(): RunSpec {
     probeTargetId: null,
     walletProbeTargetId: null,
     stages: Object.fromEntries(ALL_STAGES.map((s) => [s, true])) as Record<StageKey, boolean>,
-    guards: { maxErrorRatePct: 5, hardCap: 100_000 },
+    guards: { maxErrorRatePct: 5, hardCap: 1_000_000 },
     spread: { ...DEFAULT_SPREAD },
   };
 }

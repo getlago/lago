@@ -100,6 +100,21 @@ export type PreflightCheck = {
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
+/**
+ * A wallet's ongoing usage reads back as a WHOLE number of cents, so a canary
+ * event worth a fraction of one cannot be observed to land at all: the balance
+ * rounds back to where it started and the check times out blaming the pipeline
+ * for a resolution problem. The canary is scaled until it is worth at least
+ * this much, which also keeps it clear of the cent of rounding that tax and the
+ * wallet's rate_amount can eat.
+ */
+const WALLET_CANARY_MIN_CENTS = 5;
+
+/** Trailing window the error-rate stop guard judges the send path on. */
+const GUARD_WINDOW_SEC = 10;
+/** Below this many sends in the window the ratio is too noisy to act on. */
+const GUARD_MIN_SAMPLES = 50;
+
 /** How many events should have been sent by `elapsedSec`, integrating the ramp. */
 function plannedBy(spec: RunSpec, elapsedSec: number): number {
   const { rateEps, ramp } = spec;
@@ -467,7 +482,11 @@ export class Run {
     checks.push({
       name: "Guards",
       ok: this.spec.totalEvents <= this.spec.guards.hardCap,
-      detail: `total ${this.spec.totalEvents} vs hard cap ${this.spec.guards.hardCap}; stop above ${this.spec.guards.maxErrorRatePct}% errors`,
+      detail:
+        `total ${this.spec.totalEvents} vs hard cap ${this.spec.guards.hardCap}; ` +
+        (this.spec.guards.maxErrorRatePct > 0
+          ? `stop above ${this.spec.guards.maxErrorRatePct}% errors over ${GUARD_WINDOW_SEC}s`
+          : "error-rate stop disabled"),
       gates: ["everything"],
     });
 
@@ -578,7 +597,12 @@ export class Run {
       name: "Send transport",
       ok: Boolean(this.envelope),
       detail: this.envelope
-        ? `DIRECT PRODUCE to ${k.topic}, keyed by <organization_id>-<external_subscription_id>, acks=${k.acks}` +
+        ? `DIRECT PRODUCE to ${k.topic}, ${
+            k.partitionKey === "subscription"
+              ? "keyed by <organization_id>-<external_subscription_id> (so this run reaches at most " +
+                `${new Set(this.targets.map((x) => x.subscriptionExternalId)).size} of the topic's partitions)`
+              : "UNKEYED, round-robin over every partition"
+          }, acks=${k.acks}` +
           `${k.compression === "none" ? "" : `, ${k.compression}`}, source=${this.envelope.source}. The Lago API is out of ` +
           "the send path, so \"API response\" below is the broker ack and ingested_at is stamped by this app." +
           (k.acks === 0 ? " acks=0: nothing is acked, so a rejected batch cannot be reported and the ack latency is local only." : "")
@@ -805,6 +829,32 @@ export class Run {
   }
 
   /**
+   * Fatten ONE canary event until its predicted movement clears the wallet's
+   * integer-cent resolution.
+   *
+   * Only the canary is scaled, never the bulk plan: bulk variants carry exactly
+   * one unit per event, which is what makes the run's expected unit total exact
+   * and its usage attribution checkable. The canary is a single calibration
+   * event and its units are carried into `predicted` either way, so scaling it
+   * costs the measurement nothing.
+   *
+   * A count metric adds one unit per event by definition and cannot be scaled
+   * by fattening a property — it needs a dearer charge or several events, which
+   * the failure detail says. Same for a variant with no priced field.
+   */
+  private scaleCanaryVariant(t: Target, v: EventVariant): EventVariant {
+    const field = t.fieldName?.trim();
+    const per = centsOfVariant(t, v);
+    if (!field || t.aggregationType === "count_agg" || per == null || per <= 0) return v;
+    const factor = Math.ceil(WALLET_CANARY_MIN_CENTS / per);
+    if (factor <= 1) return v;
+    return {
+      ...v,
+      properties: { ...v.properties, [field]: String(unitsOfVariant(t, v) * factor) },
+    };
+  }
+
+  /**
    * Send ONE event and watch the wallet, for the same reason the usage canary
    * exists: a wallet path that is not wired up (no refresh consumer, a wallet
    * restricted away from this metric, triggers not sinking) does not fail — it
@@ -825,8 +875,10 @@ export class Run {
     // ago on the same customer, and its refresh arriving during this one would
     // make a stranger's event look like the calibration event.
     const before = await this.settleWallet(t.customerExternalId);
-    const variant = buildVariants(t, this.spec.spread).variants[0]!;
+    const base = buildVariants(t, this.spec.spread).variants[0]!;
+    const variant = this.scaleCanaryVariant(t, base);
     const predicted = centsOfVariant(t, variant);
+    const scaledFrom = variant === base ? null : centsOfVariant(t, base);
     const res = await this.send([
       {
         transaction_id: `${this.prefix}wcanary`,
@@ -871,10 +923,14 @@ export class Run {
         name: "Wallet refresh path",
         ok: false,
         detail:
-          `one event did NOT move the ongoing usage balance off ${before} cents within ${budgetMs}ms. ` +
+          `the canary event did NOT move the ongoing usage balance off ${before} cents within ${budgetMs}ms. ` +
           (tooSmall
-            ? `One event of this shape is worth ~${predicted!.toFixed(3)} cents, which rounds to nothing — the reading ` +
-              "is too coarse to attribute single events. Raise the charge price or the units per event."
+            ? `It is worth ~${predicted!.toFixed(3)} cents, which rounds to nothing against a balance read in whole ` +
+              `cents, and it could not be scaled up: ${
+                t.aggregationType === "count_agg"
+                  ? `${t.metricCode} is a count metric, so every event is worth exactly one unit`
+                  : "this variant has no priced field to fatten"
+              }. Point the wallet probe at a sum metric, or raise the charge price so one event clears a cent.`
             : "Check that the wallet refresh consumer is running (LAGO_KAFKA_WALLET_REFRESH_TRIGGERS_TOPIC set and " +
               "karafka consuming wallet_refresh_triggers), that the RisingWave wallet_refresh_triggers_sink exists, and " +
               "that current_usage itself is live — the refresh reads usage, so a dead usage path is a dead wallet path."),
@@ -892,8 +948,12 @@ export class Run {
       name: "Wallet refresh path",
       ok: true,
       detail:
-        `one event moved the ongoing usage balance by ${observed} cents in ${seenAt - res.sentAt}ms, so the trigger → ` +
+        `the canary moved the ongoing usage balance by ${observed} cents in ${seenAt - res.sentAt}ms, so the trigger → ` +
         "consumer → refresh path is live" +
+        (scaledFrom != null
+          ? `. It was scaled to ~${predicted!.toFixed(2)} cents (one plain event of this shape is worth ` +
+            `${scaledFrom.toFixed(3)}, below the wallet's whole-cent resolution)`
+          : "") +
         (this.walletMode === "watermark" && predicted
           ? `. Predicted ${predicted.toFixed(2)} cents pre-tax, so the calibration factor is ` +
             `${this.walletCentsFactor.toFixed(3)} (taxes, currency subunit and the wallet's rate, measured rather than modelled)`
@@ -1454,12 +1514,34 @@ export class Run {
     this.errors.set(key, (this.errors.get(key) ?? 0) + 1);
   }
 
+  /**
+   * Abort the run when the send path is failing badly enough that whatever it
+   * measures is worthless.
+   *
+   * WINDOWED, not cumulative. A load test exists to push the pipeline until it
+   * breaks, so the only actionable question is "is the send path failing NOW?".
+   * Averaging over the whole run answers a different one and gets it wrong in
+   * both directions: a burst of failures during warm-up poisons the ratio for
+   * every healthy minute that follows, and a run that degrades at the very end
+   * never trips because the early clean traffic dilutes it.
+   *
+   * 0 disables the guard. That is the only way to express "do not stop me" and
+   * it is what the field's minimum has always allowed you to type; the previous
+   * reading (zero tolerance, trip on the first failed request) made a 500k-event
+   * run impossible to finish on any real network.
+   */
   private tripGuard(): boolean {
-    const { sent, failed } = this.counters;
-    if (sent < 50) return false;
+    const limit = this.spec.guards.maxErrorRatePct;
+    if (limit <= 0) return false;
+    const { sent, failed } = this.rate.recent(GUARD_WINDOW_SEC);
+    if (sent < GUARD_MIN_SAMPLES) return false;
     const pct = (failed / sent) * 100;
-    if (pct > this.spec.guards.maxErrorRatePct) {
-      this.log("error", `error rate ${pct.toFixed(1)}% above ${this.spec.guards.maxErrorRatePct}% — stopping`);
+    if (pct > limit) {
+      this.log(
+        "error",
+        `error rate ${pct.toFixed(1)}% over the last ${GUARD_WINDOW_SEC}s ` +
+          `(${failed}/${sent}) above ${limit}% — stopping`,
+      );
       this.stopRequested = true;
       return true;
     }

@@ -370,8 +370,13 @@ export function Setup({
         <p style={{ marginTop: 12, fontSize: 12, color: "var(--text-muted)" }}>
           The message produced is byte-shape identical to what <code>Events::KafkaProducerService</code> writes —
           <code>timestamp</code> as a JSON string of float seconds, <code>ingested_at</code> without the trailing{" "}
-          <code>Z</code>, <code>precise_total_amount_cents</code> defaulting to <code>"0.0"</code>, keyed by{" "}
-          <code>&lt;organization_id&gt;-&lt;external_subscription_id&gt;</code>. What it cannot reproduce is what the API
+          <code>Z</code>, <code>precise_total_amount_cents</code> defaulting to <code>"0.0"</code>. The partition key is
+          the one deliberate difference: the API keys by{" "}
+          <code>&lt;organization_id&gt;-&lt;external_subscription_id&gt;</code>, but a run has only as many keys as it has
+          targets, which pins all its traffic to that many partitions and caps RisingWave's source parallelism to the
+          same number — so load runs produce unkeyed by default and round-robin over every partition. Nothing downstream
+          is partition-affine. Set <code>kafka.partitionKey</code> to <code>subscription</code> to reproduce the API's own
+          partitioning. What it cannot reproduce is what the API
           does <em>besides</em> producing: for an organization whose events store is Postgres, the <code>events</code> row
           and <code>PostProcessJob</code> never happen, so any usage read not served by the realtime 15-minute buckets has
           nothing to read. Preflight says which case this organization is in.

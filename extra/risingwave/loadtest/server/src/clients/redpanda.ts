@@ -27,8 +27,13 @@ import type { EventPayload, SendResult } from "./lago.js";
  *    processor re-evaluate them and measures a different code path.
  *  * `source_metadata.api_post_processed` is `!clickhouse_events_store?`, read
  *    from the organization rather than guessed.
- *  * the key is `<organization_id>-<external_subscription_id>`, so per-subscription
- *    ordering is preserved exactly as the API produces it.
+ *  * the key is `<organization_id>-<external_subscription_id>` when
+ *    `kafka.partitionKey` is `subscription`, so per-subscription ordering is
+ *    preserved exactly as the API produces it. The default is `none`: a run's
+ *    key set is only as wide as its target list, and 2 targets pin all traffic
+ *    to at most 2 partitions — which silently caps RisingWave's source
+ *    parallelism to the same 2 readers. Unkeyed messages round-robin over every
+ *    partition, and nothing downstream is partition-affine.
  *
  * What is NOT reproduced, because the API does it and Kafka cannot: the Postgres
  * `events` row and `Events::PostProcessJob` for an organization whose events
@@ -159,8 +164,12 @@ export async function produceEvents(payloads: EventPayload[], env: RawEventEnvel
   const t0 = performance.now();
   try {
     const p = await ensureProducer();
+    // A null key makes kafkajs' DefaultPartitioner round-robin instead of
+    // hashing, which is the whole point: the hashed form can only ever reach as
+    // many partitions as the run has distinct subscriptions.
+    const keyed = getConfig().kafka.partitionKey === "subscription";
     const messages = payloads.map((payload) => ({
-      key: `${env.organizationId}-${payload.external_subscription_id}`,
+      key: keyed ? `${env.organizationId}-${payload.external_subscription_id}` : null,
       value: JSON.stringify(buildRawEvent(payload, env, Date.now())),
     }));
     await p.send({ topic, acks, compression: compressionOf(), messages });

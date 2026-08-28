@@ -13,9 +13,13 @@
 #     would be counted twice. The target table must be dropped and recreated
 #     with the sink.
 #
-# Scope: everything downstream of (and including) `events_expanded`. The CDC
-# dimensions, `flat_filters`, `events_enriched` and its own load sink are
-# left running — no CDC resnapshot, no replication-slot churn.
+# Scope: everything downstream of (and including) `events_expanded`, PLUS
+# the stage-1 lookup relations and UDFs it depends on (subscriptions_agg,
+# flat_filters_agg, matching_filter/pick_subscription/extract_grouped_by —
+# cheap to rebuild from the CDC tables, and dropping them is what lets a
+# changed 02/03 definition reapply). The CDC dimensions, `events_enriched`
+# and its own load sink are left running — no CDC resnapshot, no
+# replication-slot churn.
 #
 # Usage: ./extra/risingwave/reapply_enrichment.sh [--yes]
 set -euo pipefail
@@ -83,6 +87,28 @@ DROP MATERIALIZED VIEW IF EXISTS usage_buckets_15m;
 
 DROP SINK IF EXISTS events_expanded_load;
 DROP TABLE IF EXISTS events_expanded;
+
+-- Stage-1 lookup relations + UDFs (2026-08-28 redesign, ROADMAP §0c).
+-- Dimension-derived only — setup.sh recreates them from the CDC tables in
+-- seconds, no event replay involved.
+DROP FUNCTION IF EXISTS matching_filter;
+DROP FUNCTION IF EXISTS pick_subscription;
+DROP FUNCTION IF EXISTS extract_grouped_by;
+DROP INDEX IF EXISTS idx_flat_filters_agg_lookup;
+DROP SINK IF EXISTS flat_filters_agg_load;
+DROP TABLE IF EXISTS flat_filters_agg;
+DROP MATERIALIZED VIEW IF EXISTS flat_filters_agg_mv;
+DROP SINK IF EXISTS subscriptions_agg_load;
+DROP TABLE IF EXISTS subscriptions_agg;
+DROP MATERIALIZED VIEW IF EXISTS subscriptions_agg_mv;
+
+-- Legacy relations from the pre-2026-08-28 ranked stage 1: the JS UDF and
+-- the per-(charge, filter) lookup table, both replaced (flat_filters_mv
+-- stays — flat_filters_agg_mv builds on it).
+DROP FUNCTION IF EXISTS filter_match_score;
+DROP INDEX IF EXISTS idx_flat_filters_lookup;
+DROP SINK IF EXISTS flat_filters_load;
+DROP TABLE IF EXISTS flat_filters;
 SQL
 
 echo "==> Reapplying the schema (idempotent for everything left standing)"

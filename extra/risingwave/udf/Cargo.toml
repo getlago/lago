@@ -1,0 +1,17 @@
+[package]
+name = "lago-rw-udf"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# This crate exists to unit-test the UDF bodies against the Go
+# events-processor semantics (see src/*.rs). The SAME source files are
+# assembled verbatim into sql/03_functions.sql by ./gen_sql.sh and compiled
+# by RisingWave's embedded Rust UDF toolchain (LANGUAGE rust -> WASM), which
+# only allows std / chrono / rust_decimal / serde_json — keep dependencies to
+# that set.
+
+[dependencies]
+serde_json = "1"
+
+[dev-dependencies]

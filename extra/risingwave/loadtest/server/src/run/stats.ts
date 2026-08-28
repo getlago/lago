@@ -109,6 +109,24 @@ export class RateTracker {
     if (failed) b.failed++;
   }
 
+  /**
+   * Totals over the last `windowSec` whole seconds. This is what the stop guard
+   * reads: buckets are keyed by second, so walking the window costs
+   * `windowSec` lookups regardless of how long the run has been going.
+   */
+  recent(windowSec: number): { sent: number; failed: number } {
+    const now = Math.floor(Date.now() / 1000);
+    let sent = 0;
+    let failed = 0;
+    for (let t = now - windowSec; t <= now; t++) {
+      const b = this.buckets.get(t);
+      if (!b) continue;
+      sent += b.sent;
+      failed += b.failed;
+    }
+    return { sent, failed };
+  }
+
   series(limit = 300): { t: number; sent: number; failed: number }[] {
     return [...this.buckets.entries()]
       .sort((a, b) => a[0] - b[0])

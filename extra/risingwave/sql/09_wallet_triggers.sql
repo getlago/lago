@@ -38,6 +38,18 @@
 -- one event's fan-out. Any update that DID reach this sink would be
 -- rewritten UpdateInsert -> Insert, i.e. an extra trigger, which the
 -- consumer's per-customer batch collapse absorbs idempotently.
+--
+-- REBUILD GOTCHA (staging, 2026-08-28): a recreated sink replays the FULL
+-- events_expanded snapshot — every retained event becomes a trigger message
+-- (millions on a loaded cluster), all garbage work for the consumer. The
+-- clean fix, `snapshot = 'false'`, was TRIED and is NOT available here:
+-- v3.0.2 only supports it on `CREATE SINK FROM <relation>`, not
+-- `AS SELECT`, and hoisting this projection into an MV to sink FROM would
+-- materialize unbounded per-event state (append-only-table retention is
+-- physical, no changelog — a downstream MV never shrinks; canary-proven
+-- 2026-08-21). So after ANY recreation of this sink: seek the
+-- `lago_wallet_refresh_triggers_consumer` group to the end (consumer
+-- stopped), then restart the consumer.
 CREATE SINK IF NOT EXISTS wallet_refresh_triggers_sink AS
 SELECT
     organization_id,

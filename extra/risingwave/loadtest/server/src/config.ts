@@ -42,6 +42,24 @@ export type Config = {
      * trip to measure and no error to report — throughput only). */
     acks: number;
     compression: "none" | "gzip";
+    /**
+     * How produced messages are partitioned.
+     *
+     *  subscription  key = `<organization_id>-<external_subscription_id>`, exactly
+     *                what Events::KafkaProducerService writes. Faithful, but the
+     *                key set is only as wide as the run's target list — 2 targets
+     *                means 2 keys, which land on at most 2 partitions no matter
+     *                how many the topic has, and cap RisingWave's source
+     *                parallelism at the same number.
+     *  none          no key, so kafkajs round-robins every message across all
+     *                partitions. Nothing downstream is partition-affine (stage-0
+     *                dedup shuffles on the event identity), so this changes only
+     *                the spread — and it is the only way a load test can reach
+     *                every partition. Default, because that is what load runs
+     *                need; switch to `subscription` to reproduce the API's own
+     *                partitioning.
+     */
+    partitionKey: "subscription" | "none";
     ssl: boolean;
     sasl: { mechanism: "" | "plain" | "scram-sha-256" | "scram-sha-512"; username: string; password: string };
     /** Blank = read the UUID from GET /api/v1/organizations at preflight. */
@@ -106,6 +124,7 @@ const DEFAULTS: Config = {
     clientId: "lago-rw-loadtest",
     acks: 1,
     compression: "none",
+    partitionKey: "none",
     ssl: false,
     sasl: { mechanism: "", username: "", password: "" },
     organizationId: "",

@@ -237,7 +237,18 @@ export function Run({
               disabled={!!live}
               onChange={(e) => setSpec({ ...spec, guards: { ...spec.guards, maxErrorRatePct: Number(e.target.value) } })}
             />
-            <span className="note">hard cap {num(spec.guards.hardCap)} events</span>
+            <span className="note">judged over a trailing 10s window; 0 disables the stop</span>
+          </label>
+          <label className="field">
+            Hard cap (events)
+            <input
+              type="number"
+              min={1}
+              value={spec.guards.hardCap}
+              disabled={!!live}
+              onChange={(e) => setSpec({ ...spec, guards: { ...spec.guards, hardCap: Number(e.target.value) } })}
+            />
+            <span className="note">preflight refuses a run larger than this</span>
           </label>
         </div>
 

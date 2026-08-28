@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS events_expanded (
     rw_received_at TIMESTAMPTZ,
     -- Stage-1+2 stamp, and the reason the sink below lists its target columns
     -- explicitly: the sink does NOT write this one, so the DEFAULT applies at
-    -- insert and records when the ranking stage actually emitted the row.
+    -- insert and records when stage 1 actually emitted the row.
     --
     -- It has to be a column DEFAULT. `proctime()` is rejected outside
     -- CREATE TABLE/SOURCE, and a bare `now()` in a streaming projection is
@@ -162,45 +162,46 @@ CREATE TABLE IF NOT EXISTS events_expanded (
     rw_expanded_at TIMESTAMPTZ DEFAULT now()
 ) APPEND ONLY WITH (retention_seconds = 2851200); -- 33 days
 
--- Stage 1+2 load: temporal joins against the *current* state of the CDC
--- tables at event arrival time (same semantics as the Go processor reading
--- its cache; LEFT joins match equality keys only, time-window validity is
--- computed as flags and resolved by ranking), then pick the best
--- subscription per event and the best-matching filter per (event, charge)
--- with default-bucket fallback.
+-- Stage 1+2 load (REDESIGNED 2026-08-28, ROADMAP §0c): two single-row
+-- temporal joins + two scalar UDFs, structurally identical to the Go
+-- processor (cache lookup + in-memory loop over the candidates).
 --
--- The 32-day filter re-enters here (on the carried kafka_timestamp) so the
--- ranking state is also swept by expiry retractions; the sink drops them.
--- Stage 0 guarantees exactly one input row per unique event, so ranking
--- only resolves the dimension fan-out. The DENSE_RANK ordering fully
--- determines a subscription: valid first, most recent as tie-breakers
--- (mirrors the Go FetchSubscription ordering).
+-- The previous encoding resolved the dimension fan-out with a subscription
+-- DENSE_RANK and a filter ROW_NUMBER. Same semantics, wildly different cost
+-- model: rank/GroupTopN must be able to re-emit a new winner if inputs
+-- change, so they materialized every candidate row as operator state per
+-- event identity and synced it to object storage EVERY BARRIER — 7 state
+-- tables, 244MB memtables, and the ~3k ev/s staging ceiling PROVEN by
+-- amputation (5,001 ev/s at 9ms barriers without this job). The Go
+-- processor pays a microsecond loop over cached rows for the same decision.
 --
--- CRITICAL (fixed 2026-08-23): both ranking partitions MUST carry the FULL
--- event identity — the stage-0 dedup key (organization_id, code,
--- external_subscription_id, event_ts, transaction_id). They previously
--- partitioned on (organization_id, transaction_id) only, which is NARROWER
--- than event identity: `index_unique_transaction_id` in Rails is
--- (organization_id, external_subscription_id, transaction_id), so the SAME
--- transaction_id on two different subscriptions is legal input. Two such
--- events then shared one rank partition and competed for its single top-1
--- slot, with two measured failure modes (both reproduced on a replica of
--- this plan, 2026-08-23):
---   * SILENT EVENT LOSS (under-billing): the event whose subscription lost
---     the DENSE_RANK was discarded outright — 1 row for 2 billable events,
---     no missing-row signal, so the read path serves the short total.
---   * DOUBLE COUNTING (over-billing): event A appended as top-1; event B
---     arrives out of order (older kafka_timestamp, outranking subscription)
---     -> A's retraction is DROPPED by force_append_only but B is appended;
---     when B leaves the 32-day window A is RE-PROMOTED to top-1 and
---     appended a SECOND time. 3 rows for 2 events. usage_buckets_15m is a
---     plain COUNT(*)/SUM() over this table, so A is billed twice and the
---     ClickHouse upsert overwrites the bucket with the inflated value.
--- With the full event identity in the partition key, one partition holds
--- exactly one event's fan-out: no cross-event rank interference, and expiry
--- empties a partition in one go (all its rows share one kafka_timestamp),
--- so nothing is ever re-promoted and re-appended.
--- DO NOT narrow these partition keys again.
+-- Now the candidate sets ARE the lookup rows: subscriptions_agg and
+-- flat_filters_agg (02_flat_filters.sql) hold one JSONB array per lookup
+-- key, and pick_subscription() / matching_filter() (03_functions.sql) are
+-- line-by-line ports of the Go FetchSubscription / MatchingFilter loops —
+-- parity by PORT, not by re-encoding into SQL operators. Both ranking
+-- stages are gone; per-event operator state in this job is ZERO (temporal
+-- joins on an append-only LHS keep no LHS state, projections are
+-- stateless), which also removes the need for the 32-day temporal filter
+-- that existed to sweep the ranking state: there is nothing left to sweep,
+-- and entry is already bounded by stage 0's own 32-day filter plus
+-- events_enriched's physical retention. (Consequence of dropping it: a
+-- stage-1 REBUILD replays events_enriched's full ~33-day retention window
+-- instead of 32 days. Nothing else changes.)
+--
+-- Go-parity notes:
+--   * No valid subscription at the event timestamp -> pick_subscription
+--     returns NULL -> NULL plan_id joins no charge -> ONE subscription-less,
+--     charge-less row. (The ranked encoding instead attributed charges via
+--     the invalid subscription's plan while nulling the subscription
+--     columns — a divergence from the Go processor, gone with it.)
+--   * The recurring-BM fallback (Go retries FetchSubscription at now() for
+--     recurring metrics) is still NOT implemented, same as before —
+--     tracked in ROADMAP §1; UDFs are pure so it cannot live inside
+--     pick_subscription.
+--   * matching_filter's inputs are COALESCE'd: WASM UDFs are strict on SQL
+--     NULL, while Go accepts nil properties (nil never matches a filter
+--     key, same as '{}').
 CREATE SINK IF NOT EXISTS events_expanded_load INTO events_expanded (
     organization_id,
     external_subscription_id,
@@ -232,73 +233,45 @@ CREATE SINK IF NOT EXISTS events_expanded_load INTO events_expanded (
     kafka_timestamp,
     rw_received_at
 ) AS
-WITH joined AS (
+WITH sub_picked AS (
+    -- One-row lookup + FetchSubscription port. No subscriptions_agg row or
+    -- no valid subscription at event_ts -> picked_sub is SQL NULL.
     SELECT
         e.*,
-        s.id AS subscription_id,
-        s.customer_id AS subscription_customer_id,
-        s.plan_id AS subscription_plan_id,
-        s.started_at AS subscription_started_at,
-        s.terminated_at AS subscription_terminated_at,
-        (
-            s.id IS NOT NULL
-            AND s.started_at <= e.event_time
-            AND (
-                s.terminated_at IS NULL
-                OR s.terminated_at >= e.event_time
-            )
-        ) AS subscription_valid,
-        ff.charge_id,
-        ff.charge_updated_at,
-        ff.charge_filter_id,
-        ff.charge_filter_key,
-        ff.charge_filter_updated_at,
-        ff.filters,
-        ff.pricing_group_keys,
-        ff.pay_in_advance,
-        ff.accepts_target_wallet,
-        CASE WHEN ff.charge_id IS NULL THEN NULL
-             ELSE filter_match_score(ff.filters, e.properties)
-        END AS match_score
+        pick_subscription(sa.subs, e.event_ts) AS picked_sub
     FROM events_enriched e
-    LEFT JOIN subscriptions FOR SYSTEM_TIME AS OF PROCTIME() s
-        ON s.organization_id = e.organization_id
-       AND s.external_id = e.external_subscription_id
-    LEFT JOIN flat_filters FOR SYSTEM_TIME AS OF PROCTIME() ff
-        ON ff.organization_id = e.organization_id
-       AND ff.plan_id = s.plan_id
-       AND ff.billable_metric_code = e.code
-    WHERE e.kafka_timestamp > now() - INTERVAL '32 days'
+    LEFT JOIN subscriptions_agg FOR SYSTEM_TIME AS OF PROCTIME() sa
+        ON sa.organization_id = e.organization_id
+       AND sa.external_id = e.external_subscription_id
 ),
-best_sub AS (
-    SELECT * FROM (
-        SELECT
-            *,
-            DENSE_RANK() OVER (
-                PARTITION BY organization_id, code, external_subscription_id,
-                             event_ts, transaction_id
-                ORDER BY
-                    subscription_valid DESC,
-                    subscription_terminated_at DESC NULLS FIRST,
-                    subscription_started_at DESC,
-                    subscription_id
-            ) AS sub_rank
-        FROM joined
-    ) ranked_subs
-    WHERE sub_rank = 1
+sub_resolved AS (
+    SELECT
+        *,
+        picked_sub ->> 'id' AS subscription_id,
+        picked_sub ->> 'customer_id' AS customer_id,
+        picked_sub ->> 'plan_id' AS plan_id
+    FROM sub_picked
 ),
-best_filter AS (
-    SELECT * FROM (
-        SELECT
-            *,
-            ROW_NUMBER() OVER (
-                PARTITION BY organization_id, code, external_subscription_id,
-                             event_ts, transaction_id, COALESCE(charge_id, '')
-                ORDER BY match_score DESC, charge_filter_key
-            ) AS filter_rank
-        FROM best_sub
-    ) ranked_filters
-    WHERE filter_rank = 1
+charged AS (
+    -- One row per charge of (org, plan, code) — the charge fan-out is the
+    -- OUTPUT cardinality (one expanded row per charge), same as the Go
+    -- processor's per-charge loop. matching_filter resolves the charge's
+    -- candidate array to the winning filter or the default bucket; keys it
+    -- omits (default bucket: filter identity) read back as SQL NULL.
+    SELECT
+        s.*,
+        ffc.charge_id,
+        ffc.charge_updated_at,
+        ffc.pay_in_advance,
+        ffc.accepts_target_wallet,
+        CASE WHEN ffc.charge_id IS NULL THEN NULL
+             ELSE matching_filter(ffc.filters_agg, COALESCE(s.properties, '{}'::jsonb))
+        END AS mf
+    FROM sub_resolved s
+    LEFT JOIN flat_filters_agg FOR SYSTEM_TIME AS OF PROCTIME() ffc
+        ON ffc.organization_id = s.organization_id
+       AND ffc.plan_id = s.plan_id
+       AND ffc.billable_metric_code = s.code
 )
 SELECT
     organization_id,
@@ -325,25 +298,27 @@ SELECT
         ELSE ''
     END AS aggregation_type,
     recurring,
-    CASE WHEN subscription_valid THEN subscription_id END AS subscription_id,
-    CASE WHEN subscription_valid THEN subscription_customer_id END AS customer_id,
-    CASE WHEN subscription_valid THEN subscription_plan_id END AS plan_id,
+    subscription_id,
+    customer_id,
+    plan_id,
     charge_id,
     charge_updated_at,
-    -- Default bucket: best candidate did not match -> attribute to the charge
-    -- itself, without a filter (mirrors MatchingFilter/ToDefaultFilter).
-    CASE WHEN COALESCE(match_score, -1) >= 0 THEN charge_filter_id END AS charge_filter_id,
-    CASE WHEN COALESCE(match_score, -1) >= 0 THEN charge_filter_updated_at END AS charge_filter_updated_at,
-    CASE WHEN COALESCE(match_score, -1) >= 0 THEN filters END AS filters,
+    mf ->> 'charge_filter_id' AS charge_filter_id,
+    (mf ->> 'charge_filter_updated_at')::timestamp AS charge_filter_updated_at,
+    mf -> 'filters' AS filters,
     pay_in_advance,
     -- NOTE: custom expression evaluation (billable_metrics.expression) is not
     -- applied yet — phase 2 ships it as a WASM UDF built from lago-expression.
     CASE WHEN aggregation_type_code = 0 THEN '1'
          ELSE properties ->> field_name
     END AS value,
-    extract_grouped_by(pricing_group_keys, properties, COALESCE(accepts_target_wallet, false)) AS grouped_by,
+    extract_grouped_by(
+        COALESCE(mf -> 'pricing_group_keys', 'null'::jsonb),
+        COALESCE(properties, '{}'::jsonb),
+        COALESCE(accepts_target_wallet, false)
+    ) AS grouped_by,
     CASE WHEN COALESCE(accepts_target_wallet, false) THEN properties ->> 'target_wallet_code' END AS target_wallet_code,
     kafka_timestamp,
     rw_received_at
-FROM best_filter
+FROM charged
 WITH (type = 'append-only', force_append_only = 'true');

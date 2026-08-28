@@ -1,6 +1,6 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-25 (no pipeline change since 08-23; 08-24 built and reverted compute-on-read wallet balance, see §3; 08-25 was ClickHouse serving cost — org key prefix + monthly partitioning, see §0b): BOUNDED 32-day pipeline — enrichment runs as two
+State as of 2026-08-28 EVENING (big day: the 08-27/28 staging ceiling ~3k ev/s was PROVEN to be stage-1 `events_expanded_load` by amputation, then the stage was REWRITTEN the same day — ranking operators replaced by Rust-UDF ports of the Go matching logic over pre-aggregated dimension arrays — applied locally AND to staging, and the ceiling is GONE: flat 5,000 ev/s on the small tier, barriers 19-23ms, usage p50 284ms / wallet p50 603ms under load, full record + rebuild gotchas in §0c; earlier context: 08-24 built and reverted compute-on-read wallet balance, see §3; 08-25 ClickHouse serving cost — org key prefix + monthly partitioning, see §0b): BOUNDED 32-day pipeline — enrichment runs as two
 bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
 window; events immutable, reprocess removed) into append-only firewall
 TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
@@ -51,6 +51,14 @@ Consequences / follow-ups:
   distincts) — needs its own structure when its turn comes (§3).
 
 ## 0. FIXED 2026-08-23 — ranking partition keys narrower than event identity
+
+> **HISTORICAL since 2026-08-28: the ranking stages this section fixed no
+> longer exist** — the §0c redesign deleted both (stage 1 is now UDF-based,
+> ranking-free). The failure analysis stays worth reading: it documents how
+> GroupTopN + force_append_only mis-bills, and the §0c local A/B later
+> caught the SAME operator class duplicating ~0.4% of rows WITHIN a
+> correctly-keyed partition (interim-winner churn) — the partition-key fix
+> below narrowed the bug, the redesign removed the operator.
 
 **Billing-correctness bug, found and fixed 2026-08-23.** Both ranking stages
 in `sql/04_enrichment.sql` partitioned on `(organization_id, transaction_id)`
@@ -239,6 +247,610 @@ ClickHouse in 234 ms, in line with the `barrier_interval_ms` floor.
 - [ ] The `bench` database (~8.8 GiB of synthetic data) is still on the dev
       ClickHouse — `DROP DATABASE bench` when it is no longer wanted.
 
+## 0c. 2026-08-28 — staging ceiling ~3,000 ev/s: PROVEN to be `events_expanded_load` (stage-1), then FIXED same day
+
+> **RESOLVED 2026-08-28 evening.** The stage-1 redesign proposed at the end
+> of this section was built, validated locally, applied to staging, and
+> load-tested: **flat 5,000 ev/s, zero backlog, 19-23ms barriers** on the
+> small tier — see "REDESIGN BUILT AND VALIDATED LOCALLY" and "STAGING
+> VALIDATED — CEILING CLOSED" below. Everything above those subsections is
+> the investigation record: read it for the method and the eliminated
+> hypotheses, not for current state.
+
+Four load runs against the staging cloud stack (RisingWave Cloud +
+Redpanda Cloud + ClickHouse Cloud) at a 5,000 ev/s target; measured ceiling
+**~3,400 ev/s**. Symptom was "huge latency on the RisingWave consumer group".
+
+Read this section for the METHOD as much as the answer: three hypotheses were
+tested and falsified before the real one was located, and each falsification
+was a measurement, not an argument.
+
+| hypothesis | verdict | how it was killed |
+|---|---|---|
+| 3 Kafka partitions too few | **WRONG** | doubled to 6 + parallelism 6: per-partition HALVED, total FLAT |
+| external sinks backpressuring | **WRONG** | dropped ~5,800 rows/s of CH sinks; gain was transient |
+| `barrier_interval_ms` 250 too tight | **WRONG** | set to 1000; throughput flat, wall-clock latency 2x worse |
+| `events_enriched` table write | **WRONG** | fragment 102 writes ~0 bytes to the state store |
+| `events_expanded` column width | **WRONG** | target table holds 10.4 MB of 254 MB — 4% of the bytes |
+
+None of the six was correct. The ceiling is real and reproducible; the binding
+resource is NOT identified. Read the eliminations, not a conclusion.
+
+Two loadtest bugs were also found and fixed along the way.
+
+### (a) The load test only ever used 2 of the 3 partitions
+
+`redpanda.ts` keyed every produced message
+`<organization_id>-<external_subscription_id>` to mirror
+`Events::KafkaProducerService`. A run has as many distinct keys as it has
+TARGETS — the staging run had 2 — so murmur2 pinned 100% of traffic to 2
+partitions, deterministically, every run. Partition 1 had 597,830 messages
+from other producers, no reader, and no `source_partition_input_count` /
+`source_latest_message_id` series at all. The source fragment had 8 actors
+(715-722); only 720 and 722 ever emitted rows.
+
+Effective source parallelism was therefore 2, not 3, and no cluster or
+partition change could have moved it. FIXED loadtest-side: new config
+`kafka.partitionKey` (`subscription` | `none`), **default `none`** — an
+unkeyed message makes kafkajs' DefaultPartitioner round-robin per message
+(verified in `partitioners/legacy/partitioner.js`), so a produce batch
+spreads over every partition. Nothing downstream is partition-affine
+(stage-0 dedup shuffles on event identity). Preflight now prints either
+`UNKEYED, round-robin over every partition` or, in keyed mode, how many
+partitions the run can actually reach.
+
+### (b) First measurements — what the load actually looked like
+
+With all 3 partitions reading, the rerun still capped at ~3,200 ev/s:
+
+| partition | peak ev/s | peak lag | final lag |
+|---|---|---|---|
+| 0 | 1084 | 20,361 | 1 |
+| 1 | 1084 | 19,276 | 1 |
+| 2 | 1024 | 21,035 | 1 |
+
+Lag built to ~20k per partition — messages were sitting in Kafka UNREAD, so
+the readers were not starved, they were held back. Meanwhile:
+
+```
+barrier inflight duration:   10ms -> 2.10s -> 9.36s
+barrier sync to storage:     35ms -> 195ms -> 515ms
+barriers issued/sec:          4.0 -> 3.1      (confirms barrier_interval_ms = 250)
+barrier batch size:           1.0 -> 2.07     (barriers coalescing = backlog)
+process CPU:                 0.43 -> 4.63 of 8 cores (58%)
+```
+
+`rate(stream_actor_output_buffer_blocking_duration_ns)` sat at 7.5-8.1 for
+fragments 33, 51, 60, 61, 63, 94, 97, 103, 104, 105 — i.e. all 8 actors of
+each blocked ~1.0 s/s on their OUTPUT buffer. Everything upstream is waiting
+on something downstream, while CPU is half idle.
+
+**The arithmetic that breaks it: a barrier is issued every 250 ms, but
+syncing one to object storage takes 515 ms.** Checkpoints are issued twice
+as fast as storage absorbs them, barriers queue (9.36s inflight / 250ms
+interval = ~37 outstanding), RisingWave throttles the source to protect
+itself, and ingest pins at ~3,200 ev/s. Adding partitions adds readers that
+get backpressured identically.
+
+Compounding it: the cloud cluster is `component=standalone`,
+`pod=risingwave-standalone-0`, `process_cpu_core_num=8` — meta, compute,
+compactor and frontend in ONE process on ONE node, so compaction competes
+with streaming for the same 8 cores. That is why storage sync degrades from
+35ms to 515ms exactly when load arrives.
+
+Nothing was broken: lag fully drained to 1 after the run. This is a
+sustained-rate ceiling, not a stall.
+
+### (c) Hypotheses tested and falsified
+
+- [x] **`barrier_interval_ms` 250 -> 1000 TESTED and REVERTED 2026-08-28.**
+      Hypothesis was that checkpointing was oversubscribed (sync-to-storage
+      0.35s against a 0.25s interval). Applied and confirmed live (barrier
+      rate 4.0/s -> 0.63-0.83/s). Result: **throughput unchanged** (3,372 ->
+      3,422 ev/s) and wall-clock barrier inflight got WORSE, 9.8s -> 20.45s.
+      In barrier COUNT it did improve (39 outstanding -> 20), but visibility
+      is wall-clock — a row is visible when its barrier commits — so 1000ms
+      loses on latency and gains nothing on throughput. Reverted to 250ms.
+
+### Where the backpressure terminates: `events_enriched` (fragment 102)
+
+Found 2026-08-28 by tracing per-edge backpressure instead of guessing.
+`stream_actor_output_buffer_blocking_duration_ns` carries BOTH `fragment_id`
+and `downstream_fragment_id`, so the graph can be walked edge by edge.
+Blocking per edge, normalised by the fragment's actor count:
+
+```
+34 -> 96    94%    <- fragment 34 IS the events_raw source
+96 -> 95   100%
+95 -> 94    99%
+94 -> 92   100%
+103 -> 102 101%
+104 -> 102 101%    <- everything feeding 102 is pinned
+102 -> 101  31%    <- jam releases here
+101 -> 99    1%
+```
+
+**Fragment 102 is the `events_enriched` table** (confirmed by Jeremy against
+the streaming graph). Backpressure is total from the source down to 102 and
+collapses immediately after it.
+
+The per-edge trace is SOUND and still the best tool here — it is how the
+external sinks and the barrier interval were ruled out. But the conclusion
+originally drawn from it ("therefore the state-store write into
+`events_enriched` is the constraint") was WRONG and is retracted: fragment 102
+never registers above 0 in `state_store_per_table_imm_size`. It writes
+essentially nothing. Backpressure terminating at a fragment tells you where
+the queue drains, not which resource is scarce.
+
+This retro-explains every negative result above:
+- dropping the ClickHouse shadow sinks barely helped, because the jam is
+  UPSTREAM of every external sink;
+- changing `barrier_interval_ms` did nothing, because the bytes written per
+  second are the same whatever the checkpoint cadence;
+- CPU sat at 3.1/8 cores (39%) because the process is waiting on object-store
+  I/O, not computing — which is also why `barrier_sync_storage` degrades from
+  0.035s idle to 0.35-0.52s under load.
+
+**DISPROVED: "3 Kafka partitions is the ceiling."** Held for three runs, and
+the direct measurement kills it: the source fragment is **94% output-BLOCKED**.
+A partition-starved reader is IDLE waiting for bytes; a 94%-blocked reader has
+already read the data and cannot hand it off. More partitions add more readers
+that block in the same place. (Per-partition rate has also been invariant at
+~900-1,160 ev/s across every configuration tried, which is the signature of a
+shared downstream constraint, not a per-reader cap.)
+
+### (d) PARTITION HYPOTHESIS KILLED BY EXPERIMENT (2026-08-28, Jeremy's test)
+
+The cleanest result of the day. `events_raw` taken 3 -> 6 partitions AND
+`ALTER SOURCE events_raw SET PARALLELISM = 6` (fragment 34 confirmed 4 -> 6
+actors, all 6 partitions confirmed reading).
+
+| | 3 partitions | 6 partitions |
+|---|---|---|
+| source actors | 4 | 6 |
+| per-partition | ~1,140 ev/s | **~503 ev/s** |
+| **total** | **~3,422 ev/s** | **~3,021 ev/s** |
+| source output-blocked | 94% | 87% |
+| CPU | 3.1 / 8 | 3.1-3.9 / 8 |
+| peak lag | 39,826 | 50,961 |
+
+**Per-partition throughput halved; the total did not move.** If readers were
+the cap, 6 x 1,140 = ~6,800 ev/s. Instead the same ~3,000 was redistributed
+across twice as many readers, and the source is STILL 87% output-blocked with
+6 actors. Throughput conserved under redistribution is the signature of a
+shared DOWNSTREAM constraint, not a per-reader cap.
+
+GOTCHA worth keeping: adding partitions WITHOUT `ALTER SOURCE ... SET
+PARALLELISM` would have produced a false negative — fragment 34 had only 4
+actors, so 6 partitions would still have been read by 4 readers and the test
+would have proved nothing. Splits distribute across source actors; actor count
+caps usable partitions. `SET PARALLELISM` accepts `ADAPTIVE` (0) or a fixed
+number, capped by the job's `max_parallelism` (fixed at creation).
+
+### Write-path measurements (2026-08-28)
+
+```
+state_store sync:                 68 MB/s at peak (3,021 ev/s)
+                                  => ~22 KB of state-store sync PER EVENT
+uploading_memory_usage_ratio:     0.37   (NOT saturated)
+mem_table_spill_counts:           ~0.1/s (negligible)
+CPU:                              3.1-3.9 of 8 cores (39-49%)
+```
+
+~22 KB/event for a raw event of a few hundred bytes — the amplification across
+`events_enriched`, the stage-1 join state, `events_expanded` per charge, and
+LSM overhead. Interesting, but see (e): it does NOT decompose the way the
+column-removal plan assumed, and 0.37 uploader saturation means the write path
+is not demonstrably the limiter. See the CONCLUSION below for what this does
+and does not establish.
+
+RETRACTED from an earlier draft of this section: "the compactor competes with
+streaming for the same 8 cores". That framing was CPU-shaped and the CPU
+numbers (39-49%) do not support it. Withdrawn, not merely softened.
+
+### (e) CATALOG EVIDENCE — the column-removal plan KILLED before it was run
+
+State-store memtable bytes, peak across every run (`state_store_per_table_imm_size`,
+labelled by `fragment_id`, free from metrics already collected):
+
+```
+fragment 101    244.3 MB     <- the write hotspot, ~10x the next fragment
+fragment  95     25.5 MB         and ~3x the sum of all others combined
+fragment  94     22.8 MB
+fragment  92     12.5 MB
+fragment  99     10.4 MB
+fragment 107      8.3 MB
+fragment 109      7.1 MB
+fragment  34       5.8 KB     <- the source
+fragment 102        —         <- events_enriched: NEVER above 0
+```
+
+`rw_catalog.rw_fragments` then named them:
+
+| fragment | flags | state tables | parallelism | what it is |
+|---|---|---|---|---|
+| 101 | `SINK` | **7** (113-119) | 8 | stage-1 enrichment join (`events_expanded_load`) |
+| 99 | `MVIEW`, `UPSTREAM_SINK_UNION` | 1 | **4** | the `events_expanded` TABLE |
+| 94 | `SINK` | 2 | 8 | a sink |
+| 95 | — | 2 | 8 | join stage |
+
+A "sink" with 7 state tables and 3 upstreams is not a writer — fragment 101 is
+the stage-1 temporal joins against the CDC dimensions plus the ranking stages.
+Its 244 MB is **join and ranking state**, not output rows.
+
+**This killed the planned next test.** The proposal was to drop `properties`
+and `filters` from `events_expanded` to cut state-store bytes. But those
+columns live in fragment 99 — **10.4 MB of 254 MB, about 4%**. The 244 MB sits
+in join state that must carry `properties` regardless, because
+`filter_match_score(ff.filters, e.properties)` and `properties ->> field_name`
+are evaluated INSIDE that join. The rebuild would have cost a 32-day replay to
+address 4% of the bytes. Not run. Do not revive it.
+
+### CONCLUSION: measured ceiling, unresolved mechanism (SUPERSEDED — the rewrite below removed the ceiling before the mechanism was ever pinned)
+
+**~2,700-3,400 ev/s on this RisingWave Cloud tier for this pipeline shape**,
+reproducible across six configurations. Eliminated, each by measurement:
+
+| ruled out | evidence |
+|---|---|
+| Kafka partitions | 3 -> 6: per-partition HALVED (1,140 -> 503), total FLAT |
+| source parallelism | 4 -> 6 actors, no change; still 87% output-blocked |
+| external sinks | dropped ~5,800 rows/s of CH writes; gain transient only |
+| barrier interval | 250 -> 1000ms: throughput flat, wall-clock latency 2x WORSE |
+| `events_enriched` write | fragment 102 writes ~0 state-store bytes |
+| column width in `events_expanded` | target table is 4% of state-store bytes |
+| CPU | 3.1-3.9 of 8 cores (39-49%) throughout every run |
+| S3 reads from operators | state-store gets ~0-13/s; join/ranking cache misses 0 |
+| S3 write saturation | ~12 uploads/s; uploader memory ratio 0.37 |
+| barrier alignment | 0.24 s/s at fragments 99/101 — present, minor |
+| JS UDF cost | `filter_match_score`: 100k calls in 617ms = **162k/s single-threaded** (trivial payload; even 50x slower clears ~25k ev/s on 8 actors) |
+| **tier compute (8 -> 24 cores)** | **ceiling unchanged** (1.8-3.5k ev/s), CPU 4.5-5.4/24 (~20%), parallelism VERIFIED at 24 on all key fragments, storage sync UNCHANGED at 0.42-0.49s/barrier, barrier inflight WORSE (27.5s peak — checkpoint weight grows with actor count). Still one `standalone` pod |
+| CDC dimension (`subscriptions`) backpressure | symptom, not cause: lago_pg CDC carried ~0 rows/s during the run — the edge shows 100% blocked because BARRIERS cannot be consumed by the wedged join; backpressure propagates up BOTH inputs of a temporal join |
+
+What is NOT established: which resource actually binds. Best remaining
+picture (2026-08-28, after the read-path and UDF eliminations): relative
+actor busy-time concentrates **~10x in fragments 101 and 95** (stage-1 join +
+ranking — ratio only, counter units unverified), and every actor is
+single-threaded and barrier-coupled, so the cap is per-row engine work in
+stage 1 (ranking + 7 state tables per row, native code — the JS UDFs are
+exonerated) interleaved with checkpoint flush stalls (memtable sync 0.35-0.5s
+per barrier; the 0.37 uploader ratio is a 60s average that hides those
+bursts). That is a coherent story, not a proven one.
+
+The 24-core A/B (run 2026-08-28, end of day) landed on the pre-registered
+"structural" fork: 3x cores, parallelism verified at 24, ceiling and storage
+sync both unchanged, CPU at 20%. So the limit is NOT tier compute. What the
+upgrade did NOT change: single `standalone` pod, same object-store path —
+checkpoint/S3 sync serialization is the last story standing. Barrier inflight
+getting WORSE at higher parallelism (27.5s peak) is itself evidence: a
+checkpoint collects memtables from every actor, so its cost grows with actor
+count — 24 may genuinely be worse than 8-12 for this graph.
+
+LOCALIZED BY THE CONSOLE (2026-08-28, late): the RW console's own
+edge-backpressure panels walk the chain with names and find the drop —
+`events_raw -> events_enriched_load` 96%, `events_enriched_load ->
+events_enriched` 96%, `events_enriched -> events_expanded_load` 99-102%,
+then **`events_expanded_load -> events_expanded` 4.5%**. The epicenter is
+the STAGE-1 ENRICHMENT JOB `events_expanded_load` (= fragments 101/95, the
+~10x busy-time concentration): every input pinned, its output free.
+Confirmed victims-by-barrier-propagation: the whole `flat_filters` CDC
+chain shows 70-104% blocked while carrying ~0 rows/s (dimension inputs of
+the wedged temporal join cannot hand over their barriers), same as
+`subscriptions`. Also: all five sinks carried IDENTICAL row totals
+(1,291,295), so event->charge fan-out in this population is ~1 — stage-1's
+per-event cost is the 3 temporal joins + ranking + 7 state tables at
+fan-out 1, not fan-out amplification.
+
+PROVEN BY AMPUTATION (2026-08-28, final test of the day): Jeremy DROPPED
+`events_expanded_load` and reran at 5k. Result: ingest hit **5,001 ev/s —
+the full offered rate — with barrier inflight at 7-9 MILLISECONDS** (from
+16-26s moments earlier) and CPU at 2.6/24 cores. Lag drained to 0. Removing
+the suspect removed the ceiling: stage-1 is the bottleneck by causal
+demonstration, not inference. Corollary: stage-0 (dedup + BM temporal join +
+`events_enriched` table write) ran throughout and swallowed 5k/s at 9ms
+barriers — causally exonerated. Whatever `events_expanded_load` does per
+barrier (7 state tables, join+ranking state sync) is what turned 250ms
+checkpoints into 26s ones. Caveats: one 60s sample at 5,001 (barrier
+collapse corroborates); 5k was the OFFERED rate, so stage-0 capacity is
+>=5k with ceiling unknown; and the amputated config is diagnostic only —
+buckets and wallet triggers receive nothing without stage-1.
+
+### PROPOSED REDESIGN (2026-08-28, late — build AFTER the await-tree confirms)
+
+Jeremy questioned why stage-1 carries a DENSE_RANK on subscriptions and a
+ROW_NUMBER on filters at all, given the goal is parity with the Go
+events-processor. Answer, from reading both sides line by line: the ranks ARE
+the Go behavior, re-encoded —
+  * sub DENSE_RANK = `FetchSubscription`'s `ORDER BY terminated_at DESC NULLS
+    FIRST, started_at DESC LIMIT 1` (models/subscriptions.go:40); the join
+    fans out to every subscription row of the external_id, the rank keeps 1
+    (`subscription_valid` replaces Go's WHERE because the LEFT join must keep
+    no-sub events);
+  * filter ROW_NUMBER = the `MatchingFilter` loop (models/flat_filters.go:180
+    — match, most-keys wins, default-bucket fallback), re-encoded as
+    `filter_match_score` + rank per (event, charge).
+Same semantics; wildly different cost model. Go's candidates live for
+microseconds in a loop over cached rows. The SQL encoding turns the fan-out
+rows into OPERATOR STATE: rank/GroupTopN must be able to re-emit a new winner
+if inputs change, so they materialize candidate rows per event-identity
+partition (the §0 fix made those partitions correct AND fat) and sync them to
+object storage EVERY BARRIER. That is the 7 state tables / 244MB memtables /
+(proven tonight) the ~3k ceiling. A per-event LIMIT 1, paid at
+streaming-state prices.
+
+THE CHANGE — make RW do it the way Go does (loop over a small array, not a
+streaming operator):
+  1. FILTERS: aggregate each charge's filters into ONE JSONB array per
+     (org, plan, code, charge) — one more level on the existing flat_filters
+     aggregation. Temporal-join ONE row per (event, charge); a scalar UDF
+     `matching_filter(filters_array, properties)` returns the winner. The UDF
+     is a LINE-BY-LINE PORT of Go's `MatchingFilter` (default bucket
+     included) — parity becomes a direct port instead of a score+ORDER BY
+     re-encoding of it. ROW_NUMBER stage deleted.
+  2. SUBSCRIPTIONS: same shape — MV aggregating rows per (org, external_id)
+     into an array; one-row temporal join; `pick_subscription(subs_array,
+     event_time)` ports Go's ordering. DENSE_RANK stage deleted.
+Stage-1 becomes: two single-row temporal joins + two scalar UDFs —
+structurally identical to the Go processor (cache lookup + loop). Fan-out 1,
+both ranking operators and their state GONE; remaining new state = tiny
+dimension-side aggregates updated only on CDC churn. Sink-into-table
+firewall architecture UNTOUCHED (stage-0 proved the mechanism at 5k/9ms
+tonight) — only the job's interior changes.
+
+Evidence already priced the trade: `filter_match_score` measured 162k
+calls/s single-threaded (617ms / 100k, trivial payload) — scalar compute is
+the cheap resource; per-barrier ranking-state sync is the expensive one.
+
+GATE: build only after the await-tree names the rank/state-sync path as what
+the actors await (today's score: four confident hypotheses died by
+measurement — the fifth does not get built on inference). Worth doing for
+parity alone, but sequence it. Gotchas when building: it is a stage-1
+rebuild = the events_expanded subtree dance (32-day replay, wallet consumer
+re-seek, capture-DDL-first on cloud); array MVs must handle a charge/sub
+with NO rows (LEFT join semantics preserved); UDF must reproduce Go's
+tie-breaks exactly (most-keys, then Go's iteration order vs SQL's
+charge_filter_key ordering — VERIFY on a parity window before trusting).
+
+### REDESIGN BUILT AND VALIDATED LOCALLY (2026-08-28, gate waived by Jeremy)
+
+Jeremy called the build without waiting for the await-tree ("we agreed the
+ranking for sub and filters is the bottleneck"). Applied on the LOCAL dev
+stack the same day; staging validation still pending.
+
+WHAT SHIPPED (all on the poc branch, uncommitted at time of writing):
+  * `extra/risingwave/udf/` — a Cargo crate holding the UDF sources with a
+    29-test parity suite mirroring the Go tests (`cargo test`), plus
+    `gen_sql.sh` which assembles `sql/03_functions.sql` VERBATIM from the
+    same files. 03 is now a generated file — edit the .rs, not the SQL.
+  * ALL UDFs are now embedded RUST (LANGUAGE rust, compiled server-side to
+    WASM — works out of the box on the v3.0.2 docker image; each CREATE
+    FUNCTION takes ~30-60s to compile). JS UDFs deleted. Inline-Rust
+    gotchas: body must START with the `fn` named like the SQL function
+    (imports go INSIDE fn bodies, helper fns AFTER the entry fn); jsonb args
+    cannot be Option (the generated glue calls .parse() on them) but
+    Option RETURNS work; WASM UDFs are STRICT on SQL NULL (call sites
+    COALESCE where Go accepts nil).
+  * `matching_filter(filters_agg, properties) -> jsonb` and
+    `pick_subscription(subs, event_ts) -> jsonb` — ports of Go
+    `MatchingFilter` / `FetchSubscription` selection logic (match,
+    most-keys-wins, default bucket, sub ordering incl. ms-truncation);
+    `extract_grouped_by` re-ported to Rust.
+  * FORMATTING DECISION (Jeremy, 2026-08-28): property values compare by
+    their plain JSON TEXT (`udf/src/json_text.rs`), NOT a port of Go's
+    `fmt.Sprintf("%v")`. Context: a %v-exact port was built first (Go's
+    float formatting verified empirically against the events-processor
+    toolchain — scientific at decimal exponent < -4 or >= 6, 2-digit
+    exponent, so Go renders 1000000 as "1e+06" and 1e-7 as "1e-07") and
+    then REMOVED on Jeremy's call: every dialect (Go %v, JS String(),
+    serde_json) already disagreed on those corners, the old JS UDF never
+    had Go formatting either, and a comparison should just be a comparison.
+    Consequence, accepted: numeric properties >= 1e6 or < 1e-4 (and
+    compound values) can match filters / render into grouped_by differently
+    than the Go path — visible only in shadow-parity comparisons on such
+    values. The chosen semantics are PINNED by unit tests
+    (`json_text_semantics_are_pinned`) so they stay a decision, not a
+    library accident. Do not re-propose %v parity without new evidence that
+    real traffic hits these corners.
+  * `02_flat_filters.sql` — new `flat_filters_agg` (one row per (org, plan,
+    code, charge), candidates as a jsonb array ordered by charge_filter_key)
+    and `subscriptions_agg` (one row per (org, external_id), timestamps
+    pre-floored to ms mirroring Go's date_trunc). The old `flat_filters`
+    TABLE + sink + index are GONE (flat_filters_mv stays, the agg builds on
+    it). Timestamps inside jsonb are stringified ::varchar (RW renders
+    jsonb timestamps ISO-T; ::varchar keeps the space form ::timestamp
+    parses back).
+  * `04_enrichment.sql` stage 1 — both rank stages deleted; two single-row
+    temporal joins + the two UDFs. The stage-1 32-day temporal filter is
+    ALSO gone: its only purpose was sweeping ranking state, and stage-1
+    per-event operator state is now ZERO (append-only-LHS temporal joins
+    keep no LHS state). Entry stays bounded by stage-0's filter; a stage-1
+    rebuild now replays the full ~33d retention window instead of 32d.
+  * `reapply_enrichment.sh` teardown extended: UDFs + agg relations +
+    legacy flat_filters (a changed 02/03 needs them dropped to reapply).
+
+LOCAL A/B, 100k-event burst blast (same box, same fixtures: 90% load-plan
+traffic across 203 subs x 3 codes, 10% heavy 20-filter-candidate charges;
+single-partition local topic; produce itself ~1s via rpk):
+
+| metric (burst of 100k) | ranked stage 1 | UDF stage 1 |
+|---|---|---|
+| drain after produce end | ~21.3s (~4.7k ev/s) | **<= 2.6s (>= 38k ev/s, poll-bound)** |
+| visibility avg / p95 / max | 1.69s / 16.9s / 17.4s | **26ms / 387ms / 420ms** |
+| stage-1 state @ 272k events | **3.2 GB**, 7 state tables (4 x 808k keys) | **~10 KB** (backfill tracker only) |
+| duplicate rows emitted | +373 and +383 per 100k run | **0** |
+
+PARITY: full-table diff old vs new events_expanded over the replayed 272,460
+events: ZERO unexplained divergences. The 1,296 old-only rows decompose as
+896 DUPLICATES the ranked pipeline had emitted (see below) + 400 keys whose
+old rows predate the 2026-08-25 Hooli region filters (rebuild replays
+against current dimensions — known temporal-join backfill semantics, the
+new rows are the correct-today attribution). Functional spot checks: gold
+matches, bronze/GOLD -> default bucket (case-sensitive like Go), 20-candidate
+no-match -> default bucket, grouped_by exact, buckets flow to CH, wallet
+consumer drains.
+
+FOUND ALONG THE WAY — the ranked stage 1 DUPLICATES rows under burst: both
+100k baseline runs appended ~0.4% extra rows (373, then 383; 896 total in
+history), overwhelmingly on the 20-candidate default-bucket class, some
+byte-identical within one barrier. Mechanism: GroupTopN interim-winner churn
+inside an epoch — interim top-1 emitted, retraction swallowed by
+force_append_only, final winner appended again; the differing interim
+charge_filter_key is masked by the default-bucket CASE so rows can collide
+into identical output. This was ALWAYS live under load (usage_buckets sums
+it = over-billing); the §0 2026-08-23 partition-key fix removed CROSS-event
+interference but not WITHIN-partition churn. The UDF stage 1 eliminates the
+operator class entirely — exactly-once per (event, charge) held across
+272k-row replay + 100k burst.
+
+STAGING/CLOUD ROLLOUT NOTES: cloud rebuild remains manual (capture DDL
+first, drop leaves->root, sinks recreated in a sink_decouple session —
+§ above); TRUNCATE the CH expanded shadow before the rebuild (plain
+MergeTree, replay duplicates) and seek the wallet consumer group to end
+after backfill (this rebuild replayed ~272k triggers locally). RW Cloud
+question RESOLVED same evening: embedded LANGUAGE rust compilation works
+on the managed tier out of the box (the BASE64/wasm32-wasip1 fallback was
+not needed).
+
+### STAGING VALIDATED — CEILING CLOSED (2026-08-28 evening)
+
+Jeremy applied the rebuild to the staging RW Cloud cluster the same
+evening and reran the load. The ~3k ceiling is GONE; the investigation
+this section documents is closed.
+
+Rebuild facts worth keeping:
+  * The events_enriched->events_expanded BACKFILL digested at 6.7k ->
+    **15.6k rows/s** through the new stage 1 (~4M rows in ~6 min), barrier
+    inflight 1.5-1.9s DURING backfill, CPU-bound — on the SMALL tier
+    (standalone pod reporting 8 cores), i.e. ~5x Wednesday's ceiling
+    while doing strictly more per-row work than steady-state ingest.
+  * INCIDENT — sink stuck "under creation": the first
+    wallet_refresh_triggers_sink CREATE left a catalog entry in creating
+    state with NO job behind it (`rw_ddl_progress` empty, DROP SINK
+    refused with "exists but under creation"). Likely cause: the create
+    hung on an unreachable broker (the local file hardcodes
+    redpanda:9092 — see the cloud-parameterisation item below, which bit
+    AGAIN) and/or the psql session died mid-backfill. CLEARED by cluster
+    restart (`rwc cluster stop/start`; `RECOVER;` is the lighter first
+    attempt — forces the same meta recovery that aborts creating-state
+    jobs). Prevention: `SET BACKGROUND_DDL = true` before long sink
+    creates, and verify the bootstrap address before retrying.
+  * `snapshot = 'false'` is NOT available for `CREATE SINK AS SELECT`
+    (v3.0.2: FROM-relation sinks only — tested, bind error), and hoisting
+    the wallet-trigger projection into an MV to sink FROM is FORBIDDEN
+    (a downstream MV over the retention-cleaned events_expanded grows
+    unbounded — physical cleanup emits no changelog, canary-proven). So
+    wallet-sink recreation keeps the seek-the-consumer-group dance;
+    documented in 09_wallet_triggers.sql.
+  * METRICS GOTCHA: Kafka sinks never emit `sink_commit_duration_*`
+    (only coordinated sinks like ClickHouse do). Do NOT infer a sink's
+    absence from it — the reliable liveness signal is a
+    `stream_sink_input_row_count` series existing for the sink_id.
+
+THE HEADLINE RUN (id 20260828180122-0375, 18:01 UTC, staging cloud stack,
+wallet sink live as sink_id 213, buckets CH sink attached, shadows off):
+**712,330 events at a FLAT 5,000 ev/s for 143s — zero errors, zero probe
+timeouts, zero Kafka backlog.** Loadtest-measured freshness under that
+load (200k samples each, watermark attribution, factor 1.000):
+  * event -> usage visible:        p50 284ms / p95 382ms / p99 536ms
+  * event -> wallet balance:       p50 603ms / p95 857ms / p99 949ms
+    (BETTER than the local 664ms median — full trigger->consumer->refresh
+    chain included)
+RW during the run: barrier inflight **19-23ms** (Wednesday at 3.4k:
+9,000-26,000ms), wallet triggers emitted at 5,000/s, CPU peak 3.6 of the
+8 reported cores. Consumed == offered at every sample. The Wednesday
+signature (capped throughput + idle CPU + wedged checkpoints) did not
+reappear; the graph now behaves compute-bound, which scales with tier.
+Results artifact (shareable, product-friendly):
+https://claude.ai/code/artifact/dc748e85-9782-4d9a-b09b-5baf37c856ea
+
+NEXT (2026-08-29), REVISED — the RisingWave-team asks are now optional
+curiosity, not blockers (the await-tree question died with the ceiling).
+Still worth asking if a conversation happens anyway: standalone-tier
+object-store bandwidth (sync sat at ~0.45s/barrier across 8 and 24 cores
+on the OLD graph) and recommended parallelism for barrier-coupled graphs.
+Remaining validation before prod-shadow confidence: a LONG run (10min+)
+at 5k+ with the CH shadow sinks recreated (today's run had no shadows;
+sinks were a measured contributor on Wednesday), and a ceiling-hunt ramp
+above 5k to find the new knee on this tier.
+
+### Still open, cheap, unrelated to the above
+
+- [ ] `events_expanded` (fragment 99) runs at **parallelism 4** while the
+      fragments around it run at 8. Graph-wide: 33 fragments at 8, 20 at 4,
+      15 at 1. `parallelism_policy` is `upstream_fragment([100])`, and
+      `max_parallelism` is 256 with the effective bound at 8 (the core count).
+      Free to fix, unrelated to the ceiling.
+- [ ] **No cloud-parameterised setup path exists** — `setup.sh` applies
+      `sql/*.sql` VERBATIM and every endpoint is hardcoded to local Docker
+      (`redpanda:9092`, `http://clickhouse:8123`), and both scripts hardcode
+      `-U root` while cloud uses `oauth_default` over `sslmode=require`.
+      BIT AGAIN 2026-08-28 evening: the staging wallet-sink create wedged
+      in "under creation", most plausibly from the hardcoded broker —
+      cost a cluster restart to clear.
+      So `reapply_enrichment.sh` MUST NOT be run against a cloud cluster: it
+      would drop the subtree and then recreate every sink pointed at
+      unresolvable hostnames. Cloud rebuilds are manual today. This is a
+      CUTOVER BLOCKER, not an inconvenience — see §2 deployment ordering.
+
+### Method note (worth reusing)
+
+Per-edge blocking normalised by actor count is what finally located this;
+aggregate "everything is blocked" told us nothing for three runs. The
+signature to look for is the edge where blocking DROPS from ~100% to
+something low — that fragment is the bottleneck, everything above it is a
+victim. Actor counts differ per fragment (4 vs 8 here), so normalise or the
+numbers mislead.
+- [x] **Sinks TESTED and largely EXONERATED 2026-08-28.** Two experiments,
+      both measured, neither lifted the ceiling:
+      1. `sink_decouple = true` on `usage_buckets_clickhouse_sink` (recreated,
+         sink_id 141 -> 147). NO effect on throughput or barriers — that sink
+         carries only ~15-31 rows/s, ~0.5% of sink volume, because it is a
+         15-minute bucket aggregation. Latency-critical is not the same as
+         volume-critical; backpressure follows volume. Kept anyway (free).
+      2. `events_enriched_rw_shadow_sink` +
+         `events_enriched_expanded_rw_shadow_sink` DROPPED — removing ~5,800
+         rows/s of ClickHouse HTTPS writes. First minute improved (2,840 ->
+         3,372 ev/s, barrier 9.27s -> 6.96s, sync storage 0.52s -> 0.35s) but
+         it did NOT hold: by minute two the run was back to 2,739 ev/s,
+         barrier 9.8s, and lag climbing to 34,253. The sinks were a
+         contributor, not the constraint.
+      Sink row amplification for the record: 2,840 events/s in produced
+      ~14,500 sink-rows/s out across 5 sinks — every event written 5 times.
+- [ ] **Get off standalone.** 8 shared cores is why sync degrades under load;
+      the structural fix for real headroom.
+- [ ] **Then** raise `events_raw` partitions. Only meaningful once the graph
+      is no longer the constraint — today 3 readers are not the limit.
+
+### sink_decouple: what it costs here, and why it is safe
+
+`sink_decouple` is a SESSION variable (`default` | `true`/`enable` |
+`false`/`disable`), captured at CREATE SINK time — it does NOT retroactively
+change existing sinks, so enabling it means DROP + CREATE. Verify with
+`SELECT sink_id, is_decouple FROM rw_sink_decouple;`.
+
+The usual objection is that a decoupled sink commits every 10 checkpoints
+(10 x barrier_interval_ms) instead of every one. **That does not apply to
+our ClickHouse sinks: all three already pin `commit_checkpoint_interval = 1`**
+(`06_sinks.sql:77,120`, `10_enriched_shadow.sql:95`), so flush cadence stays
+at the barrier interval and the decoupling buffer only absorbs bursts. This
+is why decoupling can be turned on while KEEPING barrier_interval_ms at 250.
+
+Scope deliberately limited to the ClickHouse sinks — they are the slow
+HTTPS writers doing the backpressuring. The Redpanda sinks
+(`wallet_refresh_triggers_sink`, `usage_realtime_updates_sink`) stay
+non-decoupled: they are fast, they are not the backpressure source, and the
+wallet trigger's whole value is emitting within milliseconds.
+
+RECREATION HAZARD, per sink:
+- `usage_buckets_clickhouse_sink` — SAFE. Recreating replays the whole
+  `usage_buckets_15m` snapshot, but it is an `upsert` sink into a
+  ReplacingMergeTree keyed on the same primary key, so replay is idempotent
+  (expensive, not corrupting).
+- `events_enriched_rw_shadow_sink` / `events_enriched_expanded_rw_shadow_sink`
+  — DESTRUCTIVE. `append-only` into plain MergeTree with no dedup: a replay
+  DUPLICATES all shadow history. Truncate the target first, or accept that
+  parity numbers over the replayed window are junk.
+
 ## 1. Harden for prod shadow (do first, one chunk)
 
 - [x] **NULL `ingested_at` wedged the whole streaming database** (found and
@@ -345,8 +957,13 @@ history lives in ClickHouse anyway).
       a delay, alert on second orphaning. Replaces the Go processor's
       12h-retry semantics for CDC races.
 - [ ] **Recurring-BM fallback** (no active sub at event time → currently
-      active sub) in the subscription ranking stage — last enrichment
-      difference vs the Go processor.
+      active sub) — last enrichment difference vs the Go processor. Since
+      the 2026-08-28 redesign the natural home changed: `pick_subscription`
+      is a pure UDF (no clock), so the fallback needs a second UDF call at
+      a now()-ish timestamp resolved OUTSIDE the UDF — note `now()` is
+      rejected in streaming projections, so this likely means carrying
+      `rw_received_at`/`kafka_timestamp` as the "current time" argument
+      gated on `recurring`.
 - [x] **Load-test + latency app for the POC** (2026-08-24): `loadtest/` — a
       local service (Fastify + React, `npm run dev`) that sends events to the
       Lago API for existing customers/active subscriptions and reports
