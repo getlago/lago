@@ -91,7 +91,6 @@ Lago supports dedicated workers for specific job types to improve performance an
 | `SIDEKIQ_AI_AGENT`   | `ai_agent`                         | 10                               | AI Agent             |
 | `SIDEKIQ_ALERTS`     | `alerts_high_priority`, `alerts`   | 5                                | Usage Alerting       |
 | `SIDEKIQ_WALLETS`    | `wallets`                          | 10                               | Wallet balance refresh |
-| _(always on, no toggle)_ | `meilisearch`                  | 10                               | Meilisearch invoice indexing |
 
 #### Queue Routing Logic
 
@@ -221,7 +220,6 @@ Lago's production deployment includes multiple worker types, each handling speci
 | **Wallet Worker** | `wallets` | Refreshes wallet ongoing balances | Optional | Enable with `SIDEKIQ_WALLETS=true`; otherwise jobs fall back to `low_priority` |
 | **Alerts Worker** | `alerts_high_priority`, `alerts` | Processes usage alerting jobs | Optional | Enable with `SIDEKIQ_ALERTS=true`; otherwise jobs fall back to `default` |
 | **AI Agent Worker** | `ai_agent` | Handles AI Agent jobs | Optional | Enable with `SIDEKIQ_AI_AGENT=true` |
-| **Meilisearch Worker** | `meilisearch` | Indexes invoices into Meilisearch | Optional | Always routes to the `meilisearch` queue (no toggle); requires this worker when Meilisearch search is used |
 
 #### Specialized Workers
 
