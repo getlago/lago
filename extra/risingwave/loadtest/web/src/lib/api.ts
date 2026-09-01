@@ -41,7 +41,7 @@ export type RunSpec = {
   probeTargetId: string | null;
   walletProbeTargetId: string | null;
   stages: Record<StageKey, boolean>;
-  guards: { maxErrorRatePct: number; hardCap: number };
+  guards: { maxErrorRatePct: number };
   spread: { groupKeyValues: number; includeDefaultBucket: boolean; maxVariantsPerTarget: number };
 };
 

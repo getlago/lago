@@ -1,6 +1,6 @@
 # RisingWave realtime usage — remaining work
 
-State as of 2026-08-28 EVENING (big day: the 08-27/28 staging ceiling ~3k ev/s was PROVEN to be stage-1 `events_expanded_load` by amputation, then the stage was REWRITTEN the same day — ranking operators replaced by Rust-UDF ports of the Go matching logic over pre-aggregated dimension arrays — applied locally AND to staging, and the ceiling is GONE: flat 5,000 ev/s on the small tier, barriers 19-23ms, usage p50 284ms / wallet p50 603ms under load, full record + rebuild gotchas in §0c; earlier context: 08-24 built and reverted compute-on-read wallet balance, see §3; 08-25 ClickHouse serving cost — org key prefix + monthly partitioning, see §0b): BOUNDED 32-day pipeline — enrichment runs as two
+State as of 2026-08-31 (dependency-outage drills COMPLETE — Postgres, Redpanda and ClickHouse all tested under load, ClickHouse was the only one the pipeline could not ride through and its three sinks are now DECOUPLED, verified by a repeat outage with zero stall: §0d; earlier: 08-28 was the big staging day — the 08-27/28 staging ceiling ~3k ev/s was PROVEN to be stage-1 `events_expanded_load` by amputation, then the stage was REWRITTEN the same day — ranking operators replaced by Rust-UDF ports of the Go matching logic over pre-aggregated dimension arrays — applied locally AND to staging, and the ceiling is GONE: flat 5,000 ev/s on the small tier, barriers 19-23ms, usage p50 284ms / wallet p50 603ms under load, full record + rebuild gotchas in §0c; earlier context: 08-24 built and reverted compute-on-read wallet balance, see §3; 08-25 ClickHouse serving cost — org key prefix + monthly partitioning, see §0b): BOUNDED 32-day pipeline — enrichment runs as two
 bounded sink queries (first-wins dedup on the prod RMT key over a 32-day
 window; events immutable, reprocess removed) into append-only firewall
 TABLES `events_enriched`/`events_expanded` (retention 33 days, physical
@@ -821,7 +821,19 @@ numbers mislead.
 - [ ] **Then** raise `events_raw` partitions. Only meaningful once the graph
       is no longer the constraint — today 3 readers are not the limit.
 
-### sink_decouple: what it costs here, and why it is safe
+### sink_decouple: what it costs here, and why it is safe — APPLIED 2026-08-31
+
+**APPLIED AND VERIFIED 2026-08-31** (after the ClickHouse-outage drill, §0d,
+proved coupled CH sinks stall the whole graph): all three ClickHouse sinks
+now run decoupled. The mechanism is a session-scoped `SET sink_decouple =
+true;` at the TOP of `06_sinks.sql` and `10_enriched_shadow.sql` — setup.sh
+runs each file as its own psql session, so the Kafka sinks (07/09) keep the
+system default `disable`. Measured healthy-path cost ≈ ZERO (CH bucket
+218-327ms, wallet 266-509ms — identical to coupled), confirming the
+`commit_checkpoint_interval = 1` argument below. Verify after any rebuild:
+`SELECT * FROM rw_catalog.rw_sink_decouple;` → `t` for exactly the three CH
+sinks. CLOUD CUTOVER: the setting binds at CREATE SINK in-session, so the
+rebuild-from-captured-DDL procedure MUST include the `SET`.
 
 `sink_decouple` is a SESSION variable (`default` | `true`/`enable` |
 `false`/`disable`), captured at CREATE SINK time — it does NOT retroactively
@@ -850,6 +862,74 @@ RECREATION HAZARD, per sink:
   — DESTRUCTIVE. `append-only` into plain MergeTree with no dedup: a replay
   DUPLICATES all shadow history. Truncate the target first, or accept that
   parity numbers over the replayed window are junk.
+
+## 0d. 2026-08-31 — dependency-outage drills: Postgres, Redpanda, ClickHouse
+
+All three stateful dependencies were killed under live traffic (local dev,
+same probe/burst/ledger method each time; scripts in the session scratchpads,
+full write-ups in the artifacts). Headline: **the pipeline rides through
+Postgres and Redpanda outages; ClickHouse was the one it could not survive —
+fixed the same day by decoupling the CH sinks (see §0c "sink_decouple ...
+APPLIED"), verified by a repeat outage with zero stall.**
+
+### Postgres (CDC) — rides through
+Two restart cycles (157s / 60s). Slot is durable, Debezium resumes from the
+stored LSN (`snapshot.mode=no_data`, tables never re-copied), reconnect
+2.2-7.2s after pg_isready, race writes committed while the slot was inactive
+always captured, 0 loss / 0 dupes. A dead CDC source does NOT stall barriers —
+the Kafka event pipeline stayed fully live mid-outage. PROD RISKS (untested):
+the inverse outage (RW down) pins WAL via the slot; if
+`max_slot_wal_keep_size` invalidates it, `no_data` mode means NO self-heal —
+manual source re-creation. Need slot-lag alerting.
+Artifact: https://claude.ai/code/artifact/be41f5d8-0596-4ec2-906b-c38ad7c1f5cf
+
+### Redpanda — RW rides through; the API's producer is the real exposure
+Two cycles (stop + 97s idle, SIGKILL mid-burst + 59s). RW never stalled
+(FLUSH 47-484ms throughout — checkpoints don't wait on dead Kafka connectors;
+quiesced sinks pass), exactly-once perfect for every delivered message.
+THE EXPOSURE IS UPSTREAM: `produce_many_async` + WaterDrop default
+`message.timeout.ms=50000` + an error handler that only logs means **any
+broker outage >50s silently loses API-accepted events** (API keeps 200ing;
+PG-store orgs keep a re-injectable row, CH-store orgs lose the event
+entirely — api_logs/activity_logs topics too). Prod asks: raise
+message.timeout.ms, persist delivery failures (ties into §1 orphan
+re-injection), alert on producer error rate. Secondary: Go events-processor
+panic-crash-loops for the whole outage; a SIGKILL can lose the acked tail of
+`usage_realtime_updates` (RW Kafka sink acks < acks=all) → loopback source
+offset-reset replay (observability-only).
+Artifact: https://claude.ai/code/artifact/73bab6de-b0df-4168-bc2a-fb3a2dfba2b8
+
+### ClickHouse — full-graph stall (FIXED same day: sinks decoupled)
+Two cycles at the then-current `sink_decouple=disable` (graceful stop 3m43s
+with a 300-event burst; SIGKILL mid-burst 76s): CH sink delivery sits inside
+the checkpoint, so a dead CH failed every barrier → meta suspended the WHOLE
+graph in a hot recovery loop (~2 full teardown/rebuilds per SECOND; 379
+cycles in 3m43s) — wallet triggers, buckets, every MV frozen; usage reads
+raw-500 in 171ms from `bucket_lookup.rb:30` (the legacy fallback is also CH,
+nothing to fall back to). Exactly-once still PERFECT: 303/303 rows every
+store both cycles, zero dups even in the plain-MergeTree shadows after a
+SIGKILL mid-insert; recovery automatic ~3s after CH healthy, drain <10s.
+PROVEN DESIGN FACT: Kafka-sink emission is NOT checkpoint-gated — each
+recovery attempt re-published the dirty epoch's triggers (7.1x/4.2x per
+event vs steady-state exactly 1x) → every consumer of an RW Kafka sink must
+be idempotent (the trigger consumer is).
+THE FIX (same day): all three CH sinks recreated decoupled (§0c). Repeat
+66s outage + 200-event burst: ZERO stall (FLUSH 54-113ms, 0 recovery events,
+buckets/triggers advanced live; sinks retry internally — "reset log reader
+stream" — instead of dying). Drain after CH returns is the trade: first row
++8s but full drain +2m33s with ~3min of ragged stale-connection retries
+(coupled sinks drained <10s because recovery rebuilt actors with fresh
+connections); self-heals, no intervention. Ledger 200/200, 0 dups.
+STILL OPEN from this drill (folded into §1 observability):
+- usage reads during a CH outage should 503 (rescue the connection-refused
+  class in the CH store layer), not stack-trace 500;
+- alert on RW recovery-count/barrier metrics + a bucket-freshness canary
+  (max `ver` age on `usage_buckets_15m`) — a stall is INFO-level logs only;
+- CH availability still bounds the READ path SLO (buckets + legacy both CH).
+Also found (pre-existing, uninvestigated): RW logs a constant ~1.5k/5min
+stream of librdkafka "AllBrokersDown 2/2 brokers" producer errors unrelated
+to actual Redpanda health — likely a stale producer handle.
+Artifact: https://claude.ai/code/artifact/eab26fdf-f04a-41c6-9ea7-29443100e8d2
 
 ## 1. Harden for prod shadow (do first, one chunk)
 
@@ -882,6 +962,12 @@ RECREATION HAZARD, per sink:
             actually guarantees (not what the API happens to send), or put a
             validation/quarantine stage between `events_raw` and stage 0.
             A shadow sink in particular must never be able to stop serving.
+            UPDATE 2026-08-31: decoupling the CH sinks (§0d) SHRINKS the blast
+            radius — a failing sink now retries against its log store instead
+            of failing barriers, so the graph keeps running — but a poison ROW
+            (unlike a dead server) fails every retry forever: that sink stops
+            delivering and its log store grows until intervention. Quarantine
+            is still the real fix; decoupling buys time and containment.
 
 - [ ] **State growth: accepted + monitored** (downgraded from "blocking",
       2026-08-21, Jeremy's call). Dedup/event-MV state grows linearly with
@@ -1032,6 +1118,12 @@ history lives in ClickHouse anyway).
       - wallet-balance parity check
       - realtime-vs-fallback counters in the realtime aggregators
       - consumer-lag panel for `wallet_refresh_triggers`
+      - from the outage drills (§0d): PG replication-slot lag alert;
+        WaterDrop producer error-rate alert + raised `message.timeout.ms`
+        (API health hides silent event loss past 50s of broker outage);
+        RW recovery-count/barrier-latency alert + bucket-freshness canary
+        (max `ver` age on CH `usage_buckets_15m`); 503 instead of raw 500
+        on usage reads when ClickHouse is unreachable
 
 ### Dedup retention: "is this event already ingested?" — mechanisms measured 2026-08-20
 

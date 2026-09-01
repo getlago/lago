@@ -481,9 +481,11 @@ export class Run {
 
     checks.push({
       name: "Guards",
-      ok: this.spec.totalEvents <= this.spec.guards.hardCap,
+      // No size ceiling: a load test that refuses to run big is useless. The
+      // only guard left is the windowed error-rate stop, and 0 disables it.
+      ok: true,
       detail:
-        `total ${this.spec.totalEvents} vs hard cap ${this.spec.guards.hardCap}; ` +
+        `total ${this.spec.totalEvents} events, no size cap; ` +
         (this.spec.guards.maxErrorRatePct > 0
           ? `stop above ${this.spec.guards.maxErrorRatePct}% errors over ${GUARD_WINDOW_SEC}s`
           : "error-rate stop disabled"),
@@ -1058,7 +1060,7 @@ export class Run {
 
   private async bulkLoop() {
     const spec = this.spec;
-    const cap = Math.min(spec.totalEvents, spec.guards.hardCap);
+    const cap = spec.totalEvents;
     const batchSize = Math.max(1, Math.min(this.maxBatch(), spec.send.batchSize));
     let inFlight = 0; // requests, not events — that is what the round trip gates
     let seq = 0;

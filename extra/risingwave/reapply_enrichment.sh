@@ -148,5 +148,10 @@ Remaining manual steps after a rebuild:
   * re-apply persisted system params if the volume was also wiped:
       ALTER SYSTEM SET barrier_interval_ms TO 250;
       ALTER SYSTEM SET sink_decouple TO false;
+    (false stays the SYSTEM default so Kafka sinks — wallet triggers, usage
+    updates — remain checkpoint-coupled; the ClickHouse sinks override it with
+    a session-scoped SET sink_decouple = true inside 06_sinks.sql and
+    10_enriched_shadow.sql so a CH outage degrades instead of stalling the
+    graph. Verify with: SELECT * FROM rw_catalog.rw_sink_decouple;)
   * check the streaming graph at http://localhost:5691
 DONE

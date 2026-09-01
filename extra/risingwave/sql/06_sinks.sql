@@ -1,3 +1,15 @@
+-- DECOUPLED ClickHouse sinks (2026-08-31, after the ClickHouse-outage drill):
+-- with sink_decouple=disable, CH sink delivery sits INSIDE the checkpoint, so
+-- a dead ClickHouse fails every barrier and meta suspends the WHOLE graph in
+-- a hot recovery loop (~2 teardown/rebuilds per second) — wallet triggers and
+-- all MVs freeze for the full outage. Decoupled sinks buffer in the log store
+-- and stop failing checkpoints, so a CH outage degrades (stale buckets,
+-- degraded-stale wallet refreshes) instead of stalling the pipeline.
+-- Session-scoped: setup.sh runs each file as its own psql session, so this
+-- does NOT leak to the Kafka sinks (07/09) — those keep the system default
+-- (disable), which the wallet path's latency depends on.
+SET sink_decouple = true;
+
 -- Shadow output: enriched + expanded events, shaped like the production
 -- ClickHouse table `events_enriched_expanded`, for parity diffing against the
 -- Go processor's output with plain SQL.

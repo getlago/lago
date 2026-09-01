@@ -103,6 +103,24 @@ decrements when rows are reclaimed).
   validity at the event timestamp is computed as a flag and resolved by
   ranking, mirroring the Go `FetchSubscription` ordering.
 
+## Migrations (`migrate.sh` + `migrations/`)
+
+Schema changes are Rails-style migrations, with state stored in RisingWave
+itself (`schema_migrations` user table — the ledger lives and dies with the
+state store it describes, so they can never disagree).
+
+- `sql/*.sql` stays the CURRENT state (what `setup.sh` applies on a fresh
+  install — the schema.rb analog). Keep it updated alongside each migration.
+- `migrations/NNNN_name.sql|.sh` are run-once deltas for instances that
+  already exist. `.sh` for changes needing orchestration (subtree teardown,
+  ClickHouse DDL, consumer seeks).
+- `./migrate.sh status | up | new <name> | baseline`. `setup.sh` runs
+  `baseline` at the end so fresh installs stamp everything as applied.
+- No DDL transactions in RW: write migrations idempotently
+  (`DROP ... IF EXISTS` before `CREATE`) so a failed run converges on retry.
+- Before writing one, pick the recreate pattern from the section below —
+  the backfill matrix decides whether a naive drop+create duplicates data.
+
 ## Changing the pipeline (recreating MVs, sinks, tables)
 
 Nothing here is a live-edit: RisingWave has no `ALTER MATERIALIZED VIEW` and

@@ -239,17 +239,6 @@ export function Run({
             />
             <span className="note">judged over a trailing 10s window; 0 disables the stop</span>
           </label>
-          <label className="field">
-            Hard cap (events)
-            <input
-              type="number"
-              min={1}
-              value={spec.guards.hardCap}
-              disabled={!!live}
-              onChange={(e) => setSpec({ ...spec, guards: { ...spec.guards, hardCap: Number(e.target.value) } })}
-            />
-            <span className="note">preflight refuses a run larger than this</span>
-          </label>
         </div>
 
         <div className="row" style={{ marginTop: 12, gap: 18 }}>

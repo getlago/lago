@@ -427,8 +427,9 @@ share from competing with the load being generated.
 
 ## Guards
 
-Rate, total, optional ramp, `stop above N% errors`, and a hard cap that a typo
-cannot exceed. A run also stops early if no probe has made progress for 15 s
+Rate, total, optional ramp, and `stop above N% errors` (windowed over 10 s; 0
+disables it). There is no size ceiling — a run is as large as `total` says.
+A run also stops early if no probe has made progress for 15 s
 rather than waiting out the full probe timeout, and it says which stages it gave
 up on.
 

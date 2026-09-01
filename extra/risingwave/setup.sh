@@ -36,4 +36,9 @@ for file in "$SQL_DIR"/*.sql; do
   fi
 done
 
+# A fresh install applied the CURRENT state (sql/*.sql already contains every
+# past migration's outcome), so stamp all migrations as applied without
+# running them — same model as Rails' schema load.
+"$(dirname "$SQL_DIR")/migrate.sh" baseline
+
 echo "==> Done. Dashboard: http://localhost:5691 — SQL: psql -h $RW_HOST -p $RW_PORT -d dev -U root"

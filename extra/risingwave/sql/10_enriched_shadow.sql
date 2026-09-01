@@ -1,3 +1,8 @@
+-- DECOUPLED ClickHouse sink — same rationale as 06_sinks.sql: keeps a dead
+-- ClickHouse from failing checkpoints and stalling the whole graph (see the
+-- 2026-08-31 ClickHouse-outage drill). Session-scoped; Kafka sinks unaffected.
+SET sink_decouple = true;
+
 -- Shadow of the Go processor's *enriched* (non-expanded) output.
 --
 -- The Go path (processor.go / ProduceEnrichedEvent -> events_enriched topic ->

@@ -305,7 +305,7 @@ export type RunSpec = {
    */
   walletProbeTargetId: string | null;
   stages: Record<StageKey, boolean>;
-  guards: { maxErrorRatePct: number; hardCap: number };
+  guards: { maxErrorRatePct: number };
   /** How widely to spread events across charge filters and pricing group keys. */
   spread: { groupKeyValues: number; includeDefaultBucket: boolean; maxVariantsPerTarget: number };
 };

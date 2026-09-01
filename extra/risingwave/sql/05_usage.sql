@@ -42,8 +42,15 @@ SELECT
     grouped_by::VARCHAR AS grouped_by,
     aggregation_type,
     COUNT(*) AS events_count,
+    -- The exponent branch matters: jsonb ->> renders small JSON numbers in
+    -- scientific notation (0.000001 -> '1e-6'), which ::DECIMAL parses but a
+    -- plain-decimal regex rejects — dropping real units (AggCmp parity run,
+    -- 2026-08-31). An exponent outside rw_decimal's 28-digit range makes the
+    -- cast error, which streaming evaluates non-strictly to NULL (verified on
+    -- '1e999'/'1e-30': job keeps running, SUM skips the row — same result as
+    -- ELSE 0, matching the legacy toDecimal-or-zero read).
     SUM(
-        CASE WHEN regexp_match(value, '^-?[0-9]+(\.[0-9]+)?$') IS NOT NULL
+        CASE WHEN regexp_match(value, '^-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?$') IS NOT NULL
              THEN value::DECIMAL
              ELSE 0
         END
