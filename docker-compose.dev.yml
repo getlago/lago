@@ -5,6 +5,11 @@ configs:
 volumes:
   front_node_modules_dev:
   front_dist_dev:
+  # Shared with the per-workspace Conductor front containers, which mount it on
+  # the same path (scripts/conductor-front-container.sh in the front repo).
+  # External so its name stays unprefixed and `down -v` never drops it.
+  lago_front_pnpm_store:
+    external: true
   postgres_data_dev:
   redis_data_dev:
   redis_replica_data_dev:
@@ -92,6 +97,10 @@ services:
       - ./front:/app:cached
       - front_node_modules_dev:/app/node_modules
       - front_dist_dev:/app/dist
+      # /app is a bind mount, so pnpm always relocates its store to
+      # <project>/.pnpm-store; mounting the shared volume there keeps ~670MB out
+      # of ./front and lets every workspace container reuse one store.
+      - lago_front_pnpm_store:/app/.pnpm-store
     environment:
       - NODE_ENV=development
       - API_URL=https://api.lago.dev
