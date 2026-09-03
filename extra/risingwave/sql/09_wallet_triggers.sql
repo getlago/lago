@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- Wallet refresh triggers: one Kafka message per enriched event, keyed by
 -- (organization_id, customer_id). Coalescing and wallet-filtering are the
 -- CONSUMER's job (batch-collapse in WalletRefreshTriggersConsumer with a

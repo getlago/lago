@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- Event enrichment: bounded 32-day working set in RisingWave, full history
 -- in ClickHouse.
 --
@@ -108,9 +114,9 @@ FROM (
             ON bm.organization_id = e.organization_id
            AND bm.code = e.code
            AND bm.deleted_at IS NULL
-        WHERE e.kafka_timestamp > now() - INTERVAL '32 days'
     ) joined
 ) deduped
+WHERE kafka_timestamp > now() - INTERVAL '32 days'
 WITH (type = 'append-only', force_append_only = 'true');
 
 -- Stage 1+2 firewall table: expanded events, one row per (event, charge).

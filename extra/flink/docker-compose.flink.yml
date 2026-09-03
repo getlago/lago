@@ -1,0 +1,100 @@
+# Local Flink cluster, shaped to match Amazon Managed Service for Apache Flink
+# (MSF) as closely as a local session cluster can.
+#
+# WHAT IS AND IS NOT REUSABLE ON AWS
+#   Reusable   : the application JAR (app/), its SQL resources, its UDFs, and
+#                the PropertyGroup-shaped configuration contract (conf/).
+#   Local only : THIS FILE. MSF runs an application cluster it provisions
+#                itself; you never ship a JobManager/TaskManager definition.
+#
+# The `FLINK_PROPERTIES` below therefore exist ONLY to reproduce locally what
+# MSF sets for you (RocksDB state backend, incremental + exactly-once
+# checkpointing, restart strategy). Do NOT move these into the job code:
+# MSF 2.2+ throws when an application sets a Flink config it does not allow
+# (see ROADMAP "MSF constraints"). Anything the job genuinely needs to vary
+# belongs in conf/local.properties -> PropertyGroups.
+#
+# Attaches to the running lago dev stack's network so the job can reach
+# `redpanda:9092`, `db:5432` and `clickhouse:8123` by service name, exactly
+# as the RisingWave pipeline does.
+
+name: lago_flink
+
+networks:
+  default:
+    name: lago_dev_default
+    external: true
+
+volumes:
+  flink_checkpoints:
+  flink_m2_cache:
+
+x-flink-common: &flink-common
+  image: flink:2.3.0-java17
+  restart: unless-stopped
+  environment: &flink-env
+    # MSF parity. Keep this list minimal and justified — every entry is a
+    # thing MSF would otherwise set, not a tuning knob.
+    FLINK_PROPERTIES: |
+      jobmanager.rpc.address: flink-jobmanager
+      taskmanager.numberOfTaskSlots: ${FLINK_TASK_SLOTS:-8}
+      parallelism.default: ${FLINK_PARALLELISM:-8}
+      state.backend.type: rocksdb
+      state.backend.incremental: true
+      execution.checkpointing.interval: 60s
+      execution.checkpointing.min-pause: 5s
+      execution.checkpointing.mode: EXACTLY_ONCE
+      execution.checkpointing.dir: file:///flink-checkpoints
+      restart-strategy.type: exponential-delay
+      rest.flamegraph.enabled: true
+      # 12 GB, not the 4 GB this started at. MEASURED, 2026-09-02: at 4 GB the
+      # 8 slots share 1.4 GB of managed memory for RocksDB, and stage 0
+      # degrades from 49k to 15k ev/s as the dedup state grows — which reads
+      # on a graph exactly like a structural ceiling and is not one. Same JAR
+      # at 12 GB (4.6 GB managed) holds 79k ev/s flat. Any throughput number
+      # taken with a starved TaskManager is a number about RocksDB.
+      taskmanager.memory.process.size: ${FLINK_TM_MEMORY:-12288m}
+  volumes:
+    - flink_checkpoints:/flink-checkpoints
+    # Mount the PROJECT dir, not target/ — `mvn clean` deletes target/, and a
+    # bind mount pointing at a deleted directory goes stale: the JobManager
+    # keeps reporting "JAR file does not exist" until the container restarts.
+    - ./app:/opt/lago/app:ro
+
+services:
+  flink-jobmanager:
+    <<: *flink-common
+    container_name: lago_flink_jobmanager
+    hostname: flink-jobmanager
+    command: jobmanager
+    ports:
+      # Web UI — the analogue of the RisingWave dashboard. Backpressure and
+      # the flame graph live here; this is where a ceiling gets localised.
+      - 8081:8081
+    labels:
+      # Same convention as risingwave.lago.dev / grafana.lago.dev / console.lago.dev.
+      - "traefik.enable=true"
+      - "traefik.http.routers.flink.rule=Host(`flink.lago.dev`)"
+      - "traefik.http.routers.flink.entrypoints=web,websecure"
+      - "traefik.http.routers.flink.tls=true"
+      - "traefik.http.services.flink.loadbalancer.server.port=8081"
+
+  flink-taskmanager:
+    <<: *flink-common
+    command: taskmanager
+    depends_on:
+      - flink-jobmanager
+    deploy:
+      replicas: ${FLINK_TM_REPLICAS:-1}
+
+  # Build container: this machine has no JDK/Maven. `scripts/build.sh` drives
+  # it. The m2 cache is a named volume so rebuilds are fast.
+  flink-builder:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: lago_flink_builder
+    profiles: ["build"]
+    working_dir: /workspace
+    volumes:
+      - ./app:/workspace
+      - flink_m2_cache:/root/.m2
+    command: ["mvn", "-B", "clean", "package"]

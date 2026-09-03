@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- DECOUPLED ClickHouse sink — same rationale as 06_sinks.sql: keeps a dead
 -- ClickHouse from failing checkpoints and stalling the whole graph (see the
 -- 2026-08-31 ClickHouse-outage drill). Session-scoped; Kafka sinks unaffected.

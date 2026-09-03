@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- Pipeline latency, per minute, from broker-stamped timestamps.
 --
 -- Kafka append times are the only trustworthy per-event clocks here:

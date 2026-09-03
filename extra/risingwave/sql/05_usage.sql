@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- Incrementally-maintained realtime usage for count and sum billable metrics,
 -- on 15-minute buckets of the customer-supplied event timestamp.
 --

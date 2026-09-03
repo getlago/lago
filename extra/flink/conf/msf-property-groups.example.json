@@ -1,0 +1,26 @@
+[
+  {
+    "PropertyGroupId": "LagoUsage",
+    "PropertyMap": {
+      "pipeline.job-name": "lago-usage",
+      "pipeline.stages": "/sql/00_source_events_raw.sql,/sql/91_blackhole.sql",
+      "pipeline.state-ttl-days": "32",
+      "pipeline.mini-batch.enabled": "false",
+
+      "kafka.bootstrap.servers": "b-1.msk.example.amazonaws.com:9098,b-2.msk.example.amazonaws.com:9098",
+      "kafka.topic.events-raw": "events-raw",
+      "kafka.group.id": "lago_flink_usage",
+      "kafka.startup.mode": "latest-offset",
+
+      "postgres.hostname": "lago.cluster-xxxx.eu-west-1.rds.amazonaws.com",
+      "postgres.port": "5432",
+      "postgres.database": "lago",
+      "postgres.schema": "public",
+      "postgres.username": "lago_cdc",
+      "postgres.slot.name": "lago_flink_cdc",
+
+      "clickhouse.url": "https://clickhouse.example:8443",
+      "clickhouse.database": "default"
+    }
+  }
+]

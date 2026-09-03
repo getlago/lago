@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- DECOUPLED ClickHouse sinks (2026-08-31, after the ClickHouse-outage drill):
 -- with sink_decouple=disable, CH sink delivery sits INSIDE the checkpoint, so
 -- a dead ClickHouse fails every barrier and meta suspends the WHOLE graph in

@@ -1,0 +1,28 @@
+{
+  "name": "lago-dimensions-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "db",
+    "database.port": "5432",
+    "database.user": "lago",
+    "database.password": "changeme",
+    "database.dbname": "lago",
+    "topic.prefix": "lagodim",
+    "plugin.name": "pgoutput",
+    "slot.name": "lago_debezium",
+    "publication.name": "rw_publication",
+    "publication.autocreate.mode": "disabled",
+    "table.include.list": "public.billable_metrics,public.subscriptions,public.charges,public.charge_filters,public.charge_filter_values,public.billable_metric_filters",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false",
+    "tombstones.on.delete": "false",
+    "decimal.handling.mode": "string",
+    "time.precision.mode": "connect",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.tombstone.handling.mode": "rewrite",
+    "transforms.unwrap.add.fields": "op,ts_ms"
+  }
+}

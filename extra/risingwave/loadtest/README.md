@@ -425,6 +425,46 @@ pollers hit the same API, so at high rates a large share of the requests Lago is
 serving are the measurement's own. Batching the send path is what keeps that
 share from competing with the load being generated.
 
+## Running at 100 000 events/s
+
+Past a few thousand events/s the generator's own bookkeeping, not the send path,
+is what breaks first. Everything a run retains is now bounded by a constant
+rather than by how many events it sent, so the heap is flat whatever the rate:
+
+| what | before | now |
+|---|---|---|
+| per-event record | one per event, kept for the whole run | 1-in-N, so a run of any size keeps ~200 000 (`retention.trackEvery`) |
+| latency samples | first 200 000 per segment, rest discarded | reservoir of 200 000 per segment, so the late minutes are represented too |
+| probe backlog | every probe enrolled on six stages, drained 1 000/s | probe cadence floored at 50/s, and 2 000 per stage max |
+| usage / wallet attribution | one entry per event forever, rescanned from zero on every poll | attributed entries dropped, scan starts at the watermark, outstanding capped |
+| per-second throughput buckets | one per second forever | last 900 |
+
+None of this changes what is measured. Every event is still counted, and still
+moves the usage and wallet predictions the attribution is checked against — only
+the *per-event record*, which exists to turn stamps into latency samples, is
+sampled, and no segment retains more than 200 000 samples anyway. `summary.json`
+carries a `retention` block saying exactly what the run kept, including its peak
+heap, so a reader knows which numbers are a sample and which are the population.
+
+A 20 M-event soak of the record path holds a flat 186 MB. If a run does approach
+the heap ceiling it now says so in the log while it can still be read, instead of
+dying on `Ineffective mark-compacts near heap limit`; raise it with
+`NODE_OPTIONS=--max-old-space-size=8192` (the npm scripts already do).
+
+**Is the generator the ceiling?** Measure it directly, with no pipeline in the
+way — same message bytes, same producer settings, throwaway topic:
+
+```
+npm run bench --workspace server -- 5000000 2000 32 1
+# 5,000,000 events in 26.12s = 191,410 events/s, peak heap 98MB
+rpk topic delete lt-bench-scratch
+```
+
+On this dev box that is ~1.9× the 100 k/s target, so a run that flatlines below
+it is reporting the pipeline, not the sender. Use the direct-produce transport
+(`kafka`) with **events per produce** at 1 000–2 000: the API transport cannot
+reach these rates, because Lago's own ingest is then what is being measured.
+
 ## Guards
 
 Rate, total, optional ramp, and `stop above N% errors` (windowed over 10 s; 0
@@ -441,7 +481,7 @@ Live via SSE, and persisted per run under `runs/<id>/`:
 |---|---|
 | `preflight.json` | what was reachable, the clock offsets, the resolved table names |
 | `summary.json` | spec, counters, percentiles, histograms, throughput, errors, logs |
-| `events.jsonl` | one line per event: send time, API time, per-stage first-seen, every stamp, and the usage / wallet leg where one was attributed |
+| `events.jsonl` | one line per *tracked* event (every probe, plus 1 bulk event in `retention.trackEvery`): send time, API time, per-stage first-seen, every stamp, and the usage / wallet leg where one was attributed |
 
 `summary.json` is exactly what the dashboard renders, so History replays a past
 run through the same view as a live one.
@@ -462,6 +502,13 @@ server/   Fastify. Lago + RisingWave (pgwire) + ClickHouse (HTTPS) + Redpanda
   src/run/crossing.ts  the shared attribution machinery (bracketing, coalescing
                    counts, freshness verdict). Both the usage and the wallet
                    measurement run on it, so neither can drift from the other
+  src/run/stats.ts     bounded percentiles: a reservoir per segment and one sort
+                   per second, so reporting cannot starve the sender
+  src/bench/produce.ts what the SENDER can do with no pipeline in the way, so a
+                   flat line can be blamed on the right side
+  src/__tests__/   the invariants worth pinning: that the fast produce path is
+                   byte-identical to the general one, and that nothing the runner
+                   retains grows with the number of events sent
 web/      React + Vite. Charts are hand-rolled SVG against theme tokens.
 ```
 

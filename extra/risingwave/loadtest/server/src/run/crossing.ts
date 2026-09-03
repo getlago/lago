@@ -1,6 +1,29 @@
 import { Series } from "./stats.js";
 
 /**
+ * How many attributed entries may sit at the head of the arrays before they are
+ * spliced off. Everything below `attributed` is dead — nothing reads it again —
+ * so without this a 100k/s run keeps one pair of numbers per event sent for the
+ * whole run.
+ */
+const COMPACT_AT = 8_192;
+
+/**
+ * Ceiling on OUTSTANDING (recorded but not yet attributed) entries. A read path
+ * that stalls while the sender runs at 100k/s would otherwise grow these arrays
+ * without bound and take the process down — which is a load-generator bug
+ * reported as a pipeline result.
+ *
+ * Past the cap the tracker FOLDS: a new event is summed into the last entry,
+ * which keeps the older send time. Attribution stays exact in value terms (the
+ * cumulative total is still the truth), and the latency it reports for a folded
+ * group is the oldest member's — an upper bound, the same reading `refresh`
+ * mode already publishes. `saturated` says it happened rather than letting the
+ * percentiles quietly become upper bounds.
+ */
+const MAX_OUTSTANDING = 500_000;
+
+/**
  * Attribution for a read path that exposes no per-event handle — only a
  * monotonic number (a metric's units, a wallet's ongoing usage) that this run is
  * the sole writer of.
@@ -27,10 +50,16 @@ import { Series } from "./stats.js";
  * things.
  */
 export class CrossingTracker {
-  /** Send time of each recorded event, in order. */
+  /** Send time of each recorded event, in order, from global index `base`. */
   private sentAt: number[] = [];
   /** Cumulative expected reading after each recorded event. */
   private cum: number[] = [];
+  /** Global index of `sentAt[0]`: entries before it were attributed and dropped. */
+  private base = 0;
+  /** Cumulative total carried across a compaction, so `cum` stays absolute. */
+  private droppedCum = 0;
+  /** Events folded into an earlier entry because the read path fell too far behind. */
+  folded = 0;
   attributed = 0;
   /**
    * Start time of the most recent poll that came back NOT yet seeing the next
@@ -41,25 +70,51 @@ export class CrossingTracker {
   stale = { unchangedSincePolls: 0, unchangedSinceMs: 0, worstBatch: 0, batches: 0 };
 
   get pushed(): number {
-    return this.sentAt.length;
+    return this.base + this.sentAt.length;
   }
 
   get outstanding(): number {
-    return this.sentAt.length - this.attributed;
+    return this.pushed - this.attributed;
   }
 
   get caughtUp(): boolean {
-    return this.attributed >= this.sentAt.length;
+    return this.attributed >= this.pushed;
+  }
+
+  get saturated(): boolean {
+    return this.folded > 0;
   }
 
   get lastSentAt(): number | undefined {
     return this.sentAt.at(-1);
   }
 
+  /** Cumulative expected reading after the last recorded event. */
+  private get total(): number {
+    return this.cum.length ? this.cum[this.cum.length - 1]! : this.droppedCum;
+  }
+
   /** Record one accepted event and what it should add to the reading. */
   push(sentAt: number, delta: number) {
+    if (this.outstanding >= MAX_OUTSTANDING && this.cum.length > 0) {
+      // Fold into the last entry: its (older) send time is kept, so the sample
+      // this group eventually produces is an upper bound rather than a fiction.
+      this.cum[this.cum.length - 1] = this.total + delta;
+      this.folded++;
+      return;
+    }
     this.sentAt.push(sentAt);
-    this.cum.push((this.cum.at(-1) ?? 0) + delta);
+    this.cum.push(this.total + delta);
+  }
+
+  /** Drop the attributed head. Amortised O(1) per event. */
+  private compact() {
+    const drop = this.attributed - this.base;
+    if (drop < COMPACT_AT) return;
+    this.droppedCum = this.cum[drop - 1]!;
+    this.sentAt.splice(0, drop);
+    this.cum.splice(0, drop);
+    this.base = this.attributed;
   }
 
   /**
@@ -69,9 +124,13 @@ export class CrossingTracker {
    * credit an event that has not landed.
    */
   coveredByValue(value: number, tolerance = 1e-9): number {
-    let k = 0;
+    // Start at the watermark, not at zero. `cum` is non-decreasing and
+    // `attributed` only ever advances, so everything below it is already known
+    // to be covered — scanning from 0 on every poll made the cost of a poll grow
+    // with the run and turned a 100k/s run's polling into a quadratic.
+    let k = this.attributed - this.base;
     while (k < this.cum.length && this.cum[k]! <= value + tolerance) k++;
-    return k;
+    return this.base + k;
   }
 
   /**
@@ -81,7 +140,7 @@ export class CrossingTracker {
    */
   observe(t0: number, t1: number, covered: number): { samples: number[]; batch: number } {
     // Responses can land out of order; the watermark only ever advances.
-    const upTo = Math.min(covered, this.sentAt.length);
+    const upTo = Math.min(covered, this.pushed);
     if (upTo <= this.attributed) {
       if (t0 > this.lastBelowT0) this.lastBelowT0 = t0;
       if (this.outstanding > 0) {
@@ -97,7 +156,8 @@ export class CrossingTracker {
     if (batch > this.stale.worstBatch) this.stale.worstBatch = batch;
     if (batch > 1) this.stale.batches++;
     const samples: number[] = [];
-    while (this.attributed < upTo) samples.push(Math.max(0, observedAt - this.sentAt[this.attributed++]!));
+    while (this.attributed < upTo) samples.push(Math.max(0, observedAt - this.sentAt[this.attributed++ - this.base]!));
+    this.compact();
     this.stale.unchangedSincePolls = 0;
     this.stale.unchangedSinceMs = 0;
     this.lastBelowT0 = t1;
@@ -118,6 +178,7 @@ export class CrossingTracker {
     batches: number;
     batchShare: number;
     stalePolls: number;
+    folded: number;
     verdict: "unknown" | "incremental" | "coarse" | "batched";
   } {
     const worst = this.stale.worstBatch;
@@ -127,6 +188,7 @@ export class CrossingTracker {
       batches: this.stale.batches,
       batchShare: Math.round(share * 1000) / 1000,
       stalePolls: this.stale.unchangedSincePolls,
+      folded: this.folded,
       verdict:
         this.attributed === 0
           ? "unknown"

@@ -171,6 +171,9 @@ cmd_new() {
 --      last-write-wins trap (README) — guard with a bucket-window floor.
 --  [ ] Needs ClickHouse DDL or consumer seeks too? Make this a .sh migration
 --      instead and orchestrate the order there.
+
+-- Streaming jobs created below default to ADAPTIVE parallelism (0001).
+SET streaming_parallelism = ADAPTIVE;
 TEMPLATE
   echo "Created $f"
 }

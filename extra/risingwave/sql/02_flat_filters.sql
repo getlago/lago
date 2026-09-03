@@ -1,3 +1,9 @@
+-- Streaming jobs created below default to ADAPTIVE parallelism (use all
+-- cores, rescale automatically on tier changes) instead of being pinned to
+-- the core count at creation time. Session-scoped: every file sets it because
+-- setup.sh/migrate.sh apply each file in its own psql session.
+SET streaming_parallelism = ADAPTIVE;
+
 -- Dimension derivations for stage-1 enrichment.
 --
 -- Part 1 rebuilds the Postgres `flat_filters` view (api/db/structure.sql) as
@@ -122,7 +128,8 @@ FROM flat_filters_agg_mv;
 -- Index backing the stage-1 temporal-join lookup (an event knows org, plan
 -- and code; the join fans out one row per charge).
 CREATE INDEX IF NOT EXISTS idx_flat_filters_agg_lookup
-    ON flat_filters_agg (organization_id, plan_id, billable_metric_code);
+    ON flat_filters_agg (organization_id, plan_id, billable_metric_code)
+    DISTRIBUTED BY (organization_id, plan_id, billable_metric_code);
 
 -- One row per (org, external_id): every subscription row of the external_id
 -- as a JSONB array, consumed by pick_subscription() (a port of Go's

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Lago realtime usage pipeline on Apache Flink.
+
+  Build target is an Amazon Managed Service for Apache Flink (MSF)
+  application: ONE shaded uber-JAR uploaded to S3. MSF has no SQL client, no
+  session cluster and no plugin directory, so every connector must be bundled
+  here and the topology must be driven from a Java main() that runs SQL.
+
+  Version pinning follows the AWS convention (`mvn package -Dflink.version=...`).
+  Flink itself is `provided` — the runtime supplies it. Connectors are bundled.
+
+  Connector versions are chosen against Flink 2.3.0. Note that the newest
+  published connectors are built against 2.2 / 2.0; Flink keeps the Source
+  (FLIP-27) and Sink (FLIP-143) APIs stable within a major, so they are
+  expected to run on 2.3 — ROADMAP Gate 0 verifies that empirically rather
+  than assuming it.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.getlago</groupId>
+  <artifactId>lago-flink-usage</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+  <name>Lago realtime usage (Flink)</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
+
+    <!-- MSF runtime: Apache Flink 2.3.0 on Java 17. -->
+    <flink.version>2.3.0</flink.version>
+    <!-- aws-kinesisanalytics-runtime version for MSF 2.3 (per AWS "Components"). -->
+    <msf.runtime.version>1.2.0</msf.runtime.version>
+
+    <kafka.connector.version>5.0.0-2.2</kafka.connector.version>
+    <cdc.connector.version>3.6.0-2.2</cdc.connector.version>
+    <jackson.version>2.18.2</jackson.version>
+    <junit.version>5.10.2</junit.version>
+  </properties>
+
+  <dependencies>
+    <!-- ============ Flink runtime: PROVIDED (on the cluster / MSF) ======= -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-streaming-java</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-table-api-java-bridge</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-table-planner-loader</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-table-runtime</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-clients</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- flink-json ships in the distribution's /lib; SQL FORMAT 'json' needs it. -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-json</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- ============ Connectors: BUNDLED into the uber-JAR ================ -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-connector-kafka</artifactId>
+      <version>${kafka.connector.version}</version>
+    </dependency>
+    <!-- Postgres CDC for the dimension tables (subscriptions, charges,
+         billable_metrics, charge_filters). The `sql-` artifact is the shaded
+         fat build that Flink SQL expects; it carries its own relocated
+         Debezium. -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-sql-connector-postgres-cdc</artifactId>
+      <version>${cdc.connector.version}</version>
+    </dependency>
+
+    <!-- ============ MSF runtime config (PropertyGroups) ================== -->
+    <!-- Present at runtime on MSF; bundled so the same code runs locally,
+         where AppConfig falls back to a properties file. -->
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-kinesisanalytics-runtime</artifactId>
+      <version>${msf.runtime.version}</version>
+    </dependency>
+
+    <!-- ============ UDF support ========================================= -->
+    <!-- Flink's own Jackson is shaded and not on the user classpath. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <!-- ============ Test =============================================== -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>lago-flink-usage</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- REQUIRED: Flink discovers connectors and formats through
+                     META-INF/services/....Factory. Without this transformer
+                     the entries collide and every SQL connector vanishes at
+                     runtime with "Could not find any factory". -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.getlago.flink.LagoUsageJob</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

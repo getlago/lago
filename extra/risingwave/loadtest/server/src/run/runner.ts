@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { getHeapStatistics } from "node:v8";
 import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getConfig, RUNS_DIR } from "../config.js";
@@ -48,6 +49,71 @@ const RW_STAGES: RwTableKey[] = ["rwEnriched", "rwExpanded"];
 const CH_STAGES: ChTableKey[] = ["chRwEnriched", "chRwExpanded", "chGoEnriched", "chGoExpanded"];
 const isRwStage = (s: StageKey): s is RwTableKey => (RW_STAGES as StageKey[]).includes(s);
 
+/**
+ * How many events keep a per-event `Rec`.
+ *
+ * A Rec is ~200 bytes of object graph (two sub-objects and a Set) and used to be
+ * retained for EVERY event for the whole run. At 100k events/s that is 20MB of
+ * live heap per second, and a run died on "Ineffective mark-compacts near heap
+ * limit" a few minutes in — the load generator falling over before the pipeline
+ * it is meant to break.
+ *
+ * Nothing needs every Rec. A Rec exists to turn one event's stamps into latency
+ * samples, and every segment retains at most 200 000 samples anyway (see
+ * `Series`), so tracking more events than that buys no resolution at all. Bulk
+ * events are therefore tracked 1-in-N, chosen so a run of any size stays near
+ * this number; probes are always tracked, because they ARE the measurement.
+ */
+const TRACK_CAP = 200_000;
+
+/**
+ * Hard ceiling on retained Recs, whatever the sampling decided. `totalEvents` is
+ * an intent, not a promise — a run stopped early, or one whose probe stream
+ * outran the estimate, must still not grow the heap without bound.
+ */
+const TRACK_HARD_CAP = 400_000;
+
+/**
+ * How many probes may be waiting on one stage's visibility poll at a time.
+ *
+ * `pollVisibility` drains 200 ids per stage per tick. Enrolling faster than that
+ * does not measure more, it just grows a Set of strings for the rest of the run:
+ * at 100k/s with `probeEvery: 20` the run enrols 5 000/s into six stages and
+ * drains 1 000/s. Past the cap a probe is still SENT and still counted, it just
+ * is not enrolled for visibility polling.
+ */
+const MAX_PENDING_PER_STAGE = 2_000;
+
+/** Probes enrolled per second, whatever the event rate. See MAX_PENDING_PER_STAGE. */
+const MAX_PROBES_PER_SEC = 50;
+
+/**
+ * Cap on half-paired usage/wallet legs held for the per-event split. A leg whose
+ * partner never lands would otherwise be kept forever.
+ */
+const PAIR_CAP = 100_000;
+
+/**
+ * One (target, variant) the bulk stream round-robins over, with everything that
+ * is the same for every event of that shape worked out once.
+ *
+ * `units` and `cents` used to be recomputed per event — including a linear scan
+ * of the target's charge filters — on the hottest path in the process.
+ */
+type PlanSlot = {
+  target: Target;
+  variant: EventVariant;
+  sent: number;
+  /** What this shape adds to the metric's units, for usage attribution. */
+  units: number;
+  /** What it adds in pre-tax cents, or null when the charge is not linear. */
+  cents: number | null;
+  /** Does this shape land on the (subscription, metric) the usage probe polls? */
+  hitsProbePair: boolean;
+  /** Does it land on the customer whose wallets are polled? */
+  hitsWalletCustomer: boolean;
+};
+
 /** One event queued for a request, before it has a response to be recorded with. */
 type SendEntry = {
   target: Target;
@@ -56,6 +122,10 @@ type SendEntry = {
   seq: number;
   stream: "bulk" | "probe";
   isProbe: boolean;
+  /** The plan slot it came from, when it came from one. */
+  slot?: PlanSlot;
+  /** Whether a Rec is retained for this event. See TRACK_CAP. */
+  track: boolean;
 };
 
 type Rec = {
@@ -97,8 +167,6 @@ export type PreflightCheck = {
   /** Segments this check gates; if it fails, they are not measurable. */
   gates: string[];
 };
-
-const nowSec = () => Math.floor(Date.now() / 1000);
 
 /**
  * A wallet's ongoing usage reads back as a WHOLE number of cents, so a canary
@@ -248,9 +316,10 @@ export class Run {
    * meaningful rather than a difference of unrelated percentiles.
    */
   private walletAligned = false;
-  private usageLatency: number[] = [];
-  private walletLatency: number[] = [];
-  private pairEmitted = new Set<number>();
+  /** Half-paired legs of the per-event usage → wallet split, keyed by crossing
+   * index and deleted the moment their partner lands. */
+  private usageLatency = new Map<number, number>();
+  private walletLatency = new Map<number, number>();
   private eventsFile: string;
   /**
    * One entry per (target, variant): a charge filter value combination, a
@@ -258,8 +327,19 @@ export class Run {
    * whole plan so every dimension the pipeline can branch on is exercised
    * evenly, instead of every event landing in the first filter.
    */
-  private plan: { target: Target; variant: EventVariant; sent: number }[] = [];
+  private plan: PlanSlot[] = [];
   private planTruncated = 0;
+  /** 1-in-N bulk events keep a Rec. Derived in the constructor. See TRACK_CAP. */
+  private readonly trackEvery: number;
+  /** Effective probe cadence, floored so enrolment cannot outrun the poller. */
+  private readonly probeEvery: number;
+  /** Probes sent but not enrolled for visibility polling: the stage backlog was full. */
+  private probesUnenrolled = 0;
+  /** Recomputed once per run rather than per probe. */
+  private stages: StageKey[] = [];
+  private heapPeakBytes = 0;
+  private heapLimitBytes = 0;
+  private heapWarned = false;
 
   constructor(
     readonly spec: RunSpec,
@@ -273,15 +353,37 @@ export class Run {
     mkdirSync(resolve(RUNS_DIR, this.id), { recursive: true });
     this.eventsFile = resolve(RUNS_DIR, this.id, "events.jsonl");
     for (const s of [...RW_STAGES, ...CH_STAGES]) this.pending.set(s, new Set());
+    const slot = (t: Target, variant: EventVariant): PlanSlot => ({
+      target: t,
+      variant,
+      sent: 0,
+      units: unitsOfVariant(t, variant),
+      cents: centsOfVariant(t, variant),
+      hitsProbePair: Boolean(
+        probeTarget &&
+          t.subscriptionExternalId === probeTarget.subscriptionExternalId &&
+          t.metricCode === probeTarget.metricCode,
+      ),
+      hitsWalletCustomer: Boolean(walletTarget && t.customerExternalId === walletTarget.customerExternalId),
+    });
     for (const t of targets) {
       const { variants, truncated } = buildVariants(t, spec.spread);
       this.planTruncated += truncated;
-      for (const variant of variants) this.plan.push({ target: t, variant, sent: 0 });
+      for (const variant of variants) this.plan.push(slot(t, variant));
     }
     if (this.plan.length === 0 && targets[0]) {
       const { variants } = buildVariants(targets[0], spec.spread);
-      for (const variant of variants) this.plan.push({ target: targets[0], variant, sent: 0 });
+      for (const variant of variants) this.plan.push(slot(targets[0], variant));
     }
+    this.trackEvery = Math.max(1, Math.ceil(Math.max(1, spec.totalEvents) / TRACK_CAP));
+    // A probe cadence expressed as "every Nth event" scales with the rate, and
+    // at 100k/s the stated N enrols orders of magnitude more probes than the
+    // poller can drain. Floor it at the rate the poller can actually keep up
+    // with, so the knob still means what it says at ordinary rates.
+    this.probeEvery =
+      spec.probeEvery > 0
+        ? Math.max(spec.probeEvery, Math.ceil(spec.rateEps / MAX_PROBES_PER_SEC))
+        : 0;
   }
 
   private log(level: LogLine["level"], msg: string) {
@@ -994,12 +1096,29 @@ export class Run {
   async start() {
     this.phase = "sending";
     this.startedAt = Date.now();
+    // Preflight is what disables a stage whose table did not check out, so the
+    // list is settled by now — and enrolling a probe must not rebuild it.
+    this.stages = this.enabledStages();
     this.log("info", `run ${this.id} started: ${this.spec.totalEvents} events at ${this.spec.rateEps}/s`);
+    if (this.trackEvery > 1)
+      this.log(
+        "info",
+        `retaining a per-event record for 1 event in ${this.trackEvery} (~${Math.round(this.spec.totalEvents / this.trackEvery)} records) — ` +
+          "every segment keeps at most 200k samples, so tracking more measures nothing extra",
+      );
+    if (this.spec.probeEvery > 0 && this.probeEvery !== this.spec.probeEvery)
+      this.log(
+        "info",
+        `probing every ${this.probeEvery} events rather than every ${this.spec.probeEvery}: at ${this.spec.rateEps}/s ` +
+          `the stated cadence enrols more probes than the ${MAX_PROBES_PER_SEC}/s the visibility poller can drain`,
+      );
 
     const cfg = getConfig().measurement;
     this.timers.push(setInterval(() => void this.pollVisibility(), cfg.pollTickMs));
     this.timers.push(setInterval(() => void this.sweepStamps(), cfg.sweepMs));
     this.timers.push(setInterval(() => void this.countStages(), Math.max(cfg.sweepMs, 2000)));
+    this.timers.push(setInterval(() => this.sampleHeap(), 5_000));
+    this.sampleHeap();
 
     const usageLoops =
       this.usageMode === "off"
@@ -1040,6 +1159,30 @@ export class Run {
   }
 
   /**
+   * Watch this process's own heap while it generates load.
+   *
+   * A load generator that dies of "Ineffective mark-compacts near heap limit"
+   * takes the run's results with it and says nothing about why. Everything the
+   * run retains is now bounded, but the bound is an argument rather than a
+   * proof — so the peak is recorded in the summary and a run that approaches the
+   * ceiling says so while it can still be read.
+   */
+  private sampleHeap() {
+    const used = process.memoryUsage().heapUsed;
+    if (used > this.heapPeakBytes) this.heapPeakBytes = used;
+    if (!this.heapLimitBytes) this.heapLimitBytes = getHeapStatistics().heap_size_limit;
+    const share = this.heapLimitBytes ? used / this.heapLimitBytes : 0;
+    if (share > 0.8 && !this.heapWarned) {
+      this.heapWarned = true;
+      this.log(
+        "warn",
+        `this process is holding ${Math.round(used / 1e6)}MB of a ${Math.round(this.heapLimitBytes / 1e6)}MB heap — ` +
+          "raise it with NODE_OPTIONS=--max-old-space-size=8192, and check `retention` in the summary",
+      );
+    }
+  }
+
+  /**
    * How many requests may be outstanding at once.
    *
    * Little's law is the whole story of this loadtest's send ceiling: the rate a
@@ -1072,18 +1215,24 @@ export class Run {
       const maxInFlight = this.inFlightBudget(batchSize);
       while (seq < planned && inFlight < maxInFlight && !this.stopRequested) {
         const take = Math.min(batchSize, planned - seq);
-        const entries: SendEntry[] = [];
+        const entries: SendEntry[] = new Array(take);
         for (let i = 0; i < take; i++) {
           const slot = this.plan[seq % this.plan.length]!;
           const n = seq++;
-          entries.push({
+          const isProbe = this.probeEvery > 0 && n % this.probeEvery === 0;
+          entries[i] = {
             target: slot.target,
             variant: slot.variant,
             txid: `${this.prefix}b${n}`,
             seq: n,
             stream: "bulk",
-            isProbe: spec.probeEvery > 0 && n % spec.probeEvery === 0,
-          });
+            isProbe,
+            slot,
+            // Probes are the measurement, so they are always retained; bulk
+            // events are sampled, because retaining all of them is what filled
+            // the heap and none of it reached a percentile anyway.
+            track: isProbe || n % this.trackEvery === 0,
+          };
         }
         inFlight++;
         void this.sendMany(entries).finally(() => {
@@ -1140,13 +1289,13 @@ export class Run {
       // bulk sender aimed at the probe target.
       if (!waitsForUsage && !waitsForWallet) await sleep(cfg.usagePollMs);
       if (this.usage.attributed >= mine) {
-        rec.usageMs = (this.series.get("usage_visible")?.raw().at(-1) as number | undefined) ?? undefined;
+        rec.usageMs = this.series.get("usage_visible")?.last();
       } else {
         this.counters.usageTimeouts++;
         this.log("warn", `usage probe ${txid} did not appear within ${cfg.probeTimeoutMs}ms`);
       }
       if (waitsForWallet && this.wallet.attributed >= mineWallet) {
-        rec.walletMs = (this.series.get("wallet_visible")?.raw().at(-1) as number | undefined) ?? undefined;
+        rec.walletMs = this.series.get("wallet_visible")?.last();
       }
     }
   }
@@ -1155,9 +1304,12 @@ export class Run {
     this.usage.push(sentAt, unitsOfVariant(target, variant));
   }
 
-  private pushWalletExpectation(target: Target, variant: EventVariant, sentAt: number) {
-    const cents = centsOfVariant(target, variant);
+  private pushWalletCents(cents: number | null, sentAt: number) {
     this.wallet.push(sentAt, cents == null ? 0 : cents * this.walletCentsFactor);
+  }
+
+  private pushWalletExpectation(target: Target, variant: EventVariant, sentAt: number) {
+    this.pushWalletCents(centsOfVariant(target, variant), sentAt);
   }
 
   /**
@@ -1224,12 +1376,26 @@ export class Run {
    */
   private notePairLeg(leg: "usage" | "wallet", index: number, latency: number) {
     if (!this.walletAligned) return;
-    if (leg === "usage") this.usageLatency[index] = latency;
-    else this.walletLatency[index] = latency;
-    const u = this.usageLatency[index];
-    const w = this.walletLatency[index];
-    if (u == null || w == null || this.pairEmitted.has(index)) return;
-    this.pairEmitted.add(index);
+    const mine = leg === "usage" ? this.usageLatency : this.walletLatency;
+    const other = leg === "usage" ? this.walletLatency : this.usageLatency;
+    const partner = other.get(index);
+    if (partner == null) {
+      mine.set(index, latency);
+      // A leg whose partner never lands is never claimed, so the map is only
+      // bounded by how many of those a run accumulates. Maps iterate in
+      // insertion order, so the oldest unpaired legs go first.
+      if (mine.size > PAIR_CAP) {
+        let drop = mine.size - PAIR_CAP / 2;
+        for (const k of mine.keys()) {
+          if (drop-- <= 0) break;
+          mine.delete(k);
+        }
+      }
+      return;
+    }
+    other.delete(index);
+    const u = leg === "usage" ? latency : partner;
+    const w = leg === "usage" ? partner : latency;
     this.series.add("usage_to_wallet", Math.max(0, w - u));
   }
 
@@ -1439,6 +1605,10 @@ export class Run {
     // histogram by the batch size.
     this.series.add("api_response", res.apiMs);
     this.apiEwmaMs = this.apiEwmaMs * 0.9 + res.apiMs * 0.1;
+    // One bucket update per REQUEST: the whole batch shares a second and a
+    // verdict, and at 100k events/s a per-event update is 100k map lookups a
+    // second for a number nothing reads at that resolution.
+    this.rate.markMany(Math.floor(res.sentAt / 1000), entries.length, res.ok ? 0 : entries.length);
     if (!res.ok) {
       const what =
         this.transport === "kafka"
@@ -1448,10 +1618,44 @@ export class Run {
             : "POST /events";
       this.noteError(`${what} ${res.status}: ${res.error ?? "network"}`);
     }
-    return entries.map((e) => this.record(e, res));
+    const recs: Rec[] = [];
+    for (const e of entries) {
+      const rec = this.record(e, res);
+      if (rec) recs.push(rec);
+    }
+    return recs;
   }
 
-  private record(e: SendEntry, res: SendResult): Rec {
+  /**
+   * Account for one sent event, and retain a Rec for it only if it is tracked.
+   *
+   * Counting, usage and wallet attribution happen for EVERY event — they are
+   * what makes the predicted readings match the real ones. Only the per-event
+   * record, which exists solely to turn stamps into latency samples, is sampled.
+   */
+  private record(e: SendEntry, res: SendResult): Rec | null {
+    const slot = e.slot ?? this.plan.find((p) => p.target.id === e.target.id && p.variant.key === e.variant.key);
+    if (slot) slot.sent++;
+    this.counters.sent++;
+    if (res.ok) {
+      this.counters.accepted++;
+      if (this.usageMode === "watermark" && (slot ? slot.hitsProbePair : this.hitsProbePair(e.target))) {
+        this.usage.push(res.sentAt, slot ? slot.units : unitsOfVariant(e.target, e.variant));
+      }
+      // Any event for the wallet's customer moves its ongoing usage, whichever
+      // subscription or metric it went to — so every one of them is recorded,
+      // otherwise the predicted reading would run behind the real one.
+      if (this.walletMode !== "off" && (slot ? slot.hitsWalletCustomer : this.hitsWalletCustomer(e.target))) {
+        this.pushWalletCents(slot ? slot.cents : centsOfVariant(e.target, e.variant), res.sentAt);
+      }
+      if (e.isProbe) {
+        this.counters.probes++;
+        this.enrolProbe(e.txid);
+      }
+    } else {
+      this.counters.failed++;
+    }
+    if (!e.track || this.recs.size >= TRACK_HARD_CAP) return null;
     const rec: Rec = {
       txid: e.txid,
       seq: e.seq,
@@ -1469,34 +1673,34 @@ export class Run {
       computed: new Set(),
     };
     this.recs.set(e.txid, rec);
-    const slot = this.plan.find((p) => p.target.id === e.target.id && p.variant.key === e.variant.key);
-    if (slot) slot.sent++;
-    this.counters.sent++;
-    this.rate.mark(nowSec(), !res.ok);
-    if (res.ok) {
-      this.counters.accepted++;
-      if (
-        this.usageMode === "watermark" &&
-        this.probeTarget &&
-        e.target.subscriptionExternalId === this.probeTarget.subscriptionExternalId &&
-        e.target.metricCode === this.probeTarget.metricCode
-      ) {
-        this.pushUsageExpectation(e.target, e.variant, res.sentAt);
-      }
-      // Any event for the wallet's customer moves its ongoing usage, whichever
-      // subscription or metric it went to — so every one of them is recorded,
-      // otherwise the predicted reading would run behind the real one.
-      if (this.walletMode !== "off" && e.target.customerExternalId === this.walletTarget?.customerExternalId) {
-        this.pushWalletExpectation(e.target, e.variant, res.sentAt);
-      }
-      if (e.isProbe) {
-        this.counters.probes++;
-        for (const st of this.enabledStages()) this.pending.get(st)!.add(e.txid);
-      }
-    } else {
-      this.counters.failed++;
-    }
     return rec;
+  }
+
+  private hitsProbePair(t: Target): boolean {
+    return Boolean(
+      this.probeTarget &&
+        t.subscriptionExternalId === this.probeTarget.subscriptionExternalId &&
+        t.metricCode === this.probeTarget.metricCode,
+    );
+  }
+
+  private hitsWalletCustomer(t: Target): boolean {
+    return t.customerExternalId === this.walletTarget?.customerExternalId;
+  }
+
+  /**
+   * Put a probe on every enabled stage's visibility queue, unless that stage is
+   * already carrying more than the poller can drain — see MAX_PENDING_PER_STAGE.
+   */
+  private enrolProbe(txid: string) {
+    for (const st of this.stages) {
+      const set = this.pending.get(st)!;
+      if (set.size >= MAX_PENDING_PER_STAGE) {
+        this.probesUnenrolled++;
+        continue;
+      }
+      set.add(txid);
+    }
   }
 
   private async sendOne(
@@ -1507,13 +1711,27 @@ export class Run {
     stream: "bulk" | "probe",
     isProbe: boolean,
   ): Promise<Rec | null> {
-    const [rec] = await this.sendMany([{ target, variant, txid, seq, stream, isProbe }]);
+    const [rec] = await this.sendMany([{ target, variant, txid, seq, stream, isProbe, track: true }]);
     return rec ?? null;
   }
 
+  /**
+   * Distinct error messages held, keyed by their first 160 characters. Upstream
+   * text is not always constant — a body that quotes a transaction id makes
+   * every failure its own key — so a failing run would otherwise accumulate one
+   * map entry per request.
+   */
+  private static readonly MAX_ERROR_KEYS = 200;
+
   private noteError(msg: string) {
     const key = msg.slice(0, 160);
-    this.errors.set(key, (this.errors.get(key) ?? 0) + 1);
+    const seen = this.errors.get(key);
+    if (seen === undefined && this.errors.size >= Run.MAX_ERROR_KEYS) {
+      const other = "(other errors, message text varies)";
+      this.errors.set(other, (this.errors.get(other) ?? 0) + 1);
+      return;
+    }
+    this.errors.set(key, (seen ?? 0) + 1);
   }
 
   /**
@@ -1587,10 +1805,13 @@ export class Run {
       } catch (e) {
         this.noteError(`poll ${stage}: ${(e as Error).message}`);
       }
-      // Stop waiting on events that are never going to show up.
-      for (const id of ids) {
+      // Stop waiting on events that are never going to show up. Over the whole
+      // set, not just the ids polled this tick: with a backlog the tail is never
+      // sampled, so expiring only what was polled leaves it pinned forever — and
+      // a full set is what stops new probes being enrolled at all.
+      for (const id of set) {
         const rec = this.recs.get(id);
-        if (rec && now - rec.sentAt > cfg.probeTimeoutMs) set.delete(id);
+        if (!rec || now - rec.sentAt > cfg.probeTimeoutMs) set.delete(id);
       }
     }
   }
@@ -1726,7 +1947,22 @@ export class Run {
       startedAt: this.startedAt,
       endedAt: this.endedAt,
       elapsedMs,
-      counters: { ...this.counters, pendingProbes: this.enabledStages().reduce((n, s) => n + this.pending.get(s)!.size, 0) },
+      counters: {
+        ...this.counters,
+        pendingProbes: this.enabledStages().reduce((n, s) => n + this.pending.get(s)!.size, 0),
+        /** Probes sent but not enrolled: the stage backlog was at capacity. */
+        probesUnenrolled: this.probesUnenrolled,
+      },
+      /** What the run kept per event, so a reader knows the sample it is reading.
+       * `trackEvery` > 1 means the stamped segments are a 1-in-N sample of the
+       * bulk stream — the probes and the read-path measurements are not sampled. */
+      retention: {
+        trackEvery: this.trackEvery,
+        records: this.recs.size,
+        probeEvery: this.probeEvery,
+        heapPeakMb: Math.round(this.heapPeakBytes / 1e6),
+        heapLimitMb: Math.round(this.heapLimitBytes / 1e6),
+      },
       stageCounts: this.stageCounts,
       stats: this.series.snapshot(),
       histograms: this.series.histograms(),
