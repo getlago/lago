@@ -351,11 +351,13 @@ services:
       - "traefik.http.routers.pdf.tls=true"
       - "traefik.http.services.pdf.loadbalancer.server.port=3000"
 
-  mailhog:
-    image: mailhog/mailhog
-    container_name: lago_mailhog_dev
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lago_mailpit_dev
     restart: unless-stopped
-    platform: linux/amd64
+    # Not started by default: run `lago up -d mailpit` (or use the `mailpit` profile) when you need to test emails.
+    profiles:
+      - mailpit
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mail.rule=Host(`mail.lago.dev`)"
