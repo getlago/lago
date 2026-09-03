@@ -37,7 +37,7 @@ spinner() {
   local spinstr='|/-\'
   echo -n " "
 
-  while ps -p $pid &>/dev/null; do
+  while ps -p "$pid" &>/dev/null; do
     local temp=${spinstr#?}
     printf " [%c]  " "$spinstr"
     local spinstr=$temp${spinstr%"$temp"}
@@ -65,7 +65,7 @@ if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true ]]; then
     fi
 
     if [ "$MISSING_DOCKER_COMPOSE" = true ]; then
-        👉 Docker Compose: https://docs.docker.com/compose/install/
+        echo "👉 Docker Compose: https://docs.docker.com/compose/install/"
     fi
 fi
 
@@ -200,6 +200,37 @@ esac
 
 echo ""
 
+# Check if domain has A record
+check_domain_dns() {
+    local domain="$1"
+    
+    # Remove protocol if present
+    domain=$(echo "$domain" | sed -E 's|^https?://||')
+    
+    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
+    
+    if command -v dig &> /dev/null; then
+        if dig +short A "$domain" | grep -q '^[0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    elif command -v nslookup &> /dev/null; then
+        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
+            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 0
+        else
+            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
+            return 1
+        fi
+    else
+        echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
+        return 2
+    fi
+}
+
 # Check Env Vars depending on the deployment
 if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     mandatory_vars=("LAGO_DOMAIN" "LAGO_ACME_EMAIL" "PORTAINER_USER" "PORTAINER_PASSWORD")
@@ -271,36 +302,6 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     echo ""
 fi
 
-# Check if domain has A record
-check_domain_dns() {
-    local domain="$1"
-    
-    # Remove protocol if present
-    domain=$(echo "$domain" | sed -E 's|^https?://||')
-    
-    echo "${CYAN}${BOLD}🔍 Checking DNS A record for ${domain}...${NORMAL}"
-    
-    if command -v dig &> /dev/null; then
-        if dig +short A "$domain" | grep -q '^[0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
-    elif command -v nslookup &> /dev/null; then
-        if nslookup "$domain" | grep -q 'Address: [0-9]'; then
-            echo "${GREEN}✅ Valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 0
-        else
-            echo "${RED}❌ No valid A record found for ${BOLD}${domain}${NORMAL}"
-            return 1
-        fi
-    else
-        echo "${YELLOW}⚠️ Cannot check domain DNS record - neither dig nor nslookup available${NORMAL}"
-        return 2
-    fi
-}
 
 # Execute selected deployment
 case "$selected_key" in
