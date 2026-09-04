@@ -6,7 +6,7 @@ timeouts. Method: produce one event to `events-raw` (both pipelines consume
 it), poll the real Rails aggregation layer (`AggregationFactory` →
 `aggregate`, i.e. what `Fees::ChargeService` executes for current usage)
 every 200 ms until the value reflects the event. Read path toggled per
-measurement via `LAGO_RISINGWAVE_USAGE_ENABLED`.
+measurement via `LAGO_REALTIME_USAGE_ENABLED`.
 
 | Case | Path (aggregator actually used) | avg | min | max |
 |---|---|---|---|---|

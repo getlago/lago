@@ -12,8 +12,8 @@ while [ "$(date +%s)" -lt "$END" ]; do
   TS=$(date +%s%3N)
   RAW=$(hwm events-raw)
   SHADOW=$(hwm events_enriched_expanded_shadow)
-  TRIGGERS=$(hwm wallet_refresh_triggers)
-  WLAG=$(lag lago_wallet_refresh_triggers_consumer)
+  TRIGGERS=$(hwm realtime_usage_triggers)
+  WLAG=$(lag lago_wallet_refresh_consumer)
 
   PGSTATS=$(docker exec lago_db_dev psql -U lago -d lago -tA -c \
     "select count(*) || ' ' || coalesce(extract(epoch from (now() - max(last_ingested_at)))::int, -1) from usage_realtime_projections;" 2>/dev/null)

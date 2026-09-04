@@ -6,7 +6,7 @@ SET streaming_parallelism = ADAPTIVE;
 
 -- Wallet refresh triggers: one Kafka message per enriched event, keyed by
 -- (organization_id, customer_id). Coalescing and wallet-filtering are the
--- CONSUMER's job (batch-collapse in WalletRefreshTriggersConsumer with a
+-- CONSUMER's job (batch-collapse in WalletRefreshConsumer with a
 -- large max_messages so collapse scales with backlog).
 --
 -- Sourced from events_expanded (per event) DELIBERATELY, and kept free of
@@ -54,9 +54,9 @@ SET streaming_parallelism = ADAPTIVE;
 -- materialize unbounded per-event state (append-only-table retention is
 -- physical, no changelog — a downstream MV never shrinks; canary-proven
 -- 2026-08-21). So after ANY recreation of this sink: seek the
--- `lago_wallet_refresh_triggers_consumer` group to the end (consumer
+-- `lago_wallet_refresh_consumer` group to the end (consumer
 -- stopped), then restart the consumer.
-CREATE SINK IF NOT EXISTS wallet_refresh_triggers_sink AS
+CREATE SINK IF NOT EXISTS realtime_usage_triggers_sink AS
 SELECT
     organization_id,
     customer_id,
@@ -70,7 +70,7 @@ WHERE customer_id IS NOT NULL
   AND aggregation_type_code IN (0, 1) -- count, sum: what usage_buckets_15m serves
 WITH (
     connector = 'kafka',
-    topic = 'wallet_refresh_triggers',
+    topic = 'realtime_usage_triggers',
     properties.bootstrap.server = 'redpanda:9092',
     primary_key = 'organization_id,customer_id'
 ) FORMAT PLAIN ENCODE JSON (force_append_only = 'true');

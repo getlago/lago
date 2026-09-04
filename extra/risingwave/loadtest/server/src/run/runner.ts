@@ -781,7 +781,7 @@ export class Run {
       detail:
         `one event did NOT move units off ${before} within ${budgetMs}ms. current_usage is almost certainly served ` +
         "from the charge cache, which the legacy events consumer invalidates — so usage latency would measure cache " +
-        "refreshes, not the pipeline. Set LAGO_RISINGWAVE_USAGE_ENABLED=true and check the charge is realtime-eligible " +
+        "refreshes, not the pipeline. Set LAGO_REALTIME_USAGE_ENABLED=true and check the charge is realtime-eligible " +
         "(count/sum, in arrears, non-prorated, non-recurring, no custom expression).",
       gates: ["usage_visible"],
     };
@@ -1035,8 +1035,8 @@ export class Run {
                   ? `${t.metricCode} is a count metric, so every event is worth exactly one unit`
                   : "this variant has no priced field to fatten"
               }. Point the wallet probe at a sum metric, or raise the charge price so one event clears a cent.`
-            : "Check that the wallet refresh consumer is running (LAGO_KAFKA_WALLET_REFRESH_TRIGGERS_TOPIC set and " +
-              "karafka consuming wallet_refresh_triggers), that the RisingWave wallet_refresh_triggers_sink exists, and " +
+            : "Check that the wallet refresh consumer is running (LAGO_KAFKA_REALTIME_USAGE_TRIGGERS_TOPIC set and " +
+              "karafka consuming realtime_usage_triggers), that the RisingWave realtime_usage_triggers_sink exists, and " +
               "that current_usage itself is live — the refresh reads usage, so a dead usage path is a dead wallet path."),
         gates,
       };
@@ -1360,7 +1360,7 @@ export class Run {
         "warn",
         `current_usage has not moved for ${Math.round(stuckFor / 1000)}s across ${stale.unchangedSincePolls} polls ` +
           `while ${this.usage.outstanding} event(s) are outstanding — ` +
-          "the charge cache is probably serving this read (LAGO_RISINGWAVE_USAGE_ENABLED not true, or the charge is not realtime-eligible)",
+          "the charge cache is probably serving this read (LAGO_REALTIME_USAGE_ENABLED not true, or the charge is not realtime-eligible)",
       );
     }
   }
@@ -1542,7 +1542,7 @@ export class Run {
         "warn",
         `the wallet ongoing balance has not moved for ${Math.round(stuckFor / 1000)}s across ${stale.unchangedSincePolls} polls ` +
           `while ${this.wallet.outstanding} event(s) are outstanding — check that the wallet refresh consumer is running ` +
-          "(LAGO_KAFKA_WALLET_REFRESH_TRIGGERS_TOPIC set, karafka up) and that the wallet is not restricted away from this metric",
+          "(LAGO_KAFKA_REALTIME_USAGE_TRIGGERS_TOPIC set, karafka up) and that the wallet is not restricted away from this metric",
       );
     }
   }

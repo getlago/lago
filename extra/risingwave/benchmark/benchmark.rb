@@ -8,7 +8,7 @@
 # Rails aggregation layer (AggregationFactory -> aggregate, i.e. exactly what
 # Fees::ChargeService executes for current usage) until the value reflects
 # the event. The read path is toggled per measurement through
-# LAGO_RISINGWAVE_USAGE_ENABLED; measurements are interleaved so neither
+# LAGO_REALTIME_USAGE_ENABLED; measurements are interleaved so neither
 # path benefits from warm caches.
 #
 # Run inside the api container:
@@ -141,7 +141,7 @@ ROUNDS.times do |round|
     charge = charges.fetch(kase[:code])
     subscriptions.each do |subscription|
       [["clickhouse", "false"], ["risingwave", "true"]].each do |path, flag|
-        ENV["LAGO_RISINGWAVE_USAGE_ENABLED"] = flag
+        ENV["LAGO_REALTIME_USAGE_ENABLED"] = flag
         aggregator_classes[[kase[:key], path]] ||=
           build_aggregator(subscription, charge, kase[:charge_filter], kase[:grouped]).class.name
         latency = measure(org, subscription, charge, kase)

@@ -150,7 +150,7 @@ usage latency under load rather than usage latency of an idle system.
 ### Is the read path even live? (checked before the run)
 
 `current_usage` is **cached per charge** unless the charge is realtime-eligible
-(`app/services/realtime_usage.rb`: `LAGO_RISINGWAVE_USAGE_ENABLED=true`, count or
+(`app/services/realtime_usage.rb`: `LAGO_REALTIME_USAGE_ENABLED=true`, count or
 sum, in arrears, non-prorated, non-recurring, no custom expression). When the
 cache is in play, invalidation is driven by the legacy events consumer — so under
 load the value does not move while events arrive and then jumps once. Every
@@ -203,9 +203,9 @@ The wallet is the deepest thing the pipeline drives, and the one with the most
 moving parts between an event and what the customer sees:
 
 ```
-events_expanded → wallet_refresh_triggers_sink (one message per event, keyed by
+events_expanded → realtime_usage_triggers_sink (one message per event, keyed by
                   organization+customer)
-               → WalletRefreshTriggersConsumer  (collapses a batch to one refresh
+               → WalletRefreshConsumer  (collapses a batch to one refresh
                   per customer; skips customers with no wallet)
                → Wallets::RealtimeRefreshService (waits for usage_buckets_15m to
                   reach the trigger's ingestion watermark, then refreshes)

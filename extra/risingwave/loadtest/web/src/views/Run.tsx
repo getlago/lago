@@ -447,7 +447,7 @@ export function Run({
               looks like: it does not move while events arrive, then jumps once when something invalidates it. Every
               "latency" in that jump is really the same refresh, measured from each event's own send time — which is why
               the distribution comes out as a straight ramp. Fix the read path
-              (<code>LAGO_RISINGWAVE_USAGE_ENABLED=true</code>, and the charge must be count/sum, in arrears,
+              (<code>LAGO_REALTIME_USAGE_ENABLED=true</code>, and the charge must be count/sum, in arrears,
               non-prorated, non-recurring, no custom expression), then re-run.
             </Banner>
           )}
@@ -506,8 +506,8 @@ export function Run({
             <Banner kind="bad">
               <b>The wallet numbers below are not latency.</b> Preflight sent one event and the ongoing balance never
               moved, so the refresh path was not running when this run started. Check that karafka is consuming{" "}
-              <code>wallet_refresh_triggers</code> (<code>LAGO_KAFKA_WALLET_REFRESH_TRIGGERS_TOPIC</code>), that the
-              RisingWave <code>wallet_refresh_triggers_sink</code> exists, and that <code>current_usage</code> itself is
+              <code>realtime_usage_triggers</code> (<code>LAGO_KAFKA_REALTIME_USAGE_TRIGGERS_TOPIC</code>), that the
+              RisingWave <code>realtime_usage_triggers_sink</code> exists, and that <code>current_usage</code> itself is
               live — the refresh reads usage, so a dead usage path is a dead wallet path.
             </Banner>
           )}

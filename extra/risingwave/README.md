@@ -301,7 +301,7 @@ reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
   `setup.sh` creates the sink, which validates the table). Quiet-tail flush
   measured ~300ms — the CH upsert sink is NOT in the trailing-flush class.
 - Realtime count/sum aggregators (`BucketLookup`) sum buckets over the
-  Rails-computed charges window, gated by `LAGO_RISINGWAVE_USAGE_ENABLED` +
+  Rails-computed charges window, gated by `LAGO_REALTIME_USAGE_ENABLED` +
   eligibility (in arrears, non-prorated, non-recurring, no expression);
   fallback to the events store when no buckets cover the window. NOTE: a
   partially-covered period (pipeline enabled mid-period without topic
@@ -311,13 +311,13 @@ reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
   `RealtimeUsage::ParityCheckService`) compares bucket sums vs the
   events-store aggregation per charge over the current Rails-computed period.
 
-**Done — event-driven wallet refresh** (api branch, `sql/09_wallet_triggers.sql`)
-- `wallet_refresh_triggers` Kafka sink, FORMAT UPSERT (append-only sinks drop
+**Done — event-driven wallet refresh** (api branch, `sql/09_realtime_usage_triggers.sql`)
+- `realtime_usage_triggers` Kafka sink, FORMAT UPSERT (append-only sinks drop
   updates!), keyed by (organization_id, customer_id): the refresh cascade
   covers all of a customer's wallets, so the customer is the serialization
   unit — one partition per customer, no concurrent refreshes, no PG lock
   contention (validated: 10-event burst → 1 refresh, correct value, ~1.8s).
-- `WalletRefreshTriggersConsumer` batch-collapses per customer and calls
+- `WalletRefreshConsumer` batch-collapses per customer and calls
   `Customers::RefreshWalletsService` inline (same guards as
   `Customers::RefreshWalletJob`); `target_wallet_code` rides in the payload.
 - Realtime-eligible charges bypass the Redis charge cache in current usage —
@@ -327,7 +327,7 @@ reworked 2026-08-21 from Postgres projections to ClickHouse buckets)
   trigger races the CH sink of the same epoch). That poll runs every 100ms for
   as long as the wait lasts, so it MUST carry `organization_id` — see "Reading
   the buckets" (fixed 2026-08-25; it was 53x more expensive without it). Requires
-  `LAGO_RISINGWAVE_USAGE_ENABLED` on the consumer so the refresh reads
+  `LAGO_REALTIME_USAGE_ENABLED` on the consumer so the refresh reads
   buckets. Measured event → wallet.ongoing_balance updated: **~400 ms** median warm (351–502 ms; bucket visible in ClickHouse ~250 ms — the floor is barrier_interval_ms, keep 250 ms in prod).
 
 **Phase 3 — remaining**

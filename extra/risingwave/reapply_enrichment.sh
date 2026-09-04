@@ -51,7 +51,7 @@ Before running, be aware of the replay side effects:
     `events_enriched_expanded_rw_shadow` are PLAIN MergeTrees — replay
     DUPLICATES rows. Truncate them (dev) or plan CH-side dedup (prod) before
     the rebuild; this script only warns.
-  * `wallet_refresh_triggers` and `usage_realtime_updates` get the full
+  * `realtime_usage_triggers` and `usage_realtime_updates` get the full
     replay (~1 trigger per event in the window). Seek the consumer groups to
     the end after the rebuild, or expect a long catch-up.
   * While the chain is down the realtime read path finds no covering
@@ -73,7 +73,7 @@ echo "==> Tearing down the events_expanded subtree"
 run_psql <<'SQL'
 DROP SINK IF EXISTS usage_realtime_updates_sink;
 DROP SINK IF EXISTS usage_buckets_clickhouse_sink;
-DROP SINK IF EXISTS wallet_refresh_triggers_sink;
+DROP SINK IF EXISTS realtime_usage_triggers_sink;
 DROP SINK IF EXISTS events_enriched_expanded_rw_shadow_sink;
 -- Legacy names, for an instance last set up before 2026-08-24 (the expanded
 -- shadow was a Kafka sink looped back in to compute pipeline_latency_e2e).
@@ -144,7 +144,7 @@ cat <<'DONE'
 ==> Done.
 
 Remaining manual steps after a rebuild:
-  * seek the wallet_refresh_triggers consumer group to the end
+  * seek the realtime_usage_triggers consumer group to the end
   * re-apply persisted system params if the volume was also wiped:
       ALTER SYSTEM SET barrier_interval_ms TO 250;
       ALTER SYSTEM SET sink_decouple TO false;

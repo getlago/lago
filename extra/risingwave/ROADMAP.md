@@ -142,7 +142,7 @@ sink still append-only.
       RMT key (correct — keep it that way); `10_enriched_shadow.sql` is a
       bare projection + 32-day filter with no collapse of its own; the
       `force_append_only` Kafka sinks in `06_sinks.sql`, `07_observability.sql`
-      and `09_wallet_triggers.sql` carry no ranking. Their stale
+      and `09_realtime_usage_triggers.sql` carry no ranking. Their stale
       "ranking flip" comments were corrected in the same change.
 
 ## 0b. FIXED 2026-08-25 — ClickHouse serving cost: key prefix + partitioning
@@ -724,7 +724,7 @@ Rebuild facts worth keeping:
     (standalone pod reporting 8 cores), i.e. ~5x Wednesday's ceiling
     while doing strictly more per-row work than steady-state ingest.
   * INCIDENT — sink stuck "under creation": the first
-    wallet_refresh_triggers_sink CREATE left a catalog entry in creating
+    realtime_usage_triggers_sink CREATE left a catalog entry in creating
     state with NO job behind it (`rw_ddl_progress` empty, DROP SINK
     refused with "exists but under creation"). Likely cause: the create
     hung on an unreachable broker (the local file hardcodes
@@ -740,7 +740,7 @@ Rebuild facts worth keeping:
     (a downstream MV over the retention-cleaned events_expanded grows
     unbounded — physical cleanup emits no changelog, canary-proven). So
     wallet-sink recreation keeps the seek-the-consumer-group dance;
-    documented in 09_wallet_triggers.sql.
+    documented in 09_realtime_usage_triggers.sql.
   * METRICS GOTCHA: Kafka sinks never emit `sink_commit_duration_*`
     (only coordinated sinks like ClickHouse do). Do NOT infer a sink's
     absence from it — the reliable liveness signal is a
@@ -849,7 +849,7 @@ is why decoupling can be turned on while KEEPING barrier_interval_ms at 250.
 
 Scope deliberately limited to the ClickHouse sinks — they are the slow
 HTTPS writers doing the backpressuring. The Redpanda sinks
-(`wallet_refresh_triggers_sink`, `usage_realtime_updates_sink`) stay
+(`realtime_usage_triggers_sink`, `usage_realtime_updates_sink`) stay
 non-decoupled: they are fast, they are not the backpressure source, and the
 wallet trigger's whole value is emitting within milliseconds.
 
@@ -1117,7 +1117,7 @@ history lives in ClickHouse anyway).
       - parity at per-filter/per-group granularity (charge totals today)
       - wallet-balance parity check
       - realtime-vs-fallback counters in the realtime aggregators
-      - consumer-lag panel for `wallet_refresh_triggers`
+      - consumer-lag panel for `realtime_usage_triggers`
       - from the outage drills (§0d): PG replication-slot lag alert;
         WaterDrop producer error-rate alert + raised `message.timeout.ms`
         (API health hides silent event loss past 50s of broker outage);
@@ -1201,11 +1201,11 @@ MVs replaced by `usage_buckets_15m` → CH). Earlier EXPLAIN validation
 - [ ] Run dark: parity flag on, read flags off, across ≥1 full period
       rollover per billing_time flavor. Deployment ordering: api migrations
       before `setup.sh` (sinks validate target tables); add new CDC tables to
-      `rw_publication`; consumer needs `LAGO_RISINGWAVE_USAGE_ENABLED`.
+      `rw_publication`; consumer needs `LAGO_REALTIME_USAGE_ENABLED`.
 - [ ] **`current_usage` is served from the charge cache unless the charge is
       realtime-eligible — found 2026-08-24 on the staging load test, and it is a
       CUTOVER blocker, not an app problem.** `app/services/realtime_usage.rb`
-      requires `LAGO_RISINGWAVE_USAGE_ENABLED=true` plus count/sum, in arrears,
+      requires `LAGO_REALTIME_USAGE_ENABLED=true` plus count/sum, in arrears,
       non-prorated, non-recurring, no custom expression; otherwise
       `customer_usage_service.rb:138` leaves the per-charge cache ON, and its
       invalidation is driven by the LEGACY events consumer. Consequence measured
@@ -1350,14 +1350,14 @@ behind: peak lag 46k on 2026-08-08 (RAM-swap tainted), 98k on the clean
 load both times (e2e ~15ms avg, usage rows ~140ms, projections 0s stale).
 
 The sink stays PER-EVENT; the fixes are consumer-side (see
-09_wallet_triggers.sql header for why RW-side coalescing was tried and
+09_realtime_usage_triggers.sql header for why RW-side coalescing was tried and
 reverted — GroupTopN over the updating events_expanded, temporal-join
 wallet filter, and TUMBLE+EOWC are all unusable here):
  1. karafka.rb max_messages 500 → 10_000 — batch-collapse costs O(distinct
     customers), so the batch must scale with the backlog or each poll pays
     a full refresh cycle for a thin slice of stream and the consumer can
     never catch up.
- 2. WalletRefreshTriggersConsumer skips customers without an active wallet
+ 2. WalletRefreshConsumer skips customers without an active wallet
     (one indexed exists-check per distinct customer per batch) — in the
     load population 90% of triggers are for wallet-less customers.
  3. Wallets::RealtimeRefreshService projection wait wrapped in `uncached`:
