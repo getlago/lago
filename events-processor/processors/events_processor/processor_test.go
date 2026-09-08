@@ -302,6 +302,8 @@ func TestProcessEvent(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
 			assert.Equal(t, 1, testEnv.Producers.enrichedExpandedProducer.ExecutionCount)
+			assert.Equal(t, 1, testEnv.FlagStore.ExecutionCount)
+			assert.Equal(t, 1, testEnv.CacheStore.ExecutionCount)
 		})
 
 		t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {

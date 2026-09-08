@@ -152,7 +152,9 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 				return nil
 			})
 		}
+	}
 
+	if enrichedEvent.Subscription != nil {
 		flagResult := processor.RefreshService.FlagSubscriptionRefresh(ctx, enrichedEvent)
 		if flagResult.Failure() {
 			return failedResult(flagResult, "flag_subscription_refresh", "Error flagging subscription refresh")
