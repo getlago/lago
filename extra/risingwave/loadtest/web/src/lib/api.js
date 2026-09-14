@@ -26,6 +26,9 @@ export const api = {
     stopRun: () => json("/api/runs/current/stop", { method: "POST" }),
     runs: () => json("/api/runs"),
     run: (id) => json(`/api/runs/${id}`),
+    seedStatus: () => json("/api/seed"),
+    seedPreview: (spec) => json("/api/seed/preview", { method: "POST", body: JSON.stringify(spec) }),
+    seed: (spec) => json("/api/seed", { method: "POST", body: JSON.stringify(spec) }),
 };
 /** Live snapshots over SSE, with automatic reconnect. */
 export function useLiveSnapshot() {

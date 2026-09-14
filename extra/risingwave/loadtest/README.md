@@ -32,8 +32,10 @@ npm run dev               # API on :5180, UI on http://localhost:5181
 There is **no dotfile to fill in**. Configuration lives in a local SQLite
 database (`loadtest.db`, gitignored, via built-in `node:sqlite` — no native
 module) and the **Setup screen is the only way in**. A fresh install opens on
-Setup, refuses to start a run until the connections are filled in, and stores
-what you save immediately. Secrets stay server-side: `GET /api/config` returns
+Setup, refuses to start a run until Lago and RisingWave are filled in, and
+stores what you save immediately. ClickHouse is **optional**: a run with its
+four stages unticked never queries it, so a missing URL fails that stage's
+preflight check rather than hiding the Run button. Secrets stay server-side: `GET /api/config` returns
 masked values, and a blank secret field means "keep what is stored".
 
 If you already had a `.env` or `config.json` from an earlier version, it is
@@ -42,11 +44,96 @@ there is no second source of truth. Node 22.5+ (developed on 24).
 
 `npm run build && npm start` serves the built UI from the API process on `:5180`.
 
-Then, in the UI: **Setup** (connections, test them) → **Targets** (scan Lago, tick
-what to load, pick a usage probe and a wallet probe) → **Run** (rate, total, ramp,
-batch size, start). If the achieved rate flattens well below the target, read
+Then, in the UI: **Setup** (connections, test them) → **Targets** (optionally
+[seed a fan-out matrix](#seeding-a-matrix-wide-enough-to-fan-out), scan Lago,
+tick what to load, pick a usage probe and a wallet probe) → **Run** (rate,
+total, ramp, batch size, [scope](#scoping-a-run-what-each-knob-actually-governs),
+start). If the achieved rate flattens well below the target, read
 [Reaching the target rate](#reaching-the-target-rate) — it is almost always the
 sender's in-flight budget, not the pipeline.
+
+## Seeding a matrix wide enough to fan out
+
+A load test against one subscription and one billable metric measures one
+actor. Every lookup in the RisingWave pipeline is a temporal join, and a
+temporal join hash-shuffles the event stream on its lookup key so that the
+actor holding a key's dimension row is the one that processes its events. The
+number of **distinct keys** is therefore what bounds how many actors can be
+busy at once, whatever `streaming_parallelism` says:
+
+| fragment | joins on | fan-out dimension |
+|---|---|---|
+| stage 0 `billable_metrics` | `(organization_id, code)` | distinct **metric codes** |
+| stage 1 `subscriptions_agg` | `(organization_id, external_id)` | distinct **subscriptions** |
+| stage 1 `flat_filters_agg` | `(organization_id, plan_id, billable_metric_code)` | distinct **(plan, code) pairs** |
+
+Downstream, `usage_buckets_15m` groups on (subscription, charge, filter,
+grouped_by), so the same width also spreads the aggregation state, and on the
+API transport the Kafka key is `<org>-<external_subscription_id>`, so
+subscriptions are also what spreads the raw topic's partitions.
+
+**Targets → Seed fixtures** creates that width through the Lago public API —
+the same requests a customer's integration would make, so nothing is bypassed:
+
+- **billable metrics**, kinds rotating by index: `count` (no filters),
+  `count_filtered` and `sum_filtered` (a `tier` filter with values gold, silver,
+  bronze), `sum_grouped` (`pricing_group_keys: ["region"]`), and
+  `sum_many_filters` — the **AI-company shape**: filters `model` (as many
+  values as needed) × `token_type` (input, output, cached_input). Sum metrics
+  aggregate `amount`.
+- **plans**, each charging a contiguous window of `charges per plan` metrics
+  offset by `metrics / plans`, so every metric is charged by the same number of
+  plans and every plan holds every kind. Filtered metrics get **charge filters**
+  on gold and silver, priced 2 and 3, and bronze is left uncovered so it lands
+  in the default bucket. Each wide charge gets **one charge filter per
+  (model, token_type)** — `charge filters per wide charge` of them, 60 by
+  default (20 models × 3 token types), each at its own integer price — plus one
+  model declared on the metric but priced by no filter, so an event for it falls
+  into the default bucket the way a not-yet-priced model would. Every charge is
+  `standard` at an integer price per unit, so a wallet on a seeded customer
+  stays priceable in watermark mode.
+
+  The wide charges are what make `matching_filter()` earn its keep: every event
+  for such a charge is scored against dozens of candidates, and the charge's
+  `flat_filters_agg` JSONB row is correspondingly large — the per-charge cost an
+  LLM vendor's price-per-model-per-token-type catalog puts on the pipeline. A
+  run covers every filter with one event shape each, so the run's **max shapes
+  per target** has to exceed the filter count; the default is 128 and the seed
+  form warns when the current value would leave filters unexercised.
+- **customers, one active subscription each**, round-robin over the plans,
+  calendar billing.
+
+Defaults: 32 metrics, 8 plans × 12 charges = **96 (plan, code) pairs** carrying
+1 158 charge filters (60 on each of the 18 wide charges), 128 subscriptions → 1 536 targets after a rescan. Hashing is not dealing — K keys
+over P actors only even out when K is several times P — so these are sized for
+a fragment of up to 16 actors: 2× in codes, 6× in pairs, 8× in subscriptions,
+the subscription join being the fragment the ROADMAP measured as hot. Shrink
+one dimension on purpose to watch that fragment become the bottleneck. Every
+width is a knob and the form previews the resulting key counts before anything
+is written.
+
+The seed is **idempotent per prefix**: a metric or plan whose code already
+exists is kept as is and reported (never rewritten under live subscriptions),
+`POST /customers` is an upsert, and subscriptions already active are skipped
+from a single listing. Progress and per-step created / existing / failed counts
+are shown live, and the Targets list is rescanned when it finishes. The CDC
+snapshot into RisingWave lags Postgres by a few seconds, so rescan again if the
+first run's Preflight reports events landing without a subscription.
+
+Two buttons then set the run up in one click: **Select seeded** ticks every
+target under the prefix, and **Select seeded, probe on the spare** leaves the
+last seeded subscription out of the bulk set and points the usage probe (and
+the wallet probe, if that customer holds one) at it — the spare pair is what
+puts the usage measurement in exact mode under the load. Above 12 subscriptions
+the list collapses to one row per subscription with a filter box; expand one to
+pick a probe by hand.
+
+Because a fanned-out run has thousands of (target, shape) slots, the live
+snapshot is bounded: the **Event spread** table is rolled up per shape — one
+row per (metric code, properties) with the number of subscriptions that carried
+it — and the per-target list in `summary.json` is capped at 200 with the total
+alongside. Nothing sent is lost to the roll-up: every slot's count is summed
+into its shape's row.
 
 ## Event spread across charge filters and pricing group keys
 
@@ -67,8 +154,10 @@ shape** it can and round-robins over all of them:
 
 Controlled on the Run screen (values per group key, whether to hit the default
 bucket, a cap per target) and reported in Preflight before anything is sent. The
-**Event spread** table then shows what each shape actually sent, so "it spread"
-is verifiable rather than asserted.
+**Event spread** table then shows what each shape actually sent — rolled up over
+the subscriptions that carried it, so a seeded fan-out reads as "this shape went
+to 128 subscriptions, N events" — and "it spread" is verifiable rather than
+asserted.
 
 Verified locally on three metrics of one subscription — a plain count, a
 2-filter sum, and a sum grouped by `region` — 120 events over 7 shapes (17-18
@@ -95,9 +184,10 @@ question being asked. On a slow API the response time can dominate — compare
 **Stamped — the per-hop breakdown.** Every event (not just probes) also carries
 the timestamps the pipeline recorded for itself: `ingested_at` (Lago),
 `kafka_timestamp` (Redpanda broker), `rw_received_at` (RisingWave),
-`enriched_at` (ClickHouse insert). Swept incrementally on a watermark, so cost
-stays flat as a run grows. These pinpoint the expensive hop, but **each spans two
-machines' clocks** — the Clock offsets panel measures the disagreement, and any
+`enriched_at` (ClickHouse insert). Swept incrementally on a watermark, and the
+ClickHouse sweep is bounded on the event timestamp as well (see the ClickHouse
+scan note below), so cost stays flat as a run grows. These pinpoint the
+expensive hop, but **each spans two machines' clocks** — the Clock offsets panel measures the disagreement, and any
 negative duration is flagged as what it is: a clock artifact, not a measurement.
 Nothing is silently corrected.
 
@@ -114,15 +204,107 @@ Known limits, all surfaced in Preflight rather than hidden:
   (250 ms dev) is resolvable — a 0 means "same barrier", not "instant".
 - **No index on `transaction_id`** in the RisingWave tables, so a lookup scans the
   32-day working set. That is why probes are polled as a cohort. ClickHouse
-  lookups are narrowed to the run's subscriptions, metric codes and time window so
-  they use the primary key — without that, the 240M-row production
-  `events_enriched_expanded` times out and the stage silently reports nothing.
+  lookups are narrowed to the organization, the run's subscriptions and metric
+  codes and a time window so they use the primary key — without that, the
+  240M-row production `events_enriched_expanded` times out and the stage
+  silently reports nothing.
+- **ClickHouse scans are bounded on the event `timestamp`, never on
+  `enriched_at`.** `enriched_at` is the stamp every sweep wants to filter on,
+  but it is not in either shadow table's key, so a predicate on it alone reads
+  every row the rest of the scope admits. Measured on a 20k events/s run
+  (2026-09-07): the stamp sweep and the `uniqExact` funnel count, both bounded
+  only at the run start, rescanned the whole run every 2 s — 12M rows per table
+  after ten minutes — and ClickHouse spent **3.6 cores on reads against 0.17 on
+  writes**. The observer was the load. Now the probe polls and sweeps carry a
+  floor on `timestamp` that moves with the run (`now - probeTimeoutMs - 60 s`:
+  anything older is already a recorded timeout), the live funnel for the
+  ClickHouse stages is accumulated from the sweep rows instead of recounted,
+  and the exact `uniqExact` runs once at the end. The remaining per-sweep scan
+  is bounded by the probe timeout, not by the run length; the optional minmax
+  skip index in `clickhouse/zz_rw_shadow_enriched_at_index.sql` makes the
+  `enriched_at` predicate itself prune, which also fixes the Grafana
+  `risingwave-latency` panels that filter on it without a `timestamp` bound.
+- **Every ClickHouse query this app sends is stamped** with
+  `log_comment = 'lago-rw-loadtest:<purpose>'` and the same User-Agent, where
+  the purpose is one of `health`, `clock`, `schema`, `probe-seen`,
+  `stamp-sweep`, `funnel-count`. The app, the Lago API and Grafana usually
+  share the `default` user, so this is what makes "who is asking" answerable:
+
+  ```sql
+  SELECT log_comment, http_user_agent, count() AS n, sum(read_rows) AS rows_read,
+         round(sum(ProfileEvents['OSCPUVirtualTimeMicroseconds'])/1e6, 1) AS cpu_s
+  FROM system.query_log
+  WHERE event_time > now() - INTERVAL 10 MINUTE AND type = 'QueryFinish' AND query_kind = 'Select'
+  GROUP BY log_comment, http_user_agent ORDER BY cpu_s DESC;
+  ```
+
+  With the four ClickHouse stages unticked the app sends ClickHouse **nothing
+  at all** — not the `health` and `clock` queries either, which used to run at
+  preflight whatever the run was scoped to (see [Scoping a
+  run](#scoping-a-run-what-each-knob-actually-governs)). Anything in that window
+  is somebody else: the Lago API (a usage or wallet probe target keeps
+  `current_usage` / `wallets` polled at up to `usagePollConcurrency` in flight,
+  and the API answers those from `usage_buckets_15m FINAL`), the wallet-refresh
+  consumer's bucket wait, or a Grafana dashboard left open.
 - **`rw_received_at` is barrier-aligned** and can read up to one barrier interval
   early, so the `Redpanda → RisingWave` leg is slightly optimistic.
 - **No `FINAL` anywhere in the measurement path**, on either the shadow tables or
   the ReplacingMergeTree production ones: existence is existence,
   `min(enriched_at)` returns the first insert regardless of row versions, and
   counts use `uniqExact`. FINAL would force a merge per poll for nothing.
+
+## Scoping a run: what each knob actually governs
+
+A run can be narrowed to **Redpanda + RisingWave only** — no ClickHouse query,
+no Lago request, once it starts. The Run tab has a *Scope* row with a preset for
+it (and a *Full path* button to put everything back), because it is four changes
+at once and the obvious single change does not do it:
+
+| knob | what it governs | what it does **not** |
+|---|---|---|
+| `probe every N` = 0 | per-event visibility polling: no probe is enrolled, so no stage is looked up per event | the **stamp sweeps and funnel counts**, which read every ticked stage every `sweepMs` regardless; and both Lago read paths |
+| *Stages to read* (six ticks) | every read of RisingWave and ClickHouse — probe polls, sweeps, counts — **and now their preflight health check, table checks and clock probe** | the send path |
+| usage / wallet **probe target** (Targets tab) | whether `current_usage` and `/wallets` are polled at all | anything about the pipeline stages |
+| *transport* | whether the events go through `POST /events` or straight to the topic | the read paths |
+
+That table is the bug this fixes. Disabling the probe reads like "stop querying
+everything else", and it never meant that: a run with `probe every` at 0 still
+swept ClickHouse twice a second, still ran its health check, table checks and
+clock probe at preflight, and still polled Lago from end to end if a probe target
+was left selected. Nothing said so.
+
+Now the scope is **derived** from those knobs (`runScope` in `server/src/types.ts`)
+rather than declared next to them, so there is no scope flag to fall out of step
+with what actually decides it. What follows from it:
+
+- **Preflight skips what the run does not touch.** A Lago-free run gets no
+  health check, no clock probe and no organization lookup (discovery cached it);
+  a ClickHouse-free run gets no health check, no four table checks and no clock
+  probe. Each is reported as an explicit `NOT IN THIS RUN` check rather than
+  quietly missing, and neither can block the run — a system that is never read
+  cannot fail it.
+- **Only the clocks whose stamps are read are measured.** Lago's offset is
+  probed on the API transport only: direct produce stamps `ingested_at` from
+  this app's clock, so Lago's offset would explain nothing about the run.
+- **Segments the run cannot measure say so.** Unticking a stage marks its polled
+  segment *and* the stamped legs that need its stamp as unavailable, so the
+  dashboard shows "not measured here" instead of six empty ClickHouse
+  histograms. (`SEGMENTS_NEEDING_STAGE` in the runner; a test keeps it and the
+  segment catalog in agreement.)
+- **A stage whose store is unreachable is unticked** rather than left to fail
+  every poll for the rest of the run — its preflight check has already said why,
+  and an error every 200 ms buries whatever else went wrong.
+- **The scope is recorded** on the run (`scope` in `summary.json`, and the *Run
+  scope* preflight line), so a summary read months later says whether ClickHouse
+  and Lago were part of the picture or deliberately left out of it.
+
+Discovery still goes through Lago — it is how targets exist at all — and so does
+seeding. The claim is about the **run**: from `Run preflight & start` onward, a
+Redpanda + RisingWave run talks to exactly two systems, the broker and
+RisingWave. Verify it the same way as anything else, from `system.query_log` on
+the ClickHouse side and the API logs on Lago's. (The Setup screen's *test
+connections* button still probes all four on demand — that is a click, not a
+run.)
 
 ## Usage latency: two attribution modes
 
@@ -354,10 +536,13 @@ directly, in the same second, enriched into rows **identical on every column but
 the transaction id** — including the charge, filter and value resolved by stage
 1+2.
 
-The organization UUID is read from `GET /api/v1/organizations` at preflight,
-because it is the key the whole pipeline joins subscriptions, charges and filters
-on; a wrong one produces valid JSON that enriches into nothing. It can be
-overridden in Setup.
+The organization UUID is read from `GET /api/v1/organizations` **during
+discovery**, not at preflight, because it is the key the whole pipeline joins
+subscriptions, charges and filters on; a wrong one produces valid JSON that
+enriches into nothing. Reading it with the rest of the Lago walk is what lets a
+Redpanda-only run make no Lago request of its own — see [Scoping a
+run](#scoping-a-run-what-each-knob-actually-governs). It can be overridden in
+Setup, which is also the fallback if discovery could not read it.
 
 ### What direct produce cannot reproduce
 
@@ -480,7 +665,7 @@ Live via SSE, and persisted per run under `runs/<id>/`:
 | file | contents |
 |---|---|
 | `preflight.json` | what was reachable, the clock offsets, the resolved table names |
-| `summary.json` | spec, counters, percentiles, histograms, throughput, errors, logs |
+| `summary.json` | spec, `scope` (which systems the run actually touched), counters, percentiles, histograms, throughput, errors, logs |
 | `events.jsonl` | one line per *tracked* event (every probe, plus 1 bulk event in `retention.trackEvery`): send time, API time, per-stage first-seen, every stamp, and the usage / wallet leg where one was attributed |
 
 `summary.json` is exactly what the dashboard renders, so History replays a past
@@ -497,8 +682,12 @@ server/   Fastify. Lago + RisingWave (pgwire) + ClickHouse (HTTPS) + Redpanda
                    is documented against the Ruby it mirrors
   src/clients/events.ts    the two transports behind one signature, so
                    everything downstream of the send is transport-blind
+  src/seed.ts      the fan-out fixture matrix: what it creates and why those
+                   widths, then the idempotent walk through the Lago API
   src/types.ts     the segment catalog — the UI renders itself from this, so what
                    the dashboard claims and what the server computes cannot drift
+                   — plus runScope(), which derives which systems a run touches
+                   from the knobs that decide it rather than from a flag
   src/run/crossing.ts  the shared attribution machinery (bracketing, coalescing
                    counts, freshness verdict). Both the usage and the wallet
                    measurement run on it, so neither can drift from the other

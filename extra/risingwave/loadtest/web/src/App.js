@@ -17,6 +17,8 @@ export default function App() {
     const [selected, setSelected] = useState(new Set());
     const [probeTargetId, setProbeTargetId] = useState(null);
     const [walletProbeTargetId, setWalletProbeTargetId] = useState(null);
+    // Lives here rather than in the Targets view so the seed form survives a tab switch.
+    const [seedSpec, setSeedSpec] = useState(null);
     const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) ?? "system");
     const { snap, connected } = useLiveSnapshot();
     useEffect(() => {
@@ -59,7 +61,7 @@ export default function App() {
                         ].map(([k, label]) => (_jsxs("button", { "aria-current": tab === k ? "page" : undefined, onClick: () => setTab(k), children: [label, k === "targets" && selected.size > 0 ? ` (${selected.size})` : ""] }, k))) }), _jsxs("select", { value: theme, onChange: (e) => setTheme(e.target.value), style: { width: 90 }, "aria-label": "Theme", children: [_jsx("option", { value: "system", children: "System" }), _jsx("option", { value: "light", children: "Light" }), _jsx("option", { value: "dark", children: "Dark" })] })] }), _jsxs("main", { children: [tab === "setup" && (_jsx(Setup, { config: config, store: store, health: health, onSaved: (c, st) => {
                             setConfig(c);
                             setStore(st);
-                        }, onCheck: checkHealth })), tab === "targets" && (_jsx(Targets, { discovery: discovery, selected: selected, probeTargetId: probeTargetId, walletProbeTargetId: walletProbeTargetId, onDiscovered: (d) => {
+                        }, onCheck: checkHealth })), tab === "targets" && (_jsx(Targets, { discovery: discovery, selected: selected, probeTargetId: probeTargetId, walletProbeTargetId: walletProbeTargetId, seedSpec: seedSpec, setSeedSpec: setSeedSpec, maxVariantsPerTarget: spec?.spread.maxVariantsPerTarget ?? null, onDiscovered: (d) => {
                             setDiscovery(d);
                             setSelected(new Set());
                             setProbeTargetId(null);

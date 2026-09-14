@@ -24,8 +24,41 @@ const STAGE_LABELS: Record<StageKey, string> = {
 };
 
 const ALL_STAGES = Object.keys(STAGE_LABELS) as StageKey[];
+const RW_STAGES: StageKey[] = ["rwEnriched", "rwExpanded"];
+const CH_STAGES: StageKey[] = ["chRwEnriched", "chRwExpanded", "chGoEnriched", "chGoExpanded"];
 
 const RUNNING = ["preflight", "sending", "draining"];
+
+/**
+ * Push the pipeline and nothing else: produce straight to Redpanda, measure in
+ * RisingWave, and leave ClickHouse and Lago out entirely.
+ *
+ * This is a preset because it is FOUR changes, and because the obvious single
+ * change does not do it: switching the probe off (`probeEvery: 0`) only stops
+ * per-event visibility polling. The stamp sweeps and funnel counts read every
+ * ticked stage regardless, and the usage and wallet read paths are governed by
+ * their probe TARGETS, not by the probe cadence — so a run with the probe
+ * disabled still queried ClickHouse twice a second and polled Lago all the way
+ * through. All four have to move together.
+ */
+const pipelineOnly = (spec: RunSpec): RunSpec => ({
+  ...spec,
+  send: { ...spec.send, transport: "kafka", batchSize: Math.max(spec.send.batchSize, 500) },
+  probeTargetId: null,
+  walletProbeTargetId: null,
+  stages: {
+    ...spec.stages,
+    ...(Object.fromEntries(RW_STAGES.map((k) => [k, true])) as Record<StageKey, boolean>),
+    ...(Object.fromEntries(CH_STAGES.map((k) => [k, false])) as Record<StageKey, boolean>),
+  },
+});
+
+/** Everything back on: the API in the send path and every stage polled. */
+const fullPath = (spec: RunSpec): RunSpec => ({
+  ...spec,
+  send: { ...spec.send, transport: "api", batchSize: 1 },
+  stages: Object.fromEntries(ALL_STAGES.map((k) => [k, true])) as Record<StageKey, boolean>,
+});
 
 export function Run({
   segments,
@@ -58,6 +91,25 @@ export function Run({
   // before this transport existed, whose spec carries no transport at all and is
   // therefore an API run, whatever the form is currently set to.
   const direct = snap?.spec ? snap.spec.send.transport === "kafka" : spec.send.transport === "kafka";
+
+  // What the run about to be started would touch. Derived from the form rather
+  // than declared anywhere, because the server derives it the same way — there
+  // is no scope flag to get out of step with the knobs that actually decide it.
+  const scope = useMemo(() => {
+    const reads = [
+      RW_STAGES.some((k) => spec.stages[k]) ? "RisingWave" : null,
+      CH_STAGES.some((k) => spec.stages[k]) ? "ClickHouse" : null,
+      spec.probeTargetId ? "Lago current_usage" : null,
+      spec.walletProbeTargetId ? "Lago /wallets" : null,
+    ].filter(Boolean) as string[];
+    return {
+      kafka: spec.send.transport === "kafka",
+      reads,
+      // Nothing queries Lago once the run starts. Discovery still went through
+      // it, and so does the organization lookup it cached — but not the run.
+      lagoFree: spec.send.transport === "kafka" && !spec.probeTargetId && !spec.walletProbeTargetId,
+    };
+  }, [spec]);
   const shown = useMemo(
     () =>
       direct
@@ -226,7 +278,10 @@ export function Run({
               disabled={!!live}
               onChange={(e) => setSpec({ ...spec, probeEvery: Number(e.target.value) })}
             />
-            <span className="note">0 disables visibility polling (stamps only)</span>
+            <span className="note">
+              0 disables per-event visibility polling (stamps only). It does not stop the ClickHouse sweeps or the
+              Lago read paths — untick the stages below and clear the probe targets for that.
+            </span>
           </label>
           <label className="field">
             Stop above error rate (%)
@@ -368,8 +423,10 @@ export function Run({
               </label>
             </>
           )}
-          <div style={{ width: 1, height: 20, background: "var(--border)" }} />
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Stages to poll:</span>
+        </div>
+
+        <div className="row" style={{ marginTop: 12, gap: 18 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Stages to read:</span>
           {ALL_STAGES.map((s) => (
             <label key={s} className="row" style={{ fontSize: 12, gap: 5 }}>
               <input
@@ -381,6 +438,24 @@ export function Run({
               {STAGE_LABELS[s]}
             </label>
           ))}
+        </div>
+
+        <div className="row" style={{ marginTop: 12, gap: 18 }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Scope:</span>
+          <button className="btn" disabled={!!live} onClick={() => setSpec(pipelineOnly(spec))}>
+            Redpanda + RisingWave only
+          </button>
+          <button className="btn" disabled={!!live} onClick={() => setSpec(fullPath(spec))}>
+            Full path
+          </button>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            This run sends via {scope.kafka ? "Redpanda (direct produce)" : "the Lago API"} and reads{" "}
+            {scope.reads.length ? scope.reads.join(", ") : "nothing — send throughput only"}.
+            {scope.lagoFree
+              ? " Nothing queries Lago once it starts: no health check, no clock probe, no read path."
+              : ""}
+            {!scope.reads.includes("ClickHouse") ? " ClickHouse is not opened at all." : ""}
+          </span>
         </div>
       </Card>
 
@@ -674,15 +749,16 @@ export function Run({
           {snap.spread && snap.spread.length > 0 && (
             <Card
               title="Event spread"
-              hint={`${snap.spread.length} shape(s) — every charge filter, the default bucket, and each pricing group key value${
+              hint={`${snap.spread.length} shape(s) — every charge filter, the default bucket, and each pricing group key value, rolled up over the subscriptions that carried them${
                 snap.spreadTruncated ? ` · ${num(snap.spreadTruncated)} capped` : ""
-              }`}
+              }${snap.spreadRowsOmitted ? ` · ${num(snap.spreadRowsOmitted)} more shape(s) not listed` : ""}`}
             >
               <div className="scroll">
                 <table className="data">
                   <thead>
                     <tr>
-                      <th>Target</th>
+                      <th>Metric</th>
+                      <th>Subs</th>
                       <th style={{ textAlign: "left" }}>Shape</th>
                       <th style={{ textAlign: "left" }}>Bucket</th>
                       <th style={{ textAlign: "left" }}>Properties sent</th>
@@ -694,6 +770,9 @@ export function Run({
                       <tr key={v.target + v.label}>
                         <td className="mono" style={{ fontSize: 12 }}>
                           {v.target}
+                        </td>
+                        <td className="num" title="how many subscriptions this shape was sent to">
+                          {num(v.subscriptions)}
                         </td>
                         <td style={{ textAlign: "left" }}>{v.label}</td>
                         <td style={{ textAlign: "left" }}>

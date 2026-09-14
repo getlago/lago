@@ -1,12 +1,19 @@
-import { useMemo, useState } from "react";
-import { api, type Discovery } from "../lib/api";
+import { useCallback, useMemo, useState } from "react";
+import { api, num, type Discovery, type SeedSpec } from "../lib/api";
 import { Banner, Card } from "../components/panels";
+import { SeedCard } from "./Seed";
+
+/** Above this many subscriptions the list collapses each one to a single row. */
+const COMPACT_ABOVE = 12;
 
 export function Targets({
   discovery,
   selected,
   probeTargetId,
   walletProbeTargetId,
+  seedSpec,
+  setSeedSpec,
+  maxVariantsPerTarget,
   onDiscovered,
   onSelect,
   onProbe,
@@ -16,6 +23,10 @@ export function Targets({
   selected: Set<string>;
   probeTargetId: string | null;
   walletProbeTargetId: string | null;
+  seedSpec: SeedSpec | null;
+  setSeedSpec: (s: SeedSpec) => void;
+  /** The run's variant cap, surfaced by the seed form when a wide charge would exceed it. */
+  maxVariantsPerTarget: number | null;
   onDiscovered: (d: Discovery) => void;
   onSelect: (ids: Set<string>) => void;
   onProbe: (id: string | null) => void;
@@ -23,6 +34,8 @@ export function Targets({
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const bySub = useMemo(() => {
     const m = new Map<string, Discovery["targets"]>();
@@ -34,7 +47,7 @@ export function Targets({
     return m;
   }, [discovery]);
 
-  const run = async () => {
+  const run = useCallback(async () => {
     setBusy(true);
     setErr(null);
     try {
@@ -43,6 +56,52 @@ export function Targets({
       setErr((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  }, [onDiscovered]);
+
+  const compact = bySub.size > COMPACT_ABOVE;
+  const q = query.trim().toLowerCase();
+  const visibleSubs = useMemo(
+    () =>
+      [...bySub.entries()].filter(([sub, list]) => {
+        if (!q) return true;
+        const first = list[0]!;
+        return (
+          sub.toLowerCase().includes(q) ||
+          first.customerExternalId.toLowerCase().includes(q) ||
+          first.planCode.toLowerCase().includes(q) ||
+          list.some((t) => t.metricCode.toLowerCase().includes(q))
+        );
+      }),
+    [bySub, q],
+  );
+
+  const toggleExpanded = (sub: string) => {
+    const next = new Set(expanded);
+    if (next.has(sub)) next.delete(sub);
+    else next.add(sub);
+    setExpanded(next);
+  };
+
+  // The seeded subscriptions, in id order, so "all but the last" is deterministic.
+  const seeded = useMemo(() => {
+    const prefix = seedSpec?.prefix ?? "";
+    if (!prefix) return [];
+    return [...bySub.keys()].filter((sub) => sub.startsWith(prefix)).sort();
+  }, [bySub, seedSpec]);
+
+  const selectSeeded = (keepOneForProbe: boolean) => {
+    const next = new Set<string>();
+    const bulk = keepOneForProbe && seeded.length > 1 ? seeded.slice(0, -1) : seeded;
+    for (const sub of bulk) for (const t of bySub.get(sub) ?? []) next.add(t.id);
+    onSelect(next);
+    if (keepOneForProbe && seeded.length > 1) {
+      // The spare subscription carries only the serial probe, so the usage
+      // measurement runs in exact mode; its first target is as good as any.
+      const spare = bySub.get(seeded[seeded.length - 1]!) ?? [];
+      const probe = spare.find((t) => t.servedByRealtimeBuckets) ?? spare[0];
+      onProbe(probe?.id ?? null);
+      onWalletProbe(probe && probe.wallets.length > 0 ? probe.id : null);
     }
   };
 
@@ -106,6 +165,8 @@ export function Targets({
     <>
       {err && <Banner kind="bad">{err}</Banner>}
 
+      <SeedCard spec={seedSpec} setSpec={setSeedSpec} onSeeded={run} maxVariantsPerTarget={maxVariantsPerTarget} />
+
       <Card
         title="Discover targets"
         hint="reads subscriptions → plan → charges → billable metrics from the Lago API"
@@ -134,9 +195,31 @@ export function Targets({
       {discovery && discovery.targets.length > 0 && (
         <Card
           title="Bulk load targets"
-          hint={`${selected.size} selected — events are spread round-robin across them`}
+          hint={`${num(selected.size)} of ${num(discovery.targets.length)} selected across ${num(bySub.size)} subscription(s) — events are spread round-robin across them`}
           right={
             <div className="row">
+              {seeded.length > 0 && (
+                <>
+                  <button
+                    className="btn"
+                    title={`select every target of the ${seeded.length} subscription(s) whose id starts with "${seedSpec?.prefix}"`}
+                    onClick={() => selectSeeded(false)}
+                  >
+                    Select seeded
+                  </button>
+                  <button
+                    className="btn"
+                    title={
+                      "select the seeded subscriptions except the last one, and point the usage probe (and the wallet " +
+                      "probe if it has a wallet) at that spare one — so the probe runs in exact mode under the bulk load"
+                    }
+                    onClick={() => selectSeeded(true)}
+                    disabled={seeded.length < 2}
+                  >
+                    Select seeded, probe on the spare
+                  </button>
+                </>
+              )}
               <button className="btn" onClick={() => onSelect(new Set(discovery.targets.map((t) => t.id)))}>
                 Select all
               </button>
@@ -146,10 +229,31 @@ export function Targets({
             </div>
           }
         >
+          {compact && (
+            <div className="row" style={{ marginBottom: 10 }}>
+              <input
+                type="text"
+                placeholder="filter by subscription, customer, plan or metric code"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                style={{ flex: 1, minWidth: 260 }}
+              />
+              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                {num(visibleSubs.length)} of {num(bySub.size)} subscription(s) shown · collapsed; expand one to pick a
+                probe
+              </span>
+              <button className="btn" onClick={() => setExpanded(new Set())} disabled={expanded.size === 0}>
+                Collapse all
+              </button>
+            </div>
+          )}
           <div className="targets">
-            {[...bySub.entries()].map(([sub, list]) => {
+            {visibleSubs.map(([sub, list]) => {
               const first = list[0]!;
               const allOn = list.every((t) => selected.has(t.id));
+              const onCount = list.filter((t) => selected.has(t.id)).length;
+              const isOpen = !compact || expanded.has(sub);
+              const hasProbe = list.some((t) => t.id === probeTargetId || t.id === walletProbeTargetId);
               return (
                 <div className="sub-block" key={sub}>
                   <div className="head">
@@ -159,7 +263,29 @@ export function Targets({
                       customer {first.customerExternalId} · plan {first.planCode}
                       {first.subscriptionName ? ` · ${first.subscriptionName}` : ""}
                     </span>
+                    {compact && (
+                      <>
+                        <span style={{ color: "var(--text-muted)", fontSize: 12 }}>
+                          · {onCount}/{list.length} metric{list.length > 1 ? "s" : ""} selected
+                        </span>
+                        {hasProbe && (
+                          <span className="pill" style={{ fontSize: 11 }}>
+                            <span className="dot ok" /> probe
+                          </span>
+                        )}
+                        {list.some((t) => t.wallets.length > 0) && (
+                          <span className="pill" style={{ fontSize: 11 }} title="this customer holds an active wallet">
+                            wallet
+                          </span>
+                        )}
+                        <div style={{ flex: 1 }} />
+                        <button className="btn" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => toggleExpanded(sub)}>
+                          {isOpen ? "Hide metrics" : "Show metrics"}
+                        </button>
+                      </>
+                    )}
                   </div>
+                  {isOpen && (
                   <div className="metrics">
                     {list.map((t) => (
                       <div className="metric-row" key={t.id}>
@@ -240,9 +366,13 @@ export function Targets({
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
               );
             })}
+            {compact && visibleSubs.length === 0 && (
+              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No subscription matches "{query}".</p>
+            )}
           </div>
         </Card>
       )}

@@ -3,7 +3,7 @@ import { getHeapStatistics } from "node:v8";
 import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getConfig, RUNS_DIR } from "../config.js";
-import type { Target } from "../discovery.js";
+import type { OrganizationInfo, Target } from "../discovery.js";
 import { buildVariants, centsOfVariant, unitsOfVariant, type EventVariant } from "../variants.js";
 import {
   currentUsage,
@@ -43,6 +43,7 @@ import {
 } from "../clients/risingwave.js";
 import { CrossingTracker, PollStats } from "./crossing.js";
 import { RateTracker, SeriesSet } from "./stats.js";
+import { runScope } from "../types.js";
 import type { ClockOffsets, RunPhase, RunSpec, StageKey } from "../types.js";
 
 const RW_STAGES: RwTableKey[] = ["rwEnriched", "rwExpanded"];
@@ -112,6 +113,30 @@ type PlanSlot = {
   hitsProbePair: boolean;
   /** Does it land on the customer whose wallets are polled? */
   hitsWalletCustomer: boolean;
+};
+
+/**
+ * Snapshot bounds. The snapshot streams twice a second, so neither list may grow
+ * with a seeded fan-out: 128 subscriptions × 12 metrics is 1 536 targets and
+ * ~5 000 plan slots, which is ~1 MB of JSON per tick if listed raw. The
+ * per-target list is capped (summary.json says how many there were), and the
+ * spread is rolled up per shape — see Run.spreadRows().
+ */
+const TARGETS_IN_SNAPSHOT = 200;
+
+/** Allowance for the sender's clock vs. the `timestamp` the pipeline stores, when bounding ClickHouse scans. */
+const CH_CLOCK_SLACK_MS = 60_000;
+const SPREAD_ROWS_IN_SNAPSHOT = 400;
+
+type SpreadRow = {
+  /** The metric code; the subscription dimension is rolled up into `subscriptions`. */
+  target: string;
+  subscriptions: number;
+  label: string;
+  kind: "filter" | "default";
+  grouped: boolean;
+  properties: Record<string, string>;
+  sent: number;
 };
 
 /** One event queued for a request, before it has a response to be recorded with. */
@@ -216,6 +241,10 @@ export class Run {
   private apiEwmaMs = 200;
   private pending = new Map<StageKey, Set<string>>();
   private sweepWatermark = new Map<string, number>();
+  /** Live funnel for the ClickHouse stages, accumulated from the sweeps (see chSweep). */
+  private chSwept = new Map<StageKey, number>();
+  /** The organization UUID, first column of every ClickHouse key; read at preflight. */
+  private organizationId: string | null = null;
   private counters = {
     sent: 0,
     accepted: 0,
@@ -346,6 +375,12 @@ export class Run {
     readonly targets: Target[],
     readonly probeTarget: Target | null,
     readonly walletTarget: Target | null = null,
+    /**
+     * The organization as discovery read it. Direct produce needs its UUID and
+     * its events store, and reading them here rather than at preflight is what
+     * lets a Redpanda-only run make no Lago request at all — see `needsLago`.
+     */
+    readonly organization: OrganizationInfo | null = null,
   ) {
     this.id = `${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}-${randomBytes(2).toString("hex")}`;
     // Every id of this run shares a prefix, so a sweep is one LIKE scan per stage.
@@ -395,6 +430,30 @@ export class Run {
     return [...RW_STAGES, ...CH_STAGES].filter((s) => this.spec.stages[s]);
   }
 
+  /**
+   * Which systems this run is allowed to touch. Read fresh every time rather
+   * than cached, because a preflight table check that fails disables its stage —
+   * and that is exactly the kind of narrowing the later steps must see (the
+   * clock probes, in particular, run after those checks).
+   *
+   * Nothing here is a new knob: `runScope` derives all of it from the spec.
+   */
+  private get scope() {
+    return runScope(this.spec);
+  }
+
+  private get needsRisingWave(): boolean {
+    return this.scope.risingwave;
+  }
+
+  private get needsClickHouse(): boolean {
+    return this.scope.clickhouse;
+  }
+
+  private get needsLago(): boolean {
+    return this.scope.lago;
+  }
+
   private caps(key: RwTableKey): RwCaps {
     return this.rwCaps.get(key) ?? { rw: false, kafka: false, ingested: false, expanded: false };
   }
@@ -410,11 +469,26 @@ export class Run {
       ...(this.walletTarget ? [this.walletTarget] : []),
     ];
     return {
+      orgId: this.organizationId,
       subs: [...new Set(all.map((t) => t.subscriptionExternalId))],
       codes: [...new Set(all.map((t) => t.metricCode))],
       // Events carry `timestamp` = send time; back off a minute for clock slack.
       sinceMs: (this.startedAt || Date.now()) - 60_000,
     };
+  }
+
+  /**
+   * The scope for a question about RECENT rows only — probe polls and stamp
+   * sweeps. A row that is still of interest at time `t` was sent no earlier
+   * than `t - probeTimeoutMs` (anything older is already a recorded timeout),
+   * so the event-timestamp floor moves with the run instead of staying at its
+   * start, and the scan stays bounded whatever the run's length. A minute of
+   * clock slack covers the sender's clock vs. Lago's `timestamp` stamping.
+   */
+  private recentChScope(t: number): ChScope {
+    const base = this.chScope();
+    const floor = t - getConfig().measurement.probeTimeoutMs - CH_CLOCK_SLACK_MS;
+    return { ...base, sinceMs: Math.max(base.sinceMs, floor) };
   }
 
   // ---------------------------------------------------------------- preflight
@@ -423,25 +497,67 @@ export class Run {
     this.phase = "preflight";
     const checks: PreflightCheck[] = [];
 
-    const lago = await lagoHealth();
-    checks.push({
-      name: "Lago API",
-      ok: lago.ok,
-      detail: lago.ok ? `authenticated, ${lago.metrics ?? "?"} billable metrics visible` : lago.error!,
-      gates: ["everything"],
-    });
+    checks.push({ name: "Run scope", ok: true, detail: this.scope.detail, gates: ["everything"] });
+
+    const lago = this.needsLago ? await lagoHealth() : null;
+    checks.push(
+      lago
+        ? {
+            name: "Lago API",
+            ok: lago.ok,
+            detail: lago.ok ? `authenticated, ${lago.metrics ?? "?"} billable metrics visible` : lago.error!,
+            gates: ["everything"],
+          }
+        : {
+            name: "Lago API",
+            ok: true,
+            detail:
+              "NOT IN THIS RUN: direct produce, no usage probe target and no wallet probe target, so nothing " +
+              "queries Lago once the run starts — not even a health check or a clock probe.",
+            // Gates nothing: a run that never reads Lago cannot be blocked by it.
+            gates: [],
+          },
+    );
+
+    // The organization UUID leads every ClickHouse key, so the lookups can use
+    // the primary key instead of scanning by subscription and code alone. It
+    // comes from Setup, else from what discovery read — a live read here is the
+    // last resort, and only when Lago is in the run anyway, because this is one
+    // of the calls a Redpanda-only run must not make. Non-fatal either way: the
+    // ClickHouse lookups still work without it, just wider.
+    this.organizationId = getConfig().kafka.organizationId.trim() || this.organization?.id || null;
+    if (!this.organizationId && lago?.ok) {
+      try {
+        this.organizationId = (await fetchOrganization()).lago_id;
+      } catch (e) {
+        this.log("warn", `could not read the organization id (${(e as Error).message}) — ClickHouse lookups will not use the key prefix`);
+      }
+    }
 
     checks.push(...(await this.transportPreflight()));
 
-    const rw = await rwHealth();
-    checks.push({
-      name: "RisingWave (pgwire)",
-      ok: rw.ok,
-      detail: rw.ok ? rw.version! : rw.error!,
-      gates: ["rw_enriched_visible", "rw_expanded_visible", "stamped breakdown"],
-    });
+    const rw = this.needsRisingWave ? await rwHealth() : null;
+    checks.push(
+      rw
+        ? {
+            name: "RisingWave (pgwire)",
+            ok: rw.ok,
+            detail: rw.ok ? rw.version! : rw.error!,
+            gates: ["rw_enriched_visible", "rw_expanded_visible", "stamped breakdown"],
+          }
+        : {
+            name: "RisingWave (pgwire)",
+            ok: true,
+            detail: "NOT IN THIS RUN: neither RisingWave stage is ticked, so nothing queries it.",
+            gates: [],
+          },
+    );
 
-    if (rw.ok) {
+    // A stage whose store is unreachable used to stay ticked, so every poll,
+    // sweep and count of it failed for the whole run — an error every 200ms,
+    // burying whatever else went wrong. Its preflight check already said so.
+    if (rw && !rw.ok) for (const key of RW_STAGES) this.spec.stages[key] = false;
+    if (rw?.ok) {
       for (const key of RW_STAGES) {
         if (!this.spec.stages[key]) continue;
         const c = await rwTableCheck(key);
@@ -478,14 +594,26 @@ export class Run {
       if (!enrichedCaps.kafka) this.unavailable.add("ingest_to_broker");
     }
 
-    const ch = await chHealth();
-    checks.push({
-      name: "ClickHouse (HTTPS)",
-      ok: ch.ok,
-      detail: ch.ok ? ch.version! : ch.error!,
-      gates: CH_STAGES.map(String),
-    });
-    if (ch.ok) {
+    const ch = this.needsClickHouse ? await chHealth() : null;
+    checks.push(
+      ch
+        ? {
+            name: "ClickHouse (HTTPS)",
+            ok: ch.ok,
+            detail: ch.ok ? ch.version! : ch.error!,
+            gates: CH_STAGES.map(String),
+          }
+        : {
+            name: "ClickHouse (HTTPS)",
+            ok: true,
+            detail:
+              "NOT IN THIS RUN: no ClickHouse stage is ticked, so no health check, table check, visibility poll, " +
+              "stamp sweep, funnel count or clock probe touches it.",
+            gates: [],
+          },
+    );
+    if (ch && !ch.ok) for (const key of CH_STAGES) this.spec.stages[key] = false;
+    if (ch?.ok) {
       for (const key of CH_STAGES) {
         if (!this.spec.stages[key]) continue;
         const c = await chTableCheck(key as ChTableKey);
@@ -497,6 +625,13 @@ export class Run {
         });
         if (!c.ok) this.spec.stages[key] = false;
       }
+    }
+    // A stage nobody polls stamps nothing, so name the segments that costs
+    // instead of rendering them as empty histograms the reader has to interpret.
+    // After the table checks above, because a check failure disables a stage too.
+    for (const stage of [...RW_STAGES, ...CH_STAGES] as StageKey[]) {
+      if (this.spec.stages[stage]) continue;
+      for (const seg of SEGMENTS_NEEDING_STAGE[stage]) this.unavailable.add(seg);
     }
 
     // Probe target must be isolated: usage attribution counts events_count on the
@@ -554,12 +689,17 @@ export class Run {
     checks.push(...(await this.walletPreflight()));
 
     await this.measureClocks();
+    // "not read" and "unknown" are different answers: the first says this run
+    // never asks that clock a question, the second that the probe failed.
+    const offs = [
+      `lago ${this.transport === "api" ? fmtOff(this.clocks.lago) : "not read (direct produce stamps ingested_at here)"}`,
+      `risingwave ${this.needsRisingWave ? fmtOff(this.clocks.risingwave) : "not read"}`,
+      `clickhouse ${this.needsClickHouse ? fmtOff(this.clocks.clickhouse) : "not read"}`,
+    ];
     checks.push({
       name: "Clock offsets",
       ok: true,
-      detail:
-        `lago ${fmtOff(this.clocks.lago)}, risingwave ${fmtOff(this.clocks.risingwave)}, ` +
-        `clickhouse ${fmtOff(this.clocks.clickhouse)} (relative to this app)`,
+      detail: `${offs.join(", ")} (relative to this app)`,
       gates: ["stamped breakdown"],
     });
 
@@ -596,7 +736,7 @@ export class Run {
 
     this.preflight = checks;
     const blocking = checks.filter((c) => !c.ok && c.gates.includes("everything"));
-    const ok = blocking.length === 0 && lago.ok;
+    const ok = blocking.length === 0 && (lago?.ok ?? true);
     if (!ok) {
       this.phase = "failed";
       this.log("error", `preflight failed: ${blocking.map((b) => b.name).join(", ") || "Lago API"}`);
@@ -642,44 +782,48 @@ export class Run {
     const checks: PreflightCheck[] = [];
     const k = getConfig().kafka;
 
-    let organizationId = k.organizationId.trim();
-    let apiPostProcessed = true;
-    let orgDetail = "";
-    try {
-      const org = await fetchOrganization();
-      const clickhouseStore = org.events_store === "clickhouse";
-      apiPostProcessed = !clickhouseStore;
-      if (!organizationId) organizationId = org.lago_id;
-      orgDetail =
-        `${org.name} ${organizationId}` +
-        (k.organizationId.trim() ? " (overridden in Setup)" : " (read from GET /organizations)") +
-        `, events store ${org.events_store ?? "unknown"} → source_metadata.api_post_processed=${apiPostProcessed}`;
-      checks.push({
-        name: "Organization (direct produce)",
-        ok: Boolean(organizationId),
-        detail: organizationId ? orgDetail : "no organization id — the pipeline joins on it, so nothing would enrich",
-        gates: ["everything"],
-      });
-      if (!clickhouseStore) {
-        checks.push({
-          name: "What direct produce skips",
-          ok: true,
-          detail:
-            "this organization stores events in POSTGRES, so the API would also have written the events row and run " +
-            "PostProcessJob. A direct produce does neither: the RisingWave and ClickHouse stages are unaffected, but " +
-            "any current_usage read NOT served by the realtime 15-minute buckets has nothing to read. Check the " +
-            "freshness canary below before trusting the usage and wallet numbers.",
-          gates: ["usage_visible", "wallet_visible"],
-        });
+    // The organization comes from DISCOVERY, not from a request made here: that
+    // is what lets a Redpanda-only run reach zero Lago traffic. A live read is
+    // the fallback for a discovery that predates this or could not read it, and
+    // then only when Lago is in the run anyway — otherwise the id configured in
+    // Setup is the last resort, and its absence is what blocks the run.
+    let org = this.organization;
+    let orgFrom = org ? "read at discovery" : "";
+    if (!org && this.needsLago) {
+      try {
+        const fetched = await fetchOrganization();
+        org = { id: fetched.lago_id, name: fetched.name ?? null, eventsStore: fetched.events_store ?? null };
+        orgFrom = "read from GET /organizations";
+      } catch (e) {
+        this.log("warn", `GET /organizations failed (${(e as Error).message})`);
       }
-    } catch (e) {
+    }
+    const configured = k.organizationId.trim();
+    const organizationId = configured || org?.id || "";
+    // Unknown store: assume the API would have post-processed, which is what a
+    // Postgres events store does and the safer of the two to claim.
+    const apiPostProcessed = org?.eventsStore !== "clickhouse";
+    checks.push({
+      name: "Organization (direct produce)",
+      ok: Boolean(organizationId),
+      detail: organizationId
+        ? `${org?.name ?? "?"} ${organizationId} (${configured ? "configured in Setup" : orgFrom}), events store ` +
+          `${org?.eventsStore ?? "unknown"} → source_metadata.api_post_processed=${apiPostProcessed}`
+        : "no organization id: discovery could not read one and none is configured in Setup (Direct produce → " +
+          "organization id). The pipeline joins on it, so nothing would enrich.",
+      gates: ["everything"],
+    });
+    if (org && org.eventsStore !== "clickhouse") {
       checks.push({
-        name: "Organization (direct produce)",
-        ok: Boolean(organizationId),
-        detail: organizationId
-          ? `using the id configured in Setup; GET /organizations failed (${(e as Error).message}), so api_post_processed defaults to true`
-          : `GET /organizations failed and no organization id is configured in Setup: ${(e as Error).message}`,
-        gates: ["everything"],
+        name: "What direct produce skips",
+        ok: true,
+        detail:
+          "this organization stores events in POSTGRES, so the API would also have written the events row and run " +
+          "PostProcessJob. A direct produce does neither: the RisingWave and ClickHouse stages are unaffected, but " +
+          "any current_usage read NOT served by the realtime 15-minute buckets has nothing to read. Check the " +
+          "freshness canary below before trusting the usage and wallet numbers." +
+          (this.needsLago ? "" : " No read path is polled in this run, so nothing here is affected."),
+        gates: ["usage_visible", "wallet_visible"],
       });
     }
 
@@ -1071,6 +1215,16 @@ export class Run {
    * are reported, never silently applied: a stamped segment that spans two clocks
    * is only as good as these numbers.
    */
+  /**
+   * Offsets for the clocks whose stamps this run actually reads — and only those.
+   *
+   * An offset is worth measuring exactly when a stamped segment spans that
+   * clock: RisingWave's when an RW stage is polled, ClickHouse's when a CH stage
+   * is, and Lago's only on the API transport, because direct produce stamps
+   * `ingested_at` from THIS app's clock and Lago's offset then explains nothing.
+   * Probing them regardless is how a run with every read path switched off still
+   * opened ClickHouse and hit Lago before sending its first event.
+   */
   private async measureClocks() {
     const probe = async (f: () => Promise<number>) => {
       try {
@@ -1083,11 +1237,16 @@ export class Run {
         return null;
       }
     };
-    const [rwOff, chOff] = await Promise.all([probe(rwNowMs), probe(chNowMs)]);
+    const [rwOff, chOff] = await Promise.all([
+      this.needsRisingWave ? probe(rwNowMs) : Promise.resolve(null),
+      this.needsClickHouse ? probe(chNowMs) : Promise.resolve(null),
+    ]);
     let lagoOff: number | null = null;
-    const lt = await lagoServerTimeMs();
-    // The Date header is second-resolution, so this is ±1s by construction.
-    if (lt) lagoOff = Math.round(lt.serverMs - (Date.now() - lt.rttMs / 2));
+    if (this.transport === "api") {
+      const lt = await lagoServerTimeMs();
+      // The Date header is second-resolution, so this is ±1s by construction.
+      if (lt) lagoOff = Math.round(lt.serverMs - (Date.now() - lt.rttMs / 2));
+    }
     this.clocks = { lago: lagoOff, risingwave: rwOff, clickhouse: chOff, measuredAt: Date.now() };
   }
 
@@ -1792,7 +1951,7 @@ export class Run {
             set.delete(r.txid);
           }
         } else {
-          const seen = await chSeen(stage as ChTableKey, ids, this.chScope());
+          const seen = await chSeen(stage as ChTableKey, ids, this.recentChScope(now));
           for (const [txid, at] of seen) {
             const rec = this.recs.get(txid);
             if (!rec) continue;
@@ -1854,7 +2013,10 @@ export class Run {
           }
           this.sweepWatermark.set(wmKey, max);
         } else {
-          const rows = await chSweep(stage as ChTableKey, this.prefix, since, this.chScope());
+          // Rows stamped after `since` were sent at most probeTimeout ago, so the
+          // event-timestamp floor (the only key-usable time bound) moves with
+          // the watermark — see chSweep for why this matters.
+          const rows = await chSweep(stage as ChTableKey, this.prefix, since, this.recentChScope(since));
           let max = since;
           for (const r of rows) {
             if (r.at > max) max = r.at;
@@ -1864,6 +2026,11 @@ export class Run {
             this.recomputeStamped(rec);
           }
           this.sweepWatermark.set(wmKey, max);
+          // Each row is one event first seen in this window: that IS the funnel
+          // increment. An event whose fan-out rows straddle two sweeps counts
+          // twice; the exact count at the end of the run corrects it.
+          this.chSwept.set(stage, (this.chSwept.get(stage) ?? 0) + rows.length);
+          this.stageCounts[stage] = this.chSwept.get(stage);
         }
       } catch (e) {
         this.noteError(`sweep ${stage}: ${(e as Error).message}`);
@@ -1871,12 +2038,17 @@ export class Run {
     }
   }
 
-  private async countStages() {
+  /**
+   * Live funnel counts. RisingWave stages are counted here; ClickHouse stages
+   * are accumulated by the sweeps, because an exact uniqExact() over the run
+   * reads every row the run has written and was the single largest ClickHouse
+   * read in a 20k/s run. `exact` (end of run) does that one scan per table.
+   */
+  private async countStages(exact = false) {
     for (const stage of this.enabledStages()) {
       try {
-        this.stageCounts[stage] = isRwStage(stage)
-          ? await rwCount(stage, this.prefix)
-          : await chCount(stage as ChTableKey, this.prefix, this.chScope());
+        if (isRwStage(stage)) this.stageCounts[stage] = await rwCount(stage, this.prefix);
+        else if (exact) this.stageCounts[stage] = await chCount(stage as ChTableKey, this.prefix, this.chScope());
       } catch (e) {
         this.noteError(`count ${stage}: ${(e as Error).message}`);
       }
@@ -1932,7 +2104,7 @@ export class Run {
 
   private async finalSweep() {
     await this.sweepStamps().catch(() => {});
-    await this.countStages().catch(() => {});
+    await this.countStages(true).catch(() => {});
   }
 
   // --------------------------------------------------------------- reporting
@@ -1964,6 +2136,12 @@ export class Run {
         heapLimitMb: Math.round(this.heapLimitBytes / 1e6),
       },
       stageCounts: this.stageCounts,
+      /**
+       * Which systems this run touched. Recorded rather than inferred, so a
+       * summary read months later says whether ClickHouse and Lago were part of
+       * the picture or deliberately left out of it.
+       */
+      scope: this.scope,
       stats: this.series.snapshot(),
       histograms: this.series.histograms(),
       rate: this.rate.series(),
@@ -2010,7 +2188,11 @@ export class Run {
             attributed: this.wallet.attributed,
           }
         : null,
-      targets: this.targets.map((t) => ({
+      // A seeded fan-out is hundreds of subscriptions × a dozen metrics, and this
+      // snapshot goes over SSE twice a second: the per-target list is capped
+      // and the spread is rolled up per shape (see spreadRows) so the payload is
+      // bounded by the catalog's variety, not by the number of subscriptions.
+      targets: this.targets.slice(0, TARGETS_IN_SNAPSHOT).map((t) => ({
         id: t.id,
         subscription: t.subscriptionExternalId,
         metric: t.metricCode,
@@ -2018,16 +2200,44 @@ export class Run {
         filters: t.filters.length,
         groupKeys: t.groupKeys,
       })),
-      spread: this.plan.map((p) => ({
-        target: `${p.target.subscriptionExternalId}/${p.target.metricCode}`,
-        label: p.variant.label,
-        kind: p.variant.chargeFilterId ? "filter" : "default",
-        grouped: Boolean(p.variant.groupLabel),
-        properties: p.variant.properties,
-        sent: p.sent,
-      })),
+      targetsTotal: this.targets.length,
+      subscriptionsTotal: new Set(this.targets.map((t) => t.subscriptionExternalId)).size,
+      ...this.spreadRows(),
       spreadTruncated: this.planTruncated,
     };
+  }
+
+  /**
+   * The event spread, one row per SHAPE: a shape is (metric code, variant
+   * label), i.e. the same properties sent for the same metric, whichever
+   * subscription or plan carried it. On a single-subscription run this is the
+   * old per-slot table exactly; on a fanned-out run it says "this shape went to
+   * 128 subscriptions, N events" instead of listing 128 identical rows — which
+   * is also the only form that stays readable and cheap to stream.
+   */
+  private spreadRows(): { spread: SpreadRow[]; spreadRowsOmitted: number } {
+    const rows = new Map<string, SpreadRow & { subs: Set<string> }>();
+    for (const p of this.plan) {
+      const key = `${p.target.metricCode}\u0000${p.variant.label}`;
+      let row = rows.get(key);
+      if (!row) {
+        row = {
+          target: p.target.metricCode,
+          subscriptions: 0,
+          label: p.variant.label,
+          kind: p.variant.chargeFilterId ? "filter" : "default",
+          grouped: Boolean(p.variant.groupLabel),
+          properties: p.variant.properties,
+          sent: 0,
+          subs: new Set(),
+        };
+        rows.set(key, row);
+      }
+      row.sent += p.sent;
+      row.subs.add(p.target.subscriptionExternalId);
+    }
+    const all = [...rows.values()].map(({ subs, ...r }) => ({ ...r, subscriptions: subs.size }));
+    return { spread: all.slice(0, SPREAD_ROWS_IN_SNAPSHOT), spreadRowsOmitted: Math.max(0, all.length - SPREAD_ROWS_IN_SNAPSHOT) };
   }
 
   persist() {
@@ -2054,6 +2264,24 @@ export class Run {
     appendFileSync(this.eventsFile, lines.join("\n") + (lines.length ? "\n" : ""));
   }
 }
+
+/**
+ * Which segments stop being measurable when a stage is not polled.
+ *
+ * A stage that is unticked is never queried, so it contributes no stamp — and a
+ * stamped leg needs BOTH of its endpoints, which is why `rw_to_ch` is listed
+ * against the RisingWave stage that opens it as well as the ClickHouse stage
+ * that closes it. Reported as unavailable so a Redpanda + RisingWave run says
+ * "not measured here" rather than showing six empty ClickHouse histograms.
+ */
+export const SEGMENTS_NEEDING_STAGE: Record<StageKey, string[]> = {
+  rwEnriched: ["rw_enriched_visible", "ingest_to_broker", "broker_to_rw", "rw_enrich_to_expand", "rw_to_ch"],
+  rwExpanded: ["rw_expanded_visible", "rw_enrich_to_expand", "rw_expand_to_ch"],
+  chRwEnriched: ["ch_rw_enriched_visible", "rw_to_ch", "ingest_to_ch_rw_enriched"],
+  chRwExpanded: ["ch_rw_expanded_visible", "rw_expand_to_ch", "ingest_to_ch_rw_expanded"],
+  chGoEnriched: ["ch_go_enriched_visible", "ingest_to_ch_go_enriched"],
+  chGoExpanded: ["ch_go_expanded_visible", "ingest_to_ch_go_expanded"],
+};
 
 const VISIBLE_SEGMENT: Record<StageKey, string> = {
   rwEnriched: "rw_enriched_visible",

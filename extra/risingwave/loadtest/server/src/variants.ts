@@ -29,7 +29,9 @@ export type SpreadSpec = {
 export const DEFAULT_SPREAD: SpreadSpec = {
   groupKeyValues: 3,
   includeDefaultBucket: true,
-  maxVariantsPerTarget: 24,
+  // Wide enough for the seeder's AI-company charge (60 filters + the default
+  // bucket) to be covered in full; still a hard bound per target.
+  maxVariantsPerTarget: 128,
 };
 
 const NO_MATCH = "lt_no_match";

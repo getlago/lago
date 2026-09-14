@@ -67,6 +67,15 @@ export type Snapshot = {
     pendingProbes: number;
   };
   stageCounts?: Partial<Record<StageKey, number>>;
+  /** Which systems the run actually touched. Absent on runs recorded before it. */
+  scope?: {
+    transport: "api" | "kafka";
+    risingwave: boolean;
+    clickhouse: boolean;
+    lago: boolean;
+    reads: string[];
+    detail: string;
+  };
   stats?: Record<string, Percentiles | undefined>;
   histograms?: Record<string, { edges: number[]; counts: number[] } | undefined>;
   rate?: { t: number; sent: number; failed: number }[];
@@ -138,9 +147,14 @@ export type Snapshot = {
     expected: number;
     attributed: number;
   } | null;
+  /** Capped at 200 in the snapshot; targetsTotal says how many there were. */
   targets?: { id: string; subscription: string; metric: string; aggregation: string; filters: number; groupKeys: string[] }[];
+  targetsTotal?: number;
+  subscriptionsTotal?: number;
+  /** One row per SHAPE (metric code × variant), rolled up over every subscription that carried it. */
   spread?: {
     target: string;
+    subscriptions: number;
     label: string;
     kind: "filter" | "default";
     grouped: boolean;
@@ -148,6 +162,51 @@ export type Snapshot = {
     sent: number;
   }[];
   spreadTruncated?: number;
+  spreadRowsOmitted?: number;
+};
+
+export type SeedSpec = {
+  prefix: string;
+  billableMetrics: number;
+  plans: number;
+  chargesPerPlan: number;
+  subscriptions: number;
+  wideFilters: number;
+  currency: string;
+};
+
+export type SeedCounter = { total: number; created: number; existing: number; failed: number };
+
+export type SeedStatus = {
+  phase: "idle" | "running" | "done" | "failed";
+  spec: SeedSpec | null;
+  matrix: {
+    metrics: number;
+    plans: number;
+    planCodePairs: number;
+    subscriptions: number;
+    targets: number;
+    chargeFilters: number;
+  } | null;
+  startedAt: number | null;
+  endedAt: number | null;
+  steps: { metrics: SeedCounter; plans: SeedCounter; customers: SeedCounter; subscriptions: SeedCounter };
+  log: { t: number; level: "info" | "warn" | "error"; msg: string }[];
+  error: string | null;
+};
+
+export type SeedPreview = {
+  spec: SeedSpec;
+  metrics: number;
+  plans: number;
+  planCodePairs: number;
+  subscriptions: number;
+  targets: number;
+  chargeFilters: number;
+  kinds: Record<string, number>;
+  maxFiltersPerCharge: number;
+  defaultMaxVariantsPerTarget: number;
+  apiCalls: number;
 };
 
 export type Target = {
@@ -181,6 +240,8 @@ export type WalletInfo = {
 
 export type Discovery = {
   targets: Target[];
+  /** Read once here so a direct-produce run needs no Lago call of its own. */
+  organization?: { id: string; name: string | null; eventsStore: string | null } | null;
   subscriptions: {
     subscriptionExternalId: string;
     customerExternalId: string;
@@ -287,6 +348,14 @@ export const api = {
   stopRun: () => json<{ stopping: boolean }>("/api/runs/current/stop", { method: "POST" }),
   runs: () => json<{ runs: { id: string; phase: string; startedAt: number; endedAt: number; sent: number; rateEps: number; stats: Record<string, Percentiles | undefined> }[] }>("/api/runs"),
   run: (id: string) => json<Snapshot>(`/api/runs/${id}`),
+  seedStatus: () =>
+    json<{ status: SeedStatus; defaults: SeedSpec; limits: Record<keyof Omit<SeedSpec, "prefix" | "currency">, number> }>(
+      "/api/seed",
+    ),
+  seedPreview: (spec: Partial<SeedSpec>) =>
+    json<SeedPreview>("/api/seed/preview", { method: "POST", body: JSON.stringify(spec) }),
+  seed: (spec: Partial<SeedSpec>) =>
+    json<{ started: boolean; status: SeedStatus }>("/api/seed", { method: "POST", body: JSON.stringify(spec) }),
 };
 
 /** Live snapshots over SSE, with automatic reconnect. */

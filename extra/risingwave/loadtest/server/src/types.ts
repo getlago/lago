@@ -310,6 +310,59 @@ export type RunSpec = {
   spread: { groupKeyValues: number; includeDefaultBucket: boolean; maxVariantsPerTarget: number };
 };
 
+/** Every system a run touches, and the one-line statement of it. */
+export type RunScope = {
+  transport: RunSpec["send"]["transport"];
+  risingwave: boolean;
+  clickhouse: boolean;
+  lago: boolean;
+  /** What it reads, in pipeline order. Empty means send throughput only. */
+  reads: string[];
+  detail: string;
+};
+
+export const RW_STAGE_KEYS: StageKey[] = ["rwEnriched", "rwExpanded"];
+export const CH_STAGE_KEYS: StageKey[] = ["chRwEnriched", "chRwExpanded", "chGoEnriched", "chGoExpanded"];
+
+/**
+ * What a run is allowed to touch, DERIVED from the knobs that decide it rather
+ * than declared alongside them — there is no scope flag that can fall out of
+ * step with the spec it is meant to describe.
+ *
+ * Three things put the Lago API in a run's path and nothing else does: POSTing
+ * the events (the `api` transport), polling `current_usage` (a usage probe
+ * target) and polling `/wallets` (a wallet probe target). RisingWave and
+ * ClickHouse are in it exactly when one of their stages is ticked, since every
+ * read of them — visibility polls, stamp sweeps, funnel counts — is driven by
+ * that list.
+ *
+ * Note what is NOT here: `probeEvery`. Disabling the probe stops per-event
+ * visibility polling and nothing else, which is why a run with `probeEvery: 0`
+ * still swept ClickHouse twice a second and polled Lago throughout.
+ */
+export function runScope(spec: RunSpec): RunScope {
+  const risingwave = RW_STAGE_KEYS.some((k) => spec.stages[k]);
+  const clickhouse = CH_STAGE_KEYS.some((k) => spec.stages[k]);
+  const usage = Boolean(spec.probeTargetId);
+  const wallet = Boolean(spec.walletProbeTargetId);
+  const reads = [
+    risingwave ? "RisingWave" : null,
+    clickhouse ? "ClickHouse" : null,
+    usage ? "Lago current_usage" : null,
+    wallet ? "Lago /wallets" : null,
+  ].filter((x): x is string => Boolean(x));
+  return {
+    transport: spec.send.transport,
+    risingwave,
+    clickhouse,
+    lago: spec.send.transport === "api" || usage || wallet,
+    reads,
+    detail:
+      `sends via ${spec.send.transport === "kafka" ? "Redpanda (direct produce)" : "the Lago API"}; ` +
+      `reads ${reads.length ? reads.join(", ") : "nothing (send throughput only)"}`,
+  };
+}
+
 export type RunPhase = "idle" | "preflight" | "sending" | "draining" | "done" | "stopped" | "failed";
 
 export type Percentiles = {

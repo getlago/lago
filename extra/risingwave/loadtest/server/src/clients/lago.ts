@@ -111,6 +111,37 @@ async function get<T>(path: string, params?: Record<string, string | number | un
   return JSON.parse(text) as T;
 }
 
+/** GET that treats 404 as "does not exist" rather than as a failure. */
+async function getOrNull<T>(path: string): Promise<T | null> {
+  try {
+    return await get<T>(path);
+  } catch (e) {
+    if ((e as { status?: number }).status === 404) return null;
+    throw e;
+  }
+}
+
+/**
+ * POST a JSON body and return the parsed response. Lago answers a validation
+ * failure with 422 and an `error_details` map naming the offending fields, so
+ * the body is kept in the error: "422" alone is useless when seeding a plan
+ * with twelve charges.
+ */
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const target = url(path);
+  let res: Awaited<ReturnType<typeof fetch>>;
+  try {
+    res = await fetch(target, { method: "POST", headers: headers(), body: JSON.stringify(body), dispatcher: dispatcher() });
+  } catch (e) {
+    throw new Error(`POST ${path} — ${describeFetchError(e, target)}`);
+  }
+  const text = await res.text();
+  if (!res.ok) {
+    throw Object.assign(new Error(`POST ${path} → ${res.status}: ${text.slice(0, 400)}`), { status: res.status });
+  }
+  return JSON.parse(text) as T;
+}
+
 /** Walks Lago's `meta.next_page` pagination to the end (bounded, so a bad meta can't spin). */
 async function getAll<T>(path: string, collection: string, perPage = 100, maxPages = 25): Promise<T[]> {
   const out: T[] = [];
@@ -182,6 +213,71 @@ export const listSubscriptions = () =>
   getAll<LagoSubscription>("/api/v1/subscriptions", "subscriptions");
 export const listPlans = () => getAll<LagoPlan>("/api/v1/plans", "plans");
 export const listBillableMetrics = () => getAll<LagoBillableMetric>("/api/v1/billable_metrics", "billable_metrics");
+
+// ---------------------------------------------------------------- seeding
+//
+// The write half of the API, used only by the seeder (seed.ts) to create the
+// fixture matrix. Every shape below is the public API's own request body, so
+// what gets created is exactly what a customer's integration would create.
+
+export type BillableMetricInput = {
+  name: string;
+  code: string;
+  aggregation_type: "count_agg" | "sum_agg";
+  field_name?: string;
+  filters?: { key: string; values: string[] }[];
+};
+
+export const getBillableMetric = async (code: string): Promise<LagoBillableMetric | null> =>
+  (await getOrNull<{ billable_metric: LagoBillableMetric }>(`/api/v1/billable_metrics/${encodeURIComponent(code)}`))
+    ?.billable_metric ?? null;
+
+export const createBillableMetric = async (input: BillableMetricInput): Promise<LagoBillableMetric> =>
+  (await post<{ billable_metric: LagoBillableMetric }>("/api/v1/billable_metrics", { billable_metric: input }))
+    .billable_metric;
+
+export type ChargeInput = {
+  billable_metric_id: string;
+  charge_model: "standard";
+  pay_in_advance: boolean;
+  invoiceable: boolean;
+  properties: { amount: string; pricing_group_keys?: string[] };
+  filters?: { invoice_display_name: string; properties: { amount: string }; values: Record<string, string[]> }[];
+};
+
+export type PlanInput = {
+  name: string;
+  code: string;
+  interval: "monthly";
+  amount_cents: number;
+  amount_currency: string;
+  pay_in_advance: boolean;
+  charges: ChargeInput[];
+};
+
+export const getPlan = async (code: string): Promise<LagoPlan | null> =>
+  (await getOrNull<{ plan: LagoPlan }>(`/api/v1/plans/${encodeURIComponent(code)}`))?.plan ?? null;
+
+export const createPlan = async (input: PlanInput): Promise<LagoPlan> =>
+  (await post<{ plan: LagoPlan }>("/api/v1/plans", { plan: input })).plan;
+
+/** POST /customers is an upsert keyed on external_id (Customers::UpsertFromApiService). */
+export const upsertCustomer = async (input: { external_id: string; name: string; currency: string }) =>
+  (await post<{ customer: { lago_id: string; external_id: string } }>("/api/v1/customers", { customer: input }))
+    .customer;
+
+/**
+ * POST /subscriptions on an external_id that is already active on the same plan
+ * returns that subscription unchanged, so this is safe to repeat.
+ */
+export const createSubscription = async (input: {
+  external_customer_id: string;
+  plan_code: string;
+  external_id: string;
+  name: string;
+  billing_time: "calendar" | "anniversary";
+}): Promise<LagoSubscription> =>
+  (await post<{ subscription: LagoSubscription }>("/api/v1/subscriptions", { subscription: input })).subscription;
 
 export type LagoOrganization = {
   lago_id: string;

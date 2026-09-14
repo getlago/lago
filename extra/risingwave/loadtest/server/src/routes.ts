@@ -11,6 +11,17 @@ import { chHealth } from "./clients/clickhouse.js";
 import { Run } from "./run/runner.js";
 import { SEGMENTS, type RunSpec, type StageKey } from "./types.js";
 import { DEFAULT_SPREAD } from "./variants.js";
+import {
+  buildSeedMatrix,
+  chargeFilterCount,
+  DEFAULT_SEED,
+  KINDS,
+  runSeed,
+  seedRunning,
+  seedStatus,
+  SEED_LIMITS,
+  type SeedSpec,
+} from "./seed.js";
 
 let currentRun: Run | null = null;
 let lastDiscovery: DiscoveryResult | null = null;
@@ -65,8 +76,56 @@ export async function registerRoutes(app: FastifyInstance) {
 
   app.get(
     "/api/discover",
-    async () => lastDiscovery ?? { targets: [], subscriptions: [], wallets: [], warnings: [], scannedAt: 0 },
+    async () =>
+      lastDiscovery ?? {
+        targets: [],
+        organization: null,
+        subscriptions: [],
+        wallets: [],
+        warnings: [],
+        scannedAt: 0,
+      },
   );
+
+  // ---- seeding: a fixture matrix wide enough to fan the pipeline out (seed.ts)
+
+  /** Current seed job plus the defaults and limits the form renders from. */
+  app.get("/api/seed", async () => ({ status: seedStatus(), defaults: DEFAULT_SEED, limits: SEED_LIMITS }));
+
+  /** What a spec WOULD create, so the form can show the key counts before anything is written. */
+  app.post<{ Body: Partial<SeedSpec> }>("/api/seed/preview", async (req) => {
+    const m = buildSeedMatrix(req.body ?? {});
+    return {
+      spec: m.spec,
+      metrics: m.metrics.length,
+      plans: m.plans.length,
+      planCodePairs: m.planCodePairs,
+      subscriptions: m.subscriptions.length,
+      targets: m.targets,
+      chargeFilters: m.chargeFilters,
+      kinds: Object.fromEntries(KINDS.map((k) => [k, m.metrics.filter((x) => x.kind === k).length])),
+      // The widest charge, so the form can warn when the run's variant cap
+      // would leave some of its filters unexercised.
+      maxFiltersPerCharge: Math.max(0, ...m.metrics.map((x) => chargeFilterCount(x, m.spec))),
+      defaultMaxVariantsPerTarget: DEFAULT_SPREAD.maxVariantsPerTarget,
+      // API-call budget on a fresh instance (one existence GET + one POST per
+      // metric and plan, one listing, then a customer and a subscription POST
+      // per subscription), so a remote Lago's wait is announced rather than discovered.
+      apiCalls: 2 * m.metrics.length + 2 * m.plans.length + 2 * m.subscriptions.length + 1,
+    };
+  });
+
+  app.post<{ Body: Partial<SeedSpec> }>("/api/seed", async (req, reply) => {
+    if (!isConfigured())
+      return reply.code(400).send({ error: "not configured yet — fill in the connections on the Setup screen" });
+    if (seedRunning()) return reply.code(409).send({ error: "a seed is already running", status: seedStatus() });
+    if (currentRun && ["preflight", "sending", "draining"].includes(currentRun.phase))
+      return reply.code(409).send({ error: "a run is in progress — seeding would change what it is measuring" });
+    // Fire and forget: the UI polls GET /api/seed for progress. Errors land in
+    // the status, never as an unhandled rejection.
+    void runSeed(req.body ?? {}).catch((e) => app.log.error(e));
+    return { started: true, status: seedStatus() };
+  });
 
   app.post<{ Body: Partial<RunSpec> }>("/api/runs", async (req, reply) => {
     if (!isConfigured())
@@ -102,7 +161,9 @@ export async function registerRoutes(app: FastifyInstance) {
     if (spec.walletProbeTargetId && !walletTarget)
       return reply.code(400).send({ error: "wallet probe target not found" });
 
-    const run = new Run(spec, targets, probeTarget, walletTarget);
+    // The organization discovery read: direct produce needs it, and handing it
+    // over here is what keeps a Redpanda-only run from calling Lago at all.
+    const run = new Run(spec, targets, probeTarget, walletTarget, lastDiscovery.organization ?? null);
     currentRun = run;
     const ok = await run.runPreflight();
     if (!ok) return reply.code(422).send({ error: "preflight failed", run: run.snapshot() });

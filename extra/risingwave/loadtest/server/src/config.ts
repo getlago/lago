@@ -29,7 +29,9 @@ export type Config = {
   /**
    * Direct produce to Redpanda, for when the Lago API is the throughput ceiling
    * rather than the thing being measured. Only used when a run's transport is
-   * `kafka`; the read paths (usage, wallets, discovery) always go through Lago.
+   * `kafka`. Discovery always goes through Lago, and so do the usage and wallet
+   * read paths — but only if a run selects a probe target for them, so direct
+   * produce with neither is the one run that never touches Lago.
    */
   kafka: {
     /** Comma-separated host:port. From outside Docker this is the EXTERNAL
@@ -62,7 +64,8 @@ export type Config = {
     partitionKey: "subscription" | "none";
     ssl: boolean;
     sasl: { mechanism: "" | "plain" | "scram-sha-256" | "scram-sha-512"; username: string; password: string };
-    /** Blank = read the UUID from GET /api/v1/organizations at preflight. */
+    /** Blank = use the UUID discovery read from GET /api/v1/organizations. Set
+     * it to keep a Redpanda-only run from needing Lago at all. */
     organizationId: string;
     /** The `source` the API stamps. Both consumers read `http_ruby` as "custom
      * expressions already evaluated", so changing it measures another path. */
@@ -231,9 +234,17 @@ export function saveConfig(patch: Partial<Config>): Config {
   return current;
 }
 
-/** Enough to attempt a run? The UI sends the user to Setup when this is false. */
+/**
+ * Enough to attempt a run? The UI sends the user to Setup when this is false.
+ *
+ * ClickHouse is NOT required: a run that unticks the four ClickHouse stages
+ * never queries it, so demanding a URL for it would block the one setup — send
+ * to Redpanda, measure in RisingWave — that has no use for one. A run that does
+ * tick a ClickHouse stage fails that stage's preflight check instead, which says
+ * what is missing rather than hiding the Run button.
+ */
 export function isConfigured(): boolean {
-  return Boolean(current.lago.apiUrl && current.lago.apiKey && current.risingwave.url && current.clickhouse.url);
+  return Boolean(current.lago.apiUrl && current.lago.apiKey && current.risingwave.url);
 }
 
 export function storeInfo() {

@@ -6,6 +6,7 @@ import {
   type Discovery,
   type Health,
   type RunSpec,
+  type SeedSpec,
   type Segment,
   type StoreInfo,
 } from "./lib/api";
@@ -29,6 +30,8 @@ export default function App() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [probeTargetId, setProbeTargetId] = useState<string | null>(null);
   const [walletProbeTargetId, setWalletProbeTargetId] = useState<string | null>(null);
+  // Lives here rather than in the Targets view so the seed form survives a tab switch.
+  const [seedSpec, setSeedSpec] = useState<SeedSpec | null>(null);
   const [theme, setTheme] = useState<"system" | "light" | "dark">(
     () => (localStorage.getItem(THEME_KEY) as "system" | "light" | "dark" | null) ?? "system",
   );
@@ -135,6 +138,9 @@ export default function App() {
             selected={selected}
             probeTargetId={probeTargetId}
             walletProbeTargetId={walletProbeTargetId}
+            seedSpec={seedSpec}
+            setSeedSpec={setSeedSpec}
+            maxVariantsPerTarget={spec?.spread.maxVariantsPerTarget ?? null}
             onDiscovered={(d) => {
               setDiscovery(d);
               setSelected(new Set());
@@ -150,7 +156,15 @@ export default function App() {
           <Run
             segments={segments}
             spec={effectiveSpec}
-            setSpec={(s) => setSpec(s)}
+            setSpec={(s) => {
+              // The Run form can clear the probe targets — its "Redpanda +
+              // RisingWave only" preset does — and those two are owned by the
+              // Targets pickers, not by the spec. Without syncing them back,
+              // effectiveSpec would put them straight again on the next render.
+              setProbeTargetId(s.probeTargetId);
+              setWalletProbeTargetId(s.walletProbeTargetId);
+              setSpec(s);
+            }}
             discovery={discovery}
             snap={snap}
             connected={connected}

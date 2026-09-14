@@ -1,5 +1,6 @@
 import {
   amountOf,
+  fetchOrganization,
   groupKeysOf,
   listBillableMetrics,
   listPlans,
@@ -53,8 +54,27 @@ export type Target = {
   wallets: WalletInfo[];
 };
 
+/**
+ * The organization behind the API key, read once here rather than per run.
+ *
+ * Direct produce has to stamp `organization_id` itself (it is the join key the
+ * whole pipeline resolves subscriptions, charges and filters on) and has to know
+ * whether the API would also have written a Postgres events row. Both used to be
+ * read from Lago at preflight, which is the one Lago call a Redpanda-only run
+ * could not avoid — so it is read here, during the Lago walk the user asks for
+ * explicitly, and the run reuses it.
+ */
+export type OrganizationInfo = {
+  id: string;
+  name: string | null;
+  /** "postgres" or "clickhouse"; null when this Lago does not serialize it. */
+  eventsStore: string | null;
+};
+
 export type DiscoveryResult = {
   targets: Target[];
+  /** Null when GET /organizations failed; discovery does not fail over it. */
+  organization: OrganizationInfo | null;
   subscriptions: {
     subscriptionExternalId: string;
     customerExternalId: string;
@@ -92,6 +112,18 @@ export async function discover(): Promise<DiscoveryResult> {
     step("plans", listPlans),
     step("billable metrics", listBillableMetrics),
   ]);
+
+  // Non-fatal, like wallets: a run on the API transport never needs it.
+  let organization: OrganizationInfo | null = null;
+  try {
+    const org = await fetchOrganization();
+    organization = { id: org.lago_id, name: org.name ?? null, eventsStore: org.events_store ?? null };
+  } catch (e) {
+    warnings.push(
+      `the organization could not be read (${(e as Error).message}) — direct produce will fall back to the ` +
+        "organization id configured in Setup, and needs one",
+    );
+  }
 
   // Wallets are listed separately and NON-fatally: an instance with no wallet is
   // a perfectly valid load-test target, it just cannot measure the wallet hop.
@@ -190,7 +222,7 @@ export async function discover(): Promise<DiscoveryResult> {
       `${notServed} target(s) use an aggregation the realtime bucket path does not serve yet ` +
         `(only count and sum recompose across buckets) — usage latency for those measures the fallback read path`,
     );
-  return { targets, subscriptions, wallets, warnings, scannedAt: Date.now() };
+  return { targets, organization, subscriptions, wallets, warnings, scannedAt: Date.now() };
 }
 
 
