@@ -15,6 +15,8 @@
     Use Lago Direct for your own product, or Lago Embedded to power monetization for your customers.
     <br />
     <br />
+    <a href="#build-with-your-ai-agent"><strong>Build with your AI agent</strong></a>
+    ·
     <a href="#see-lago-price-an-ai-workload"><strong>Run the AI billing demo</strong></a>
     ·
     <a href="https://doc.getlago.com"><strong>Documentation</strong></a>
@@ -43,6 +45,27 @@
 </p>
 
 ---
+
+## Build with your AI agent
+
+Give your coding agent Lago's public documentation, then choose the API, CLI, or MCP for your workflow. Paste this prompt to start:
+
+```text
+Read https://getlago.com/llms.txt and follow the relevant Lago guides for this
+project. Use https://swagger.getlago.com/openapi.yaml for exact API fields.
+Help me design and implement a billing integration. Ask before live access.
+```
+
+| Your task | Start here |
+| --- | --- |
+| Build billing into your application | [REST API and SDKs](https://getlago.com/developers) |
+| Inspect billing, run diagnostics, or write scripts | [Lago CLI](https://github.com/getlago/lago-cli) |
+| Give an assistant tools for live billing data and supported operations | [Lago MCP server](https://github.com/getlago/lago-agent-toolkit) |
+| Give your agent current billing and API context | [Documentation index](https://getlago.com/llms.txt) or [documentation MCP](https://docs.getlago.com/mcp) |
+
+These interfaces work independently. Application code uses an SDK or the REST API; no Lago plugin is required. Confirm the target organization and environment, keep API keys out of prompts and source control, and review financial changes before execution.
+
+Follow the [agent setup guide](https://getlago.com/docs/guide/ai-agents/for-agents) for connection details and validation, or explore the [website overview](https://getlago.com/for-agents). To see real usage become a charge locally, run the maintained demo below.
 
 ## See Lago price an AI workload
 
@@ -134,6 +157,7 @@ Agentic-first means Lago's billing model is available as structured, inspectable
 | Interface | What it enables | Availability |
 |---|---|---|
 | **[REST API and OpenAPI](https://github.com/getlago/lago-openapi)** | Program every core billing workflow and generate typed clients or tools from the schema | Open source |
+| **[Lago CLI](https://github.com/getlago/lago-cli)** | Run billing commands, inspect structured output, and automate terminal workflows | Open source, MIT |
 | **[Lago MCP server](https://github.com/getlago/lago-agent-toolkit)** | Give an MCP-compatible agent tools to read and write invoices, usage, customers, payments, credit notes, coupons, and other Lago primitives | Open source, MIT |
 | **[Lago Agent SDK for Python](https://github.com/getlago/lago-agent-sdk-python)** | Wrap supported LLM clients, normalize usage, and send token or model-cost events without blocking the LLM call | Open source, MIT |
 | **[Lago Agent SDK for JavaScript and TypeScript](https://github.com/getlago/lago-agent-sdk-js)** | Instrument OpenAI, Anthropic, Mistral, Gemini, and AWS Bedrock clients with under 5 ms p99 wrapper overhead | Open source, MIT |
