@@ -105,46 +105,20 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		return failedResult(enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
 	}
 
-	enrichedEvents := enrichedEventResult.Value()
-	enrichedEvent := enrichedEvents[0]
-
-	if event.IsReprocess() {
-		// When reprocessing events, we only need to produce new enriched expanded events
-		for _, ev := range enrichedEvents {
-			if ev.ChargeID != nil {
-				errgroup.Go(func() error {
-					processor.ProducerService.ProduceEnrichedExpandedEvent(ctx, ev)
-					return nil
-				})
-			}
-		}
-		return utils.SuccessResult(enrichedEvent)
-	}
+	enrichedEvent := enrichedEventResult.Value()
 
 	errgroup.Go(func() error {
 		processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 		return nil
 	})
 
-	for _, ev := range enrichedEvents {
-		if ev.ChargeID != nil {
-			errgroup.Go(func() error {
-				processor.ProducerService.ProduceEnrichedExpandedEvent(ctx, ev)
-				return nil
-			})
-		}
-	}
-
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
-		payInAdvance := false
-		for _, ev := range enrichedEvents {
-			if ev.FlatFilter != nil && ev.FlatFilter.PayInAdvance {
-				payInAdvance = true
-				break
-			}
+		payInAdvanceResult := processor.EnrichmentService.HasPayInAdvanceCharge(enrichedEvent)
+		if payInAdvanceResult.Failure() {
+			return failedResult(payInAdvanceResult, "fetch_pay_in_advance_charge", "Error fetching pay in advance charge")
 		}
 
-		if payInAdvance {
+		if payInAdvanceResult.Value() {
 			errgroup.Go(func() error {
 				processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 				return nil
@@ -165,15 +139,4 @@ func failedResult(r utils.AnyResult, code string, message string) utils.Result[*
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result
-}
-
-func failedMultiEventsResult(r utils.AnyResult, code string, message string) utils.Result[[]*models.EnrichedEvent] {
-	result := utils.FailedResult[[]*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
-	result.Retryable = r.IsRetryable()
-	result.Capture = r.IsCapturable()
-	return result
-}
-
-func toMultiEventsResult(r utils.Result[*models.EnrichedEvent]) utils.Result[[]*models.EnrichedEvent] {
-	return failedMultiEventsResult(r, r.ErrorCode(), r.ErrorMessage())
 }

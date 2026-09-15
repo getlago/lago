@@ -13,18 +13,16 @@ import (
 )
 
 type EventProducerService struct {
-	enrichedProducer         kafka.MessageProducer
-	enrichedExpendedProducer kafka.MessageProducer
-	inAdvanceProducer        kafka.MessageProducer
-	deadLetterProducer       kafka.MessageProducer
+	enrichedProducer   kafka.MessageProducer
+	inAdvanceProducer  kafka.MessageProducer
+	deadLetterProducer kafka.MessageProducer
 }
 
-func NewEventProducerService(enrichedProducer, enrichedExpendedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer) *EventProducerService {
+func NewEventProducerService(enrichedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer) *EventProducerService {
 	return &EventProducerService{
-		enrichedProducer:         enrichedProducer,
-		enrichedExpendedProducer: enrichedExpendedProducer,
-		inAdvanceProducer:        inAdvanceProducer,
-		deadLetterProducer:       deadLetterProducer,
+		enrichedProducer:   enrichedProducer,
+		inAdvanceProducer:  inAdvanceProducer,
+		deadLetterProducer: deadLetterProducer,
 	}
 }
 
@@ -35,16 +33,6 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 
 	if err != nil {
 		slog.Error("error while marshaling enriched events")
-		utils.CaptureError(err)
-	}
-}
-
-func (eps *EventProducerService) ProduceEnrichedExpandedEvent(context context.Context, event *models.EnrichedEvent) {
-	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
-
-	err := eps.produceEvent(context, event, msgKey, eps.enrichedExpendedProducer)
-	if err != nil {
-		slog.Error("error while marshaling enriched expended events")
 		utils.CaptureError(err)
 	}
 }

@@ -8,7 +8,6 @@ import (
 )
 
 const HTTP_RUBY string = "http_ruby"
-const TARGET_WALLET_CODE string = "target_wallet_code"
 
 type Event struct {
 	OrganizationID          string           `json:"organization_id"`
@@ -25,39 +24,27 @@ type Event struct {
 
 type SourceMetadata struct {
 	ApiPostProcess bool `json:"api_post_processed"`
-	Reprocess      bool `json:"reprocess"`
-}
-
-func (ev *Event) IsReprocess() bool {
-	return ev.SourceMetadata != nil && ev.SourceMetadata.Reprocess
 }
 
 type EnrichedEvent struct {
 	InitialEvent   *Event          `json:"-"`
 	BillableMetric *BillableMetric `json:"-"`
 	Subscription   *Subscription   `json:"-"`
-	FlatFilter     *FlatFilter     `json:"-"`
 
-	OrganizationID          string            `json:"organization_id"`
-	ExternalSubscriptionID  string            `json:"external_subscription_id"`
-	SubscriptionID          string            `json:"subscription_id"`
-	PlanID                  string            `json:"plan_id"`
-	TransactionID           string            `json:"transaction_id"`
-	Code                    string            `json:"code"`
-	AggregationType         string            `json:"aggregation_type"`
-	Properties              map[string]any    `json:"properties"`
-	PreciseTotalAmountCents string            `json:"precise_total_amount_cents"`
-	Source                  string            `json:"source,omitempty"`
-	Value                   *string           `json:"value"`
-	Timestamp               float64           `json:"timestamp"`
-	TimestampStr            string            `json:"-"`
-	Time                    time.Time         `json:"-"`
-	ChargeID                *string           `json:"charge_id"`
-	ChargeUpdatedAt         *time.Time        `json:"charge_updated_at"`
-	ChargeFilterID          *string           `json:"charge_filter_id"`
-	ChargeFilterUpdatedAt   *time.Time        `json:"charge_filter_updated_at"`
-	GroupedBy               map[string]string `json:"grouped_by"`
-	TargetWalletCode        *string           `json:"target_wallet_code"`
+	OrganizationID          string         `json:"organization_id"`
+	ExternalSubscriptionID  string         `json:"external_subscription_id"`
+	SubscriptionID          string         `json:"subscription_id"`
+	PlanID                  string         `json:"plan_id"`
+	TransactionID           string         `json:"transaction_id"`
+	Code                    string         `json:"code"`
+	AggregationType         string         `json:"aggregation_type"`
+	Properties              map[string]any `json:"properties"`
+	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
+	Source                  string         `json:"source,omitempty"`
+	Value                   *string        `json:"value"`
+	Timestamp               float64        `json:"timestamp"`
+	TimestampStr            string         `json:"-"`
+	Time                    time.Time      `json:"-"`
 }
 
 type FailedEvent struct {
@@ -78,7 +65,6 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 		Properties:              ev.Properties,
 		PreciseTotalAmountCents: ev.PreciseTotalAmountCents,
 		Source:                  ev.Source,
-		GroupedBy:               make(map[string]string),
 	}
 
 	timestampResult := utils.ToFloat64Timestamp(ev.Timestamp)

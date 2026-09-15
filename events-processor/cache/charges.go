@@ -83,3 +83,20 @@ func (c *Cache) StartChargesConsumer(ctx context.Context) error {
 		},
 	})
 }
+
+// HasPayInAdvanceCharge reports whether the plan has at least one pay in advance charge for the
+// billable metric.
+func (c *Cache) HasPayInAdvanceCharge(organizationID, planID, billableMetricID string) utils.Result[bool] {
+	chResult := c.SearchCharge(organizationID, planID, billableMetricID)
+	if chResult.Failure() {
+		return utils.FailedBoolResult(chResult.Error())
+	}
+
+	for _, charge := range chResult.Value() {
+		if charge.PayInAdvance {
+			return utils.SuccessResult(true)
+		}
+	}
+
+	return utils.SuccessResult(false)
+}
