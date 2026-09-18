@@ -75,3 +75,80 @@ func TestGetCharge_NotFound(t *testing.T) {
 
 	assert.True(t, result.Failure())
 }
+
+func TestHasPayInAdvanceCharge(t *testing.T) {
+	t.Run("Without any charge", func(t *testing.T) {
+		cache := setupTestCache(t)
+
+		result := cache.HasPayInAdvanceCharge("org-123", "plan-123", "bm-123")
+
+		require.True(t, result.Success())
+		assert.False(t, result.Value())
+	})
+
+	t.Run("When no charge is charged in advance", func(t *testing.T) {
+		cache := setupTestCache(t)
+
+		cache.SetCharge(&models.Charge{
+			ID:               "123",
+			OrganizationID:   "org-123",
+			PlanID:           "plan-123",
+			BillableMetricID: "bm-123",
+			PayInAdvance:     false,
+			CreatedAt:        utils.NowNullTime(),
+			UpdatedAt:        utils.NowNullTime(),
+		})
+
+		result := cache.HasPayInAdvanceCharge("org-123", "plan-123", "bm-123")
+
+		require.True(t, result.Success())
+		assert.False(t, result.Value())
+	})
+
+	t.Run("When one charge out of many is charged in advance", func(t *testing.T) {
+		cache := setupTestCache(t)
+
+		cache.SetCharge(&models.Charge{
+			ID:               "123",
+			OrganizationID:   "org-123",
+			PlanID:           "plan-123",
+			BillableMetricID: "bm-123",
+			PayInAdvance:     false,
+			CreatedAt:        utils.NowNullTime(),
+			UpdatedAt:        utils.NowNullTime(),
+		})
+		cache.SetCharge(&models.Charge{
+			ID:               "456",
+			OrganizationID:   "org-123",
+			PlanID:           "plan-123",
+			BillableMetricID: "bm-123",
+			PayInAdvance:     true,
+			CreatedAt:        utils.NowNullTime(),
+			UpdatedAt:        utils.NowNullTime(),
+		})
+
+		result := cache.HasPayInAdvanceCharge("org-123", "plan-123", "bm-123")
+
+		require.True(t, result.Success())
+		assert.True(t, result.Value())
+	})
+
+	t.Run("When the charge belongs to another plan", func(t *testing.T) {
+		cache := setupTestCache(t)
+
+		cache.SetCharge(&models.Charge{
+			ID:               "123",
+			OrganizationID:   "org-123",
+			PlanID:           "other-plan",
+			BillableMetricID: "bm-123",
+			PayInAdvance:     true,
+			CreatedAt:        utils.NowNullTime(),
+			UpdatedAt:        utils.NowNullTime(),
+		})
+
+		result := cache.HasPayInAdvanceCharge("org-123", "plan-123", "bm-123")
+
+		require.True(t, result.Success())
+		assert.False(t, result.Value())
+	})
+}

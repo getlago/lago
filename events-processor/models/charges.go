@@ -40,3 +40,27 @@ func GetAllCharges(db *gorm.DB) utils.Result[[]Charge] {
 
 	return GetAllWithStreaming[Charge](db, config)
 }
+
+// HasPayInAdvanceCharge reports whether the plan has at least one pay in advance charge for the
+// billable metric. It replaces the lookup that used to go through the flat_filters view, and only
+// needs the charges table.
+func (store *ApiStore) HasPayInAdvanceCharge(organizationID string, planID string, billableMetricID string) utils.Result[bool] {
+	var ids []string
+
+	result := store.db.Connection.
+		Table("charges").
+		Select("id").
+		Where(
+			"organization_id = ? AND plan_id = ? AND billable_metric_id = ? AND pay_in_advance IS TRUE AND deleted_at IS NULL",
+			organizationID,
+			planID,
+			billableMetricID,
+		).
+		Limit(1).
+		Find(&ids)
+	if result.Error != nil {
+		return utils.FailedBoolResult(result.Error)
+	}
+
+	return utils.SuccessResult(len(ids) > 0)
+}

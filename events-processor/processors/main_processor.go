@@ -29,7 +29,6 @@ const (
 	envLagoEventsProcessorDatabaseMaxConnections = "LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS"
 	envLagoKafkaBootstrapServers                 = "LAGO_KAFKA_BOOTSTRAP_SERVERS"
 	envLagoKafkaConsumerGroup                    = "LAGO_KAFKA_CONSUMER_GROUP"
-	envLagoKafkaEnrichedEventsExpandedTopic      = "LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC"
 	envLagoKafkaEnrichedEventsTopic              = "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC"
 	envLagoKafkaEventsChargedInAdvanceTopic      = "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"
 	envLagoKafkaEventsDeadLetterTopic            = "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC"
@@ -121,11 +120,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "failed to initialize enriched events producer")
 	}
 
-	eventsEnrichedExpandedProducer, err := initProducer(ctx, envLagoKafkaEnrichedEventsExpandedTopic)
-	if err != nil {
-		utils.LogAndPanic(err, "failed to initialize enriched events expanded producer")
-	}
-
 	eventsInAdvanceProducer, err := initProducer(ctx, envLagoKafkaEventsChargedInAdvanceTopic)
 	if err != nil {
 		utils.LogAndPanic(err, "failed to initialize events charged in advance producer")
@@ -165,7 +159,6 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
 		events_processor.NewEventProducerService(
 			eventsEnrichedProducer,
-			eventsEnrichedExpandedProducer,
 			eventsInAdvanceProducer,
 			eventsDeadLetterQueue,
 		),

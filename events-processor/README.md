@@ -40,7 +40,6 @@ This app requires some env vars
 | LAGO_KAFKA_BOOTSTRAP_SERVERS                | Kafka Brokers list URL with port (eg: `"redpanda:9092,kafka:9092"`)                                              |
 | LAGO_KAFKA_RAW_EVENTS_TOPIC                 | Events Kafka Topic (eg: `events_raw`)                                                         |
 | LAGO_KAFKA_ENRICHED_EVENTS_TOPIC            | Events Enriched Kafka Topic (eg: `events_enriched`)                                           |
-| LAGO_KAFKA_ENRICHED_EVENTS_EXPANDED_TOPIC   | Events Enriched Expanded Kafka Topic (eg: `events_enriched_expanded`)                         |
 | LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC  | Events Charge In Advance Kafka Topic (eg: `events_charge_in_advance`)                         |
 | LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC         | Events Dead Letter Queue (eg: `events_dead_letter`)                                           |
 | LAGO_KAFKA_CONSUMER_GROUP                   | Kafka Consumer Group Name for Post Processing                                                 |

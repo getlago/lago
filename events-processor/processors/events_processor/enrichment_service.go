@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
+
 	"github.com/getlago/lago/events-processor/cache"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
@@ -23,10 +24,10 @@ func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache)
 	}
 }
 
-func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[]*models.EnrichedEvent] {
+func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	enrichedEventResult := event.ToEnrichedEvent()
 	if enrichedEventResult.Failure() {
-		return failedMultiEventsResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
 	}
 	enrichedEvent := enrichedEventResult.Value()
 
@@ -38,14 +39,14 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 		bmResult = s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
 	}
 	if bmResult.Failure() {
-		return failedMultiEventsResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
+		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 
 	bm := bmResult.Value()
 	if bm != nil {
 		enrichBmResult := s.enrichWithBillableMetric(enrichedEvent, bm)
 		if enrichBmResult.Failure() {
-			return toMultiEventsResult(enrichBmResult)
+			return enrichBmResult
 		}
 	}
 
@@ -59,7 +60,7 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 
 	if subResult.Failure() {
 		if subResult.IsCapturable() {
-			return failedMultiEventsResult(subResult, "fetch_subscription", "Error fetching subscription")
+			return failedResult(subResult, "fetch_subscription", "Error fetching subscription")
 		}
 
 		subResult = utils.SuccessResult[*models.Subscription](nil)
@@ -69,12 +70,24 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[[
 	if sub != nil {
 		enrichSubResult := s.enrichWithSubscription(enrichedEvent, sub)
 		if enrichSubResult.Failure() {
-			return toMultiEventsResult(enrichSubResult)
+			return enrichSubResult
 		}
 	}
 
-	enrichedEvents := s.enrichWithChargeInfo(enrichedEvent)
-	return enrichedEvents
+	return utils.SuccessResult(enrichedEvent)
+}
+
+// HasPayInAdvanceCharge reports whether the event's plan charges the billable metric in advance.
+func (s *EventEnrichmentService) HasPayInAdvanceCharge(enrichedEvent *models.EnrichedEvent) utils.Result[bool] {
+	if enrichedEvent.BillableMetric == nil || enrichedEvent.PlanID == "" {
+		return utils.SuccessResult(false)
+	}
+
+	if s.memCache != nil {
+		return s.memCache.HasPayInAdvanceCharge(enrichedEvent.OrganizationID, enrichedEvent.PlanID, enrichedEvent.BillableMetric.ID)
+	}
+
+	return s.apiStore.HasPayInAdvanceCharge(enrichedEvent.OrganizationID, enrichedEvent.PlanID, enrichedEvent.BillableMetric.ID)
 }
 
 func (s *EventEnrichmentService) fetchSubscription(event *models.Event, timestamp time.Time) utils.Result[*models.Subscription] {
@@ -134,84 +147,4 @@ func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.En
 	enrichedEvent.PlanID = sub.PlanID
 
 	return utils.SuccessResult(enrichedEvent)
-}
-
-func (s *EventEnrichmentService) enrichWithChargeInfo(enrichedEvent *models.EnrichedEvent) utils.Result[[]*models.EnrichedEvent] {
-	if enrichedEvent.Subscription == nil {
-		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
-	}
-
-	var filtersResult utils.Result[[]*models.FlatFilter]
-	if s.memCache != nil {
-		filtersResult = s.memCache.BuildFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.Code, enrichedEvent.PlanID)
-	} else {
-		filtersResult = s.apiStore.FetchFlatFilters(enrichedEvent.OrganizationID, enrichedEvent.PlanID, enrichedEvent.Code)
-	}
-	if filtersResult.Failure() {
-		return utils.FailedResult[[]*models.EnrichedEvent](filtersResult.Error())
-	}
-
-	filters := filtersResult.Value()
-	if len(filters) == 0 {
-		// No filters found, return the original event without charge information
-		return utils.SuccessResult([]*models.EnrichedEvent{enrichedEvent})
-	}
-
-	// Index filters by charge ID (an event can match multiple charges and filters)
-	charges := make(map[string][]models.FlatFilter)
-	for _, filter := range filters {
-		if charges[filter.ChargeID] == nil {
-			charges[filter.ChargeID] = []models.FlatFilter{}
-		}
-		charges[filter.ChargeID] = append(charges[filter.ChargeID], *filter)
-	}
-
-	var enrichedEvents []*models.EnrichedEvent
-	// For each charge, find matching filter and create an enriched event
-	for _, chargeFilters := range charges {
-		matchingFilter := models.MatchingFilter(chargeFilters, enrichedEvent)
-
-		// Create a copy of the enriched event for this filter
-		enrichedEventCopy := *enrichedEvent
-		enrichedEventCopy.GroupedBy = make(map[string]string)
-
-		// Populate charge information
-		enrichedEventCopy.FlatFilter = matchingFilter
-		enrichedEventCopy.ChargeID = &matchingFilter.ChargeID
-		enrichedEventCopy.ChargeUpdatedAt = &matchingFilter.ChargeUpdatedAt
-		enrichedEventCopy.ChargeFilterID = matchingFilter.ChargeFilterID
-		enrichedEventCopy.ChargeFilterUpdatedAt = matchingFilter.ChargeFilterUpdatedAt
-
-		enrichWithPricingGroupKeys(&enrichedEventCopy)
-
-		enrichedEvents = append(enrichedEvents, &enrichedEventCopy)
-	}
-
-	return utils.SuccessResult(enrichedEvents)
-}
-
-func enrichWithPricingGroupKeys(event *models.EnrichedEvent) {
-	if event.FlatFilter == nil {
-		return
-	}
-
-	if event.FlatFilter.PricingGroupKeys != nil {
-		for _, key := range event.FlatFilter.PricingGroupKeys {
-			property := event.Properties[key]
-			if property != nil {
-				event.GroupedBy[key] = fmt.Sprintf("%v", property)
-			} else {
-				event.GroupedBy[key] = ""
-			}
-		}
-	}
-
-	// Enrich with target wallet code when applicable
-	if event.FlatFilter.AcceptsTargetWallet {
-		if raw, ok := event.Properties[models.TARGET_WALLET_CODE]; ok && raw != nil {
-			formatted := fmt.Sprintf("%v", raw)
-			event.GroupedBy[models.TARGET_WALLET_CODE] = formatted
-			event.TargetWalletCode = utils.StringPtr(formatted)
-		}
-	}
 }
