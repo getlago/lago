@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1.26
+
+# Staging-only hardened image for the events-processor worker, built for SOC2
+# compliance. FROMs the Wolfi/apko bases published by getlago/lago-packages to
+# GHCR; they are public, so no registry credentials are needed to build this
+# file.
+#
+# The paired workflow (lago-deploy's build-events-processor-staging-image.yml)
+# sets the build context to this directory. The sibling ./Dockerfile stays
+# untouched and continues to serve production builds.
+
+ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:latest
+ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:latest
+
+# --- build stage: rust (for libexpression_go.so) + go binary -----------------
+FROM ${BUILD_IMAGE} AS build
+
+WORKDIR /workspace
+
+# lago-expression's Rust FFI lib is a build-time dependency of the Go
+# event_processors binary. Pinned to v0.2.0 to match the upstream
+# events-processor/Dockerfile; bump both together.
+ARG LAGO_EXPRESSION_REF=v0.2.0
+RUN git clone --tags https://github.com/getlago/lago-expression/ && \
+    cd lago-expression/expression-go && \
+    git checkout ${LAGO_EXPRESSION_REF} && \
+    cargo build --release
+
+WORKDIR /app
+COPY . /app/
+
+RUN cp /workspace/lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so && \
+    go mod download && \
+    go build -o event_processors .
+
+
+# --- runtime stage: hardened Wolfi glibc ------------------------------------
+FROM ${RUNTIME_IMAGE}
+
+WORKDIR /app
+
+COPY --from=build --chown=nonroot:nonroot /usr/lib/libexpression_go.so /usr/lib/libexpression_go.so
+COPY --from=build --chown=nonroot:nonroot /app/event_processors /app/event_processors
+
+USER 65532
+
+ENTRYPOINT ["/app/event_processors"]
