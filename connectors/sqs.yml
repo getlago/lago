@@ -31,6 +31,8 @@ processor_resources:
       root.timestamp = this.event.timestamp
       root.properties = this.event.properties
       root.ingested_at = timestamp_unix()
+      root.source = "sqs_connector"
+      root.source_metadata.api_post_processed = false
       root.precise_total_amount_cents = if this.event.precise_total_amount_cents.type() == "number" {
         this.event.precise_total_amount_cents
       } else {
@@ -42,7 +44,6 @@ output_resources:
     kafka_franz:
       seed_brokers: ["${KAFKA_BROKERS}"]
       topic: "${KAFKA_TOPIC}"
-      key: '${ORGANIZATION_ID}-${! json("external_subscription_id") }'
       tls:
         enabled: true
       sasl:

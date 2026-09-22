@@ -35,6 +35,8 @@ processor_resources:
       root.timestamp = this.timestamp
       root.properties = this.properties
       root.ingested_at = timestamp_unix()
+      root.source = "kinesis_connector"
+      root.source_metadata.api_post_processed = false
       root.precise_total_amount_cents = if this.precise_total_amount_cents.type() == "number" {
         this.precise_total_amount_cents
       } else {
@@ -46,7 +48,6 @@ output_resources:
     kafka_franz:
       seed_brokers: ["${KAFKA_BROKERS}"]
       topic: "${KAFKA_TOPIC}"
-      key: '${! json("organization_id") }-${! json("external_subscription_id") }'
       tls:
         enabled: ${KAFKA_TLS:false}
       sasl:
