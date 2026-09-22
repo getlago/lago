@@ -8,10 +8,12 @@ FROM golang:1.25 AS go-build
 
 WORKDIR /app
 
-COPY . /app/
-
+COPY go.mod go.sum ./
 RUN go mod download
+
 COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
+
+COPY . /app/
 RUN go build -o event_processors .
 
 FROM debian:13-slim
