@@ -42,7 +42,6 @@ output_resources:
     kafka_franz:
       seed_brokers: ["${KAFKA_BROKERS}"]
       topic: "${KAFKA_TOPIC}"
-      key: '${! json("organization_id") }-${! json("external_subscription_id") }'
       tls:
         enabled: ${KAFKA_TLS:false}
       sasl:
