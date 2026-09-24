@@ -931,6 +931,25 @@ stream of librdkafka "AllBrokersDown 2/2 brokers" producer errors unrelated
 to actual Redpanda health — likely a stale producer handle.
 Artifact: https://claude.ai/code/artifact/eab26fdf-f04a-41c6-9ea7-29443100e8d2
 
+## 0e. 2026-09-24 — wide charges: filter matching cost is marshalling, slim-filters shadow built
+
+A charge with thousands of filters (model × token type) makes stage 1 crawl.
+Measured locally on a 2502-filter charge (556 KB `filters_agg`): a noop UDF
+that only RECEIVES `filters_agg` costs ~3.7 ms per call vs ~3.85 ms for
+`matching_filter`, so ~96% of the cost is passing the JSONB into WASM, not the
+match loop. `slim_filters/` holds a shadow stage 1 on the same instance:
+a compact length-prefixed `match_payload` VARCHAR scanned in place by
+`match_filter_position` (~0.35-0.43 ms per call, ~10x), with the winner's
+details fetched by point lookup in `charge_filter_positions`, so
+`filters_agg` leaves the event path. Parity suite vs `matching_filter` green
+(Rust + end-to-end on a scratch schema).
+
+- [ ] Apply on staging with real data, run `slim_filters/parity.sh`.
+- [ ] Throughput under load, one stage-1 job at a time.
+- [ ] If green: promote into `sql/02`/`04` via a migration, drop the shadow.
+- [ ] If filter counts grow another 10x: exact-match index (per key-set hash
+      lookups, O(#key-sets) per event).
+
 ## 1. Harden for prod shadow (do first, one chunk)
 
 - [x] **NULL `ingested_at` wedged the whole streaming database** (found and
