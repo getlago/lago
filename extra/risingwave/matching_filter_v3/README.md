@@ -33,6 +33,74 @@ The cost per event depends on the number of shapes (p99 = 1 in production),
 not on the number of filters. The 3,000-filter charges have one or a few
 shapes, so they cost one or a few lookups.
 
+## Worked example
+
+A charge `ch1` with three filters, in `filters_agg` order:
+
+| Position | Filter |
+|---|---|
+| 0 | `{model: [gpt4, gpt4o], token_type: [input]}` |
+| 1 | `{model: [gpt4], token_type: [output]}` |
+| 2 | `{model: [gpt4]}` |
+
+**1. When the charge changes (CDC).** `filter_lookup_plan` finds two shapes,
+`[model, token_type]` and `[model]`, and stores them in
+`filter_lookup_charges`. `filter_lookup_expand` turns each filter into its
+value combinations, written into `filter_lookup` with their rank (more keys
+first, then the lower position):
+
+| lookup_key (shown readable) | From position | Rank |
+|---|---|---|
+| `model=gpt4, token_type=input` | 0 | 2 keys, pos 0 |
+| `model=gpt4o, token_type=input` | 0 | 2 keys, pos 0 |
+| `model=gpt4, token_type=output` | 1 | 2 keys, pos 1 |
+| `model=gpt4` | 2 | 1 key, pos 2 |
+
+The real keys are length-prefixed (`5:model4:gpt410:token_type5:input`), so
+a value containing `,` or `=` can't produce another combination's key.
+
+**2. Per event.** Event `{model: gpt4, token_type: input, region: eu}` on
+`ch1`:
+
+- `filter_lookup_event_keys` builds one key per shape:
+  `model=gpt4, token_type=input` and `model=gpt4`. `region` is ignored
+  because no shape uses it.
+- Slot 1 finds position 0 (2 keys); slot 2 finds position 2 (1 key); slots 3-8
+  are NULL and find nothing.
+- `GREATEST(rank)` picks position 0: more keys wins, the same answer
+  `matching_filter` gives.
+- One more lookup in `filter_lookup_positions` on `(ch1, 0)` returns
+  `charge_filter_id`, `filters` and `pricing_group_keys`.
+
+Other events on the same charge:
+
+| Event | Hits | Result |
+|---|---|---|
+| `{model: gpt4, token_type: cached}` | `model=gpt4` only | position 2 |
+| `{model: gpt4o}` | none (shape 1 needs `token_type`, shape 2 has no `gpt4o`) | default bucket |
+| `{model: null, token_type: input}` | none (null counts as absent) | default bucket |
+
+Adding a 3,000th filter changes nothing on the event side: it is one more row
+in `filter_lookup`, still found by the same one or two lookups.
+
+## Why this approach
+
+- **Production (`matching_filter` on `filters_agg`)**: correct, but the whole
+  array is serialized into WASM on every event. ~3.7 ms of the ~3.85 ms per
+  call on a 2,500-filter charge is just passing the argument
+  (`../slim_filters/README.md`).
+- **Slim filters (`../slim_filters`)**: a compact payload makes the call ~10x
+  cheaper, but it is still a scan of every filter per event, so the cost
+  grows with the charge.
+- **Anchor bucketing** (split filters by the value of one key every filter
+  uses): shrinks the scan, but it only helps when such a key exists and the
+  buckets are small, and it keeps the UDF scan.
+- **Lookups (this folder)**: exact equality on precomputed keys. The work
+  moves to CDC time, where it runs once per filter change instead of once
+  per event, and the event path no longer depends on how many filters a
+  charge has. The fallback keeps the rare charges with too many shapes on
+  the production path, so behavior never changes.
+
 ## Matching rules (unchanged)
 
 Same result as production `matching_filter`, checked by the parity suite:
