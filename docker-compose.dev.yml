@@ -398,6 +398,8 @@ services:
     command:
       - events-raw
       - events_enriched
+      - product_events_raw
+      - product_events_enriched
       - events_charged_in_advance
       - events_dead_letter
       - activity_logs
