@@ -83,6 +83,12 @@ docker compose up -d --profile all
 ```
 
 
+## Easypanel
+
+[Easypanel](https://easypanel.io) is a self-hosted Docker deployment platform, and it maintains a one-click deployment template for Lago that wires up all the backend services (API, worker, clock, PDF), Postgres, and Redis automatically, including generating the RSA key pair for you.
+
+[![Deploy on Easypanel](https://easypanel.io/img/deploy-on-easypanel-40.svg)](https://easypanel.io/templates/lago)
+
 ## Configuration
 
 ### Profiles
