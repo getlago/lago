@@ -2,7 +2,7 @@ SET streaming_parallelism = ADAPTIVE;
 
 -- Stage-1 dimensions for matching_filter v3, built on top of the production
 -- flat_filters_agg_mv (../../sql/02_flat_filters.sql): the production chain
--- is read, never modified, and flat_filters_agg stays the fallback path.
+-- is read, never modified, and flat_filters_agg feeds the fallback path.
 -- Everything here updates on CDC churn only, never per event.
 --
 -- Instead of scanning a charge's filters per event, each filter is expanded
@@ -11,16 +11,21 @@ SET streaming_parallelism = ADAPTIVE;
 -- (sorted key sets): a filter matches exactly when the keys are equal.
 --
 --   filter_lookup_charges    one row per charge: its shapes (at most 8) or
---                            the fallback flag, plus the default bucket's
+--                            the fallback flag, the rank of its filters
+--                            without values, and the default bucket's
 --                            pricing_group_keys. No filters_agg.
 --   filter_lookup            one row per (charge, lookup key): the rank of
 --                            the best filter holding that key.
 --   filter_lookup_positions  one row per (charge, position in filters_agg):
 --                            the winner's details, read by position.
 --
--- Rank = key_count * 1e9 + (999999999 - position): more keys wins, then the
--- lower position, which is production matching_filter's order (most keys,
--- first of equals). Positions are 0-based in filters_agg order.
+-- Selection follows the API's ChargeFilters::EventMatchingService: most keys
+-- wins, then the least recently updated filter (ChargeFilter default_scope
+-- order, updated_at ASC; the id breaks equal timestamps). A filter without
+-- values matches every event with 0 keys. Encoded as one BIGINT per row:
+--   rank = key_count * 1e12 + (999999 - api_order) * 1e6 + position
+-- position is the 0-based index in filters_agg, read back with rank % 1e6.
+-- See udf/src/flv3_common.rs.
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS filter_lookup_charges_mv AS
 SELECT
@@ -34,6 +39,7 @@ SELECT
     (lookup_plan ->> 'fallback')::BOOLEAN AS fallback,
     (lookup_plan ->> 'shape_count')::INT AS shape_count,
     lookup_plan -> 'shapes' AS shapes,
+    (lookup_plan ->> 'empty_filter_rank')::BIGINT AS empty_filter_rank,
     -- ToDefaultFilter keeps the pricing_group_keys of element 0.
     filters_agg -> 0 -> 'pricing_group_keys' AS default_pricing_group_keys
 FROM (
@@ -54,6 +60,7 @@ CREATE TABLE IF NOT EXISTS filter_lookup_charges (
     fallback BOOLEAN,
     shape_count INT,
     shapes JSONB,
+    empty_filter_rank BIGINT,
     default_pricing_group_keys JSONB,
     PRIMARY KEY (organization_id, plan_id, billable_metric_code, charge_id)
 ) ON CONFLICT OVERWRITE;
@@ -70,6 +77,7 @@ SELECT
     fallback,
     shape_count,
     shapes,
+    empty_filter_rank,
     default_pricing_group_keys
 FROM filter_lookup_charges_mv;
 
@@ -77,28 +85,24 @@ CREATE INDEX IF NOT EXISTS idx_filter_lookup_charges_lookup
     ON filter_lookup_charges (organization_id, plan_id, billable_metric_code)
     DISTRIBUTED BY (organization_id, plan_id, billable_metric_code);
 
--- Filters that can never be selected (no values, empty map, non-string
--- values only) and filters past the combination cap expand to NULL and
--- produce no row. Fallback charges are expanded too: their rows are never
--- read, and skipping them would mean calling filter_lookup_plan here again.
--- Same-key filters (same shape, overlapping values) collapse to the best
--- rank, so the key is unique per charge.
+-- One row per (charge, lookup key). filter_lookup_expand works on the whole
+-- array, because a filter's rank depends on its place in the charge's
+-- updated_at order, and already keeps the best rank per key, so the key is
+-- unique per charge without a GROUP BY. Filters without values have no key
+-- (empty_filter_rank above), and filters past the combination cap produce
+-- none (their charge is fallback). Fallback charges are expanded too: their
+-- rows are never read, and skipping them would mean calling
+-- filter_lookup_plan here again.
 CREATE MATERIALIZED VIEW IF NOT EXISTS filter_lookup_mv AS
 SELECT
     expanded.charge_id,
-    k.lookup_key,
-    max((expanded.expansion ->> 'key_count')::BIGINT * 1000000000
-        + (999999999 - (expanded.ordinality - 1))) AS rank
+    k.pair ->> 0 AS lookup_key,
+    (k.pair ->> 1)::BIGINT AS rank
 FROM (
-    SELECT
-        ffa.charge_id,
-        e.ordinality,
-        filter_lookup_expand(e.value -> 'filters') AS expansion
-    FROM flat_filters_agg_mv ffa,
-         jsonb_array_elements(ffa.filters_agg) WITH ORDINALITY AS e(value, ordinality)
+    SELECT charge_id, filter_lookup_expand(filters_agg) AS pairs
+    FROM flat_filters_agg_mv
 ) AS expanded,
-     jsonb_array_elements_text(expanded.expansion -> 'lookup_keys') AS k(lookup_key)
-GROUP BY expanded.charge_id, k.lookup_key;
+     jsonb_array_elements(expanded.pairs) AS k(pair);
 
 CREATE TABLE IF NOT EXISTS filter_lookup (
     charge_id VARCHAR,

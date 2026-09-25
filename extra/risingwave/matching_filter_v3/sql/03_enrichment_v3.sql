@@ -6,7 +6,7 @@ SET streaming_parallelism = ADAPTIVE;
 -- be diffed against events_expanded (../parity.sh) and to measure the lookup
 -- resolution on real traffic.
 --
--- The ONLY semantic change against production is how the filter is found:
+-- The ONLY change against production is the filter resolution:
 --   production: matching_filter(ffc.filters_agg, properties) -> winner JSONB
 --               (the whole candidate array crosses into WASM per event)
 --   here:       filter_lookup_event_keys(shapes, properties) -> one key per
@@ -14,8 +14,18 @@ SET streaming_parallelism = ADAPTIVE;
 --               GREATEST(rank) -> winner position -> point lookup of its
 --               details in filter_lookup_positions.
 --   fallback:   charges with more than 8 shapes (or an oversized filter) run
---               the production matching_filter on flat_filters_agg, joined
---               on a key that is NULL for every other charge.
+--               filter_lookup_fallback on flat_filters_agg, joined on a key
+--               that is NULL for every other charge. It returns a position
+--               too, so both paths read the winner from the same table.
+--
+-- The selection rules are the API's ChargeFilters::EventMatchingService, not
+-- production RisingWave's matching_filter, so a diff against events_expanded
+-- is expected to differ on exactly these events (02_lookup.sql):
+--   - two matching filters with the same key count: the least recently
+--     updated wins here, the first by charge_filter_id in production;
+--   - a charge filter without values matches every event with 0 keys here,
+--     never in production;
+--   - a JSON-null property reads as "" here, as absent in production.
 -- Everything else (subscription pick, value, grouped_by, clocks) is copied
 -- verbatim so a row-level diff isolates the filter resolution.
 
@@ -119,6 +129,7 @@ charged AS (
         flc.accepts_target_wallet,
         flc.default_pricing_group_keys,
         flc.fallback,
+        flc.empty_filter_rank,
         CASE WHEN flc.charge_id IS NOT NULL AND NOT flc.fallback AND flc.shape_count > 0
              THEN filter_lookup_event_keys(flc.shapes, COALESCE(s.properties, '{}'::jsonb))
         END AS lookup_keys
@@ -147,13 +158,16 @@ keyed AS (
 ),
 looked_up AS (
     -- Stateless chain of left temporal joins (an append-only LHS keeps no
-    -- state). Each finds at most one row; GREATEST ignores the NULLs.
+    -- state). Each finds at most one row; GREATEST ignores the NULLs. The
+    -- charge's filters without values match every event with 0 keys, so
+    -- their rank joins the hits and wins only when no keyed filter matches.
     SELECT
         k.*,
-        GREATEST(l1.rank, l2.rank, l3.rank, l4.rank, l5.rank, l6.rank, l7.rank, l8.rank) AS best_rank,
+        GREATEST(l1.rank, l2.rank, l3.rank, l4.rank, l5.rank, l6.rank, l7.rank, l8.rank,
+                 k.empty_filter_rank) AS best_rank,
         CASE WHEN ffa.charge_id IS NOT NULL
-             THEN matching_filter(ffa.filters_agg, COALESCE(k.properties, '{}'::jsonb))
-        END AS mf
+             THEN filter_lookup_fallback(ffa.filters_agg, COALESCE(k.properties, '{}'::jsonb))
+        END AS fallback_pos
     FROM keyed k
     BROADCAST LEFT JOIN filter_lookup FOR SYSTEM_TIME AS OF PROCTIME() l1
         ON l1.charge_id = k.charge_id AND l1.lookup_key = k.k1
@@ -171,7 +185,7 @@ looked_up AS (
         ON l7.charge_id = k.charge_id AND l7.lookup_key = k.k7
     BROADCAST LEFT JOIN filter_lookup FOR SYSTEM_TIME AS OF PROCTIME() l8
         ON l8.charge_id = k.charge_id AND l8.lookup_key = k.k8
-    -- Fallback: the production path, on the production table.
+    -- Fallback: a full scan with the same rules, on the production table.
     BROADCAST LEFT JOIN flat_filters_agg FOR SYSTEM_TIME AS OF PROCTIME() ffa
         ON ffa.organization_id = k.organization_id
        AND ffa.plan_id = k.plan_id
@@ -179,33 +193,28 @@ looked_up AS (
        AND ffa.charge_id = k.fallback_charge_id
 ),
 positioned AS (
-    -- Rank -> position (02_lookup.sql). No hit -> -1, the default bucket.
-    -- NULL for charge-less rows and fallback charges.
+    -- Rank -> position (rank % 1e6, 02_lookup.sql). No hit -> -1, the
+    -- default bucket. NULL for charge-less rows.
     SELECT
         *,
-        CASE WHEN charge_id IS NULL OR fallback THEN NULL
+        CASE WHEN charge_id IS NULL THEN NULL
+             WHEN fallback THEN fallback_pos
              WHEN best_rank IS NULL THEN -1
-             ELSE (999999999 - best_rank % 1000000000)::INT
+             ELSE (best_rank % 1000000)::INT
         END AS mf_pos
     FROM looked_up
 ),
 resolved AS (
-    -- Winner details by point lookup on the position (mf_pos = -1 or NULL
-    -- joins nothing). Default bucket: filter identity NULL, pricing_group_keys
-    -- from element 0, which is ToDefaultFilter. Fallback: the production mf.
+    -- Winner details by point lookup on the position, for both paths
+    -- (mf_pos = -1 or NULL joins nothing). Default bucket: filter identity
+    -- NULL, pricing_group_keys from element 0, which is production's
+    -- ToDefaultFilter.
     SELECT
         c.*,
-        CASE WHEN c.fallback THEN c.mf ->> 'charge_filter_id'
-             ELSE p.charge_filter_id
-        END AS charge_filter_id,
-        CASE WHEN c.fallback THEN (c.mf ->> 'charge_filter_updated_at')::timestamp
-             ELSE p.charge_filter_updated_at
-        END AS charge_filter_updated_at,
-        CASE WHEN c.fallback THEN c.mf -> 'filters'
-             ELSE p.filters
-        END AS filters,
-        CASE WHEN c.fallback THEN c.mf -> 'pricing_group_keys'
-             WHEN c.mf_pos >= 0 THEN p.pricing_group_keys
+        p.charge_filter_id,
+        p.charge_filter_updated_at,
+        p.filters,
+        CASE WHEN c.mf_pos >= 0 THEN p.pricing_group_keys
              ELSE c.default_pricing_group_keys
         END AS pricing_group_keys
     FROM positioned c

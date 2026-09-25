@@ -1,39 +1,48 @@
-// Dimension side, once per filter on CDC churn: every lookup key the filter
-// matches, one per combination of its allowed values.
+// Dimension side, once per charge on CDC churn: every lookup key of the
+// charge with the rank of the filter that wins it.
 //
-// `filters` is one flat_filters_agg element's `filters` map. Returns
-//   {"key_count": n, "lookup_keys": [key, ...]}
-// or NULL when the filter can never be selected (flv3_filter_terms) or
-// expands past FLV3_MAX_COMBINATIONS (filter_lookup_plan then marks the
-// charge as fallback, so no lookup row is needed).
+// `filters_agg` is one charge's flat_filters_agg array. Returns
+//   [[lookup_key, rank], ...]
+// with one entry per distinct key: filters sharing a key (same shape,
+// overlapping values) collapse to the best rank, which is the filter the API
+// would pick among them. Filters without values have no key (plan's
+// empty_filter_rank covers them), and filters past FLV3_MAX_COMBINATIONS are
+// skipped (plan then marks the charge as fallback).
 //
-// An event matches the filter exactly when the key built from the event for
-// the filter's shape (filter_lookup_event_keys) is one of these keys: every
-// filter key is present on the event and its value text is allowed.
-fn filter_lookup_expand(filters: serde_json::Value) -> Option<serde_json::Value> {
-    let terms = flv3_filter_terms(&filters)?;
-    if flv3_combinations(&terms)? > FLV3_MAX_COMBINATIONS {
-        return None;
-    }
-    // Cartesian product, built term by term in key order.
-    let mut keys: Vec<String> = vec![String::new()];
-    for (key, values) in &terms {
-        let mut next = Vec::with_capacity(keys.len() * values.len());
-        for prefix in &keys {
-            for value in values {
-                let mut k = prefix.clone();
-                flv3_push_str(&mut k, key);
-                flv3_push_str(&mut k, value);
-                next.push(k);
+// It takes the whole array, not one filter, because the rank depends on the
+// filter's place in the charge's updated_at order (flv3_api_order).
+//
+// An event matches a filter exactly when the key built from the event for the
+// filter's shape (filter_lookup_event_keys) is one of the filter's keys:
+// every filter key is present on the event and its value text is allowed.
+fn filter_lookup_expand(filters_agg: serde_json::Value) -> serde_json::Value {
+    let mut best: std::collections::BTreeMap<String, i64> = std::collections::BTreeMap::new();
+    let empty: Vec<serde_json::Value> = Vec::new();
+    let arr = filters_agg.as_array().unwrap_or(&empty);
+    let order = flv3_api_order(arr);
+    for (position, f) in arr.iter().enumerate() {
+        let api_order = match order[position] {
+            Some(o) => o,
+            None => continue,
+        };
+        let terms = match f.get("filters").and_then(flv3_filter_terms) {
+            Some(t) => t,
+            None => continue,
+        };
+        if flv3_combinations(&terms).map_or(true, |n| n > FLV3_MAX_COMBINATIONS) {
+            continue;
+        }
+        let rank = flv3_rank(terms.len(), api_order, position);
+        for key in flv3_lookup_keys(&terms) {
+            let entry = best.entry(key).or_insert(rank);
+            if rank > *entry {
+                *entry = rank;
             }
         }
-        keys = next;
     }
-    let mut out = serde_json::Map::new();
-    out.insert("key_count".to_string(), serde_json::Value::from(terms.len()));
-    out.insert(
-        "lookup_keys".to_string(),
-        serde_json::Value::Array(keys.into_iter().map(serde_json::Value::from).collect()),
-    );
-    Some(serde_json::Value::Object(out))
+    serde_json::Value::Array(
+        best.into_iter()
+            .map(|(k, r)| serde_json::Value::Array(vec![serde_json::Value::from(k), serde_json::Value::from(r)]))
+            .collect(),
+    )
 }

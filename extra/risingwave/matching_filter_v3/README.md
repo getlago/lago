@@ -35,26 +35,27 @@ shapes, so they cost one or a few lookups.
 
 ## Worked example
 
-A charge `ch1` with three filters, in `filters_agg` order:
+A charge `ch1` with three filters, in `filters_agg` order (sorted by
+`charge_filter_id`):
 
-| Position | Filter |
-|---|---|
-| 0 | `{model: [gpt4, gpt4o], token_type: [input]}` |
-| 1 | `{model: [gpt4], token_type: [output]}` |
-| 2 | `{model: [gpt4]}` |
+| Position | Filter | updated_at |
+|---|---|---|
+| 0 | `{model: [gpt4, gpt4o], token_type: [input]}` | 2026-09-01 |
+| 1 | `{model: [gpt4], token_type: [output]}` | 2026-09-03 |
+| 2 | `{model: [gpt4]}` | 2026-09-02 |
 
 **1. When the charge changes (CDC).** `filter_lookup_plan` finds two shapes,
 `[model, token_type]` and `[model]`, and stores them in
 `filter_lookup_charges`. `filter_lookup_expand` turns each filter into its
 value combinations, written into `filter_lookup` with their rank (more keys
-first, then the lower position):
+first, then the least recently updated; see "Matching rules"):
 
 | lookup_key (shown readable) | From position | Rank |
 |---|---|---|
-| `model=gpt4, token_type=input` | 0 | 2 keys, pos 0 |
-| `model=gpt4o, token_type=input` | 0 | 2 keys, pos 0 |
-| `model=gpt4, token_type=output` | 1 | 2 keys, pos 1 |
-| `model=gpt4` | 2 | 1 key, pos 2 |
+| `model=gpt4, token_type=input` | 0 | 2 keys, 1st by updated_at |
+| `model=gpt4o, token_type=input` | 0 | 2 keys, 1st by updated_at |
+| `model=gpt4, token_type=output` | 1 | 2 keys, 3rd by updated_at |
+| `model=gpt4` | 2 | 1 key, 2nd by updated_at |
 
 The real keys are length-prefixed (`5:model4:gpt410:token_type5:input`), so
 a value containing `,` or `=` can't produce another combination's key.
@@ -67,8 +68,8 @@ a value containing `,` or `=` can't produce another combination's key.
   because no shape uses it.
 - Slot 1 finds position 0 (2 keys); slot 2 finds position 2 (1 key); slots 3-8
   are NULL and find nothing.
-- `GREATEST(rank)` picks position 0: more keys wins, the same answer
-  `matching_filter` gives.
+- `GREATEST(rank)` picks position 0: more keys wins, the same answer the
+  API's `EventMatchingService` gives.
 - One more lookup in `filter_lookup_positions` on `(ch1, 0)` returns
   `charge_filter_id`, `filters` and `pricing_group_keys`.
 
@@ -78,7 +79,7 @@ Other events on the same charge:
 |---|---|---|
 | `{model: gpt4, token_type: cached}` | `model=gpt4` only | position 2 |
 | `{model: gpt4o}` | none (shape 1 needs `token_type`, shape 2 has no `gpt4o`) | default bucket |
-| `{model: null, token_type: input}` | none (null counts as absent) | default bucket |
+| `{model: null, token_type: input}` | none (null reads as `""`, which no filter allows) | default bucket |
 
 Adding a 3,000th filter changes nothing on the event side: it is one more row
 in `filter_lookup`, still found by the same one or two lookups.
@@ -98,31 +99,64 @@ in `filter_lookup`, still found by the same one or two lookups.
 - **Lookups (this folder)**: exact equality on precomputed keys. The work
   moves to CDC time, where it runs once per filter change instead of once
   per event, and the event path no longer depends on how many filters a
-  charge has. The fallback keeps the rare charges with too many shapes on
-  the production path, so behavior never changes.
+  charge has. The fallback scans the list for the rare charges with too many
+  shapes, with the same rules, so both paths give the same answer.
 
-## Matching rules (unchanged)
+## Matching rules (the API's)
 
-Same result as production `matching_filter`, checked by the parity suite:
+v3 picks the filter the API picks per event, in
+`Events::BillingPeriodFilters::EventMatchingService`
+(`api/app/services/events/billing_period_filters/event_matching_service.rb`):
 
-- A filter matches when every key is present and non-null on the event and
-  the property's JSON text (`json_value_text`, the production rule) is an
-  allowed value. The key is built from that same text, so numbers and
-  booleans compare the same way as in production.
-- More keys wins, then the first filter in `filters_agg` order:
-  `rank = key_count * 1e9 + (999999999 - position)`. Filters with the same key
-  (same shape, overlapping values) collapse to the best rank.
+```ruby
+matching = charge.filters.select { |f| f.to_h.all? { |k, v| props.key?(k) && props[k].to_s.in?(v) } }
+matching.max_by { |f| f.to_h.keys.size }   # charge.filters: default_scope order(updated_at: :asc)
+```
+
+The parity suite checks every rule against a port of that Ruby:
+
+- A filter matches when every key is on the event and the property's text is
+  an allowed value. The text is the production `json_value_text` rule, except
+  that a JSON null reads as `""` (Ruby's `nil.to_s`).
+- More keys wins. On a tie, the **least recently updated** filter wins,
+  because `max_by` keeps the first maximum and `ChargeFilter`'s default scope
+  orders by `updated_at` ASC. Postgres leaves equal `updated_at` in no defined
+  order, so v3 breaks those ties on `charge_filter_id`.
+- A charge filter without values (`{"": null}` in `flat_filters`) has an
+  empty `to_h`, so it matches every event with 0 keys: it wins over the
+  default bucket, and any keyed match beats it. Its rank is stored on the
+  charge (`empty_filter_rank`) and joins the lookup hits in `GREATEST`.
+- One BIGINT per lookup row encodes all of it:
+  `rank = key_count * 1e12 + (999999 - api_order) * 1e6 + position`, where
+  `api_order` is the filter's index in the (`updated_at`, id) order and
+  `position` its index in `filters_agg`, read back with `rank % 1e6`.
+  Filters with the same key (same shape, overlapping values) collapse to the
+  best rank.
 - No hit means the default bucket: no filter identity, `pricing_group_keys`
-  from element 0 (ToDefaultFilter).
-- Filters that can never match produce no lookup row: an empty map, a
-  valueless filter (`{"": null}`), and value lists with no string value.
+  from element 0 (production's ToDefaultFilter).
+- Value lists with no string value never match and produce no lookup row.
+
+### Differences from production RisingWave
+
+Production `matching_filter` (the Go processor's rules) differs on exactly
+three cases, so a diff against `events_expanded` shows these on purpose:
+
+| Case | Production | v3 (API) |
+|---|---|---|
+| Two matching filters with the same key count | first by `charge_filter_id` | least recently updated |
+| Charge filter without values | never matches | matches every event with 0 keys |
+| JSON-null property | absent | reads as `""` |
+
+`stats.sql` counts them as `changed_vs_production`.
 
 ## Fallback
 
-A charge goes to the production path (`matching_filter` on the production
-`flat_filters_agg`) when it has **more than 8 shapes** or a filter expands to
-**more than 256 combinations**. `filter_lookup_charges.fallback` says which
-path a charge takes. The fallback join uses a key that is NULL for every other
+A charge is resolved by `filter_lookup_fallback`, a full scan of the
+production `flat_filters_agg` with the same rules, when it has **more than 8
+shapes** or a filter expands to **more than 256 combinations**.
+`filter_lookup_charges.fallback` says which path a charge takes. The fallback
+returns a position too, so both paths read the winner from
+`filter_lookup_positions`. Its join uses a key that is NULL for every other
 charge, so lookup charges never read `filters_agg`. Production numbers from
 2026-09-24: 14 charges have more than 8 shapes (17 filters each), and the
 largest expansion is 31 combinations for one filter.
@@ -133,7 +167,7 @@ Dimension side (`sql/02_lookup.sql`):
 
 | Table | Rows | Holds |
 |---|---|---|
-| `filter_lookup_charges` | one per charge | shapes (or `fallback`), charge attributes, default `pricing_group_keys` |
+| `filter_lookup_charges` | one per charge | shapes (or `fallback`), `empty_filter_rank`, charge attributes, default `pricing_group_keys` |
 | `filter_lookup` | one per (charge, lookup key) | best rank for that key |
 | `filter_lookup_positions` | one per (charge, filter position) | winner details (`charge_filter_id`, `filters`, ...) |
 
@@ -148,8 +182,9 @@ UDFs (`udf/src/`, generated into `sql/01_functions.sql`):
 | UDF | Runs | Input |
 |---|---|---|
 | `filter_lookup_plan(filters_agg)` | per charge, on CDC | whole `filters_agg` |
-| `filter_lookup_expand(filters)` | per filter, on CDC | one filter's map |
+| `filter_lookup_expand(filters_agg)` | per charge, on CDC | whole `filters_agg` (a rank depends on the charge's `updated_at` order) |
 | `filter_lookup_event_keys(shapes, properties)` | per (event, charge) | shape key names + properties |
+| `filter_lookup_fallback(filters_agg, properties)` | per (event, charge), fallback charges only | whole `filters_agg` |
 
 Lookup key format, `(str(key) str(value))*` over the keys in byte order with
 `str(x) = <octet_len> ':' <bytes>`: no escaping, and no two combinations share
@@ -173,18 +208,33 @@ psql -h localhost -p 4566 -d dev -U root -f extra/risingwave/matching_filter_v3/
 ```
 
 `stats.sql` shows how charges are routed (fallback count, shapes per charge,
-lookup size) and checks v3's decision against `matching_filter` on the latest
-100k events without needing the shadow.
+lookup size), and on the latest 100k events, without needing the shadow,
+checks that the lookup path agrees with `filter_lookup_fallback`
+(`lookup_vs_scan_mismatches` must be 0) and counts the events whose filter
+changes compared with production (`changed_vs_production`).
 
-## Validated locally (2026-09-25, RisingWave 3.0.2)
+## Validated locally (RisingWave 3.0.2)
 
 On a scratch schema with stand-ins for `flat_filters_agg_mv`,
-`flat_filters_agg`, `subscriptions_agg` and `events_enriched`:
+`flat_filters_agg`, `subscriptions_agg` and `events_enriched`.
 
-- `cargo test`: 20 tests, every production `matching_filter` case, encoding
-  edge cases, the fallback rules and 50k randomized cases against the
-  production UDF.
-- The three UDFs compile under the embedded Rust toolchain.
+With the API's rules (current code):
+
+- `cargo test`: 23 tests against a port of the API's `EventMatchingService`,
+  covering ties on `updated_at` (including fractional seconds and equal
+  timestamps), filters without values, JSON null, the encoding, the fallback
+  rules, and 50k randomized cases. Both the lookup path and
+  `filter_lookup_fallback` are checked against the port.
+- The four UDFs compile under the embedded Rust toolchain.
+- 525 shadow rows (events before and after the sink was created, on 6
+  charges: the 3,001-filter one, several shapes, a 9-shape fallback charge
+  with a filter without values, a filterless charge, ties on `updated_at`, a
+  `""` value), 0 mismatches against `filter_lookup_fallback`. Against
+  production `matching_filter`, the only differences were the three cases in
+  the table above.
+
+With the earlier production rules (before switching to the API's rules):
+
 - Row-level parity with the production expression, 0 mismatches:
   - 232 rows (events inserted before and after the sink was created, covering
     a 3,001-filter charge, several shapes with equal key counts, parent/child
@@ -196,14 +246,21 @@ On a scratch schema with stand-ins for `flat_filters_agg_mv`,
 - Throughput on the 3,001-filter charge, same instance, one job at a time:
   production stage 1 took **63 s for 20k events** (~317 ev/s). v3 took
   **2.7 s for 200k events** (~74k ev/s, insert included). The two outputs for
-  the 20k events agreed on every row.
+  the 20k events agreed on every row. The event path changed little since (one
+  more argument to `GREATEST`); throughput was not measured again.
 
-Not yet done: a run on real data, and a load test on staging.
+Not yet done with the API's rules: a run on real data, and a load test on
+staging.
 
 ## Known limits / gotchas
 
 - `NOTICE: The plan is too deep` on the shadow sink (8 chained temporal joins).
   It is only a notice; the job runs.
+- The shadow sink uses `BROADCAST LEFT JOIN`, which RisingWave 3.0.2 does not
+  parse. The local runs above removed `BROADCAST` from a copy of the file.
+- The tie-break reads `charge_filter_updated_at` as text. It sorts correctly
+  because `02_flat_filters.sql` renders it as `YYYY-MM-DD HH:MM:SS[.ffffff]`;
+  a format change there would need `flv3_api_order` to follow.
 - `FLV3_SHAPE_SLOTS` (`udf/src/flv3_common.rs`) must equal the number of
   lookup joins in `03_enrichment_v3.sql`.
 - During a filter change, `filter_lookup_charges`, `filter_lookup` and

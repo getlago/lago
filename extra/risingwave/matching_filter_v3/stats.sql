@@ -1,9 +1,11 @@
--- matching_filter v3: dimension stats and a decision check against the
--- production matching_filter (batch queries only, nothing is created).
+-- matching_filter v3: dimension stats and decision checks (batch queries
+-- only, nothing is created).
 --
 --   psql -h localhost -p 4566 -d dev -U root -f extra/risingwave/matching_filter_v3/stats.sql
 --
--- decision_mismatches must be 0.
+-- lookup_vs_scan_mismatches must be 0. changed_vs_production counts the
+-- events whose filter differs from production RisingWave because v3 follows
+-- the API's rules (see sql/03_enrichment_v3.sql).
 
 \timing on
 
@@ -39,9 +41,11 @@ WHERE flc.fallback
 ORDER BY filters DESC
 LIMIT 20;
 
--- 2. Decision parity on real events, without the shadow: v3 (event keys ->
---    lookup -> best rank) vs matching_filter, over the latest 100k
---    events_enriched rows against the CURRENT catalog, lookup charges only.
+-- 2. Decisions on real events, without the shadow, over the latest 100k
+--    events_enriched rows against the CURRENT catalog, lookup charges only:
+--    the lookup path (event keys -> filter_lookup -> best rank) must agree
+--    with filter_lookup_fallback, a full scan of filters_agg with the same
+--    rules; and the result is compared with production matching_filter.
 WITH sample AS (
     SELECT transaction_id, organization_id, external_subscription_id, code, properties, event_ts
     FROM events_enriched
@@ -54,6 +58,7 @@ pairs AS (
         s.properties,
         flc.charge_id,
         flc.shapes,
+        flc.empty_filter_rank,
         ffa.filters_agg
     FROM sample s
     JOIN subscriptions_agg sa
@@ -75,8 +80,8 @@ keys AS (
     FROM pairs,
          unnest(filter_lookup_event_keys(shapes, COALESCE(properties, '{}'::jsonb))) AS k(lookup_key)
 ),
-best AS (
-    SELECT k.transaction_id, k.charge_id, max(fl.rank) AS best_rank
+hits AS (
+    SELECT k.transaction_id, k.charge_id, max(fl.rank) AS hit_rank
     FROM keys k
     JOIN filter_lookup fl
         ON fl.charge_id = k.charge_id
@@ -85,15 +90,23 @@ best AS (
 ),
 compared AS (
     SELECT
-        matching_filter(p.filters_agg, COALESCE(p.properties, '{}'::jsonb)) ->> 'charge_filter_id' AS expected,
-        p.filters_agg -> (999999999 - b.best_rank % 1000000000)::INT ->> 'charge_filter_id' AS actual
+        CASE WHEN GREATEST(h.hit_rank, p.empty_filter_rank) IS NULL THEN -1
+             ELSE (GREATEST(h.hit_rank, p.empty_filter_rank) % 1000000)::INT
+        END AS lookup_pos,
+        filter_lookup_fallback(p.filters_agg, COALESCE(p.properties, '{}'::jsonb)) AS scan_pos,
+        matching_filter(p.filters_agg, COALESCE(p.properties, '{}'::jsonb)) ->> 'charge_filter_id' AS production_filter,
+        p.filters_agg
     FROM pairs p
-    LEFT JOIN best b
-        ON b.transaction_id = p.transaction_id
-       AND b.charge_id = p.charge_id
+    LEFT JOIN hits h
+        ON h.transaction_id = p.transaction_id
+       AND h.charge_id = p.charge_id
 )
 SELECT
     count(*) AS event_charge_pairs,
-    count(*) FILTER (WHERE actual IS NOT NULL) AS matched_a_filter,
-    count(*) FILTER (WHERE expected IS DISTINCT FROM actual) AS decision_mismatches
+    count(*) FILTER (WHERE lookup_pos >= 0) AS matched_a_filter,
+    count(*) FILTER (WHERE lookup_pos IS DISTINCT FROM scan_pos) AS lookup_vs_scan_mismatches,
+    count(*) FILTER (
+        WHERE (CASE WHEN lookup_pos >= 0 THEN filters_agg -> lookup_pos ->> 'charge_filter_id' END)
+              IS DISTINCT FROM production_filter
+    ) AS changed_vs_production
 FROM compared;

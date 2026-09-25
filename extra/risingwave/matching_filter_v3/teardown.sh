@@ -21,6 +21,7 @@ DROP INDEX IF EXISTS idx_filter_lookup_charges_lookup;
 DROP SINK IF EXISTS filter_lookup_charges_load;
 DROP TABLE IF EXISTS filter_lookup_charges;
 DROP MATERIALIZED VIEW IF EXISTS filter_lookup_charges_mv;
+DROP FUNCTION IF EXISTS filter_lookup_fallback(JSONB, JSONB);
 DROP FUNCTION IF EXISTS filter_lookup_event_keys(JSONB, JSONB);
 DROP FUNCTION IF EXISTS filter_lookup_expand(JSONB);
 DROP FUNCTION IF EXISTS filter_lookup_plan(JSONB);

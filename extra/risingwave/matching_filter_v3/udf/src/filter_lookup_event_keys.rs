@@ -3,13 +3,12 @@
 // Inputs are small (a few key names and the event properties), so the cost
 // does not depend on how many filters the charge has.
 //
-// Element i is "" when shape i does not apply: one of its keys is missing on
-// the event or JSON null (matching_filter treats null as absent), or the
-// properties are not an object. "" is never a lookup key, and the caller maps
-// it to SQL NULL so the lookup join finds nothing.
+// Element i is "" when shape i does not apply: one of its keys is absent on
+// the event, or the properties are not an object. "" is never a lookup key,
+// and the caller maps it to SQL NULL so the lookup join finds nothing.
 //
-// Property values are rendered with the production json_value_text rule
-// (../../../udf/src/json_text.rs), the same text matching_filter compares.
+// Values read as the API compares them (flv3_property_text): a JSON null is
+// present and reads as "".
 fn filter_lookup_event_keys(shapes: serde_json::Value, properties: serde_json::Value) -> Vec<String> {
     let shapes = match shapes.as_array() {
         Some(s) => s,
@@ -28,11 +27,11 @@ fn filter_lookup_event_keys(shapes: serde_json::Value, properties: serde_json::V
                     Some(k) => k,
                     None => return String::new(),
                 };
-                match properties.get(key) {
-                    None | Some(serde_json::Value::Null) => return String::new(),
-                    Some(v) => {
+                match flv3_property_text(&properties, key) {
+                    None => return String::new(),
+                    Some(text) => {
                         flv3_push_str(&mut out, key);
-                        flv3_push_str(&mut out, &json_value_text(v));
+                        flv3_push_str(&mut out, &text);
                     }
                 }
             }
