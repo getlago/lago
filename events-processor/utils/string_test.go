@@ -102,6 +102,18 @@ func TestStringArray_Scan(t *testing.T) {
 			expected: StringArray{"plain string"},
 			wantErr:  false,
 		},
+		{
+			name:     "postgres array with quoted comma",
+			input:    `{"value,1","value2"}`,
+			expected: StringArray{"value,1", "value2"},
+			wantErr:  false,
+		},
+		{
+			name:     "postgres array with empty string",
+			input:    `{"","value2"}`,
+			expected: StringArray{"", "value2"},
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
