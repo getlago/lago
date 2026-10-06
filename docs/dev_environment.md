@@ -196,7 +196,7 @@ By default, the app is configured to use a single Redis instance. However, the d
 To use Redis Sentinel locally, you can enable it in your `.env.development` file:
 
 ```shell
-LAGO_REDIS_SIDEKIQ_SENTINELS=redis-sentinel-1:26379, redis-sentinel-2:26379,redis-sentinel-3:26379
+LAGO_REDIS_SIDEKIQ_SENTINELS=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
 LAGO_REDIS_SIDEKIQ_MASTER_NAME=master
 ```
 
@@ -205,6 +205,34 @@ Then, you can start the Sentinel services:
 ```shell
 lago --profile redis-sentinel up -d
 ```
+
+To use the same Sentinel setup for the Rails cache, also set:
+
+```shell
+LAGO_REDIS_CACHE_SENTINELS=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+LAGO_REDIS_CACHE_MASTER_NAME=master
+```
+
+The master name defaults to `master` when omitted or blank. Sidekiq and the Rails cache can use separate Sentinel deployments and credentials.
+
+#### Sentinel authentication
+
+For Sentinel instances that require client authentication, set the optional credentials for each consumer in `.env.development`:
+
+```shell
+LAGO_REDIS_SIDEKIQ_SENTINEL_USERNAME=sentinel-user
+LAGO_REDIS_SIDEKIQ_SENTINEL_PASSWORD=your-sidekiq-sentinel-password
+LAGO_REDIS_CACHE_SENTINEL_USERNAME=sentinel-user
+LAGO_REDIS_CACHE_SENTINEL_PASSWORD=your-cache-sentinel-password
+```
+
+These credentials authenticate the application to Sentinel, independently of the data Redis passwords (`REDIS_PASSWORD` for Sidekiq and `LAGO_REDIS_CACHE_PASSWORD` for the Rails cache). Set both passwords explicitly even if they are identical. For password-only authentication, omit the corresponding `*_SENTINEL_USERNAME`.
+
+Credentials are used only when the corresponding `LAGO_REDIS_SIDEKIQ_SENTINELS` or `LAGO_REDIS_CACHE_SENTINELS` is configured. Unset, empty, or whitespace-only credentials are omitted.
+
+The bundled development Sentinels do not require client authentication. Setting these application variables does not enable authentication on the Sentinel servers. The development Compose configuration's `sentinel auth-pass master` directive authenticates Sentinel to the data Redis server. To test authenticated Sentinel connections, first configure authentication on every Sentinel instance as described in the [Redis Sentinel documentation](https://redis.io/docs/latest/operate/oss_and_stack/management/sentinel/#configuring-sentinel-instances-with-authentication).
+
+This cache Sentinel configuration applies to the Rails application. The Go events processor does not currently support Sentinel.
 
 ## Testing
 

@@ -384,6 +384,10 @@ Lago uses three separate Redis instances for different purposes:
 **Configuration**:
 - `REDIS_URL` - Connection URI (host, port, database)
 - `REDIS_PASSWORD` - Password (separate for security)
+- `LAGO_REDIS_SIDEKIQ_SENTINELS` - Optional comma-separated Sentinel addresses (`host:port`)
+- `LAGO_REDIS_SIDEKIQ_MASTER_NAME` - Sentinel master name (default: `master`)
+- `LAGO_REDIS_SIDEKIQ_SENTINEL_USERNAME` - Optional Sentinel ACL username; omit for password-only authentication
+- `LAGO_REDIS_SIDEKIQ_SENTINEL_PASSWORD` - Optional Sentinel password, independent of `REDIS_PASSWORD`
 
 **Purpose**: Stores Sidekiq job queues and job data
 
@@ -394,6 +398,10 @@ Lago uses three separate Redis instances for different purposes:
 **Configuration**:
 - `LAGO_REDIS_CACHE_URL` - Connection URI
 - `LAGO_REDIS_CACHE_PASSWORD` - Password (separate for security)
+- `LAGO_REDIS_CACHE_SENTINELS` - Optional comma-separated Sentinel addresses (`host:port`)
+- `LAGO_REDIS_CACHE_MASTER_NAME` - Sentinel master name (default: `master`)
+- `LAGO_REDIS_CACHE_SENTINEL_USERNAME` - Optional Sentinel ACL username; omit for password-only authentication
+- `LAGO_REDIS_CACHE_SENTINEL_PASSWORD` - Optional Sentinel password, independent of `LAGO_REDIS_CACHE_PASSWORD`
 
 **Purpose**: Rails application cache store
 
@@ -402,6 +410,10 @@ Lago uses three separate Redis instances for different purposes:
 - Used via Rails' standard cache interface (`Rails.cache`)
 - Also used directly for low-level caching operations throughout the application
 - Stores temporary data like wallet balances, computed values, and other cached information
+
+Sentinel credentials are used only when the corresponding `*_SENTINELS` variable is configured. Unset, empty, or whitespace-only credentials are omitted. Sidekiq and the Rails cache use independent Sentinel settings; data Redis credentials are not reused for Sentinel authentication, even when the passwords are identical.
+
+These variables configure application connections and do not enable authentication on the Sentinel servers. See [Running with Redis Sentinel](dev_environment.md#running-with-redis-sentinel) for examples. The Go events processor does not currently support Sentinel.
 
 ### 3. Redis Store (Event Processing)
 
