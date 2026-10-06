@@ -6,6 +6,10 @@ FROM node:$NODE_VERSION-alpine AS front_build
 
 WORKDIR /app
 
+# Same limit as the lago-front Dockerfile: the default heap is too small for `pnpm build`
+# on the arm64 runner.
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 COPY ./front/ .
 
 RUN apk add python3 build-base && \
