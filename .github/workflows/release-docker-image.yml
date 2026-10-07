@@ -116,3 +116,50 @@ jobs:
         run: |
           [ -e ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests ] && \
           rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+  test:
+    name: Test ${{ matrix.platform.version }} Image
+    needs: [merge]
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - version: linux/amd64
+            runner: ubuntu-latest
+          - version: linux/arm64
+            runner: linux-arm64
+    runs-on: ${{ matrix.platform.runner }}
+    env:
+      IMAGE: getlago/lago:${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+    steps:
+      - name: Start the image
+        run: |
+          docker run -d --name lago --platform ${{ matrix.platform.version }} \
+            -p 80:80 -p 3000:3000 \
+            -e LAGO_CREATE_ORG=true \
+            -e LAGO_ORG_NAME=Lago \
+            -e LAGO_ORG_USER_EMAIL=foo@bar.com \
+            -e LAGO_ORG_USER_PASSWORD=foobar \
+            -e LAGO_ORG_API_KEY=test \
+            "$IMAGE"
+      - name: Wait for the API
+        run: |
+          # Migrations and the organization seed run before the API starts.
+          for _ in $(seq 1 90); do
+            if curl -fsS --max-time 10 http://localhost:3000/health; then exit 0; fi
+            if [ "$(docker inspect -f '{{.State.Running}}' lago)" != "true" ]; then
+              echo "::error::The container stopped"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::The API did not become healthy"
+          exit 1
+      - name: cURL Front
+        run: curl -f --max-time 10 http://localhost:80
+      - name: cURL API Customers
+        run: |
+          curl -f --max-time 10 http://localhost:3000/api/v1/customers -H "Authorization: Bearer test"
+      - name: Container logs
+        if: failure()
+        run: docker logs --tail 200 lago
