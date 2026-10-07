@@ -1,0 +1,71 @@
+name: Test the single Lago image
+description: >
+  Starts the all-in-one Lago image with a seeded organization and runs the Docker CI checks:
+  /health, the front on port 80 and GET /api/v1/customers with the API key.
+inputs:
+  image:
+    description: Image to test, e.g. getlago/lago:v1.54.0
+    required: true
+  platform:
+    description: Docker platform of the image, e.g. linux/arm64
+    required: true
+  pull:
+    description: >
+      Pull policy for `docker run`. `always` (default) tests the image in the registry, even when
+      the runner has a cached copy of the tag; `never` tests a local build (dry run).
+    default: always
+  wait-seconds:
+    description: How long to wait for /health, kept below the job timeout so the logs still print
+    default: "360"
+runs:
+  using: composite
+  steps:
+    - name: Start the image
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        PLATFORM: ${{ inputs.platform }}
+        PULL: ${{ inputs.pull }}
+      run: |
+        # A container left by an earlier run on a persistent runner would hold the name and ports.
+        docker rm -f lago >/dev/null 2>&1 || true
+        docker run -d --name lago --platform "$PLATFORM" --pull "$PULL" \
+          -p 80:80 -p 3000:3000 \
+          -e LAGO_CREATE_ORG=true \
+          -e LAGO_ORG_NAME=Lago \
+          -e LAGO_ORG_USER_EMAIL=foo@bar.com \
+          -e LAGO_ORG_USER_PASSWORD=foobar \
+          -e LAGO_ORG_API_KEY=test \
+          "$IMAGE"
+    - name: Wait for the API
+      shell: bash
+      env:
+        WAIT_SECONDS: ${{ inputs.wait-seconds }}
+      run: |
+        # Migrations and the organization seed run before the API starts.
+        deadline=$((SECONDS + WAIT_SECONDS))
+        while [ "$SECONDS" -lt "$deadline" ]; do
+          if curl -fsS --max-time 5 http://localhost:3000/health; then exit 0; fi
+          if [ "$(docker inspect -f '{{.State.Running}}' lago)" != "true" ]; then
+            echo "::error::The container stopped"
+            exit 1
+          fi
+          sleep 5
+        done
+        echo "::error::The API did not become healthy within ${WAIT_SECONDS}s"
+        exit 1
+    - name: cURL Front
+      shell: bash
+      run: curl -f --max-time 10 http://localhost:80
+    - name: cURL API Customers
+      shell: bash
+      run: |
+        curl -f --max-time 10 http://localhost:3000/api/v1/customers -H "Authorization: Bearer test"
+    - name: Container logs
+      if: failure()
+      shell: bash
+      run: docker logs --tail 200 lago
+    - name: Remove the container
+      if: always()
+      shell: bash
+      run: docker rm -f lago >/dev/null 2>&1 || true

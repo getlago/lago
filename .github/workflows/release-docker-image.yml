@@ -7,8 +7,14 @@ on:
       version:
         description: Version
         required: true
+      dry_run:
+        description: Build and test the image without pushing it to Docker Hub
+        type: boolean
+        default: false
 env:
   REGISTRY_IMAGE: getlago/lago
+  # Only a manual run can be a dry run: release events have no inputs.
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
 jobs:
   build-single-docker-image:
     strategy:
@@ -50,6 +56,7 @@ jobs:
         run: |
           echo "${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}" > LAGO_VERSION
       - name: Build and push Docker image
+        if: env.DRY_RUN != 'true'
         uses: docker/build-push-action@v6
         id: build
         with:
@@ -60,12 +67,34 @@ jobs:
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             SEGMENT_WRITE_KEY=${{ secrets.SEGMENT_WRITE_KEY }}
+      - name: Build Docker image (dry run, not pushed)
+        if: env.DRY_RUN == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: ${{ matrix.platform.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          load: true
+          tags: ${{ env.REGISTRY_IMAGE }}:dry-run
+          build-args: |
+            SEGMENT_WRITE_KEY=${{ secrets.SEGMENT_WRITE_KEY }}
+      - name: Test the image (dry run)
+        if: env.DRY_RUN == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/test-single-image
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}:dry-run
+          platform: ${{ matrix.platform.version }}
+          pull: never
       - name: Export Digest
+        if: env.DRY_RUN != 'true'
         run: |
           mkdir -p ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
           digest="${{ steps.build.outputs.digest }}"
           touch "./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests/${digest#sha256:}"
       - name: Upload Digest
+        if: env.DRY_RUN != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
@@ -79,6 +108,7 @@ jobs:
           rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
   merge:
     name: Merge Images
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
     runs-on: ubuntu-latest
     needs: [build-single-docker-image]
     steps:
@@ -116,3 +146,23 @@ jobs:
         run: |
           [ -e ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests ] && \
           rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+  test:
+    name: Test ${{ matrix.platform.version }} Image
+    needs: [merge]
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - version: linux/amd64
+            runner: ubuntu-latest
+          - version: linux/arm64
+            runner: linux-arm64
+    runs-on: ${{ matrix.platform.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the image
+        uses: ./.github/actions/test-single-image
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}:${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+          platform: ${{ matrix.platform.version }}
