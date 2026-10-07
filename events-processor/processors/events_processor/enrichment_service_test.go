@@ -386,3 +386,110 @@ func TestHasPayInAdvanceCharge(t *testing.T) {
 		})
 	}
 }
+
+func TestEnrichCatalogEvent(t *testing.T) {
+	testModes := []struct {
+		name     string
+		useCache bool
+	}{
+		{"WithCache", true},
+		{"WithoutCache", false},
+	}
+
+	buildEvent := func() models.Event {
+		return models.Event{
+			OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+			ExternalContractID: "contract_ext_id",
+			TransactionID:      "tx_1",
+			Code:               "api_calls",
+			Timestamp:          1741007009,
+			Source:             "SQS",
+			Properties:         map[string]any{"api_requests": "12.0"},
+		}
+	}
+
+	buildBillableMetric := func(event models.Event) *models.BillableMetric {
+		return &models.BillableMetric{
+			ID:              "bm123",
+			OrganizationID:  event.OrganizationID,
+			Code:            event.Code,
+			AggregationType: models.AggregationTypeSum,
+			FieldName:       "api_requests",
+			CreatedAt:       utils.NowNullTime(),
+			UpdatedAt:       utils.NowNullTime(),
+		}
+	}
+
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("sets the contract serving the event", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := buildEvent()
+				testEnv.DataStore.SetBillableMetric(buildBillableMetric(event))
+				testEnv.DataStore.SetContract(&models.Contract{
+					ID:             "contract123",
+					OrganizationID: &event.OrganizationID,
+					ExternalID:     event.ExternalContractID,
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+				})
+
+				result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+				assert.True(t, result.Success())
+				enriched := result.Value()
+				assert.Equal(t, "contract123", *enriched.ContractID)
+				assert.Equal(t, "contract_ext_id", enriched.ExternalContractID)
+				assert.Equal(t, "tx_1", enriched.TransactionID)
+				assert.Equal(t, "sum", enriched.AggregationType)
+				assert.Equal(t, "12.0", *enriched.Value)
+				assert.Equal(t, 1741007009.0, enriched.Timestamp)
+			})
+
+			t.Run("keeps the event without a contract when none serves it", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := buildEvent()
+				testEnv.DataStore.SetBillableMetric(buildBillableMetric(event))
+				testEnv.DataStore.ExpectContractNotFound()
+
+				result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+				assert.True(t, result.Success())
+				assert.Nil(t, result.Value().ContractID)
+				assert.Equal(t, "contract_ext_id", result.Value().ExternalContractID)
+			})
+
+			t.Run("fails without a billable metric", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := buildEvent()
+				testEnv.DataStore.ExpectBillableMetricNotFound()
+
+				result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+				assert.False(t, result.Success())
+				assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
+			})
+		})
+	}
+
+	t.Run("fails and retries when the contract lookup errors", func(t *testing.T) {
+		testEnv := setupEnrichmentTestEnv(t, false)
+		defer testEnv.Cleanup()
+
+		event := buildEvent()
+		testEnv.DataStore.SetBillableMetric(buildBillableMetric(event))
+		testEnv.DataStore.ExpectContractError()
+
+		result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+		assert.False(t, result.Success())
+		assert.Equal(t, "fetch_contract", result.ErrorCode())
+		assert.True(t, result.IsCapturable())
+		assert.True(t, result.IsRetryable())
+	})
+}

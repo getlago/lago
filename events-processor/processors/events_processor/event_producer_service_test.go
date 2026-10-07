@@ -55,6 +55,38 @@ func TestProduceEnrichedEvent(t *testing.T) {
 	assert.Equal(t, eventJson, enrichedProducer.Value)
 }
 
+func TestProduceCatalogEnrichedEvent(t *testing.T) {
+	setupProducerServiceEnv()
+	catalogEnrichedProducer := &tests.MockMessageProducer{}
+	producerService.WithCatalogEnrichedProducer(catalogEnrichedProducer)
+
+	contractID := "contract123"
+	event := models.CatalogEnrichedEvent{
+		OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		ExternalContractID: "contract_ext_id",
+		ContractID:         &contractID,
+		Code:               "api_calls",
+		TransactionID:      "transaction_id",
+	}
+
+	producerService.ProduceCatalogEnrichedEvent(context.Background(), &event)
+
+	assert.Equal(t, 1, catalogEnrichedProducer.ExecutionCount)
+	assert.Equal(t, 0, enrichedProducer.ExecutionCount)
+	assert.Equal(
+		t,
+		[]byte("1a901a90-1a90-1a90-1a90-1a901a901a90-transaction_id"),
+		catalogEnrichedProducer.Key,
+	)
+
+	// The keys are the catalog_events_enriched queue columns.
+	var payload map[string]any
+	assert.NoError(t, json.Unmarshal(catalogEnrichedProducer.Value, &payload))
+	assert.Equal(t, "contract_ext_id", payload["external_contract_id"])
+	assert.Equal(t, "contract123", payload["contract_id"])
+	assert.NotContains(t, payload, "external_subscription_id")
+}
+
 func TestProduceChargedInAdvanceEvent(t *testing.T) {
 	setupProducerServiceEnv()
 

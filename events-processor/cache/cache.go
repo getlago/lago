@@ -86,6 +86,11 @@ func (c *Cache) LoadInitialSnapshot() {
 	})
 
 	errGroup.Go(func() error {
+		c.LoadContractsSnapshot(db.Connection)
+		return nil
+	})
+
+	errGroup.Go(func() error {
 		c.LoadChargesSnapshot(db.Connection)
 		return nil
 	})
@@ -113,6 +118,7 @@ func (c *Cache) ConsumeChanges() error {
 	}{
 		{"billable metrics", c.StartBillableMetricsConsumer},
 		{"subscriptions", c.StartSubscriptionsConsumer},
+		{"contracts", c.StartContractsConsumer},
 		{"charges", c.StartChargesConsumer},
 		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
 		{"charge filters", c.StartChargeFiltersConsumer},

@@ -30,7 +30,21 @@ func NewEventProcessor(enrichmentService *EventEnrichmentService, producerServic
 }
 
 func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
-	span := tracing.StartSpan(ctx, "PostProcess.ProcessEvents")
+	return processor.processRecords(ctx, records, "PostProcess.ProcessEvents", func(ctx context.Context, event *models.Event) utils.AnyResult {
+		return processor.processEvent(ctx, event)
+	})
+}
+
+// ProcessCatalogEvents consumes the catalog raw topic, where product catalog
+// organizations send their events keyed by external_contract_id.
+func (processor *EventProcessor) ProcessCatalogEvents(ctx context.Context, records []*kgo.Record) []*kgo.Record {
+	return processor.processRecords(ctx, records, "PostProcess.ProcessCatalogEvents", func(ctx context.Context, event *models.Event) utils.AnyResult {
+		return processor.processCatalogEvent(ctx, event)
+	})
+}
+
+func (processor *EventProcessor) processRecords(ctx context.Context, records []*kgo.Record, spanName string, process func(context.Context, *models.Event) utils.AnyResult) []*kgo.Record {
+	span := tracing.StartSpan(ctx, spanName)
 	defer span.End()
 
 	span.SetAttribute("records.length", len(records))
@@ -59,7 +73,7 @@ func (processor *EventProcessor) ProcessEvents(ctx context.Context, records []*k
 					return
 				}
 
-				result := processor.processEvent(ctx, &event)
+				result := process(ctx, &event)
 				if result.Failure() {
 					slog.Error(
 						result.ErrorMessage(),
@@ -134,8 +148,25 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	return utils.SuccessResult(enrichedEvent)
 }
 
+// processCatalogEvent only writes the enriched event for now: pay in advance and
+// refresh flags need the contract's rate cards, which come next.
+func (processor *EventProcessor) processCatalogEvent(ctx context.Context, event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
+	enrichedEventResult := processor.EnrichmentService.EnrichCatalogEvent(event)
+	if enrichedEventResult.Failure() {
+		return enrichedEventResult
+	}
+
+	processor.ProducerService.ProduceCatalogEnrichedEvent(ctx, enrichedEventResult.Value())
+
+	return enrichedEventResult
+}
+
 func failedResult(r utils.AnyResult, code string, message string) utils.Result[*models.EnrichedEvent] {
-	result := utils.FailedResult[*models.EnrichedEvent](r.Error()).AddErrorDetails(code, message)
+	return failedResultFor[*models.EnrichedEvent](r, code, message)
+}
+
+func failedResultFor[T any](r utils.AnyResult, code string, message string) utils.Result[T] {
+	result := utils.FailedResult[T](r.Error()).AddErrorDetails(code, message)
 	result.Retryable = r.IsRetryable()
 	result.Capture = r.IsCapturable()
 	return result

@@ -18,28 +18,31 @@ import (
 )
 
 type testProducerService struct {
-	enrichedProducer   *tests.MockMessageProducer
-	inAdvanceProducer  *tests.MockMessageProducer
-	deadLetterProducer *tests.MockMessageProducer
-	producerService    *EventProducerService
+	enrichedProducer        *tests.MockMessageProducer
+	inAdvanceProducer       *tests.MockMessageProducer
+	deadLetterProducer      *tests.MockMessageProducer
+	catalogEnrichedProducer *tests.MockMessageProducer
+	producerService         *EventProducerService
 }
 
 func setupProducers() *testProducerService {
 	enrichedProducer := tests.MockMessageProducer{}
 	inAdvanceProducer := tests.MockMessageProducer{}
 	deadLetterProducer := tests.MockMessageProducer{}
+	catalogEnrichedProducer := tests.MockMessageProducer{}
 
 	producerService := NewEventProducerService(
 		&enrichedProducer,
 		&inAdvanceProducer,
 		&deadLetterProducer,
-	)
+	).WithCatalogEnrichedProducer(&catalogEnrichedProducer)
 
 	return &testProducerService{
-		enrichedProducer:   &enrichedProducer,
-		inAdvanceProducer:  &inAdvanceProducer,
-		deadLetterProducer: &deadLetterProducer,
-		producerService:    producerService,
+		enrichedProducer:        &enrichedProducer,
+		inAdvanceProducer:       &inAdvanceProducer,
+		deadLetterProducer:      &deadLetterProducer,
+		catalogEnrichedProducer: &catalogEnrichedProducer,
+		producerService:         producerService,
 	}
 }
 
@@ -48,6 +51,9 @@ type DataStore interface {
 	SetBillableMetric(bm *models.BillableMetric)
 	SetSubscription(sub *models.Subscription)
 	SetCharge(charge *models.Charge)
+	SetContract(contract *models.Contract)
+	ExpectContractNotFound()
+	ExpectContractError()
 	ExpectSubscriptionNotFound()
 	ExpectSubscriptionError()
 	ExpectBillableMetricNotFound()
@@ -74,6 +80,13 @@ func (s *CacheDataStore) SetCharge(charge *models.Charge) {
 	require.True(s.t, result.Success())
 }
 
+func (s *CacheDataStore) SetContract(contract *models.Contract) {
+	result := s.cache.SetContract(contract)
+	require.True(s.t, result.Success())
+}
+
+func (s *CacheDataStore) ExpectContractNotFound()       {}
+func (s *CacheDataStore) ExpectContractError()          {}
 func (s *CacheDataStore) ExpectSubscriptionNotFound()   {}
 func (s *CacheDataStore) ExpectSubscriptionError()      {}
 func (s *CacheDataStore) ExpectBillableMetricNotFound() {}
@@ -106,6 +119,21 @@ func (s *MockDataStore) SetCharge(charge *models.Charge) {
 		rows.AddRow(charge.ID)
 	}
 	s.mock.SQLMock.ExpectQuery(".* FROM \"charges\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) SetContract(contract *models.Contract) {
+	columns := []string{"id", "external_id", "created_at", "updated_at", "started_at", "terminated_at", "canceled_at"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(contract.ID, contract.ExternalID, contract.CreatedAt, contract.UpdatedAt, contract.StartedAt, contract.TerminatedAt, contract.CanceledAt)
+	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) ExpectContractNotFound() {
+	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\"").WillReturnError(gorm.ErrRecordNotFound)
+}
+
+func (s *MockDataStore) ExpectContractError() {
+	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\"").WillReturnError(gorm.ErrNotImplemented)
 }
 
 func (s *MockDataStore) ExpectSubscriptionNotFound() {
@@ -472,5 +500,82 @@ func TestProcessEvent(t *testing.T) {
 			assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
 		})
 
+	}
+}
+
+func TestProcessCatalogEvent(t *testing.T) {
+	testModes := []struct {
+		name     string
+		useCache bool
+	}{
+		{"WithCache", true},
+		{"WithoutCache", false},
+	}
+
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("produces the enriched event on the catalog topic only", func(t *testing.T) {
+				testEnv := setupProcessorTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := models.Event{
+					OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalContractID: "contract_ext_id",
+					TransactionID:      "tx_1",
+					Code:               "api_calls",
+					Timestamp:          1741007009,
+					Source:             "SQS",
+					Properties:         map[string]any{"api_requests": "12.0"},
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeSum,
+					FieldName:       "api_requests",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				contract := &models.Contract{
+					ID:             "contract123",
+					OrganizationID: &event.OrganizationID,
+					ExternalID:     event.ExternalContractID,
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+				}
+				testEnv.DataStore.SetContract(contract)
+
+				result := testEnv.EventProcessor.processCatalogEvent(context.Background(), &event)
+
+				require.True(t, result.Success())
+				assert.Equal(t, "contract123", *result.Value().ContractID)
+				assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.FlagStore.ExecutionCount)
+			})
+
+			t.Run("does not produce anything when enrichment fails", func(t *testing.T) {
+				testEnv := setupProcessorTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				testEnv.DataStore.ExpectBillableMetricNotFound()
+
+				event := models.Event{
+					OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalContractID: "contract_ext_id",
+					Code:               "api_calls",
+					Timestamp:          1741007009,
+				}
+
+				result := testEnv.EventProcessor.processCatalogEvent(context.Background(), &event)
+
+				assert.False(t, result.Success())
+				assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
+				assert.Equal(t, 0, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+			})
+		})
 	}
 }

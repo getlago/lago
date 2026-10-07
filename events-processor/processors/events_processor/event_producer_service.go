@@ -13,9 +13,10 @@ import (
 )
 
 type EventProducerService struct {
-	enrichedProducer   kafka.MessageProducer
-	inAdvanceProducer  kafka.MessageProducer
-	deadLetterProducer kafka.MessageProducer
+	enrichedProducer        kafka.MessageProducer
+	inAdvanceProducer       kafka.MessageProducer
+	deadLetterProducer      kafka.MessageProducer
+	catalogEnrichedProducer kafka.MessageProducer
 }
 
 func NewEventProducerService(enrichedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer) *EventProducerService {
@@ -26,10 +27,17 @@ func NewEventProducerService(enrichedProducer, inAdvanceProducer, deadLetterProd
 	}
 }
 
+// WithCatalogEnrichedProducer sets the producer of the catalog pipeline, only
+// configured when the catalog raw topic is consumed.
+func (eps *EventProducerService) WithCatalogEnrichedProducer(producer kafka.MessageProducer) *EventProducerService {
+	eps.catalogEnrichedProducer = producer
+	return eps
+}
+
 func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, event *models.EnrichedEvent) {
 	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
-	err := eps.produceEvent(context, event, msgKey, eps.enrichedProducer)
+	err := eps.produceEvent(context, event, event.InitialEvent, msgKey, eps.enrichedProducer)
 
 	if err != nil {
 		slog.Error("error while marshaling enriched events")
@@ -37,10 +45,21 @@ func (eps *EventProducerService) ProduceEnrichedEvent(context context.Context, e
 	}
 }
 
+func (eps *EventProducerService) ProduceCatalogEnrichedEvent(context context.Context, event *models.CatalogEnrichedEvent) {
+	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
+
+	err := eps.produceEvent(context, event, event.InitialEvent, msgKey, eps.catalogEnrichedProducer)
+
+	if err != nil {
+		slog.Error("error while marshaling catalog enriched events")
+		utils.CaptureError(err)
+	}
+}
+
 func (eps *EventProducerService) ProduceChargedInAdvanceEvent(context context.Context, event *models.EnrichedEvent) {
 	msgKey := fmt.Sprintf("%s-%s", event.OrganizationID, event.TransactionID)
 
-	err := eps.produceEvent(context, event, msgKey, eps.inAdvanceProducer)
+	err := eps.produceEvent(context, event, event.InitialEvent, msgKey, eps.inAdvanceProducer)
 
 	if err != nil {
 		slog.Error("error while marshaling charged in advance events")
@@ -73,7 +92,7 @@ func (eps *EventProducerService) ProduceToDeadLetterQueue(context context.Contex
 	}
 }
 
-func (eps *EventProducerService) produceEvent(context context.Context, event *models.EnrichedEvent, msgKey string, producer kafka.MessageProducer) error {
+func (eps *EventProducerService) produceEvent(context context.Context, event any, initialEvent *models.Event, msgKey string, producer kafka.MessageProducer) error {
 	eventJson, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -85,7 +104,7 @@ func (eps *EventProducerService) produceEvent(context context.Context, event *mo
 	})
 
 	if !pushed {
-		eps.ProduceToDeadLetterQueue(context, *event.InitialEvent, utils.FailedBoolResult(fmt.Errorf("failed to push to %s topic", producer.GetTopic())))
+		eps.ProduceToDeadLetterQueue(context, *initialEvent, utils.FailedBoolResult(fmt.Errorf("failed to push to %s topic", producer.GetTopic())))
 	}
 
 	return nil

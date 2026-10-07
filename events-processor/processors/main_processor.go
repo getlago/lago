@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -28,6 +29,8 @@ const (
 	envEnv                                       = "ENV"
 	envLagoEventsProcessorDatabaseMaxConnections = "LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS"
 	envLagoKafkaBootstrapServers                 = "LAGO_KAFKA_BOOTSTRAP_SERVERS"
+	envLagoKafkaCatalogEnrichedEventsTopic       = "LAGO_KAFKA_CATALOG_ENRICHED_EVENTS_TOPIC"
+	envLagoKafkaCatalogRawEventsTopic            = "LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC"
 	envLagoKafkaConsumerGroup                    = "LAGO_KAFKA_CONSUMER_GROUP"
 	envLagoKafkaEnrichedEventsTopic              = "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC"
 	envLagoKafkaEventsChargedInAdvanceTopic      = "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"
@@ -155,13 +158,26 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	}
 	defer flagger.Close()
 
+	producerService := events_processor.NewEventProducerService(
+		eventsEnrichedProducer,
+		eventsInAdvanceProducer,
+		eventsDeadLetterQueue,
+	)
+
+	// Product catalog organizations send their events to their own topic. Without
+	// it, they keep using the raw events topic and nothing changes here.
+	catalogRawEventsTopic := os.Getenv(envLagoKafkaCatalogRawEventsTopic)
+	if catalogRawEventsTopic != "" {
+		catalogEnrichedProducer, err := initProducer(ctx, envLagoKafkaCatalogEnrichedEventsTopic)
+		if err != nil {
+			utils.LogAndPanic(err, "failed to initialize catalog enriched events producer")
+		}
+		producerService.WithCatalogEnrichedProducer(catalogEnrichedProducer)
+	}
+
 	processor = events_processor.NewEventProcessor(
 		events_processor.NewEventEnrichmentService(apiStore, config.Cache),
-		events_processor.NewEventProducerService(
-			eventsEnrichedProducer,
-			eventsInAdvanceProducer,
-			eventsDeadLetterQueue,
-		),
+		producerService,
 		events_processor.NewSubscriptionRefreshService(flagger),
 	)
 
@@ -178,7 +194,33 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "Error starting the event consumer")
 	}
 
+	var catalogConsumers sync.WaitGroup
+	if catalogRawEventsTopic != "" {
+		// The consumer group name includes the topic, so the catalog consumer
+		// gets its own group from the same LAGO_KAFKA_CONSUMER_GROUP.
+		catalogCg, err := kafka.NewConsumerGroup(
+			kafkaConfig,
+			&kafka.ConsumerGroupConfig{
+				Topic:         catalogRawEventsTopic,
+				ConsumerGroup: os.Getenv(envLagoKafkaConsumerGroup),
+				ProcessRecords: func(ctx context.Context, records []*kgo.Record) []*kgo.Record {
+					return processor.ProcessCatalogEvents(ctx, records)
+				},
+			})
+		if err != nil {
+			utils.LogAndPanic(err, "Error starting the catalog event consumer")
+		}
+
+		catalogConsumers.Add(1)
+		go func() {
+			defer catalogConsumers.Done()
+			slog.Info("Starting catalog event consumer")
+			catalogCg.Start(ctx)
+		}()
+	}
+
 	slog.Info("Starting event consumer")
 	cg.Start(ctx)
+	catalogConsumers.Wait()
 	slog.Info("Event processor stopped")
 }
