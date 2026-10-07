@@ -86,6 +86,7 @@ jobs:
         with:
           image: ${{ env.REGISTRY_IMAGE }}:dry-run
           platform: ${{ matrix.platform.version }}
+          pull: never
       - name: Export Digest
         if: env.DRY_RUN != 'true'
         run: |
