@@ -103,9 +103,8 @@ jobs:
           retention-days: 1
       - name: Clean up
         if: always()
-        run: |
-          [ -e ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests ] && \
-          rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
+        # rm -rf ignores a missing directory: a dry run never creates the digests.
+        run: rm -rf ./_tmp/${{ github.run_id }}/${{ github.run_attempt }}/digests
   merge:
     name: Merge Images
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
