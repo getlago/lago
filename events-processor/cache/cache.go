@@ -22,6 +22,7 @@ type Cache struct {
 	db                  *badger.DB
 	logger              *slog.Logger
 	debeziumTopicPrefix string
+	loadContracts       bool
 	wg                  sync.WaitGroup
 }
 
@@ -29,6 +30,9 @@ type Cache struct {
 type CacheConfig struct {
 	Context             context.Context
 	DebeziumTopicPrefix string
+	// LoadContracts caches contracts, only needed when the catalog events topic
+	// is consumed, which also requires Debezium to publish the contracts table.
+	LoadContracts bool
 }
 
 // NewCache creates and initializes a new in-memory cache instance.
@@ -48,6 +52,7 @@ func NewCache(config CacheConfig) (*Cache, error) {
 		db:                  db,
 		logger:              logger,
 		debeziumTopicPrefix: config.DebeziumTopicPrefix,
+		loadContracts:       config.LoadContracts,
 		ctx:                 config.Context,
 	}, nil
 }
@@ -85,10 +90,12 @@ func (c *Cache) LoadInitialSnapshot() {
 		return nil
 	})
 
-	errGroup.Go(func() error {
-		c.LoadContractsSnapshot(db.Connection)
-		return nil
-	})
+	if c.loadContracts {
+		errGroup.Go(func() error {
+			c.LoadContractsSnapshot(db.Connection)
+			return nil
+		})
+	}
 
 	errGroup.Go(func() error {
 		c.LoadChargesSnapshot(db.Connection)
@@ -118,11 +125,17 @@ func (c *Cache) ConsumeChanges() error {
 	}{
 		{"billable metrics", c.StartBillableMetricsConsumer},
 		{"subscriptions", c.StartSubscriptionsConsumer},
-		{"contracts", c.StartContractsConsumer},
 		{"charges", c.StartChargesConsumer},
 		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
 		{"charge filters", c.StartChargeFiltersConsumer},
 		{"charge filter values", c.StartChargeFilterValuesConsumer},
+	}
+
+	if c.loadContracts {
+		consumers = append(consumers, struct {
+			name  string
+			start func(context.Context) error
+		}{"contracts", c.StartContractsConsumer})
 	}
 
 	for _, consumer := range consumers {

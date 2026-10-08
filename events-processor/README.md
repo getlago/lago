@@ -66,5 +66,5 @@ Additionally there's a few optional environment variables
 | OTEL_INSECURE                 | Set to `true` to use the insecure mode of OpenTelemetry                                                                            |
 | LAGO_USE_MEMORY_CACHE         | Use the new in memory cache instead of DB calls                                                                                    |
 | LAGO_DEBEZIUM_TOPIC_PREFIX    | Mandatory if USE_MEMORY_CACHE is set to true, debezium kafka topic prefix (eg: `lago_dbz`)                                         |
-| LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC      | Raw events of product catalog organizations, keyed by `external_contract_id` (eg: `catalog_events_raw`). When set, a second consumer reads it. With the memory cache, Debezium must also publish the `contracts` table |
+| LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC      | Raw events of product catalog organizations, keyed by `external_contract_id` (eg: `catalog_events_raw`). When set, a second consumer reads it and, with the memory cache, contracts are cached too: Debezium must then publish the `contracts` table (see `extra/debezium_config.json`) |
 | LAGO_KAFKA_CATALOG_ENRICHED_EVENTS_TOPIC | Mandatory if LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC is set, catalog enriched events topic (eg: `catalog_events_enriched`) |
