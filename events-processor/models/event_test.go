@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -84,5 +85,27 @@ func TestNotAPIPostProcessed(t *testing.T) {
 
 		event.SourceMetadata.ApiPostProcess = false
 		assert.True(t, event.NotAPIPostProcessed())
+	})
+}
+
+func TestEnrichedEventAttributionLabelsJSON(t *testing.T) {
+	t.Run("With attribution labels", func(t *testing.T) {
+		event := EnrichedEvent{AttributionLabels: map[string]string{"user": "alice", "department": "rnd"}}
+
+		data, err := json.Marshal(event)
+		assert.NoError(t, err)
+
+		var payload map[string]any
+		assert.NoError(t, json.Unmarshal(data, &payload))
+		assert.Equal(t, map[string]any{"user": "alice", "department": "rnd"}, payload["attribution_labels"])
+	})
+
+	t.Run("Without attribution labels", func(t *testing.T) {
+		data, err := json.Marshal(EnrichedEvent{})
+		assert.NoError(t, err)
+
+		var payload map[string]any
+		assert.NoError(t, json.Unmarshal(data, &payload))
+		assert.NotContains(t, payload, "attribution_labels")
 	})
 }

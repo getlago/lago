@@ -104,6 +104,11 @@ func (c *Cache) LoadInitialSnapshot() {
 		c.LoadChargeFilterValuesSnapshot(db.Connection)
 		return nil
 	})
+
+	errGroup.Go(func() error {
+		c.LoadUsageAttributionTypesSnapshot(db.Connection)
+		return nil
+	})
 }
 
 func (c *Cache) ConsumeChanges() error {
@@ -117,6 +122,7 @@ func (c *Cache) ConsumeChanges() error {
 		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
 		{"charge filters", c.StartChargeFiltersConsumer},
 		{"charge filter values", c.StartChargeFilterValuesConsumer},
+		{"usage attribution types", c.StartUsageAttributionTypesConsumer},
 	}
 
 	for _, consumer := range consumers {

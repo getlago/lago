@@ -74,6 +74,11 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		}
 	}
 
+	enrichLabelsResult := s.enrichWithAttributionLabels(enrichedEvent)
+	if enrichLabelsResult.Failure() {
+		return enrichLabelsResult
+	}
+
 	return utils.SuccessResult(enrichedEvent)
 }
 
@@ -139,6 +144,24 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 	}
 
 	return utils.SuccessResult(true)
+}
+
+// enrichWithAttributionLabels stamps the account tree labels of the event. Organizations without
+// usage attribution types get no labels.
+func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent) utils.Result[*models.EnrichedEvent] {
+	var typesResult utils.Result[[]*models.UsageAttributionType]
+	if s.memCache != nil {
+		typesResult = s.memCache.SearchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	} else {
+		typesResult = s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	}
+	if typesResult.Failure() {
+		return failedResult(typesResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
+	}
+
+	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), enrichedEvent.Properties)
+
+	return utils.SuccessResult(enrichedEvent)
 }
 
 func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.EnrichedEvent, sub *models.Subscription) utils.Result[*models.EnrichedEvent] {
