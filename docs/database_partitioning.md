@@ -74,9 +74,9 @@ CREATE TABLE public.enriched_events (
     enriched_at timestamp(6) without time zone NOT NULL,
     PRIMARY KEY (id, "timestamp")
 ) PARTITION BY RANGE ("timestamp");
-
-CREATE TABLE public.enriched_events_default PARTITION OF public.enriched_events DEFAULT;
 ```
+
+> Do NOT create a manual `DEFAULT` partition here. `partman.create_parent` (step 5) creates pg_partman's own default partition (`enriched_events_default`). A manually created one collides with it (`relation "enriched_events_default" already exists`) and aborts registration.
 
 ### 4. Recreate indexes
 
@@ -94,22 +94,9 @@ CREATE INDEX index_enriched_events_on_event_id
     ON public.enriched_events (event_id);
 ```
 
-### 5. Migrate existing data
+### 5. Register with pg_partman
 
-```sql
-INSERT INTO public.enriched_events
-SELECT * FROM public.enriched_events_old;
-```
-
-> If the table is large, consider batching inserts or running this during a maintenance window.
-
-### 6. Drop the old table
-
-```sql
-DROP TABLE public.enriched_events_old;
-```
-
-### 7. Register with pg_partman
+Register FIRST, while the parent table is still empty. This creates the monthly partitions and pg_partman's own default partition:
 
 ```sql
 SELECT partman.create_parent(
@@ -128,13 +115,45 @@ SET infinite_time_partitions = true,
 WHERE parent_table = 'public.enriched_events';
 ```
 
-### 8. Run initial maintenance
+> `p_start_partition` must be at or before your oldest row in `enriched_events_old`. Anything earlier has no covering partition and lands in the default partition.
+>
+> Registration must happen before the data move (step 6). Copying rows first leaves them all in the default partition, and PostgreSQL then refuses to create the dated partitions covering those rows (`partition constraint would be violated`).
 
-Trigger a first maintenance run to create the monthly partitions and move data out of the default partition into the correct ones:
+### 6. Migrate existing data
+
+Only now copy the historical rows. Every row routes directly into its monthly partition:
+
+```sql
+INSERT INTO public.enriched_events
+SELECT * FROM public.enriched_events_old;
+```
+
+> If the table is large, consider batching inserts or running this during a maintenance window.
+
+### 7. Verify before dropping anything
+
+This is the last point where a mistake is still recoverable (`enriched_events_old` still exists), so confirm the counts first:
+
+```sql
+SELECT count(*) FROM public.enriched_events_default; -- expect 0
+SELECT count(*) FROM public.enriched_events; -- expect the old row count
+```
+
+If the default partition is not empty, stop: check that `p_start_partition` covers your oldest row before retrying. Do not drop the old table until the default count is 0 and the total matches.
+
+### 8. Drop the old table last
+
+```sql
+DROP TABLE public.enriched_events_old;
+```
+
+Then trigger a first maintenance run to create future partitions per `p_premake`:
 
 ```sql
 CALL partman.run_maintenance_proc();
 ```
+
+> Note: `run_maintenance_proc()` only creates future partitions (and drops/detaches expired ones per `retention`). It does not move rows out of the default partition. Moving rows out of an already-populated default partition requires `partition_data_proc()` / `partition_data_time()`, which is exactly why this procedure registers (step 5) before moving data (step 6) instead of relying on maintenance afterwards.
 
 After this, configure one of the two scheduled maintenance approaches described below.
 
