@@ -209,14 +209,16 @@ Sources for company context: [Mistral AI](https://observer.com/2026/07/arthur-me
 
 | Option | Best for | Access |
 |---|---|---|
+| **Lago Cloud** | Teams that want usage-based billing without running billing infrastructure. Lago operates the platform in US or EU regions and provides commercial support | [Talk to us](https://www.getlago.com/pricing) |
 | **Lago open source** | Teams that want to inspect, extend, and operate the billing platform on their infrastructure | This repository, AGPLv3 |
 | **Agent tooling** | Teams that want to meter LLM usage or expose billing primitives to agents | Separate open-source Agent SDK and MCP repositories, MIT |
-| **Lago Cloud** | Teams that want Lago to operate the platform and provide commercial support | [Talk to us](https://www.getlago.com/pricing) |
 | **Premium capabilities** | Teams that need selected assistants, enterprise integrations, governance, or embedded use cases | Availability varies by feature; [talk to us](https://www.getlago.com/pricing) |
 
 ## Deploy Lago
 
-For a source-based local deployment:
+With [Lago Cloud](https://doc.getlago.com/guide/lago-cloud), there is nothing to deploy or maintain. Your application calls the Lago API, and Lago runs and updates the platform. Your code uses the same API and SDKs either way; only the base URL changes.
+
+To run Lago yourself, start with a source-based local deployment:
 
 ```bash
 git clone --depth 1 https://github.com/getlago/lago.git
