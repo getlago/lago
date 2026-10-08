@@ -2,6 +2,7 @@ package events_processor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -63,6 +64,14 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 // billable metric stage is shared with EnrichEvent, and the contract takes the
 // place of the subscription.
 func (s *EventEnrichmentService) EnrichCatalogEvent(event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
+	// Without it the event can't be tied to a contract nor aggregated: a payload
+	// sent to the catalog topic by mistake goes to the dead letter queue.
+	if event.ExternalContractID == "" {
+		missing := utils.FailedResult[*models.CatalogEnrichedEvent](errors.New("external_contract_id is missing")).
+			NonRetryable().NonCapturable()
+		return failedResultFor[*models.CatalogEnrichedEvent](missing, "missing_external_contract_id", "Catalog event without external_contract_id")
+	}
+
 	enrichedEventResult := s.enrichWithEventBillableMetric(event)
 	if enrichedEventResult.Failure() {
 		return failedResultFor[*models.CatalogEnrichedEvent](enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())

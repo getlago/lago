@@ -43,8 +43,8 @@ func (c *Cache) GetContract(organizationID, externalID, ID string) utils.Result[
 }
 
 // SearchContracts mirrors ApiStore.FetchContract: among the contracts started at
-// timestamp and not terminated before it, the live one wins, then the latest
-// terminated, then the latest started.
+// timestamp and not terminated before it, a live one wins over a terminated one,
+// an active one over a pending one, then the latest started.
 func (c *Cache) SearchContracts(organizationID string, externalID string, timestamp time.Time) utils.Result[*models.Contract] {
 	prefix := fmt.Sprintf("%s:%s:%s:", contractPrefix, organizationID, externalID)
 	result := searchJSON[models.Contract](c, prefix)
@@ -80,7 +80,8 @@ func servesTimestamp(contract *models.Contract, timestamp time.Time) bool {
 	return !contract.TerminatedAt.Valid || !contract.TerminatedAt.Time.Before(timestamp)
 }
 
-// preferContract orders like "terminated_at DESC NULLS FIRST, started_at DESC".
+// preferContract orders like
+// "terminated_at DESC NULLS FIRST, (status = 'active') DESC, started_at DESC".
 func preferContract(candidate, current *models.Contract) bool {
 	if candidate.TerminatedAt.Valid != current.TerminatedAt.Valid {
 		return !candidate.TerminatedAt.Valid
@@ -88,6 +89,11 @@ func preferContract(candidate, current *models.Contract) bool {
 
 	if candidate.TerminatedAt.Valid && !candidate.TerminatedAt.Time.Equal(current.TerminatedAt.Time) {
 		return candidate.TerminatedAt.Time.After(current.TerminatedAt.Time)
+	}
+
+	candidateActive := candidate.Status == models.ContractStatusActive
+	if candidateActive != (current.Status == models.ContractStatusActive) {
+		return candidateActive
 	}
 
 	return candidate.StartedAt.Time.After(current.StartedAt.Time)
@@ -131,7 +137,11 @@ func (c *Cache) LoadContractsSnapshot(db *gorm.DB) utils.Result[int] {
 }
 
 func (c *Cache) StartContractsConsumer(ctx context.Context) error {
-	return startGenericConsumer(ctx, c, ConsumerConfig[models.Contract]{
+	return startGenericConsumer(ctx, c, c.contractsConsumerConfig())
+}
+
+func (c *Cache) contractsConsumerConfig() ConsumerConfig[models.Contract] {
+	return ConsumerConfig[models.Contract]{
 		Topic:     c.debeziumTopicPrefix + contractTopic,
 		ModelName: contractModelName,
 		IsDeleted: func(contract *models.Contract) bool {
@@ -159,5 +169,5 @@ func (c *Cache) StartContractsConsumer(ctx context.Context) error {
 		Delete: func(contract *models.Contract) utils.Result[bool] {
 			return c.DeleteContract(contract)
 		},
-	})
+	}
 }

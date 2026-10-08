@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func buildContract(id string, startedAt time.Time) *models.Contract {
@@ -51,6 +53,21 @@ func TestSearchContracts(t *testing.T) {
 
 		require.True(t, result.Success())
 		assert.Equal(t, "started", result.Value().ID)
+	})
+
+	t.Run("prefers the active contract to a pending one", func(t *testing.T) {
+		cache := setupTestCache(t)
+		active := buildContract("active", timestamp.AddDate(0, -2, 0))
+		active.Status = models.ContractStatusActive
+		pending := buildContract("pending", timestamp.AddDate(0, -1, 0))
+		pending.Status = "pending"
+		require.True(t, cache.SetContract(active).Success())
+		require.True(t, cache.SetContract(pending).Success())
+
+		result := cache.SearchContracts("org-123", "contract-ext", timestamp)
+
+		require.True(t, result.Success())
+		assert.Equal(t, "active", result.Value().ID)
 	})
 
 	t.Run("prefers the live contract to the one it replaced", func(t *testing.T) {
@@ -117,5 +134,49 @@ func TestDeleteContract(t *testing.T) {
 		require.True(t, cache.DeleteContract(contract).Success())
 
 		assert.True(t, cache.GetContract("org-123", "contract-ext", "terminated").Success())
+	})
+}
+
+func contractRecord(t *testing.T, contract *models.Contract) *kgo.Record {
+	data, err := json.Marshal(contract)
+	require.NoError(t, err)
+
+	return &kgo.Record{Value: data, Topic: "test_topic"}
+}
+
+func TestContractsConsumer(t *testing.T) {
+	t.Run("caches a new contract", func(t *testing.T) {
+		cache := setupTestCache(t)
+		contract := buildContract("new", time.Now())
+
+		processRecord(cache, contractRecord(t, contract), cache.contractsConsumerConfig())
+
+		assert.True(t, cache.GetContract("org-123", "contract-ext", "new").Success())
+	})
+
+	t.Run("drops a contract once canceled", func(t *testing.T) {
+		cache := setupTestCache(t)
+		contract := buildContract("canceled", time.Now())
+		require.True(t, cache.SetContract(contract).Success())
+
+		canceled := buildContract("canceled", time.Now())
+		canceled.CanceledAt = utils.NowNullTime()
+		processRecord(cache, contractRecord(t, canceled), cache.contractsConsumerConfig())
+
+		assert.True(t, cache.GetContract("org-123", "contract-ext", "canceled").Failure())
+	})
+
+	t.Run("keeps a contract once terminated, with its termination date", func(t *testing.T) {
+		cache := setupTestCache(t)
+		contract := buildContract("terminated", time.Now().AddDate(0, -1, 0))
+		require.True(t, cache.SetContract(contract).Success())
+
+		terminated := buildContract("terminated", time.Now().AddDate(0, -1, 0))
+		terminated.TerminatedAt = utils.NowNullTime()
+		processRecord(cache, contractRecord(t, terminated), cache.contractsConsumerConfig())
+
+		result := cache.GetContract("org-123", "contract-ext", "terminated")
+		require.True(t, result.Success())
+		assert.True(t, result.Value().TerminatedAt.Valid)
 	})
 }

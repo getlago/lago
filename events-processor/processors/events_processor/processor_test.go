@@ -2,12 +2,14 @@ package events_processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/cache"
@@ -578,4 +580,88 @@ func TestProcessCatalogEvent(t *testing.T) {
 			})
 		})
 	}
+}
+
+func eventRecord(t *testing.T, offset int64, event models.Event) *kgo.Record {
+	data, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	return &kgo.Record{Value: data, Offset: offset}
+}
+
+func setupRecordTestEnv(t *testing.T) (*ProcessorTestEnv, *models.BillableMetric) {
+	testEnv := setupProcessorTestEnv(t, true)
+
+	bm := &models.BillableMetric{
+		ID:              "bm123",
+		OrganizationID:  "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		Code:            "api_calls",
+		AggregationType: models.AggregationTypeSum,
+		FieldName:       "api_requests",
+		CreatedAt:       utils.NowNullTime(),
+		UpdatedAt:       utils.NowNullTime(),
+	}
+	testEnv.DataStore.SetBillableMetric(bm)
+
+	return testEnv, bm
+}
+
+func TestProcessCatalogEvents(t *testing.T) {
+	testEnv, bm := setupRecordTestEnv(t)
+	defer testEnv.Cleanup()
+
+	valid := models.Event{
+		OrganizationID:     bm.OrganizationID,
+		ExternalContractID: "contract_ext_id",
+		TransactionID:      "tx_1",
+		Code:               bm.Code,
+		Timestamp:          1741007009,
+		Source:             "SQS",
+		Properties:         map[string]any{"api_requests": "12.0"},
+	}
+	withoutContract := valid
+	withoutContract.ExternalContractID = ""
+	withoutContract.TransactionID = "tx_2"
+
+	records := []*kgo.Record{
+		eventRecord(t, 1, valid),
+		eventRecord(t, 2, withoutContract),
+		{Value: []byte("not json"), Offset: 3},
+	}
+
+	processed := testEnv.EventProcessor.ProcessCatalogEvents(context.Background(), records)
+
+	// Every record is committed: the valid one is enriched, the one without a
+	// contract goes to the dead letter queue, and unparsable JSON is skipped.
+	assert.Len(t, processed, 3)
+	assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+	assert.Equal(t, 1, testEnv.Producers.deadLetterProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+}
+
+func TestProcessEvents(t *testing.T) {
+	testEnv, bm := setupRecordTestEnv(t)
+	defer testEnv.Cleanup()
+
+	event := models.Event{
+		OrganizationID:         bm.OrganizationID,
+		ExternalSubscriptionID: "sub_id",
+		TransactionID:          "tx_1",
+		Code:                   bm.Code,
+		Timestamp:              1741007009,
+		Source:                 "SQS",
+		Properties:             map[string]any{"api_requests": "12.0"},
+	}
+
+	records := []*kgo.Record{
+		eventRecord(t, 1, event),
+		{Value: []byte("not json"), Offset: 2},
+	}
+
+	processed := testEnv.EventProcessor.ProcessEvents(context.Background(), records)
+
+	assert.Len(t, processed, 2)
+	assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.deadLetterProducer.ExecutionCount)
 }

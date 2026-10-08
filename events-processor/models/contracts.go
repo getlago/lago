@@ -10,12 +10,15 @@ import (
 	"github.com/getlago/lago/events-processor/utils"
 )
 
+const ContractStatusActive = "active"
+
 // Contract is the product catalog counterpart of Subscription: catalog events
 // carry its external id as external_contract_id.
 type Contract struct {
 	ID             string         `gorm:"primaryKey;->" json:"id"`
 	OrganizationID *string        `gorm:"->" json:"organization_id"`
 	ExternalID     string         `gorm:"->" json:"external_id"`
+	Status         string         `gorm:"->" json:"status"`
 	CreatedAt      utils.NullTime `gorm:"->" json:"created_at"`
 	UpdatedAt      utils.NullTime `gorm:"->" json:"updated_at"`
 	StartedAt      utils.NullTime `gorm:"->" json:"started_at"`
@@ -26,7 +29,9 @@ type Contract struct {
 var contractSchema, _ = schema.Parse(&Contract{}, &sync.Map{}, schema.NamingStrategy{})
 
 // FetchContract returns the contract serving the event at timestamp. A canceled
-// contract never started, so it never serves an event.
+// contract never started, so it never serves an event. A live contract wins over
+// a terminated one, and an active contract over a pending one: a pending
+// successor is not activated while its predecessor is active.
 func (store *ApiStore) FetchContract(organizationID string, externalID string, timestamp time.Time) utils.Result[*Contract] {
 	var contract Contract
 
@@ -41,7 +46,7 @@ func (store *ApiStore) FetchContract(organizationID string, externalID string, t
 		Table("contracts").
 		Select(contractSchema.DBNames).
 		Where(conditions, organizationID, externalID, timestamp, timestamp).
-		Order("terminated_at DESC NULLS FIRST, started_at DESC").
+		Order("terminated_at DESC NULLS FIRST, (status = 'active') DESC, started_at DESC").
 		Limit(1).
 		Find(&contract)
 
@@ -66,6 +71,7 @@ func GetAllContracts(db *gorm.DB) utils.Result[[]Contract] {
 			"id",
 			"organization_id",
 			"external_id",
+			"status",
 			"created_at",
 			"updated_at",
 			"started_at",

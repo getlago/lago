@@ -477,6 +477,50 @@ func TestEnrichCatalogEvent(t *testing.T) {
 		})
 	}
 
+	t.Run("rejects an event without external_contract_id", func(t *testing.T) {
+		testEnv := setupEnrichmentTestEnv(t, true)
+		defer testEnv.Cleanup()
+
+		event := buildEvent()
+		event.ExternalContractID = ""
+		event.ExternalSubscriptionID = "sub_id"
+
+		result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+		assert.False(t, result.Success())
+		assert.Equal(t, "missing_external_contract_id", result.ErrorCode())
+		assert.False(t, result.IsRetryable())
+		assert.False(t, result.IsCapturable())
+	})
+
+	for _, mode := range testModes {
+		t.Run(mode.name+"/falls back on the current contract for a recurring metric", func(t *testing.T) {
+			testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
+
+			event := buildEvent()
+			bm := buildBillableMetric(event)
+			bm.Recurring = true
+			testEnv.DataStore.SetBillableMetric(bm)
+
+			// Started after the event: only the lookup at the current time finds it.
+			contract := &models.Contract{
+				ID:             "contract123",
+				OrganizationID: &event.OrganizationID,
+				ExternalID:     event.ExternalContractID,
+				Status:         models.ContractStatusActive,
+				StartedAt:      utils.NewNullTime(time.Unix(1741007009, 0).AddDate(0, 0, 1)),
+			}
+			testEnv.DataStore.ExpectContractNotFound()
+			testEnv.DataStore.SetContract(contract)
+
+			result := testEnv.EventProcessor.EnrichCatalogEvent(&event)
+
+			assert.True(t, result.Success())
+			assert.Equal(t, "contract123", *result.Value().ContractID)
+		})
+	}
+
 	t.Run("fails and retries when the contract lookup errors", func(t *testing.T) {
 		testEnv := setupEnrichmentTestEnv(t, false)
 		defer testEnv.Cleanup()
