@@ -31,21 +31,21 @@ type EnrichedEvent struct {
 	BillableMetric *BillableMetric `json:"-"`
 	Subscription   *Subscription   `json:"-"`
 
-	OrganizationID          string         `json:"organization_id"`
-	ExternalSubscriptionID  string         `json:"external_subscription_id"`
-	SubscriptionID          string         `json:"subscription_id"`
-	PlanID                  string         `json:"plan_id"`
-	TransactionID           string         `json:"transaction_id"`
-	Code                    string         `json:"code"`
-	AggregationType         string         `json:"aggregation_type"`
-	Properties              map[string]any `json:"properties"`
-	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
-	Source                  string         `json:"source,omitempty"`
-	Value                   *string        `json:"value"`
-	Timestamp               float64        `json:"timestamp"`
-	TimestampStr            string         `json:"-"`
-	Time                    time.Time      `json:"-"`
-	AttributionLabels map[string]string.   `json:"attribution_labels,omitempty"`
+	OrganizationID          string         		`json:"organization_id"`
+	ExternalSubscriptionID  string         		`json:"external_subscription_id"`
+	SubscriptionID          string         		`json:"subscription_id"`
+	PlanID                  string         		`json:"plan_id"`
+	TransactionID           string         		`json:"transaction_id"`
+	Code                    string         		`json:"code"`
+	AggregationType         string         		`json:"aggregation_type"`
+	Properties              map[string]any 		`json:"properties"`
+	PreciseTotalAmountCents string         		`json:"precise_total_amount_cents"`
+	Source                  string         		`json:"source,omitempty"`
+	Value                   *string        		`json:"value"`
+	Timestamp               float64        		`json:"timestamp"`
+	TimestampStr            string         		`json:"-"`
+	Time                    time.Time      		`json:"-"`
+	AttributionLabels 		map[string]string 	`json:"attribution_labels,omitempty"`
 }
 
 type FailedEvent struct {
