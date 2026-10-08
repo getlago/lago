@@ -45,7 +45,7 @@ type EnrichedEvent struct {
 	Timestamp               float64        `json:"timestamp"`
 	TimestampStr            string         `json:"-"`
 	Time                    time.Time      `json:"-"`
-	AttributionLabels map[string]string `json:"attribution_labels,omitempty"`
+	AttributionLabels map[string]string.   `json:"attribution_labels,omitempty"`
 }
 
 type FailedEvent struct {
