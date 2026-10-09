@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"strconv"
 	"unicode/utf8"
 
 	"gorm.io/gorm"
@@ -90,15 +91,20 @@ func BuildAttributionLabels(types []*UsageAttributionType, properties map[string
 	return labels
 }
 
-// attributionValue formats a property the same way as the billable metric value. Missing, empty,
-// nested (objects, arrays) and too long values cannot identify an attribution value.
+// attributionValue formats a property as a label value. Missing, empty, nested (objects, arrays)
+// and too long values cannot identify an attribution value.
 func attributionValue(property any) (string, bool) {
-	switch property.(type) {
+	var value string
+
+	switch v := property.(type) {
 	case nil, map[string]any, []any:
 		return "", false
+	case float64:
+		value = strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		value = fmt.Sprintf("%v", v)
 	}
 
-	value := fmt.Sprintf("%v", property)
 	if value == "" || utf8.RuneCountInString(value) > MaxAttributionValueLength {
 		return "", false
 	}

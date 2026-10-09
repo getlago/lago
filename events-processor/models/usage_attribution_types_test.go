@@ -131,6 +131,12 @@ func TestBuildAttributionLabels(t *testing.T) {
 			expected:   map[string]string{"user": "42", "model": "true"},
 		},
 		{
+			name:       "formats large numbers without scientific notation",
+			types:      types,
+			properties: map[string]any{"user_id": float64(1234567), "model": float64(12.5)},
+			expected:   map[string]string{"user": "1234567", "model": "12.5"},
+		},
+		{
 			name:       "skips null, nested and too long values",
 			types:      types,
 			properties: map[string]any{"department_id": nil, "user_id": map[string]any{"id": "alice"}, "model": strings.Repeat("a", 256)},
