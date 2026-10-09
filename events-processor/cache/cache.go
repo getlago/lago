@@ -22,6 +22,7 @@ type Cache struct {
 	db                  *badger.DB
 	logger              *slog.Logger
 	debeziumTopicPrefix string
+	loadCatalog         bool
 	wg                  sync.WaitGroup
 }
 
@@ -29,6 +30,10 @@ type Cache struct {
 type CacheConfig struct {
 	Context             context.Context
 	DebeziumTopicPrefix string
+	// LoadCatalog caches contracts and their rate cards, only needed when the
+	// catalog events topic is consumed. Debezium must then also publish the
+	// contracts, contract_rate_cards, rate_cards and products tables.
+	LoadCatalog bool
 }
 
 // NewCache creates and initializes a new in-memory cache instance.
@@ -48,6 +53,7 @@ func NewCache(config CacheConfig) (*Cache, error) {
 		db:                  db,
 		logger:              logger,
 		debeziumTopicPrefix: config.DebeziumTopicPrefix,
+		loadCatalog:         config.LoadCatalog,
 		ctx:                 config.Context,
 	}, nil
 }
@@ -85,6 +91,28 @@ func (c *Cache) LoadInitialSnapshot() {
 		return nil
 	})
 
+	if c.loadCatalog {
+		errGroup.Go(func() error {
+			c.LoadContractsSnapshot(db.Connection)
+			return nil
+		})
+
+		errGroup.Go(func() error {
+			c.LoadContractRateCardsSnapshot(db.Connection)
+			return nil
+		})
+
+		errGroup.Go(func() error {
+			c.LoadRateCardsSnapshot(db.Connection)
+			return nil
+		})
+
+		errGroup.Go(func() error {
+			c.LoadProductsSnapshot(db.Connection)
+			return nil
+		})
+	}
+
 	errGroup.Go(func() error {
 		c.LoadChargesSnapshot(db.Connection)
 		return nil
@@ -107,16 +135,27 @@ func (c *Cache) LoadInitialSnapshot() {
 }
 
 func (c *Cache) ConsumeChanges() error {
-	consumers := []struct {
+	type cacheConsumer struct {
 		name  string
 		start func(context.Context) error
-	}{
+	}
+
+	consumers := []cacheConsumer{
 		{"billable metrics", c.StartBillableMetricsConsumer},
 		{"subscriptions", c.StartSubscriptionsConsumer},
 		{"charges", c.StartChargesConsumer},
 		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
 		{"charge filters", c.StartChargeFiltersConsumer},
 		{"charge filter values", c.StartChargeFilterValuesConsumer},
+	}
+
+	if c.loadCatalog {
+		consumers = append(consumers,
+			cacheConsumer{"contracts", c.StartContractsConsumer},
+			cacheConsumer{"contract rate cards", c.StartContractRateCardsConsumer},
+			cacheConsumer{"rate cards", c.StartRateCardsConsumer},
+			cacheConsumer{"products", c.StartProductsConsumer},
+		)
 	}
 
 	for _, consumer := range consumers {

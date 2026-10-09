@@ -148,15 +148,28 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 	return utils.SuccessResult(enrichedEvent)
 }
 
-// processCatalogEvent only writes the enriched event for now: pay in advance and
-// refresh flags need the contract and its rate cards, which come next.
+// processCatalogEvent writes the enriched event and, when the contract bills the
+// metric in advance, sends it to the API to price the fee. Refresh flags for
+// contracts come with the API side that consumes them.
 func (processor *EventProcessor) processCatalogEvent(ctx context.Context, event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichCatalogEvent(event)
 	if enrichedEventResult.Failure() {
 		return enrichedEventResult
 	}
 
-	processor.ProducerService.ProduceCatalogEnrichedEvent(ctx, enrichedEventResult.Value())
+	enrichedEvent := enrichedEventResult.Value()
+	processor.ProducerService.ProduceCatalogEnrichedEvent(ctx, enrichedEvent)
+
+	if event.NotAPIPostProcessed() {
+		advanceResult := processor.EnrichmentService.HasAdvanceRateCard(enrichedEvent)
+		if advanceResult.Failure() {
+			return failedResultFor[*models.CatalogEnrichedEvent](advanceResult, "fetch_advance_rate_card", "Error fetching advance rate card")
+		}
+
+		if advanceResult.Value() {
+			processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent.ToChargedInAdvanceEvent())
+		}
+	}
 
 	return enrichedEventResult
 }
