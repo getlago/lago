@@ -13,6 +13,16 @@ import (
 	"github.com/getlago/lago/events-processor/config/database"
 	"github.com/getlago/lago/events-processor/utils"
 	"golang.org/x/sync/errgroup"
+	"gorm.io/gorm"
+)
+
+// Pipeline is the event flow a processor runs: each one caches only the tables
+// it enriches events with.
+type Pipeline string
+
+const (
+	PipelineEvents        Pipeline = "events"
+	PipelineCatalogEvents Pipeline = "catalog_events"
 )
 
 // Cache wraps BadgerDB to provide an in-memory key-value store with JSON serialization
@@ -22,6 +32,7 @@ type Cache struct {
 	db                  *badger.DB
 	logger              *slog.Logger
 	debeziumTopicPrefix string
+	pipeline            Pipeline
 	wg                  sync.WaitGroup
 }
 
@@ -29,6 +40,15 @@ type Cache struct {
 type CacheConfig struct {
 	Context             context.Context
 	DebeziumTopicPrefix string
+	// The catalog pipeline needs Debezium to also publish the contracts,
+	// contract_rate_cards, rate_cards and products tables.
+	Pipeline Pipeline
+}
+
+type cachedModel struct {
+	name          string
+	loadSnapshot  func(*gorm.DB) utils.Result[int]
+	startConsumer func(context.Context) error
 }
 
 // NewCache creates and initializes a new in-memory cache instance.
@@ -48,6 +68,7 @@ func NewCache(config CacheConfig) (*Cache, error) {
 		db:                  db,
 		logger:              logger,
 		debeziumTopicPrefix: config.DebeziumTopicPrefix,
+		pipeline:            config.Pipeline,
 		ctx:                 config.Context,
 	}, nil
 }
@@ -58,6 +79,29 @@ func (c *Cache) Close() error {
 
 func (c *Cache) Wait() {
 	c.wg.Wait()
+}
+
+func (c *Cache) cachedModels() []cachedModel {
+	billableMetrics := cachedModel{"billable metrics", c.LoadBillableMetricsSnapshot, c.StartBillableMetricsConsumer}
+
+	if c.pipeline == PipelineCatalogEvents {
+		return []cachedModel{
+			billableMetrics,
+			{"contracts", c.LoadContractsSnapshot, c.StartContractsConsumer},
+			{"contract rate cards", c.LoadContractRateCardsSnapshot, c.StartContractRateCardsConsumer},
+			{"rate cards", c.LoadRateCardsSnapshot, c.StartRateCardsConsumer},
+			{"products", c.LoadProductsSnapshot, c.StartProductsConsumer},
+		}
+	}
+
+	return []cachedModel{
+		billableMetrics,
+		{"subscriptions", c.LoadSubscriptionsSnapshot, c.StartSubscriptionsConsumer},
+		{"charges", c.LoadChargesSnapshot, c.StartChargesConsumer},
+		{"billable metric filters", c.LoadBillableMetricFiltersSnapshot, c.StartBillableMetricFiltersConsumer},
+		{"charge filters", c.LoadChargeFiltersSnapshot, c.StartChargeFiltersConsumer},
+		{"charge filter values", c.LoadChargeFilterValuesSnapshot, c.StartChargeFilterValuesConsumer},
+	}
 }
 
 func (c *Cache) LoadInitialSnapshot() {
@@ -75,53 +119,18 @@ func (c *Cache) LoadInitialSnapshot() {
 	errGroup := errgroup.Group{}
 	defer errGroup.Wait()
 
-	errGroup.Go(func() error {
-		c.LoadBillableMetricsSnapshot(db.Connection)
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		c.LoadSubscriptionsSnapshot(db.Connection)
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		c.LoadChargesSnapshot(db.Connection)
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		c.LoadBillableMetricFiltersSnapshot(db.Connection)
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		c.LoadChargeFiltersSnapshot(db.Connection)
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		c.LoadChargeFilterValuesSnapshot(db.Connection)
-		return nil
-	})
+	for _, model := range c.cachedModels() {
+		errGroup.Go(func() error {
+			model.loadSnapshot(db.Connection)
+			return nil
+		})
+	}
 }
 
 func (c *Cache) ConsumeChanges() error {
-	consumers := []struct {
-		name  string
-		start func(context.Context) error
-	}{
-		{"billable metrics", c.StartBillableMetricsConsumer},
-		{"subscriptions", c.StartSubscriptionsConsumer},
-		{"charges", c.StartChargesConsumer},
-		{"billable metric filters", c.StartBillableMetricFiltersConsumer},
-		{"charge filters", c.StartChargeFiltersConsumer},
-		{"charge filter values", c.StartChargeFilterValuesConsumer},
-	}
-
-	for _, consumer := range consumers {
-		if err := consumer.start(c.ctx); err != nil {
-			return fmt.Errorf("failed to start %s consumer: %w", consumer.name, err)
+	for _, model := range c.cachedModels() {
+		if err := model.startConsumer(c.ctx); err != nil {
+			return fmt.Errorf("failed to start %s consumer: %w", model.name, err)
 		}
 	}
 
