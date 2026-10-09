@@ -53,9 +53,6 @@ type DataStore interface {
 	SetBillableMetric(bm *models.BillableMetric)
 	SetSubscription(sub *models.Subscription)
 	SetCharge(charge *models.Charge)
-	SetContract(contract *models.Contract)
-	ExpectContractNotFound()
-	ExpectContractError()
 	ExpectSubscriptionNotFound()
 	ExpectSubscriptionError()
 	ExpectBillableMetricNotFound()
@@ -82,13 +79,6 @@ func (s *CacheDataStore) SetCharge(charge *models.Charge) {
 	require.True(s.t, result.Success())
 }
 
-func (s *CacheDataStore) SetContract(contract *models.Contract) {
-	result := s.cache.SetContract(contract)
-	require.True(s.t, result.Success())
-}
-
-func (s *CacheDataStore) ExpectContractNotFound()       {}
-func (s *CacheDataStore) ExpectContractError()          {}
 func (s *CacheDataStore) ExpectSubscriptionNotFound()   {}
 func (s *CacheDataStore) ExpectSubscriptionError()      {}
 func (s *CacheDataStore) ExpectBillableMetricNotFound() {}
@@ -121,21 +111,6 @@ func (s *MockDataStore) SetCharge(charge *models.Charge) {
 		rows.AddRow(charge.ID)
 	}
 	s.mock.SQLMock.ExpectQuery(".* FROM \"charges\".*").WillReturnRows(rows)
-}
-
-func (s *MockDataStore) SetContract(contract *models.Contract) {
-	columns := []string{"id", "external_id", "created_at", "updated_at", "started_at", "terminated_at", "canceled_at"}
-	rows := sqlmock.NewRows(columns).
-		AddRow(contract.ID, contract.ExternalID, contract.CreatedAt, contract.UpdatedAt, contract.StartedAt, contract.TerminatedAt, contract.CanceledAt)
-	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\".*").WillReturnRows(rows)
-}
-
-func (s *MockDataStore) ExpectContractNotFound() {
-	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\"").WillReturnError(gorm.ErrRecordNotFound)
-}
-
-func (s *MockDataStore) ExpectContractError() {
-	s.mock.SQLMock.ExpectQuery(".* FROM \"contracts\"").WillReturnError(gorm.ErrNotImplemented)
 }
 
 func (s *MockDataStore) ExpectSubscriptionNotFound() {
@@ -541,18 +516,10 @@ func TestProcessCatalogEvent(t *testing.T) {
 				}
 				testEnv.DataStore.SetBillableMetric(bm)
 
-				contract := &models.Contract{
-					ID:             "contract123",
-					OrganizationID: &event.OrganizationID,
-					ExternalID:     event.ExternalContractID,
-					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
-				}
-				testEnv.DataStore.SetContract(contract)
-
 				result := testEnv.EventProcessor.processCatalogEvent(context.Background(), &event)
 
 				require.True(t, result.Success())
-				assert.Equal(t, "contract123", *result.Value().ContractID)
+				assert.Equal(t, "contract_ext_id", result.Value().ExternalContractID)
 				assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
 				assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
 				assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
@@ -611,6 +578,7 @@ func TestProcessCatalogEvents(t *testing.T) {
 	defer testEnv.Cleanup()
 
 	valid := models.Event{
+		IngestedAt:         utils.CustomTime(time.Now().UTC()),
 		OrganizationID:     bm.OrganizationID,
 		ExternalContractID: "contract_ext_id",
 		TransactionID:      "tx_1",
@@ -632,7 +600,8 @@ func TestProcessCatalogEvents(t *testing.T) {
 	processed := testEnv.EventProcessor.ProcessCatalogEvents(context.Background(), records)
 
 	// Every record is committed: the valid one is enriched, the one without a
-	// contract goes to the dead letter queue, and unparsable JSON is skipped.
+	// contract id goes to the dead letter queue although it was just ingested
+	// (it is not retried), and unparsable JSON is skipped.
 	assert.Len(t, processed, 3)
 	assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
 	assert.Equal(t, 1, testEnv.Producers.deadLetterProducer.ExecutionCount)

@@ -56,7 +56,6 @@ type CatalogEnrichedEvent struct {
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalContractID      string         `json:"external_contract_id"`
-	ContractID              *string        `json:"contract_id"`
 	TransactionID           string         `json:"transaction_id"`
 	Code                    string         `json:"code"`
 	AggregationType         string         `json:"aggregation_type"`
@@ -103,8 +102,8 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	return utils.SuccessResult(er)
 }
 
-func (er *EnrichedEvent) ToCatalogEnrichedEvent(contract *Contract) *CatalogEnrichedEvent {
-	catalogEvent := &CatalogEnrichedEvent{
+func (er *EnrichedEvent) ToCatalogEnrichedEvent() *CatalogEnrichedEvent {
+	return &CatalogEnrichedEvent{
 		InitialEvent:            er.InitialEvent,
 		OrganizationID:          er.OrganizationID,
 		ExternalContractID:      er.InitialEvent.ExternalContractID,
@@ -117,12 +116,6 @@ func (er *EnrichedEvent) ToCatalogEnrichedEvent(contract *Contract) *CatalogEnri
 		Value:                   er.Value,
 		Timestamp:               er.Timestamp,
 	}
-
-	if contract != nil {
-		catalogEvent.ContractID = &contract.ID
-	}
-
-	return catalogEvent
 }
 
 func (ev *Event) NotAPIPostProcessed() bool {

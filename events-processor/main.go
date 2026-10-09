@@ -18,11 +18,10 @@ import (
 )
 
 const (
-	envEnv                            = "ENV"
-	envSentryDsn                      = "SENTRY_DSN"
-	envUseMemoryCache                 = "LAGO_USE_MEMORY_CACHE"
-	envLagoKafkaCatalogRawEventsTopic = "LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC"
-	envDebeziumTopicPrefix            = "LAGO_DEBEZIUM_TOPIC_PREFIX"
+	envEnv                 = "ENV"
+	envSentryDsn           = "SENTRY_DSN"
+	envUseMemoryCache      = "LAGO_USE_MEMORY_CACHE"
+	envDebeziumTopicPrefix = "LAGO_DEBEZIUM_TOPIC_PREFIX"
 )
 
 func main() {
@@ -69,7 +68,6 @@ func main() {
 		memCache, err = cache.NewCache(cache.CacheConfig{
 			Context:             ctx,
 			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
-			LoadContracts:       os.Getenv(envLagoKafkaCatalogRawEventsTopic) != "",
 		})
 		if err != nil {
 			utils.LogAndPanic(err, "Error creating the cache")

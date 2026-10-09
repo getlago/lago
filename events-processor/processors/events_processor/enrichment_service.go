@@ -60,9 +60,9 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 	return utils.SuccessResult(enrichedEvent)
 }
 
-// EnrichCatalogEvent enriches an event of a product catalog organization: the
-// billable metric stage is shared with EnrichEvent, and the contract takes the
-// place of the subscription.
+// EnrichCatalogEvent enriches an event of a product catalog organization with
+// the same billable metric stage as EnrichEvent. The contract is not resolved:
+// billing finds a contract's events by external_contract_id.
 func (s *EventEnrichmentService) EnrichCatalogEvent(event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
 	// Without it the event can't be tied to a contract nor aggregated: a payload
 	// sent to the catalog topic by mistake goes to the dead letter queue.
@@ -76,25 +76,8 @@ func (s *EventEnrichmentService) EnrichCatalogEvent(event *models.Event) utils.R
 	if enrichedEventResult.Failure() {
 		return failedResultFor[*models.CatalogEnrichedEvent](enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
 	}
-	enrichedEvent := enrichedEventResult.Value()
-	bm := enrichedEvent.BillableMetric
 
-	contractResult := s.fetchContract(event, enrichedEvent.Time)
-
-	// Same fallback as subscriptions for recurring billable metrics.
-	if contractResult.Failure() && !contractResult.IsCapturable() && bm != nil && bm.Recurring {
-		contractResult = s.fetchContract(event, time.Now())
-	}
-
-	if contractResult.Failure() {
-		if contractResult.IsCapturable() {
-			return failedResultFor[*models.CatalogEnrichedEvent](contractResult, "fetch_contract", "Error fetching contract")
-		}
-
-		contractResult = utils.SuccessResult[*models.Contract](nil)
-	}
-
-	return utils.SuccessResult(enrichedEvent.ToCatalogEnrichedEvent(contractResult.Value()))
+	return utils.SuccessResult(enrichedEventResult.Value().ToCatalogEnrichedEvent())
 }
 
 func (s *EventEnrichmentService) enrichWithEventBillableMetric(event *models.Event) utils.Result[*models.EnrichedEvent] {
@@ -144,13 +127,6 @@ func (s *EventEnrichmentService) fetchSubscription(event *models.Event, timestam
 		return s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
 	}
 	return s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
-}
-
-func (s *EventEnrichmentService) fetchContract(event *models.Event, timestamp time.Time) utils.Result[*models.Contract] {
-	if s.memCache != nil {
-		return s.memCache.SearchContracts(event.OrganizationID, event.ExternalContractID, timestamp)
-	}
-	return s.apiStore.FetchContract(event.OrganizationID, event.ExternalContractID, timestamp)
 }
 
 func (s *EventEnrichmentService) enrichWithBillableMetric(enrichedEvent *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[*models.EnrichedEvent] {

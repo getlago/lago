@@ -149,7 +149,7 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 }
 
 // processCatalogEvent only writes the enriched event for now: pay in advance and
-// refresh flags need the contract's rate cards, which come next.
+// refresh flags need the contract and its rate cards, which come next.
 func (processor *EventProcessor) processCatalogEvent(ctx context.Context, event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichCatalogEvent(event)
 	if enrichedEventResult.Failure() {
