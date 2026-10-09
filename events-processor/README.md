@@ -43,7 +43,10 @@ This app requires some env vars
 | LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC  | Events Charge In Advance Kafka Topic (eg: `events_charge_in_advance`)                         |
 | LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC         | Events Dead Letter Queue (eg: `events_dead_letter`)                                           |
 | LAGO_KAFKA_CONSUMER_GROUP                   | Kafka Consumer Group Name for Post Processing                                                 |
-| LAGO_REDIS_STORE_URL                        | Redis URL to store subscription refresh IDs                                                   |
+| LAGO_EVENTS_PROCESSOR_PIPELINE              | `events` (default) or `product_events`. Each pipeline runs in its own deployment              |
+| LAGO_KAFKA_PRODUCT_RAW_EVENTS_TOPIC         | Product events pipeline only: raw product events (eg: `product_events_raw`)                   |
+| LAGO_KAFKA_PRODUCT_ENRICHED_EVENTS_TOPIC    | Product events pipeline only: enriched product events (eg: `product_events_enriched`)         |
+| LAGO_REDIS_STORE_URL                        | Events pipeline only: Redis URL to store subscription refresh IDs                             |
 | LAGO_REDIS_CACHE_URL                        | Redis URL to store charge usage cache entries                                                 |
 
 
