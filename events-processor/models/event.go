@@ -52,7 +52,11 @@ type EnrichedEvent struct {
 // catalog_events_enriched: one row per event, keyed by contract, with rate
 // cards and product filters matched when the API reads.
 type CatalogEnrichedEvent struct {
-	InitialEvent *Event `json:"-"`
+	InitialEvent   *Event          `json:"-"`
+	BillableMetric *BillableMetric `json:"-"`
+	// The contract serving the event, when found. Not written to ClickHouse:
+	// billing finds a contract's events by external_contract_id.
+	Contract *Contract `json:"-"`
 
 	OrganizationID          string         `json:"organization_id"`
 	ExternalContractID      string         `json:"external_contract_id"`
@@ -102,9 +106,11 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	return utils.SuccessResult(er)
 }
 
-func (er *EnrichedEvent) ToCatalogEnrichedEvent() *CatalogEnrichedEvent {
+func (er *EnrichedEvent) ToCatalogEnrichedEvent(contract *Contract) *CatalogEnrichedEvent {
 	return &CatalogEnrichedEvent{
 		InitialEvent:            er.InitialEvent,
+		BillableMetric:          er.BillableMetric,
+		Contract:                contract,
 		OrganizationID:          er.OrganizationID,
 		ExternalContractID:      er.InitialEvent.ExternalContractID,
 		TransactionID:           er.TransactionID,
@@ -115,6 +121,26 @@ func (er *EnrichedEvent) ToCatalogEnrichedEvent() *CatalogEnrichedEvent {
 		Source:                  er.Source,
 		Value:                   er.Value,
 		Timestamp:               er.Timestamp,
+	}
+}
+
+// ToChargedInAdvanceEvent builds the message the API prices pay in advance
+// fees from. It keeps the legacy enriched shape: the API job finds the contract
+// through external_subscription_id, where ingestion stores external_contract_id.
+func (ce *CatalogEnrichedEvent) ToChargedInAdvanceEvent() *EnrichedEvent {
+	return &EnrichedEvent{
+		InitialEvent:            ce.InitialEvent,
+		BillableMetric:          ce.BillableMetric,
+		OrganizationID:          ce.OrganizationID,
+		ExternalSubscriptionID:  ce.ExternalContractID,
+		TransactionID:           ce.TransactionID,
+		Code:                    ce.Code,
+		AggregationType:         ce.AggregationType,
+		Properties:              ce.Properties,
+		PreciseTotalAmountCents: ce.PreciseTotalAmountCents,
+		Source:                  ce.Source,
+		Value:                   ce.Value,
+		Timestamp:               ce.Timestamp,
 	}
 }
 
