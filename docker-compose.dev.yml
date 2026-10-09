@@ -337,6 +337,35 @@ services:
     volumes:
       - ./events-processor:/app:cached
 
+  # Product catalog events: run `lago up -d catalog-events-processor` (or use the
+  # `catalog` profile) once the catalog topics are set.
+  catalog-events-processor:
+    image: events-processor_dev
+    pull_policy: never
+    container_name: lago_catalog-events-processor
+    restart: unless-stopped
+    profiles:
+      - catalog
+    build:
+      context: ./events-processor
+      dockerfile: Dockerfile.dev
+    # Both processors share the source mount: a binary of its own keeps their
+    # rebuilds from overwriting each other.
+    command: ["air", "-c", ".air.toml", "-build.cmd", "go build -o ./tmp/catalog_main .", "-build.bin", "./tmp/catalog_main"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    env_file:
+      - path: ./.env.development.default
+      - path: ./.env.development
+        required: false
+    environment:
+      LAGO_EVENTS_PROCESSOR_PIPELINE: catalog_events
+    volumes:
+      - ./events-processor:/app:cached
+
   pdf:
     image: getlago/lago-gotenberg:8
     container_name: lago_pdf_dev

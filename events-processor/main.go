@@ -22,6 +22,7 @@ const (
 	envSentryDsn           = "SENTRY_DSN"
 	envUseMemoryCache      = "LAGO_USE_MEMORY_CACHE"
 	envDebeziumTopicPrefix = "LAGO_DEBEZIUM_TOPIC_PREFIX"
+	envPipeline            = "LAGO_EVENTS_PROCESSOR_PIPELINE"
 )
 
 func main() {
@@ -30,6 +31,13 @@ func main() {
 
 	env := utils.GetEnvOrDefault(envEnv, "development")
 
+	// Each pipeline runs in its own deployment, so a catalog failure or backlog
+	// never holds back the subscription events.
+	pipeline := cache.Pipeline(utils.GetEnvOrDefault(envPipeline, string(cache.PipelineEvents)))
+	if pipeline != cache.PipelineEvents && pipeline != cache.PipelineCatalogEvents {
+		panic(fmt.Sprintf("%s must be %q or %q, got %q", envPipeline, cache.PipelineEvents, cache.PipelineCatalogEvents, pipeline))
+	}
+
 	logLevel := slog.LevelInfo
 	if env == "development" {
 		logLevel = slog.LevelDebug
@@ -37,7 +45,7 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel,
-	})).With("service", "post_process")
+	})).With("service", "post_process", "pipeline", string(pipeline))
 	slog.SetDefault(logger)
 
 	setupGracefulShutdown(cancel)
@@ -68,6 +76,7 @@ func main() {
 		memCache, err = cache.NewCache(cache.CacheConfig{
 			Context:             ctx,
 			DebeziumTopicPrefix: os.Getenv(envDebeziumTopicPrefix),
+			Pipeline:            pipeline,
 		})
 		if err != nil {
 			utils.LogAndPanic(err, "Error creating the cache")
@@ -80,11 +89,17 @@ func main() {
 		}
 	}
 
-	// start processing events & loop forever
-	processors.StartProcessingEvents(ctx, &processors.Config{
+	config := &processors.Config{
 		TracerProvider: tracerProvider,
 		Cache:          memCache,
-	})
+	}
+
+	// start processing events & loop forever
+	if pipeline == cache.PipelineCatalogEvents {
+		processors.StartProcessingCatalogEvents(ctx, config)
+	} else {
+		processors.StartProcessingEvents(ctx, config)
+	}
 }
 
 func setupGracefulShutdown(cancel context.CancelFunc) {
