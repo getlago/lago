@@ -65,7 +65,7 @@ func TestHasAdvanceRateCard(t *testing.T) {
 		assert.False(t, result.Value())
 	})
 
-	t.Run("is false when the rate card is not cached yet", func(t *testing.T) {
+	t.Run("is retried when the rate card is not cached yet", func(t *testing.T) {
 		cache := setupTestCache(t)
 		require.True(t, cache.SetContractRateCard(&models.ContractRateCard{
 			ID: "crc123", OrganizationID: "org-123", ContractID: "contract123", RateCardID: "rc123",
@@ -73,8 +73,26 @@ func TestHasAdvanceRateCard(t *testing.T) {
 
 		result := cache.HasAdvanceRateCard("org-123", "contract123", "bm123")
 
-		require.True(t, result.Success())
-		assert.False(t, result.Value())
+		assert.True(t, result.Failure())
+		assert.Contains(t, result.ErrorMsg(), "rate card rc123 is not cached yet")
+		assert.True(t, result.IsRetryable())
+		assert.False(t, result.IsCapturable())
+	})
+
+	t.Run("is retried when the product is not cached yet", func(t *testing.T) {
+		cache := setupTestCache(t)
+		require.True(t, cache.SetContractRateCard(&models.ContractRateCard{
+			ID: "crc123", OrganizationID: "org-123", ContractID: "contract123", RateCardID: "rc123",
+		}).Success())
+		require.True(t, cache.SetRateCard(&models.RateCard{
+			ID: "rc123", OrganizationID: "org-123", ProductID: "product123", BillingTiming: models.RateCardBillingTimingAdvance,
+		}).Success())
+
+		result := cache.HasAdvanceRateCard("org-123", "contract123", "bm123")
+
+		assert.True(t, result.Failure())
+		assert.Contains(t, result.ErrorMsg(), "product product123 is not cached yet")
+		assert.True(t, result.IsRetryable())
 	})
 }
 

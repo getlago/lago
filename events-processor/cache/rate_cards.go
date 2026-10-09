@@ -62,8 +62,11 @@ func (c *Cache) GetProduct(organizationID, id string) utils.Result[*models.Produ
 	return getJSON[models.Product](c, c.buildProductKey(organizationID, id))
 }
 
-// HasAdvanceRateCard mirrors ApiStore.HasAdvanceRateCard. A rate card or product
-// missing from the cache does not bill in advance; any other read error fails.
+// HasAdvanceRateCard mirrors ApiStore.HasAdvanceRateCard. The three tables come
+// from separate Debezium topics, so a contract card can be cached before its rate
+// card or product. That is only lag: the API refuses to delete a rate card or a
+// product a contract card uses. Such an event is retried instead of being judged
+// as not billed in advance, which would silently drop its fee.
 func (c *Cache) HasAdvanceRateCard(organizationID, contractID, billableMetricID string) utils.Result[bool] {
 	prefix := fmt.Sprintf("%s:%s:%s:", contractRateCardPrefix, organizationID, contractID)
 	cardsResult := searchJSON[models.ContractRateCard](c, prefix)
@@ -75,7 +78,7 @@ func (c *Cache) HasAdvanceRateCard(organizationID, contractID, billableMetricID 
 		rateCardResult := c.GetRateCard(organizationID, contractRateCard.RateCardID)
 		if rateCardResult.Failure() {
 			if errors.Is(rateCardResult.Error(), badger.ErrKeyNotFound) {
-				continue
+				return notCachedYet("rate card", contractRateCard.RateCardID)
 			}
 			return utils.FailedBoolResult(rateCardResult.Error())
 		}
@@ -88,7 +91,7 @@ func (c *Cache) HasAdvanceRateCard(organizationID, contractID, billableMetricID 
 		productResult := c.GetProduct(organizationID, rateCard.ProductID)
 		if productResult.Failure() {
 			if errors.Is(productResult.Error(), badger.ErrKeyNotFound) {
-				continue
+				return notCachedYet("product", rateCard.ProductID)
 			}
 			return utils.FailedBoolResult(productResult.Error())
 		}
@@ -101,6 +104,12 @@ func (c *Cache) HasAdvanceRateCard(organizationID, contractID, billableMetricID 
 	}
 
 	return utils.SuccessResult(false)
+}
+
+// notCachedYet is retried, without reaching Sentry: an event still failing after
+// the retry window goes to the dead letter queue.
+func notCachedYet(model, id string) utils.Result[bool] {
+	return utils.FailedBoolResult(fmt.Errorf("%s %s is not cached yet", model, id)).NonCapturable()
 }
 
 func (c *Cache) LoadContractRateCardsSnapshot(db *gorm.DB) utils.Result[int] {
