@@ -12,6 +12,7 @@ const HTTP_RUBY string = "http_ruby"
 type Event struct {
 	OrganizationID          string           `json:"organization_id"`
 	ExternalSubscriptionID  string           `json:"external_subscription_id"`
+	ExternalContractID      string           `json:"external_contract_id,omitempty"`
 	TransactionID           string           `json:"transaction_id"`
 	Code                    string           `json:"code"`
 	Properties              map[string]any   `json:"properties"`
@@ -45,6 +46,24 @@ type EnrichedEvent struct {
 	Timestamp               float64        `json:"timestamp"`
 	TimestampStr            string         `json:"-"`
 	Time                    time.Time      `json:"-"`
+}
+
+// CatalogEnrichedEvent is what the catalog pipeline writes to
+// catalog_events_enriched: one row per event, keyed by contract, with rate
+// cards and product filters matched when the API reads.
+type CatalogEnrichedEvent struct {
+	InitialEvent *Event `json:"-"`
+
+	OrganizationID          string         `json:"organization_id"`
+	ExternalContractID      string         `json:"external_contract_id"`
+	TransactionID           string         `json:"transaction_id"`
+	Code                    string         `json:"code"`
+	AggregationType         string         `json:"aggregation_type"`
+	Properties              map[string]any `json:"properties"`
+	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
+	Source                  string         `json:"source,omitempty"`
+	Value                   *string        `json:"value"`
+	Timestamp               float64        `json:"timestamp"`
 }
 
 type FailedEvent struct {
@@ -81,6 +100,22 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er.Time = timeResult.Value()
 
 	return utils.SuccessResult(er)
+}
+
+func (er *EnrichedEvent) ToCatalogEnrichedEvent() *CatalogEnrichedEvent {
+	return &CatalogEnrichedEvent{
+		InitialEvent:            er.InitialEvent,
+		OrganizationID:          er.OrganizationID,
+		ExternalContractID:      er.InitialEvent.ExternalContractID,
+		TransactionID:           er.TransactionID,
+		Code:                    er.Code,
+		AggregationType:         er.AggregationType,
+		Properties:              er.Properties,
+		PreciseTotalAmountCents: er.PreciseTotalAmountCents,
+		Source:                  er.Source,
+		Value:                   er.Value,
+		Timestamp:               er.Timestamp,
+	}
 }
 
 func (ev *Event) NotAPIPostProcessed() bool {

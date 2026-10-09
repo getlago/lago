@@ -2,12 +2,14 @@ package events_processor
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/cache"
@@ -18,28 +20,31 @@ import (
 )
 
 type testProducerService struct {
-	enrichedProducer   *tests.MockMessageProducer
-	inAdvanceProducer  *tests.MockMessageProducer
-	deadLetterProducer *tests.MockMessageProducer
-	producerService    *EventProducerService
+	enrichedProducer        *tests.MockMessageProducer
+	inAdvanceProducer       *tests.MockMessageProducer
+	deadLetterProducer      *tests.MockMessageProducer
+	catalogEnrichedProducer *tests.MockMessageProducer
+	producerService         *EventProducerService
 }
 
 func setupProducers() *testProducerService {
 	enrichedProducer := tests.MockMessageProducer{}
 	inAdvanceProducer := tests.MockMessageProducer{}
 	deadLetterProducer := tests.MockMessageProducer{}
+	catalogEnrichedProducer := tests.MockMessageProducer{}
 
 	producerService := NewEventProducerService(
 		&enrichedProducer,
 		&inAdvanceProducer,
 		&deadLetterProducer,
-	)
+	).WithCatalogEnrichedProducer(&catalogEnrichedProducer)
 
 	return &testProducerService{
-		enrichedProducer:   &enrichedProducer,
-		inAdvanceProducer:  &inAdvanceProducer,
-		deadLetterProducer: &deadLetterProducer,
-		producerService:    producerService,
+		enrichedProducer:        &enrichedProducer,
+		inAdvanceProducer:       &inAdvanceProducer,
+		deadLetterProducer:      &deadLetterProducer,
+		catalogEnrichedProducer: &catalogEnrichedProducer,
+		producerService:         producerService,
 	}
 }
 
@@ -473,4 +478,159 @@ func TestProcessEvent(t *testing.T) {
 		})
 
 	}
+}
+
+func TestProcessCatalogEvent(t *testing.T) {
+	testModes := []struct {
+		name     string
+		useCache bool
+	}{
+		{"WithCache", true},
+		{"WithoutCache", false},
+	}
+
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("produces the enriched event on the catalog topic only", func(t *testing.T) {
+				testEnv := setupProcessorTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				event := models.Event{
+					OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalContractID: "contract_ext_id",
+					TransactionID:      "tx_1",
+					Code:               "api_calls",
+					Timestamp:          1741007009,
+					Source:             "SQS",
+					Properties:         map[string]any{"api_requests": "12.0"},
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  event.OrganizationID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeSum,
+					FieldName:       "api_requests",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				result := testEnv.EventProcessor.processCatalogEvent(context.Background(), &event)
+
+				require.True(t, result.Success())
+				assert.Equal(t, "contract_ext_id", result.Value().ExternalContractID)
+				assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.FlagStore.ExecutionCount)
+			})
+
+			t.Run("does not produce anything when enrichment fails", func(t *testing.T) {
+				testEnv := setupProcessorTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				testEnv.DataStore.ExpectBillableMetricNotFound()
+
+				event := models.Event{
+					OrganizationID:     "1a901a90-1a90-1a90-1a90-1a901a901a90",
+					ExternalContractID: "contract_ext_id",
+					Code:               "api_calls",
+					Timestamp:          1741007009,
+				}
+
+				result := testEnv.EventProcessor.processCatalogEvent(context.Background(), &event)
+
+				assert.False(t, result.Success())
+				assert.Equal(t, "fetch_billable_metric", result.ErrorCode())
+				assert.Equal(t, 0, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+			})
+		})
+	}
+}
+
+func eventRecord(t *testing.T, offset int64, event models.Event) *kgo.Record {
+	data, err := json.Marshal(event)
+	require.NoError(t, err)
+
+	return &kgo.Record{Value: data, Offset: offset}
+}
+
+func setupRecordTestEnv(t *testing.T) (*ProcessorTestEnv, *models.BillableMetric) {
+	testEnv := setupProcessorTestEnv(t, true)
+
+	bm := &models.BillableMetric{
+		ID:              "bm123",
+		OrganizationID:  "1a901a90-1a90-1a90-1a90-1a901a901a90",
+		Code:            "api_calls",
+		AggregationType: models.AggregationTypeSum,
+		FieldName:       "api_requests",
+		CreatedAt:       utils.NowNullTime(),
+		UpdatedAt:       utils.NowNullTime(),
+	}
+	testEnv.DataStore.SetBillableMetric(bm)
+
+	return testEnv, bm
+}
+
+func TestProcessCatalogEvents(t *testing.T) {
+	testEnv, bm := setupRecordTestEnv(t)
+	defer testEnv.Cleanup()
+
+	valid := models.Event{
+		IngestedAt:         utils.CustomTime(time.Now().UTC()),
+		OrganizationID:     bm.OrganizationID,
+		ExternalContractID: "contract_ext_id",
+		TransactionID:      "tx_1",
+		Code:               bm.Code,
+		Timestamp:          1741007009,
+		Source:             "SQS",
+		Properties:         map[string]any{"api_requests": "12.0"},
+	}
+	withoutContract := valid
+	withoutContract.ExternalContractID = ""
+	withoutContract.TransactionID = "tx_2"
+
+	records := []*kgo.Record{
+		eventRecord(t, 1, valid),
+		eventRecord(t, 2, withoutContract),
+		{Value: []byte("not json"), Offset: 3},
+	}
+
+	processed := testEnv.EventProcessor.ProcessCatalogEvents(context.Background(), records)
+
+	// Every record is committed: the valid one is enriched, the one without a
+	// contract id goes to the dead letter queue although it was just ingested
+	// (it is not retried), and unparsable JSON is skipped.
+	assert.Len(t, processed, 3)
+	assert.Equal(t, 1, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+	assert.Equal(t, 1, testEnv.Producers.deadLetterProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.enrichedProducer.ExecutionCount)
+}
+
+func TestProcessEvents(t *testing.T) {
+	testEnv, bm := setupRecordTestEnv(t)
+	defer testEnv.Cleanup()
+
+	event := models.Event{
+		OrganizationID:         bm.OrganizationID,
+		ExternalSubscriptionID: "sub_id",
+		TransactionID:          "tx_1",
+		Code:                   bm.Code,
+		Timestamp:              1741007009,
+		Source:                 "SQS",
+		Properties:             map[string]any{"api_requests": "12.0"},
+	}
+
+	records := []*kgo.Record{
+		eventRecord(t, 1, event),
+		{Value: []byte("not json"), Offset: 2},
+	}
+
+	processed := testEnv.EventProcessor.ProcessEvents(context.Background(), records)
+
+	assert.Len(t, processed, 2)
+	assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.catalogEnrichedProducer.ExecutionCount)
+	assert.Equal(t, 0, testEnv.Producers.deadLetterProducer.ExecutionCount)
 }
