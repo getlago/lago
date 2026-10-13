@@ -2,6 +2,7 @@ package events_processor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,30 +26,12 @@ func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache)
 }
 
 func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
-	enrichedEventResult := event.ToEnrichedEvent()
+	enrichedEventResult := s.enrichWithEventBillableMetric(event)
 	if enrichedEventResult.Failure() {
-		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+		return enrichedEventResult
 	}
 	enrichedEvent := enrichedEventResult.Value()
-
-	var bmResult utils.Result[*models.BillableMetric]
-
-	if s.memCache != nil {
-		bmResult = s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
-	} else {
-		bmResult = s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
-	}
-	if bmResult.Failure() {
-		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
-	}
-
-	bm := bmResult.Value()
-	if bm != nil {
-		enrichBmResult := s.enrichWithBillableMetric(enrichedEvent, bm)
-		if enrichBmResult.Failure() {
-			return enrichBmResult
-		}
-	}
+	bm := enrichedEvent.BillableMetric
 
 	subResult := s.fetchSubscription(event, enrichedEvent.Time)
 
@@ -71,6 +54,55 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		enrichSubResult := s.enrichWithSubscription(enrichedEvent, sub)
 		if enrichSubResult.Failure() {
 			return enrichSubResult
+		}
+	}
+
+	return utils.SuccessResult(enrichedEvent)
+}
+
+// EnrichCatalogEvent enriches an event of a product catalog organization with
+// the same billable metric stage as EnrichEvent. The contract is not resolved:
+// billing finds a contract's events by external_contract_id.
+func (s *EventEnrichmentService) EnrichCatalogEvent(event *models.Event) utils.Result[*models.CatalogEnrichedEvent] {
+	// Without it the event can't be tied to a contract nor aggregated: a payload
+	// sent to the catalog topic by mistake goes to the dead letter queue.
+	if event.ExternalContractID == "" {
+		missing := utils.FailedResult[*models.CatalogEnrichedEvent](errors.New("external_contract_id is missing")).
+			NonRetryable().NonCapturable()
+		return failedResultFor[*models.CatalogEnrichedEvent](missing, "missing_external_contract_id", "Catalog event without external_contract_id")
+	}
+
+	enrichedEventResult := s.enrichWithEventBillableMetric(event)
+	if enrichedEventResult.Failure() {
+		return failedResultFor[*models.CatalogEnrichedEvent](enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
+	}
+
+	return utils.SuccessResult(enrichedEventResult.Value().ToCatalogEnrichedEvent())
+}
+
+func (s *EventEnrichmentService) enrichWithEventBillableMetric(event *models.Event) utils.Result[*models.EnrichedEvent] {
+	enrichedEventResult := event.ToEnrichedEvent()
+	if enrichedEventResult.Failure() {
+		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+	}
+	enrichedEvent := enrichedEventResult.Value()
+
+	var bmResult utils.Result[*models.BillableMetric]
+
+	if s.memCache != nil {
+		bmResult = s.memCache.GetBillableMetric(event.OrganizationID, event.Code)
+	} else {
+		bmResult = s.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
+	}
+	if bmResult.Failure() {
+		return failedResult(bmResult, "fetch_billable_metric", "Error fetching billable metric")
+	}
+
+	bm := bmResult.Value()
+	if bm != nil {
+		enrichBmResult := s.enrichWithBillableMetric(enrichedEvent, bm)
+		if enrichBmResult.Failure() {
+			return enrichBmResult
 		}
 	}
 
