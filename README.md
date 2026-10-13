@@ -65,7 +65,7 @@ Help me design and implement a billing integration. Ask before live access.
 
 These interfaces work independently. Application code uses an SDK or the REST API; no Lago plugin is required. Confirm the target organization and environment, keep API keys out of prompts and source control, and review financial changes before execution.
 
-Follow the [agent setup guide](https://getlago.com/docs/guide/ai-agents/agent-sdk/overview) for connection details and validation, or explore the [website overview](https://getlago.com/for-agents). To see real usage become a charge locally, run the maintained demo below.
+Follow the [agent setup guide](https://getlago.com/docs/guide/ai-agents/for-agents) for connection details and validation, or explore the [website overview](https://getlago.com/for-agents). To see real usage become a charge locally, run the maintained demo below.
 
 ## See Lago price an AI workload
 
