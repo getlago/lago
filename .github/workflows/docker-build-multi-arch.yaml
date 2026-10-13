@@ -51,6 +51,12 @@ on:
         type: string
         default: ''
 
+      default-tags:
+        description: 'Emit the built-in tags (semver, branch, PR, sha-<short>). Set false to push only `tags` — e.g. a rebuild of an already-tagged commit must not move its sha-<short> tag.'
+        required: false
+        type: boolean
+        default: true
+
       exact-tags-only:
         description: 'Only push the semver tag (e.g., 1.2.3). Requires the git ref to be a valid semver tag.'
         required: false
@@ -228,11 +234,11 @@ jobs:
           images: ${{ inputs.image-name }}
           context: 'git'
           tags: |
-            type=semver,pattern=v{{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=pr
-            type=ref,event=branch
-            type=sha,priority=1000
+            type=semver,pattern=v{{version}},enable=${{ inputs.default-tags }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ inputs.default-tags }}
+            type=ref,event=pr,enable=${{ inputs.default-tags }}
+            type=ref,event=branch,enable=${{ inputs.default-tags }}
+            type=sha,priority=1000,enable=${{ inputs.default-tags }}
             ${{ inputs.tags }}
 
       - name: Generate build hash
@@ -254,7 +260,15 @@ jobs:
           BUILD_ARGS="${{ inputs.build-args }}"
           BUILD_SECRETS="${{ secrets.build-secrets }}"
 
-          if [[ -n "$BUILD_ARGS" || -n "$BUILD_SECRETS" ]]; then
+          # Without default tags the caller owns the tag scheme: push its tag
+          # as is, with no `.build-<hash>` twin.
+          if [[ "${{ inputs.default-tags }}" != "true" ]]; then
+            if [[ -z "$VERSION" ]]; then
+              echo "::error::default-tags is false, so the tags input must name at least one tag."
+              exit 1
+            fi
+            COMBINED_TAG="${VERSION}"
+          elif [[ -n "$BUILD_ARGS" || -n "$BUILD_SECRETS" ]]; then
             # Sort and normalize the build args to ensure consistency
             SORTED_ARGS=""
             if [[ -n "$BUILD_ARGS" ]]; then
@@ -376,8 +390,8 @@ jobs:
           if [[ "${{ inputs.exact-tags-only }}" == "true" ]]; then
             TAG_ARGS="-t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
           else
-            TAG_ARGS=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-            TAG_ARGS="$TAG_ARGS -t ${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}"
+            TAG_ARGS=$(jq -cr --arg combined "${{ inputs.image-name }}:${{ needs.build.outputs.combined-tag }}" \
+              '.tags + [$combined] | unique | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
           fi
 
           docker buildx imagetools create $TAG_ARGS \
