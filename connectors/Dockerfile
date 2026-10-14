@@ -18,7 +18,7 @@
 # internal/impl/kafka both carry the Apache-2.0 header. The repo is
 # dual-licensed (Apache-2.0 + Redpanda Community License) and declares no
 # repo-level licence, so re-check headers before adding a component.
-ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:latest
+ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:4c7f4748689da0f6ca6f5dcee4068b144966c71e
 ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:latest
 
 # Must match the upstream image tag this replaces, so component behaviour and
