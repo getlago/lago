@@ -443,6 +443,7 @@ services:
       - events_charged_in_advance
       - events_dead_letter
       - product_events_dead_letter
+      - usage_attribution_values
       - activity_logs
       - api_logs
       - security_logs
