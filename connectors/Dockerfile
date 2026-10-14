@@ -35,6 +35,7 @@ ARG CONNECT_VERSION=v4.78.0
 # drags x/crypto down with it, landing on v0.55.0 and silently undoing the
 # crypto bump below. Keep every pin here at or above what the dependency
 # graph already selects; a bump must never be a downgrade.
+ARG GO_EDWARDS25519_VERSION=v1.1.1
 ARG GO_CRYPTO_VERSION=v0.56.0
 ARG GO_NET_VERSION=v0.58.0
 ARG GO_GRPC_VERSION=v1.83.2
@@ -45,6 +46,7 @@ ARG GO_GRPC_VERSION=v1.83.2
 FROM ${BUILD_IMAGE} AS build
 
 ARG CONNECT_VERSION
+ARG GO_EDWARDS25519_VERSION
 ARG GO_CRYPTO_VERSION
 ARG GO_NET_VERSION
 ARG GO_GRPC_VERSION
@@ -64,6 +66,7 @@ COPY main.go .
 RUN go mod init lago-connectors && \
     go get github.com/redpanda-data/connect/v4@${CONNECT_VERSION} && \
     go mod tidy && \
+    go get filippo.io/edwards25519@${GO_EDWARDS25519_VERSION} && \
     go get golang.org/x/crypto@${GO_CRYPTO_VERSION} && \
     go get golang.org/x/net@${GO_NET_VERSION} && \
     go get google.golang.org/grpc@${GO_GRPC_VERSION}
@@ -72,7 +75,7 @@ RUN go mod init lago-connectors && \
 # looks hardened and is not. `go list` reports the version actually selected
 # for the build, which is the only number that matters.
 RUN set -eu; \
-    for mod in "golang.org/x/crypto=${GO_CRYPTO_VERSION}" "golang.org/x/net=${GO_NET_VERSION}" "google.golang.org/grpc=${GO_GRPC_VERSION}"; do \
+    for mod in "filippo.io/edwards25519=${GO_EDWARDS25519_VERSION}" "golang.org/x/crypto=${GO_CRYPTO_VERSION}" "golang.org/x/net=${GO_NET_VERSION}" "google.golang.org/grpc=${GO_GRPC_VERSION}"; do \
       m=${mod%%=*}; want=${mod##*=}; \
       got=$(go list -m -f '{{.Version}}' "$m"); \
       if [ "$(printf '%s\n%s\n' "$want" "$got" | sort -V | head -1)" != "$want" ]; then \
