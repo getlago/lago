@@ -109,6 +109,14 @@ To check a hybrid AI plan with a $49 monthly base fee, model-specific token rate
 
 This checks 100,000 `model_a` tokens at $0.000004 ($0.40), 100,000 `model_b` tokens at $0.000008 ($0.80), and a $2 granted-credit wallet scoped to usage. Lago reports $1.20 of usage and $0.80 of ongoing credits remaining. A separate advance-billed subscription checks that a $49 base invoice remains payable with the same wallet scope; the usage subscription bills its base fee in arrears. The script does not test Lago Cloud, paid credit purchases, payment collection, or the final usage invoice. Clean up before switching between the basic and hybrid fixtures.
 
+For a seat-based SaaS plan with included usage and enterprise entitlements, run a fresh demo with:
+
+```bash
+./examples/agentic-ai-demo/run.sh --seats
+```
+
+It checks an $89 advance invoice ($29 base plus five $12 seats), 10,000 included API calls followed by $5 for 5,000 overage calls, SSO access, and a subscription-specific project limit raised from five to 25. Lago returns the effective entitlement values; the application still enforces access. This local example does not test Cloud, payment collection, or the final usage invoice. Confirm entitlement availability and commercial terms in a Lago Cloud quote before production use.
+
 Log into [http://localhost:8080](http://localhost:8080) with `agentic-ai-demo@example.local` / `agentic-ai-demo-local-password`, then open **Customers → Agentic AI Demo Customer → Agentic AI Demo subscription → Usage**.
 
 Requirements: Docker, `curl`, and `jq`. If ports 8080 or 3001 are occupied, set `LAGO_DEMO_UI_PORT` and `LAGO_DEMO_API_PORT` before running. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its isolated Compose project and data volume when you are done:

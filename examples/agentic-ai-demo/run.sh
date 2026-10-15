@@ -12,9 +12,12 @@ API_KEY="d3d08c5a7c5944c7b54120921f2fcb77f9c1aa43c78217d9"
 
 usage() {
   printf '%s\n' \
-    "Usage: $0 [--hybrid|--cleanup]" \
+    "Usage: $0 [--hybrid|--seats|--cleanup]" \
     "" \
     "Runs a disposable local AI usage-billing demo with Docker Compose." \
+    "  --hybrid  Check a base fee, model rates, and usage-only credits" \
+    "  --seats   Check seats, included usage, and entitlement overrides" \
+    "  --cleanup Remove the isolated demo and its data volume" \
     "" \
     "Optional environment variables:" \
     "  LAGO_DEMO_UI_PORT   Lago UI port (default: 8080)" \
@@ -29,6 +32,9 @@ VERIFY_SCRIPT=seed-and-verify.sh
 case "${1:-}" in
   --hybrid)
     VERIFY_SCRIPT=verify-hybrid-ai.sh
+    ;;
+  --seats)
+    VERIFY_SCRIPT=verify-seats-entitlements.sh
     ;;
   --cleanup)
     compose down --volumes --remove-orphans
