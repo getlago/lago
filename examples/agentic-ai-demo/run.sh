@@ -2,8 +2,8 @@
 
 set -eu
 
-DEMO_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ROOT_DIR=$(CDPATH= cd -- "$DEMO_DIR/../.." && pwd)
+DEMO_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$DEMO_DIR/../.." && pwd)
 COMPOSE_FILE="$DEMO_DIR/compose.yml"
 PROJECT_NAME="lago-agentic-ai-demo"
 UI_PORT=${LAGO_DEMO_UI_PORT:-8080}
@@ -12,7 +12,7 @@ API_KEY="d3d08c5a7c5944c7b54120921f2fcb77f9c1aa43c78217d9"
 
 usage() {
   printf '%s\n' \
-    "Usage: $0 [--cleanup]" \
+    "Usage: $0 [--hybrid|--cleanup]" \
     "" \
     "Runs a disposable local AI usage-billing demo with Docker Compose." \
     "" \
@@ -25,7 +25,11 @@ compose() {
   docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
 }
 
+VERIFY_SCRIPT=seed-and-verify.sh
 case "${1:-}" in
+  --hybrid)
+    VERIFY_SCRIPT=verify-hybrid-ai.sh
+    ;;
   --cleanup)
     compose down --volumes --remove-orphans
     printf 'Removed the Lago Agentic AI demo containers, network, and data volume.\n'
@@ -68,7 +72,7 @@ if ! compose up -d; then
   exit 1
 fi
 
-"$DEMO_DIR/seed-and-verify.sh" "http://127.0.0.1:$API_PORT/api/v1" "$API_KEY"
+"$DEMO_DIR/$VERIFY_SCRIPT" "http://127.0.0.1:$API_PORT/api/v1" "$API_KEY"
 
 printf '\nOpen Lago: http://localhost:%s\n' "$UI_PORT"
 printf 'Local API: http://localhost:%s/api/v1\n' "$API_PORT"

@@ -101,6 +101,14 @@ Lago usage total                   = $0.02
 
 Docker Compose starts an isolated Lago service, then a small script seeds and verifies the example through Lago's API. It retrieves current usage, independently reconciles the result, and retries one transaction to confirm that usage does not increase. Everything stays on your machine; the demo does not access Lago Cloud. The bundled credentials and API key are disposable and only intended for this local demo.
 
+To check a hybrid AI plan with a $49 monthly base fee, model-specific token rates, and usage-only credits, start a fresh demo with:
+
+```bash
+./examples/agentic-ai-demo/run.sh --hybrid
+```
+
+This checks 100,000 `model_a` tokens at $0.000004 ($0.40), 100,000 `model_b` tokens at $0.000008 ($0.80), and a $2 granted-credit wallet scoped to usage. Lago reports $1.20 of usage and $0.80 of ongoing credits remaining. A separate advance-billed subscription checks that a $49 base invoice remains payable with the same wallet scope; the usage subscription bills its base fee in arrears. The script does not test Lago Cloud, paid credit purchases, payment collection, or the final usage invoice. Clean up before switching between the basic and hybrid fixtures.
+
 Log into [http://localhost:8080](http://localhost:8080) with `agentic-ai-demo@example.local` / `agentic-ai-demo-local-password`, then open **Customers → Agentic AI Demo Customer → Agentic AI Demo subscription → Usage**.
 
 Requirements: Docker, `curl`, and `jq`. If ports 8080 or 3001 are occupied, set `LAGO_DEMO_UI_PORT` and `LAGO_DEMO_API_PORT` before running. The demo keeps Lago running so you can inspect the customer, metrics, plan, subscription, events, and usage in the UI. Remove its isolated Compose project and data volume when you are done:
