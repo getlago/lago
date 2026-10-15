@@ -7,21 +7,19 @@
   <h1 align="center">Lago</h1>
 
   <p>
-    <strong>Open-source billing for subscriptions, usage, and AI products</strong>
+    <strong>Billing for subscriptions, usage, and AI products</strong>
     <br />
-    Run Lago locally, self-host it, or use managed Lago Cloud.<br />
+    Use fully managed Lago Cloud or run the open-source platform on your own infrastructure.<br />
     Turn product usage into pricing, credits, entitlements, invoices, and payments.
     <br />
     Use Lago Direct for your own product, or Lago Embedded to power monetization for your customers.
     <br />
     <br />
-    <a href="#try-lago-locally"><strong>Try Lago locally</strong></a>
+    <a href="#try-lago"><strong>Run the local demo</strong></a>
     ·
-    <a href="#see-lago-price-an-ai-workload"><strong>Run the AI billing demo</strong></a>
+    <a href="https://getlago.com/evaluate"><strong>Explore Lago Cloud</strong></a>
     ·
     <a href="https://doc.getlago.com"><strong>Documentation</strong></a>
-    ·
-    <a href="https://www.getlago.com/pricing"><strong>Talk to us about Lago Cloud</strong></a>
   </p>
 </div>
 
@@ -46,9 +44,9 @@
 
 ---
 
-## Try Lago locally
+## Try Lago
 
-From this checkout, run a disposable self-hosted Lago instance and verify a real usage charge:
+**Run locally.** From this checkout, start a disposable Lago instance and verify a real usage charge:
 
 ```bash
 ./examples/agentic-ai-demo/run.sh
@@ -56,14 +54,15 @@ From this checkout, run a disposable self-hosted Lago instance and verify a real
 
 The demo uses Docker, `curl`, and `jq`. It checks the API charge and retries an event to verify duplicate handling. [See the expected result, other pricing examples, and cleanup instructions](#see-lago-price-an-ai-workload).
 
+**Use Lago Cloud.** Lago operates the billing service. Connect your application and chosen payment provider, then [evaluate your current pricing and the next model you may need](https://getlago.com/evaluate). A local demo is one way to test Lago; production can run on Lago Cloud.
+
 | What you want to prove | Start here |
 | --- | --- |
 | Explore a broader self-hosted setup | Follow the [deployment steps](#deploy-lago) and [self-hosting guide](https://getlago.com/docs/guide/lago-self-hosted/overview). |
 | Understand the billing flow without Docker | [Install the Lago plugin](https://github.com/getlago/lago-plugin) for Claude Code or Codex and ask `show me what Lago can do`. Its first example is an offline calculation, not a live Lago test. |
-| Evaluate a managed production path | [Explore Lago Cloud](https://getlago.com/evaluate) with your current pricing and the next model you may need. |
 | Work in an existing Lago organization | Use the [CLI](https://getlago.com/docs/guide/lago-cli/overview) for terminal workflows or the [Product MCP](https://getlago.com/docs/guide/ai-agents/mcp-server) for supported assistant operations. Both require credentials. |
 
-Lago Cloud can run a flat subscription now and support usage pricing, credits, and customer-specific terms as your business changes. Connect your application and chosen payment provider; Lago operates the billing service. Self-hosting gives teams control over deployment and operations.
+Both deployment paths can start with a flat subscription and support usage pricing, credits, and customer-specific terms as your business changes. Self-hosting gives teams control over deployment and operations.
 
 Already route AI traffic through Cloudflare AI Gateway, Snowflake Cortex, Ramp Router, or Databricks AI Gateway? [Lago's Agent SDK guides](https://getlago.com/docs/guide/ai-agents/agent-sdk/overview) show how supported usage becomes billable events. Check each integration's cost-data limits before using that data to assess margins.
 

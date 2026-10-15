@@ -1,12 +1,12 @@
 # Lago Core Repository
 
-> This repository contains Lago's open-source billing application. Lago is also available as managed Lago Cloud. Use this index to find the right test, code, and documentation without assuming a production deployment must be self-hosted.
+> Lago is a billing platform available as fully managed Lago Cloud or open-source software on your own infrastructure. This repository contains the application source and a disposable local demo; running the demo does not require a self-hosted production deployment.
 
 ## Try Lago
 
 - [Guided offline walkthrough](https://github.com/getlago/lago-plugin): Install the optional Lago plugin for Claude Code or Codex and ask `show me what Lago can do`. No Lago account, credentials, Docker, or application repository is needed. The calculation is illustrative and does not contact a Lago backend.
 - [Real local billing demo](https://github.com/getlago/lago/tree/main/examples/agentic-ai-demo): Run `./examples/agentic-ai-demo/run.sh` from this checkout. It starts a disposable Docker deployment and verifies AI usage charges and event replay through the Lago API. It requires Docker, curl, and jq; clean up with `./examples/agentic-ai-demo/run.sh --cleanup`.
-- [Lago Cloud](https://getlago.com/docs/guide/lago-cloud): Evaluate the managed service for production billing without operating the Lago stack. Your application still integrates with Lago and connects payment collection.
+- [Lago Cloud](https://getlago.com/docs/guide/lago-cloud): Evaluate a fully managed production service without operating the Lago stack. Your application still integrates with Lago and connects payment collection.
 
 ## Build an integration
 
