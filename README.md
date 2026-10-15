@@ -7,15 +7,15 @@
   <h1 align="center">Lago</h1>
 
   <p>
-    <strong>Agentic-first, open-source monetization infrastructure for AI products</strong>
+    <strong>Billing for subscriptions today, usage and AI products as you grow</strong>
     <br />
-    Meter tokens, compute, API calls, or any product usage.<br />
-    Turn usage into pricing, credits, entitlements, invoices, payments, and revenue.
+    Run on managed Lago Cloud, or self-host the open-source platform when deployment control matters.<br />
+    Turn product usage into pricing, credits, entitlements, invoices, and payments.
     <br />
     Use Lago Direct for your own product, or Lago Embedded to power monetization for your customers.
     <br />
     <br />
-    <a href="#build-with-your-ai-agent"><strong>Build with your AI agent</strong></a>
+    <a href="#choose-your-first-test"><strong>Choose your first test</strong></a>
     ·
     <a href="#see-lago-price-an-ai-workload"><strong>Run the AI billing demo</strong></a>
     ·
@@ -46,6 +46,21 @@
 
 ---
 
+## Choose your first test
+
+Lago Cloud can run a flat subscription now and support usage pricing, credits, and customer-specific terms as your business changes. Connect your application and chosen payment provider; Lago operates the billing service. Teams with deployment requirements can [self-host](https://getlago.com/solutions/use-cases/self-hosted).
+
+| What you want to prove | Start here |
+| --- | --- |
+| Understand Lago without setup | [Install the Lago plugin](https://github.com/getlago/lago-plugin) for Claude Code or Codex and ask `show me what Lago can do`. Its first example is an offline calculation, not a live Lago test. |
+| Verify a real charge | [Run the local demo](#see-lago-price-an-ai-workload). It checks the API charge and duplicate handling in a disposable Docker deployment. |
+| Evaluate managed billing | [Explore Lago Cloud](https://getlago.com/evaluate) with your current pricing and the next model you may need. |
+| Work in an existing Lago organization | Use the [CLI](https://getlago.com/docs/guide/lago-cli/overview) for terminal workflows or the [Product MCP](https://getlago.com/docs/guide/ai-agents/mcp-server) for supported assistant operations. Both require credentials. |
+
+Already route AI traffic through Cloudflare AI Gateway, Snowflake Cortex, Ramp Router, or Databricks AI Gateway? [Lago's Agent SDK guides](https://getlago.com/docs/guide/ai-agents/agent-sdk/overview) show how supported usage becomes billable events. Check each integration's cost-data limits before using that data to assess margins.
+
+For any proof, compare the expected charge with Lago's result and retry the same event to check duplicate handling. The local demo below does both.
+
 ## Build with your AI agent
 
 Give your coding agent Lago's public documentation, then choose the API, CLI, or MCP for your workflow. Paste this prompt to start:
@@ -60,10 +75,10 @@ Help me design and implement a billing integration. Ask before live access.
 | --- | --- |
 | Build billing into your application | [REST API and SDKs](https://getlago.com/developers) |
 | Inspect billing, run diagnostics, or write scripts | [Lago CLI](https://github.com/getlago/lago-cli) |
-| Give an assistant tools for live billing data and supported operations | [Lago MCP server](https://github.com/getlago/lago-agent-toolkit) |
+| Give an assistant tools for live billing data and supported operations | [Lago Product MCP server](https://github.com/getlago/lago-agent-toolkit) |
 | Give your agent current billing and API context | [Documentation index](https://getlago.com/llms.txt) or [documentation MCP](https://docs.getlago.com/mcp) |
 
-These interfaces work independently. Application code uses an SDK or the REST API; no Lago plugin is required. Confirm the target organization and environment, keep API keys out of prompts and source control, and review financial changes before execution.
+These interfaces work independently. The plugin packages guidance for agents; application code uses an SDK or the REST API. Confirm the target organization and environment, keep API keys out of prompts and source control, and review financial changes before execution.
 
 Follow the [agent setup guide](https://getlago.com/docs/guide/ai-agents/for-agents) for connection details and validation, or explore the [website overview](https://getlago.com/for-agents). To see real usage become a charge locally, run the maintained demo below.
 
@@ -158,7 +173,7 @@ Agentic-first means Lago's billing model is available as structured, inspectable
 |---|---|---|
 | **[REST API and OpenAPI](https://github.com/getlago/lago-openapi)** | Program every core billing workflow and generate typed clients or tools from the schema | Open source |
 | **[Lago CLI](https://github.com/getlago/lago-cli)** | Run billing commands, inspect structured output, and automate terminal workflows | Open source, MIT |
-| **[Lago MCP server](https://github.com/getlago/lago-agent-toolkit)** | Give an MCP-compatible agent tools to read and write invoices, usage, customers, payments, credit notes, coupons, and other Lago primitives | Open source, MIT |
+| **[Lago MCP server](https://github.com/getlago/lago-agent-toolkit)** | Give an MCP-compatible agent supported billing reads, analysis, previews, and a limited set of operations | Open source, MIT |
 | **[Lago Agent SDK for Python](https://github.com/getlago/lago-agent-sdk-python)** | Wrap supported LLM clients, normalize usage, and send token or model-cost events without blocking the LLM call | Open source, MIT |
 | **[Lago Agent SDK for JavaScript and TypeScript](https://github.com/getlago/lago-agent-sdk-js)** | Instrument OpenAI, Anthropic, Mistral, Gemini, and AWS Bedrock clients with under 5 ms p99 wrapper overhead | Open source, MIT |
 | **[Finance Assistant](https://www.getlago.com/platform/ai)** | Ask read-only questions about billing, usage, and revenue in plain language | Beta, early access |
