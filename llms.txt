@@ -1,0 +1,27 @@
+# Lago Core Repository
+
+> This repository contains Lago's open-source billing application. Lago is also available as managed Lago Cloud. Use this index to find the right test, code, and documentation without assuming a production deployment must be self-hosted.
+
+## Try Lago
+
+- [Guided offline walkthrough](https://github.com/getlago/lago-plugin): Install the optional Lago plugin for Claude Code or Codex and ask `show me what Lago can do`. No Lago account, credentials, Docker, or application repository is needed. The calculation is illustrative and does not contact a Lago backend.
+- [Real local billing demo](https://github.com/getlago/lago/tree/main/examples/agentic-ai-demo): Run `./examples/agentic-ai-demo/run.sh` from this checkout. It starts a disposable Docker deployment and verifies AI usage charges and event replay through the Lago API. It requires Docker, curl, and jq; clean up with `./examples/agentic-ai-demo/run.sh --cleanup`.
+- [Lago Cloud](https://getlago.com/docs/guide/lago-cloud): Evaluate the managed service for production billing without operating the Lago stack. Your application still integrates with Lago and connects payment collection.
+
+## Build an integration
+
+- [Developer documentation](https://getlago.com/docs/llms.txt): Billing concepts, task guides, SDKs, API reference, and agent entry points.
+- [Complete OpenAPI specification](https://swagger.getlago.com/openapi.yaml): Check exact fields and endpoint behavior before implementing the REST API.
+- [Lago CLI](https://getlago.com/docs/guide/lago-cli/overview): Configure and inspect a Cloud or self-hosted organization from the terminal. Live requests require an API key; a `test` mode is not an isolated sandbox.
+- [Documentation MCP](https://getlago.com/docs/mcp): Search public documentation. [Product MCP](https://getlago.com/docs/guide/ai-agents/mcp-server) connects an assistant to live billing data with credentials.
+- [AI gateway and router guides](https://getlago.com/docs/guide/ai-agents/agent-sdk/overview): Turn supported model usage into billable events; provider-cost availability varies by integration.
+
+Applications should use a Lago SDK or the REST API at runtime. The plugin, CLI, and MCP servers help people and agents discover, configure, and inspect Lago; they are optional for the application.
+
+## Work in this repository
+
+- [README](https://github.com/getlago/lago#readme): Product overview, local demo, self-hosted setup, and project links.
+- [Contributing guide](https://github.com/getlago/lago/blob/main/CONTRIBUTING.md): Development and contribution workflow.
+- [Security policy](https://github.com/getlago/lago/security): Report vulnerabilities privately.
+
+Billing changes can affect invoices and payments. Verify the environment, organization, identifiers, currency, and expected amounts before live mutations. Keep API keys out of source control and prompts.
