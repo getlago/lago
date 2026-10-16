@@ -22,6 +22,8 @@ type testProducerService struct {
 	inAdvanceProducer  *tests.MockMessageProducer
 	deadLetterProducer *tests.MockMessageProducer
 	producerService    *EventProducerService
+
+	attributionValuesProducer *tests.MockMessageProducer
 }
 
 func setupProducers() *testProducerService {
@@ -40,6 +42,8 @@ func setupProducers() *testProducerService {
 		inAdvanceProducer:  &inAdvanceProducer,
 		deadLetterProducer: &deadLetterProducer,
 		producerService:    producerService,
+
+		attributionValuesProducer: &tests.MockMessageProducer{},
 	}
 }
 
@@ -180,6 +184,7 @@ func setupProcessorTestEnv(t *testing.T, useCache bool) *ProcessorTestEnv {
 		NewEventEnrichmentService(apiStore, memCache),
 		testProducers.producerService,
 		flagger,
+		NewAttributionValuesService(testProducers.attributionValuesProducer),
 	)
 
 	return &ProcessorTestEnv{
@@ -278,6 +283,62 @@ func TestProcessEvent(t *testing.T) {
 			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
 			// The event was already post processed on API, no pay in advance production
 			assert.Equal(t, 0, testEnv.Producers.inAdvanceProducer.ExecutionCount)
+		})
+
+		t.Run("When event carries attribution labels", func(t *testing.T) {
+			testEnv := setupProcessorTestEnv(t, mode.useCache)
+			defer testEnv.Cleanup()
+
+			orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+			event := models.Event{
+				OrganizationID:         orgID,
+				ExternalSubscriptionID: "sub_id",
+				Code:                   "api_calls",
+				Timestamp:              1741007009,
+				Source:                 models.HTTP_RUBY,
+				Properties:             map[string]any{"api_requests": "12.0", "user_id": "alice"},
+				SourceMetadata:         &models.SourceMetadata{ApiPostProcess: true},
+			}
+
+			testEnv.DataStore.SetBillableMetric(&models.BillableMetric{
+				ID:              "bm123",
+				OrganizationID:  orgID,
+				Code:            event.Code,
+				AggregationType: models.AggregationTypeSum,
+				FieldName:       "api_requests",
+				CreatedAt:       utils.NowNullTime(),
+				UpdatedAt:       utils.NowNullTime(),
+			})
+			testEnv.DataStore.SetSubscription(&models.Subscription{
+				ID:             "sub123",
+				OrganizationID: &orgID,
+				ExternalID:     event.ExternalSubscriptionID,
+				PlanID:         "plan123",
+				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+			})
+			testEnv.DataStore.SetUsageAttributionTypes(
+				&models.UsageAttributionType{ID: "uat-user", OrganizationID: orgID, Code: "user", AttributionKeys: utils.StringArray{"user_id"}, UpdatedAt: utils.NowNullTime()},
+			)
+
+			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
+			require.True(t, result.Success())
+
+			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+
+			// The in memory cache stamps no labels, so nothing is reported.
+			if mode.useCache {
+				assert.Equal(t, 0, testEnv.Producers.attributionValuesProducer.ExecutionCount)
+				return
+			}
+
+			assert.Equal(t, 1, testEnv.Producers.attributionValuesProducer.ExecutionCount)
+			assert.Equal(t, []byte(orgID+"-sub123"), testEnv.Producers.attributionValuesProducer.Key)
+			assert.JSONEq(
+				t,
+				`{"organization_id":"`+orgID+`","subscription_id":"sub123","attribution_labels":{"user":"alice"},"timestamp":1741007009}`,
+				string(testEnv.Producers.attributionValuesProducer.Value),
+			)
 		})
 
 		t.Run("When event source is not post process on API when timestamp is invalid", func(t *testing.T) {
