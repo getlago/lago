@@ -147,14 +147,14 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 }
 
 // enrichWithAttributionLabels stamps the account tree labels of the event. Organizations without
-// usage attribution types get no labels.
+// usage attribution types get no labels, and so do events processed with the deprecated in memory
+// cache, which runs without the database.
 func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent) utils.Result[*models.EnrichedEvent] {
-	var typesResult utils.Result[[]*models.UsageAttributionType]
-	if s.memCache != nil {
-		typesResult = s.memCache.SearchUsageAttributionTypes(enrichedEvent.OrganizationID)
-	} else {
-		typesResult = s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	if s.apiStore == nil {
+		return utils.SuccessResult(enrichedEvent)
 	}
+
+	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
 	if typesResult.Failure() {
 		return failedResult(typesResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
 	}

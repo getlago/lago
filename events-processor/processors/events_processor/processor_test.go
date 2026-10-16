@@ -76,12 +76,8 @@ func (s *CacheDataStore) SetCharge(charge *models.Charge) {
 	require.True(s.t, result.Success())
 }
 
-func (s *CacheDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {
-	for _, uat := range types {
-		result := s.cache.SetUsageAttributionType(uat)
-		require.True(s.t, result.Success())
-	}
-}
+// Usage attribution types are not cached: events processed with the cache get no labels.
+func (s *CacheDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {}
 
 func (s *CacheDataStore) ExpectUsageAttributionTypesError() {}
 func (s *CacheDataStore) ExpectSubscriptionNotFound()       {}

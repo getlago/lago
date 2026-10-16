@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"gorm.io/gorm"
-
 	"github.com/getlago/lago/events-processor/utils"
 )
 
@@ -39,27 +37,6 @@ func (store *ApiStore) FetchUsageAttributionTypes(organizationID string) utils.R
 	}
 
 	return utils.SuccessResult(types)
-}
-
-func GetAllUsageAttributionTypes(db *gorm.DB) utils.Result[[]UsageAttributionType] {
-	config := StreamQueryConfig{
-		TableName: "usage_attribution_types",
-		SelectFields: []string{
-			"id",
-			"organization_id",
-			"code",
-			"attribution_keys",
-			"parent_id",
-			"created_at",
-			"updated_at",
-			"deleted_at",
-		},
-		WhereCondition: "deleted_at IS NULL",
-		WhereArgs:      []any{},
-		LogInterval:    10000,
-	}
-
-	return GetAllWithStreaming[UsageAttributionType](db, config)
 }
 
 // BuildAttributionLabels resolves the account tree labels of an event: for each attribution type,
