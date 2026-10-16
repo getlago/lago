@@ -323,6 +323,13 @@ func TestProcessEvent(t *testing.T) {
 			require.True(t, result.Success())
 
 			assert.Equal(t, 1, testEnv.Producers.enrichedProducer.ExecutionCount)
+
+			// The in memory cache stamps no labels, so nothing is reported.
+			if mode.useCache {
+				assert.Equal(t, 0, testEnv.Producers.attributionValuesProducer.ExecutionCount)
+				return
+			}
+
 			assert.Equal(t, 1, testEnv.Producers.attributionValuesProducer.ExecutionCount)
 			assert.Equal(t, []byte(orgID+"-sub123"), testEnv.Producers.attributionValuesProducer.Key)
 			assert.JSONEq(
