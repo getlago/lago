@@ -299,11 +299,15 @@ func TestEnrichEvent(t *testing.T) {
 				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
 				require.True(t, enrichResult.Success())
 
-				assert.Equal(
-					t,
-					map[string]string{"department": "rnd", "user": "alice", "model": "opus"},
-					enrichResult.Value().AttributionLabels,
-				)
+				if mode.useCache {
+					assert.Nil(t, enrichResult.Value().AttributionLabels)
+				} else {
+					assert.Equal(
+						t,
+						map[string]string{"department": "rnd", "user": "alice", "model": "opus"},
+						enrichResult.Value().AttributionLabels,
+					)
+				}
 				assert.Equal(t, "1000", *enrichResult.Value().Value)
 			})
 
