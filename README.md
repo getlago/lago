@@ -114,7 +114,7 @@ To check a hybrid AI plan with a $49 monthly base fee, model-specific token rate
 ./examples/agentic-ai-demo/run.sh --hybrid
 ```
 
-This checks 100,000 `model_a` tokens at $0.000004 ($0.40), 100,000 `model_b` tokens at $0.000008 ($0.80), and a $2 granted-credit wallet scoped to usage. Lago reports $1.20 of usage and $0.80 of ongoing credits remaining. A separate advance-billed subscription checks that a $49 base invoice remains payable with the same wallet scope. The usage subscription then ends early so the script can inspect its finalized invoice: $0.40 and $0.80 in model charges, $1.20 in credits applied, and only its prorated base fee due. This does not test a full month-end renewal, Lago Cloud, paid credit purchases, or payment collection. Clean up before switching between fixtures.
+This checks 100,000 `model_a` tokens at $0.000004 ($0.40), 100,000 `model_b` tokens at $0.000008 ($0.80), and a $2 granted-credit wallet scoped to usage. Lago reports $1.20 of usage and $0.80 of ongoing credits remaining. A separate advance-billed subscription checks that a $49 base invoice remains payable with the same wallet scope. The usage subscription then ends early so the script can inspect its finalized invoice: $0.40 and $0.80 in model charges, $1.20 in credits applied, and only its prorated base fee due. This does not test a full month-end renewal, Lago Cloud, paid credit purchases, automatic top-ups, or payment collection. Automatic recurring top-ups require Lago Premium; this open-source demo does not exercise them. Clean up before switching between fixtures.
 
 For a seat-based SaaS plan with included usage and enterprise entitlements, run a fresh demo with:
 
@@ -159,7 +159,7 @@ Use Lago to launch and change pricing without rebuilding billing:
 - tokens by model, input, output, cache, reasoning, or tool call
 - GPU, CPU, storage, and other compute consumption
 - API calls, transactions, seats, active users, or custom events
-- prepaid credits with automatic top-ups
+- prepaid credits, with automatic top-ups on Lago Premium
 - subscriptions with allowances, minimum commitments, and overages
 - self-serve plans and negotiated enterprise contracts in the same system
 
