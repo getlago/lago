@@ -88,7 +88,12 @@ if ! call_api GET /plans/agentic-ai-demo-plan >/dev/null 2>&1; then
 fi
 
 subscription=$(jq -n '{subscription:{external_customer_id:"agentic-ai-demo-customer",plan_code:"agentic-ai-demo-plan",external_id:"agentic-ai-demo-subscription",billing_time:"anniversary"}}')
-require_api POST /subscriptions "$subscription" >/dev/null
+subscription_response=$(require_api POST /subscriptions "$subscription")
+# ClickHouse deduplicates on the transaction ID and timestamp together. Use
+# the first whole second after activation: rounding started_at down can put
+# events before a subscription that starts partway through a second.
+event_timestamp=$(printf '%s' "$subscription_response" | jq -er '.subscription.started_at | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 + 1')
+while [ "$(date +%s)" -lt "$event_timestamp" ]; do sleep 1; done
 
 send_event() {
   transaction_id=$1
@@ -97,8 +102,9 @@ send_event() {
   event=$(jq -n \
     --arg transaction_id "$transaction_id" \
     --arg code "$code" \
+    --argjson timestamp "$event_timestamp" \
     --argjson tokens "$tokens" \
-    '{event:{transaction_id:$transaction_id,external_subscription_id:"agentic-ai-demo-subscription",code:$code,properties:{tokens:$tokens}}}')
+    '{event:{transaction_id:$transaction_id,external_subscription_id:"agentic-ai-demo-subscription",code:$code,timestamp:$timestamp,properties:{tokens:$tokens}}}')
 
   status=$(curl -sS -o "$RESPONSE_FILE" -w '%{http_code}' \
     "$BASE_URL/events" \
