@@ -119,7 +119,29 @@ while [ "$attempt" -le 30 ]; do
 done
 [ "$attempt" -le 30 ] || { printf 'The $49 base invoice was not found.\n' >&2; exit 1; }
 
+api DELETE '/subscriptions/hybrid-ai-subscription?status=terminated' >/dev/null
+attempt=1
+while [ "$attempt" -le 30 ]; do
+  invoices=$(api GET /customers/hybrid-ai-customer/invoices)
+  invoice_id=$(printf '%s' "$invoices" | jq -r '[.invoices[] | select(.invoice_type == "subscription" and .status == "finalized" and .prepaid_credit_amount_cents == 120) | .lago_id] | first // empty')
+  [ -z "$invoice_id" ] || break
+  attempt=$((attempt + 1))
+  sleep 1
+done
+[ -n "$invoice_id" ] || { printf 'The final usage invoice was not found within 30 seconds.\n' >&2; exit 1; }
+
+invoice=$(api GET "/invoices/$invoice_id")
+printf '%s' "$invoice" | jq -e '
+  .invoice.status == "finalized" and
+  .invoice.prepaid_credit_amount_cents == 120 and
+  ([.invoice.fees[] | select(.item.type == "charge") | .amount_cents] | sort) == [40, 80] and
+  ([.invoice.fees[] | select(.item.type == "subscription")] | length) == 1 and
+  .invoice.total_amount_cents == ([.invoice.fees[] | select(.item.type == "subscription") | .amount_cents] | add) and
+  .invoice.sub_total_excluding_taxes_amount_cents == (.invoice.total_amount_cents + 120)
+' >/dev/null || { printf 'The final invoice did not reconcile model charges, usage credits, and the base fee.\n' >&2; exit 1; }
+
 printf 'Verified on local Lago: $49 monthly plan, $0.40 model A usage, $0.80 model B usage, and $0.80 of $2 usage-only credits remaining.\n'
 printf 'A separate advance-billed subscription confirmed its $49 base invoice remained payable with the same credit scope.\n'
+printf 'The finalized termination invoice contains both usage fees, applies $1.20 of wallet credits, and leaves only the prorated base fee due.\n'
 printf 'Verified: retrying the same transaction ID and timestamp did not add usage.\n'
-printf 'This does not test payment collection, paid credit purchases, Lago Cloud, or the final usage invoice.\n'
+printf 'This does not test payment collection, paid credit purchases, Lago Cloud, or a full month-end renewal.\n'
