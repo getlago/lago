@@ -117,10 +117,9 @@ func (s *MockDataStore) SetCharge(charge *models.Charge) {
 // SetUsageAttributionTypes registers the organization's usage attribution types lookup, that every
 // enriched event goes through once its subscription is resolved.
 func (s *MockDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {
-	columns := []string{"id", "organization_id", "code", "attribution_keys", "parent_id", "created_at", "updated_at", "deleted_at"}
-	rows := sqlmock.NewRows(columns)
+	rows := sqlmock.NewRows([]string{"code", "attribution_keys"})
 	for _, uat := range types {
-		rows.AddRow(uat.ID, uat.OrganizationID, uat.Code, uat.AttributionKeys, uat.ParentID, uat.CreatedAt, uat.UpdatedAt, uat.DeletedAt)
+		rows.AddRow(uat.Code, uat.AttributionKeys)
 	}
 	s.mock.SQLMock.ExpectQuery(".* FROM \"usage_attribution_types\".*").WillReturnRows(rows)
 }

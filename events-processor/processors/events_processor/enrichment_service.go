@@ -3,6 +3,8 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"maps"
 	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
@@ -13,8 +15,9 @@ import (
 )
 
 type EventEnrichmentService struct {
-	apiStore *models.ApiStore
-	memCache *cache.Cache
+	apiStore              *models.ApiStore
+	memCache              *cache.Cache
+	usageAttributionTypes usageAttributionTypesCache
 }
 
 func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache) *EventEnrichmentService {
@@ -30,6 +33,9 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
 	}
 	enrichedEvent := enrichedEventResult.Value()
+
+	// Labels come from the properties as sent, before a custom expression overwrites the metric field.
+	attributionProperties := maps.Clone(enrichedEvent.Properties)
 
 	var bmResult utils.Result[*models.BillableMetric]
 
@@ -74,10 +80,7 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		}
 	}
 
-	enrichLabelsResult := s.enrichWithAttributionLabels(enrichedEvent)
-	if enrichLabelsResult.Failure() {
-		return enrichLabelsResult
-	}
+	s.enrichWithAttributionLabels(enrichedEvent, attributionProperties)
 
 	return utils.SuccessResult(enrichedEvent)
 }
@@ -149,19 +152,38 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 // enrichWithAttributionLabels stamps the account tree labels of the event. Organizations without
 // usage attribution types get no labels, and so do events processed with the deprecated in memory
 // cache, which runs without the database.
-func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent) utils.Result[*models.EnrichedEvent] {
+func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) {
 	if s.apiStore == nil {
-		return utils.SuccessResult(enrichedEvent)
+		return
 	}
 
-	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	typesResult := s.fetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+
+	// Labels are not worth blocking billing for: the event goes on without them.
 	if typesResult.Failure() {
-		return failedResult(typesResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
+		slog.Error(
+			"Error fetching usage attribution types",
+			slog.String("organization_id", enrichedEvent.OrganizationID),
+			slog.String("error", typesResult.ErrorMsg()),
+		)
+		utils.CaptureError(typesResult.Error())
+		return
 	}
 
-	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), enrichedEvent.Properties)
+	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), properties)
+}
 
-	return utils.SuccessResult(enrichedEvent)
+func (s *EventEnrichmentService) fetchUsageAttributionTypes(organizationID string) utils.Result[[]*models.UsageAttributionType] {
+	if types, ok := s.usageAttributionTypes.get(organizationID); ok {
+		return utils.SuccessResult(types)
+	}
+
+	typesResult := s.apiStore.FetchUsageAttributionTypes(organizationID)
+	if typesResult.Success() {
+		s.usageAttributionTypes.set(organizationID, typesResult.Value())
+	}
+
+	return typesResult
 }
 
 func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.EnrichedEvent, sub *models.Subscription) utils.Result[*models.EnrichedEvent] {
