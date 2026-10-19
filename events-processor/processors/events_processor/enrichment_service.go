@@ -15,9 +15,8 @@ import (
 )
 
 type EventEnrichmentService struct {
-	apiStore              *models.ApiStore
-	memCache              *cache.Cache
-	usageAttributionTypes usageAttributionTypesCache
+	apiStore *models.ApiStore
+	memCache *cache.Cache
 }
 
 func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache) *EventEnrichmentService {
@@ -149,15 +148,15 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 	return utils.SuccessResult(true)
 }
 
-// enrichWithAttributionLabels stamps the account tree labels of the event. Organizations without
-// usage attribution types get no labels, and so do events processed with the deprecated in memory
-// cache, which runs without the database.
+// enrichWithAttributionLabels stamps the account tree labels of the event. The billable metric tells
+// whether the organization has usage attribution types, so organizations without them skip the lookup.
+// Events processed with the deprecated in memory cache, which runs without the database, get no labels.
 func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) {
-	if s.apiStore == nil {
+	if s.apiStore == nil || enrichedEvent.BillableMetric == nil || !enrichedEvent.BillableMetric.HasUsageAttributionTypes {
 		return
 	}
 
-	typesResult := s.fetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
 
 	// Labels are not worth blocking billing for: the event goes on without them.
 	if typesResult.Failure() {
@@ -171,19 +170,6 @@ func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *mode
 	}
 
 	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), properties)
-}
-
-func (s *EventEnrichmentService) fetchUsageAttributionTypes(organizationID string) utils.Result[[]*models.UsageAttributionType] {
-	if types, ok := s.usageAttributionTypes.get(organizationID); ok {
-		return utils.SuccessResult(types)
-	}
-
-	typesResult := s.apiStore.FetchUsageAttributionTypes(organizationID)
-	if typesResult.Success() {
-		s.usageAttributionTypes.set(organizationID, typesResult.Value())
-	}
-
-	return typesResult
 }
 
 func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.EnrichedEvent, sub *models.Subscription) utils.Result[*models.EnrichedEvent] {
