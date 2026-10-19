@@ -316,7 +316,7 @@ func TestProcessEvent(t *testing.T) {
 				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			})
 			testEnv.DataStore.SetUsageAttributionTypes(
-				&models.UsageAttributionType{ID: "uat-user", OrganizationID: orgID, Code: "user", AttributionKeys: utils.StringArray{"user_id"}, UpdatedAt: utils.NowNullTime()},
+				&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id"}},
 			)
 
 			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
