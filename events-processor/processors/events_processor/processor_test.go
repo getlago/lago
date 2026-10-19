@@ -91,10 +91,10 @@ type MockDataStore struct {
 }
 
 func (s *MockDataStore) SetBillableMetric(bm *models.BillableMetric) {
-	columns := []string{"id", "organization_id", "code", "aggregation_type", "recurring", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+	columns := []string{"id", "organization_id", "code", "aggregation_type", "recurring", "field_name", "expression", "created_at", "updated_at", "deleted_at", "has_usage_attribution_types"}
 	rows := sqlmock.NewRows(columns).
-		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.Recurring, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
-	s.mock.SQLMock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
+		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.Recurring, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt, bm.HasUsageAttributionTypes)
+	s.mock.SQLMock.ExpectQuery(".* FROM \"billable_metrics\".*").WillReturnRows(rows)
 }
 
 func (s *MockDataStore) SetSubscription(sub *models.Subscription) {
@@ -114,8 +114,8 @@ func (s *MockDataStore) SetCharge(charge *models.Charge) {
 	s.mock.SQLMock.ExpectQuery(".* FROM \"charges\".*").WillReturnRows(rows)
 }
 
-// SetUsageAttributionTypes registers the organization's usage attribution types lookup, that every
-// enriched event goes through once its subscription is resolved.
+// SetUsageAttributionTypes registers the organization's usage attribution types lookup, that events
+// go through once their subscription is resolved, when their billable metric has HasUsageAttributionTypes.
 func (s *MockDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {
 	rows := sqlmock.NewRows([]string{"code", "attribution_keys"})
 	for _, uat := range types {
@@ -254,7 +254,6 @@ func TestProcessEvent(t *testing.T) {
 				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(sub)
-			testEnv.DataStore.SetUsageAttributionTypes()
 
 			charge := &models.Charge{
 				ID:               "ch123",
@@ -335,7 +334,6 @@ func TestProcessEvent(t *testing.T) {
 			}
 			testEnv.DataStore.SetBillableMetric(&bm)
 			testEnv.DataStore.ExpectSubscriptionNotFound()
-			testEnv.DataStore.SetUsageAttributionTypes()
 
 			result := testEnv.EventProcessor.processEvent(context.Background(), &event)
 			assert.True(t, result.Success())
@@ -418,7 +416,6 @@ func TestProcessEvent(t *testing.T) {
 				StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
 			}
 			testEnv.DataStore.SetSubscription(sub)
-			testEnv.DataStore.SetUsageAttributionTypes()
 
 			charge := &models.Charge{
 				ID:               "ch123",

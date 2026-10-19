@@ -185,7 +185,6 @@ func TestEnrichEvent(t *testing.T) {
 				// First lookup (event timestamp) misses, fallback lookup (now) hits.
 				testEnv.DataStore.ExpectSubscriptionNotFound()
 				testEnv.DataStore.SetSubscription(sub)
-				testEnv.DataStore.SetUsageAttributionTypes()
 
 				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
 				assert.True(t, enrichResult.Success())
@@ -239,7 +238,6 @@ func TestEnrichEvent(t *testing.T) {
 				} else {
 					testEnv.DataStore.ExpectSubscriptionNotFound()
 				}
-				testEnv.DataStore.SetUsageAttributionTypes()
 
 				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
 				assert.True(t, enrichResult.Success())
@@ -270,13 +268,14 @@ func TestEnrichEvent(t *testing.T) {
 				}
 
 				bm := &models.BillableMetric{
-					ID:              "bm123",
-					OrganizationID:  orgID,
-					Code:            event.Code,
-					AggregationType: models.AggregationTypeSum,
-					FieldName:       "tokens",
-					CreatedAt:       utils.NowNullTime(),
-					UpdatedAt:       utils.NowNullTime(),
+					ID:                       "bm123",
+					OrganizationID:           orgID,
+					Code:                     event.Code,
+					AggregationType:          models.AggregationTypeSum,
+					FieldName:                "tokens",
+					HasUsageAttributionTypes: true,
+					CreatedAt:                utils.NowNullTime(),
+					UpdatedAt:                utils.NowNullTime(),
 				}
 				testEnv.DataStore.SetBillableMetric(bm)
 
@@ -337,7 +336,11 @@ func TestEnrichEvent(t *testing.T) {
 				}
 				testEnv.DataStore.SetBillableMetric(bm)
 				testEnv.DataStore.ExpectSubscriptionNotFound()
-				testEnv.DataStore.SetUsageAttributionTypes()
+
+				// Registered, but not queried: the billable metric tells the organization has none.
+				testEnv.DataStore.SetUsageAttributionTypes(
+					&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id"}},
+				)
 
 				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
 				require.True(t, enrichResult.Success())
@@ -361,13 +364,14 @@ func TestEnrichEvent(t *testing.T) {
 					}
 
 					bm := &models.BillableMetric{
-						ID:              "bm123",
-						OrganizationID:  orgID,
-						Code:            event.Code,
-						AggregationType: models.AggregationTypeSum,
-						FieldName:       "tokens",
-						CreatedAt:       utils.NowNullTime(),
-						UpdatedAt:       utils.NowNullTime(),
+						ID:                       "bm123",
+						OrganizationID:           orgID,
+						Code:                     event.Code,
+						AggregationType:          models.AggregationTypeSum,
+						FieldName:                "tokens",
+						HasUsageAttributionTypes: true,
+						CreatedAt:                utils.NowNullTime(),
+						UpdatedAt:                utils.NowNullTime(),
 					}
 					testEnv.DataStore.SetBillableMetric(bm)
 					testEnv.DataStore.ExpectSubscriptionNotFound()
@@ -395,14 +399,15 @@ func TestEnrichEvent(t *testing.T) {
 					}
 
 					bm := &models.BillableMetric{
-						ID:              "bm123",
-						OrganizationID:  orgID,
-						Code:            event.Code,
-						AggregationType: models.AggregationTypeSum,
-						FieldName:       "user_id",
-						Expression:      "event.properties.units * 2",
-						CreatedAt:       utils.NowNullTime(),
-						UpdatedAt:       utils.NowNullTime(),
+						ID:                       "bm123",
+						OrganizationID:           orgID,
+						Code:                     event.Code,
+						AggregationType:          models.AggregationTypeSum,
+						FieldName:                "user_id",
+						Expression:               "event.properties.units * 2",
+						HasUsageAttributionTypes: true,
+						CreatedAt:                utils.NowNullTime(),
+						UpdatedAt:                utils.NowNullTime(),
 					}
 					testEnv.DataStore.SetBillableMetric(bm)
 					testEnv.DataStore.ExpectSubscriptionNotFound()
@@ -414,47 +419,6 @@ func TestEnrichEvent(t *testing.T) {
 					require.True(t, enrichResult.Success())
 					assert.Equal(t, "6", *enrichResult.Value().Value)
 					assert.Equal(t, map[string]string{"user": "alice"}, enrichResult.Value().AttributionLabels)
-				})
-
-				t.Run("When the usage attribution types of the organization were fetched recently", func(t *testing.T) {
-					testEnv := setupEnrichmentTestEnv(t, mode.useCache)
-					defer testEnv.Cleanup()
-
-					orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
-
-					bm := &models.BillableMetric{
-						ID:              "bm123",
-						OrganizationID:  orgID,
-						Code:            "tokens",
-						AggregationType: models.AggregationTypeSum,
-						FieldName:       "tokens",
-						CreatedAt:       utils.NowNullTime(),
-						UpdatedAt:       utils.NowNullTime(),
-					}
-
-					// The types are only queried for the first event.
-					testEnv.DataStore.SetBillableMetric(bm)
-					testEnv.DataStore.ExpectSubscriptionNotFound()
-					testEnv.DataStore.SetUsageAttributionTypes(
-						&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id"}},
-					)
-					testEnv.DataStore.SetBillableMetric(bm)
-					testEnv.DataStore.ExpectSubscriptionNotFound()
-
-					for _, user := range []string{"alice", "bob"} {
-						event := models.Event{
-							OrganizationID:         orgID,
-							ExternalSubscriptionID: "sub_id",
-							Code:                   "tokens",
-							Timestamp:              1741007009.0,
-							Source:                 "SQS",
-							Properties:             map[string]any{"tokens": "1000", "user_id": user},
-						}
-
-						enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
-						require.True(t, enrichResult.Success())
-						assert.Equal(t, map[string]string{"user": user}, enrichResult.Value().AttributionLabels)
-					}
 				})
 			}
 		})
