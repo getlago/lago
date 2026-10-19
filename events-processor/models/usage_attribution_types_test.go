@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ import (
 )
 
 var fetchUsageAttributionTypesQuery = regexp.QuoteMeta(
-	`SELECT * FROM "usage_attribution_types" WHERE organization_id = $1 AND deleted_at IS NULL`,
+	`SELECT code, attribution_keys FROM "usage_attribution_types" WHERE organization_id = $1 AND deleted_at IS NULL`,
 )
 
 func TestFetchUsageAttributionTypes(t *testing.T) {
@@ -25,11 +24,9 @@ func TestFetchUsageAttributionTypes(t *testing.T) {
 		store, mock, cleanup := setupApiStore(t)
 		defer cleanup()
 
-		now := time.Now()
-		columns := []string{"id", "organization_id", "code", "attribution_keys", "parent_id", "created_at", "updated_at", "deleted_at"}
-		rows := sqlmock.NewRows(columns).
-			AddRow("uat-department", orgID, "department", "{department_id}", nil, now, now, nil).
-			AddRow("uat-user", orgID, "user", "{user_id,userId}", "uat-department", now, now, nil)
+		rows := sqlmock.NewRows([]string{"code", "attribution_keys"}).
+			AddRow("department", "{department_id}").
+			AddRow("user", "{user_id,userId}")
 
 		mock.ExpectQuery(fetchUsageAttributionTypesQuery).
 			WithArgs(orgID).
@@ -43,11 +40,9 @@ func TestFetchUsageAttributionTypes(t *testing.T) {
 
 		assert.Equal(t, "department", types[0].Code)
 		assert.Equal(t, utils.StringArray{"department_id"}, types[0].AttributionKeys)
-		assert.Nil(t, types[0].ParentID)
 
 		assert.Equal(t, "user", types[1].Code)
 		assert.Equal(t, utils.StringArray{"user_id", "userId"}, types[1].AttributionKeys)
-		assert.Equal(t, "uat-department", *types[1].ParentID)
 	})
 
 	t.Run("should return an empty list when the organization has no usage attribution types", func(t *testing.T) {
@@ -56,7 +51,7 @@ func TestFetchUsageAttributionTypes(t *testing.T) {
 
 		mock.ExpectQuery(fetchUsageAttributionTypesQuery).
 			WithArgs(orgID).
-			WillReturnRows(sqlmock.NewRows([]string{"id"}))
+			WillReturnRows(sqlmock.NewRows([]string{"code", "attribution_keys"}))
 
 		result := store.FetchUsageAttributionTypes(orgID)
 
@@ -122,6 +117,12 @@ func TestBuildAttributionLabels(t *testing.T) {
 			name:       "falls back on the next attribution key when the first one is empty",
 			types:      types,
 			properties: map[string]any{"user_id": "", "userId": "bob"},
+			expected:   map[string]string{"user": "bob"},
+		},
+		{
+			name:       "falls back on the next attribution key when the first one is blank",
+			types:      types,
+			properties: map[string]any{"user_id": "  ", "userId": "bob"},
 			expected:   map[string]string{"user": "bob"},
 		},
 		{

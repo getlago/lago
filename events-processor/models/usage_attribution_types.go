@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/getlago/lago/events-processor/utils"
@@ -14,15 +15,10 @@ const MaxAttributionValueLength = 255
 
 // UsageAttributionType is an account tree level declared by the organization (user, team, model...).
 // An event is attributed to it through the first of its attribution keys found in the event properties.
+// Only the columns that resolve labels are read, as the types are fetched for every event.
 type UsageAttributionType struct {
-	ID              string            `gorm:"primaryKey;->" json:"id"`
-	OrganizationID  string            `gorm:"->" json:"organization_id"`
-	Code            string            `gorm:"->" json:"code"`
-	AttributionKeys utils.StringArray `gorm:"type:varchar[];->" json:"attribution_keys"`
-	ParentID        *string           `gorm:"->" json:"parent_id"`
-	CreatedAt       utils.NullTime    `gorm:"->" json:"created_at"`
-	UpdatedAt       utils.NullTime    `gorm:"->" json:"updated_at"`
-	DeletedAt       utils.NullTime    `gorm:"->" json:"deleted_at"`
+	Code            string            `gorm:"->"`
+	AttributionKeys utils.StringArray `gorm:"type:varchar[];->"`
 }
 
 func (store *ApiStore) FetchUsageAttributionTypes(organizationID string) utils.Result[[]*UsageAttributionType] {
@@ -30,6 +26,7 @@ func (store *ApiStore) FetchUsageAttributionTypes(organizationID string) utils.R
 
 	result := store.db.Connection.
 		Table("usage_attribution_types").
+		Select("code, attribution_keys").
 		Where("organization_id = ? AND deleted_at IS NULL", organizationID).
 		Find(&types)
 	if result.Error != nil {
@@ -68,7 +65,7 @@ func BuildAttributionLabels(types []*UsageAttributionType, properties map[string
 	return labels
 }
 
-// attributionValue formats a property as a label value. Missing, empty, nested (objects, arrays)
+// attributionValue formats a property as a label value. Missing, blank, nested (objects, arrays)
 // and too long values cannot identify an attribution value.
 func attributionValue(property any) (string, bool) {
 	var value string
@@ -82,7 +79,7 @@ func attributionValue(property any) (string, bool) {
 		value = fmt.Sprintf("%v", v)
 	}
 
-	if value == "" || utf8.RuneCountInString(value) > MaxAttributionValueLength {
+	if strings.TrimSpace(value) == "" || utf8.RuneCountInString(value) > MaxAttributionValueLength {
 		return "", false
 	}
 
