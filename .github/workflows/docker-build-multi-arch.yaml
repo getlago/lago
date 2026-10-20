@@ -232,7 +232,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image-name }}
-          context: 'git'
+          # The git context fails on a detached SHA checkout (`ref: <sha>`,
+          # INF-431). Without default tags it is not needed: the caller
+          # names every tag.
+          context: ${{ inputs.default-tags && 'git' || 'workflow' }}
           tags: |
             type=semver,pattern=v{{version}},enable=${{ inputs.default-tags }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ inputs.default-tags }}
