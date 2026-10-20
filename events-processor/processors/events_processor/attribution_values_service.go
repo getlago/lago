@@ -17,10 +17,15 @@ const (
 	// A combination is reported again once this delay is over, which keeps its last_seen_at fresh.
 	attributionValuesReportTTL = time.Hour
 
-	// Bounds the memory of the reported combinations. When full, they are all forgotten: they are
-	// reported again, which the API handles as idempotent upserts.
+	// Bounds the memory of the reported combinations. When full, the expired ones are dropped, and if
+	// it is still full, all are forgotten: they are reported again, as idempotent upserts in the API.
 	attributionValuesMaxReported = 100_000
 )
+
+type reportedCombination struct {
+	reportedAt     time.Time
+	eventTimestamp float64
+}
 
 // AttributionValuesService reports the account tree values carried by enriched events, so that the
 // API stores them in usage_attribution_values. Every subscription + labels combination is reported
@@ -30,7 +35,7 @@ type AttributionValuesService struct {
 	now      func() time.Time
 
 	mu       sync.Mutex
-	reported map[string]time.Time
+	reported map[string]reportedCombination
 }
 
 // NewAttributionValuesService returns a service reporting to the producer. Without a producer,
@@ -39,7 +44,7 @@ func NewAttributionValuesService(producer kafka.MessageProducer) *AttributionVal
 	return &AttributionValuesService{
 		producer: producer,
 		now:      time.Now,
-		reported: make(map[string]time.Time),
+		reported: make(map[string]reportedCombination),
 	}
 }
 
@@ -64,7 +69,7 @@ func (s *AttributionValuesService) ReportAttributionValues(ctx context.Context, 
 	}
 
 	key := fmt.Sprintf("%s|%s|%s", message.OrganizationID, message.SubscriptionID, labelsJson)
-	if !s.markReported(key) {
+	if !s.markReported(key, message.Timestamp) {
 		return
 	}
 
@@ -89,22 +94,38 @@ func (s *AttributionValuesService) ReportAttributionValues(ctx context.Context, 
 }
 
 // markReported records the combination as reported, before it is produced, so that events of the
-// same batch processed concurrently report it once. Returns false when it was reported within the TTL.
-func (s *AttributionValuesService) markReported(key string) bool {
+// same batch processed concurrently report it once. Returns false when it was reported within the TTL,
+// unless the event is a TTL newer than the reported one: a late event reported first must not keep
+// the last_seen_at of live events in the past.
+func (s *AttributionValuesService) markReported(key string, eventTimestamp float64) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := s.now()
-	if reportedAt, ok := s.reported[key]; ok && now.Sub(reportedAt) < attributionValuesReportTTL {
+	if reported, ok := s.reported[key]; ok && !reported.expired(now, eventTimestamp) {
 		return false
 	}
 
 	if len(s.reported) >= attributionValuesMaxReported {
-		s.reported = make(map[string]time.Time)
+		s.pruneExpired(now)
 	}
 
-	s.reported[key] = now
+	s.reported[key] = reportedCombination{reportedAt: now, eventTimestamp: eventTimestamp}
 	return true
+}
+
+// pruneExpired drops the combinations reported before the TTL, and forgets all of them when they
+// are still too many.
+func (s *AttributionValuesService) pruneExpired(now time.Time) {
+	for key, reported := range s.reported {
+		if now.Sub(reported.reportedAt) >= attributionValuesReportTTL {
+			delete(s.reported, key)
+		}
+	}
+
+	if len(s.reported) >= attributionValuesMaxReported {
+		s.reported = make(map[string]reportedCombination)
+	}
 }
 
 func (s *AttributionValuesService) forget(key string) {
@@ -112,4 +133,9 @@ func (s *AttributionValuesService) forget(key string) {
 	defer s.mu.Unlock()
 
 	delete(s.reported, key)
+}
+
+func (r reportedCombination) expired(now time.Time, eventTimestamp float64) bool {
+	return now.Sub(r.reportedAt) >= attributionValuesReportTTL ||
+		eventTimestamp-r.eventTimestamp >= attributionValuesReportTTL.Seconds()
 }
