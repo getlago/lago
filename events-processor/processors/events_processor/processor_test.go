@@ -300,14 +300,14 @@ func TestProcessEvent(t *testing.T) {
 			}
 
 			testEnv.DataStore.SetBillableMetric(&models.BillableMetric{
-				ID:              "bm123",
-				OrganizationID:  orgID,
-				Code:            event.Code,
-				AggregationType: models.AggregationTypeSum,
-				FieldName:       "api_requests",
+				ID:                       "bm123",
+				OrganizationID:           orgID,
+				Code:                     event.Code,
+				AggregationType:          models.AggregationTypeSum,
+				FieldName:                "api_requests",
 				HasUsageAttributionTypes: true,
-				CreatedAt:       utils.NowNullTime(),
-				UpdatedAt:       utils.NowNullTime(),
+				CreatedAt:                utils.NowNullTime(),
+				UpdatedAt:                utils.NowNullTime(),
 			})
 			testEnv.DataStore.SetSubscription(&models.Subscription{
 				ID:             "sub123",
