@@ -253,6 +253,10 @@ services:
       - "traefik.http.routers.lago-front.entrypoints=websecure"
       - "traefik.http.routers.lago-front.rule=Host(`${LAGO_DOMAIN}`)"
       - "traefik.http.routers.lago-front.tls.certresolver=letsencrypt"
+      # getlago/front listens on 80 up to the release before the hardened
+      # image, and on 8080 from that release on (nginx runs as uid 65532).
+      # Change this port to 8080 when you move frontend-image to that release,
+      # and give the service `read_only: true` and a tmpfs on /tmp.
       - "traefik.http.services.lago-front.loadbalancer.server.port=80"
       
 
