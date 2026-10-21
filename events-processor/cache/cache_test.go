@@ -545,3 +545,22 @@ func TestSearchJSON_NestedPrefixes(t *testing.T) {
 	assert.Len(t, adminResult.Value(), 1)
 	assert.Equal(t, "admin", adminResult.Value()[0].Type)
 }
+
+func TestCachedModels(t *testing.T) {
+	names := func(pipeline Pipeline) []string {
+		cache := &Cache{pipeline: pipeline}
+		var names []string
+		for _, model := range cache.cachedModels() {
+			names = append(names, model.name)
+		}
+		return names
+	}
+
+	assert.Equal(t, []string{
+		"billable metrics", "subscriptions", "charges", "billable metric filters", "charge filters", "charge filter values",
+	}, names(PipelineEvents))
+
+	assert.Equal(t, []string{
+		"billable metrics", "contracts", "contract rate cards", "rate cards", "products",
+	}, names(PipelineCatalogEvents))
+}
