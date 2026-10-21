@@ -19,13 +19,16 @@ if [ -d "$data_path" ]; then
 fi
 
 
-if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
+if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ]; then
   echo "### Downloading recommended TLS parameters ..."
   mkdir -p "$data_path/conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
+  curl -fsS https://raw.githubusercontent.com/certbot/certbot/main/certbot/src/certbot/_internal/plugins/nginx/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
   echo
 fi
+
+# The front container runs nginx as uid 65532. certbot writes the keys as root
+# with mode 0600, so give them to that uid after every issue and renewal.
+chown_certs="chown -R 65532:65532 /etc/letsencrypt"
 
 echo "### Creating dummy certificate for $domains ..."
 path="/etc/letsencrypt/live/$domains"
@@ -35,6 +38,7 @@ docker-compose run --rm --entrypoint "\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
     -subj '/CN=localhost'" certbot
+docker-compose run --rm --entrypoint "$chown_certs" certbot
 echo
 
 
@@ -73,8 +77,9 @@ docker-compose run --rm --entrypoint "\
     $domain_args \
     --rsa-key-size $rsa_key_size \
     --agree-tos \
-    --force-renewal" certbot
+    --force-renewal \
+    --deploy-hook '$chown_certs'" certbot
 echo
 
 echo "### Reloading nginx ..."
-docker-compose exec front nginx -s reload
+docker-compose exec front nginx -e /dev/stderr -s reload

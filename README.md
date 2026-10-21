@@ -226,6 +226,15 @@ echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .e
 docker compose up -d
 ```
 
+> [!IMPORTANT]
+> **Upgrading the front image.** From the release that ships [getlago/lago-front#4359](https://github.com/getlago/lago-front/pull/4359), the `front` container runs nginx as uid 65532 (not root), with a read-only root filesystem, and listens on **8080** (8443 for TLS) instead of 80 (443). The `docker-compose.yml` in this repository already maps the host ports to the new container ports. If you run your own Compose file, Kubernetes manifests or reverse proxy:
+>
+> - Point it at container port `8080`. The host port can stay `80`.
+> - Give `/tmp` a writable mount (a tmpfs or an emptyDir). The container writes its pid file, `env-config.js` and `csp.conf` there.
+> - If you mount your own nginx `default.conf`, listen on 8080/8443, and copy the `env-config.js` location and the `include /tmp/csp.conf` lines from `extra/nginx-selfsigned.conf`. Do not set `ssl_dhparam`: the image cannot load DH parameter files.
+> - Make TLS keys readable by uid 65532 (`extra/init-selfsigned.sh` and `extra/init-letsencrypt.sh` do this).
+> - Remove any `command:` override for the front service. It never reached nginx; use the `entrypoint:` in `docker-compose.yml` instead.
+
 Use the [self-hosted deployment guide](https://doc.getlago.com/guide/lago-self-hosted/docker#configuration) for persistent storage, SMTP, TLS, object storage, Redis, database configuration, and upgrades. For larger deployments, use the [Lago Helm charts](https://github.com/getlago/lago-helm-charts) and configure [dedicated workers](./docs/architecture.md#dedicated-workers).
 
 ## SDKs and developer resources
