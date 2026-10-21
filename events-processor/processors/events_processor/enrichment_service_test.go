@@ -10,6 +10,7 @@ import (
 	"github.com/getlago/lago/events-processor/tests"
 	"github.com/getlago/lago/events-processor/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type enrichmentTestEnv struct {
@@ -245,6 +246,181 @@ func TestEnrichEvent(t *testing.T) {
 				assert.Nil(t, eventResult.Subscription)
 				assert.Equal(t, "", eventResult.SubscriptionID)
 			})
+
+			t.Run("With usage attribution types", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "tokens",
+					Timestamp:              1741007009.0,
+					Source:                 "SQS",
+					Properties: map[string]any{
+						"tokens":        "1000",
+						"department_id": "rnd",
+						"userId":        "alice",
+						"model":         "opus",
+					},
+				}
+
+				bm := &models.BillableMetric{
+					ID:                       "bm123",
+					OrganizationID:           orgID,
+					Code:                     event.Code,
+					AggregationType:          models.AggregationTypeSum,
+					FieldName:                "tokens",
+					HasUsageAttributionTypes: true,
+					CreatedAt:                utils.NowNullTime(),
+					UpdatedAt:                utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+
+				sub := &models.Subscription{
+					ID:             "sub123",
+					OrganizationID: &orgID,
+					ExternalID:     event.ExternalSubscriptionID,
+					PlanID:         "plan_id",
+					StartedAt:      utils.NewNullTime(time.Unix(1700000000, 0)),
+				}
+				testEnv.DataStore.SetSubscription(sub)
+
+				testEnv.DataStore.SetUsageAttributionTypes(
+					&models.UsageAttributionType{Code: "department", AttributionKeys: utils.StringArray{"department_id"}},
+					&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id", "userId"}},
+					&models.UsageAttributionType{Code: "model", AttributionKeys: utils.StringArray{"model"}},
+					&models.UsageAttributionType{Code: "region", AttributionKeys: utils.StringArray{"region"}},
+				)
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				require.True(t, enrichResult.Success())
+
+				if mode.useCache {
+					assert.Nil(t, enrichResult.Value().AttributionLabels)
+				} else {
+					assert.Equal(
+						t,
+						map[string]string{"department": "rnd", "user": "alice", "model": "opus"},
+						enrichResult.Value().AttributionLabels,
+					)
+				}
+				assert.Equal(t, "1000", *enrichResult.Value().Value)
+			})
+
+			t.Run("Without usage attribution types", func(t *testing.T) {
+				testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+				defer testEnv.Cleanup()
+
+				orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+				event := models.Event{
+					OrganizationID:         orgID,
+					ExternalSubscriptionID: "sub_id",
+					Code:                   "tokens",
+					Timestamp:              1741007009.0,
+					Source:                 "SQS",
+					Properties:             map[string]any{"tokens": "1000", "user_id": "alice"},
+				}
+
+				bm := &models.BillableMetric{
+					ID:              "bm123",
+					OrganizationID:  orgID,
+					Code:            event.Code,
+					AggregationType: models.AggregationTypeSum,
+					FieldName:       "tokens",
+					CreatedAt:       utils.NowNullTime(),
+					UpdatedAt:       utils.NowNullTime(),
+				}
+				testEnv.DataStore.SetBillableMetric(bm)
+				testEnv.DataStore.ExpectSubscriptionNotFound()
+
+				// Registered, but not queried: the billable metric tells the organization has none.
+				testEnv.DataStore.SetUsageAttributionTypes(
+					&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id"}},
+				)
+
+				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+				require.True(t, enrichResult.Success())
+				assert.Nil(t, enrichResult.Value().AttributionLabels)
+			})
+
+			if !mode.useCache {
+				t.Run("When usage attribution types cannot be fetched", func(t *testing.T) {
+					testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+					defer testEnv.Cleanup()
+
+					orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+					event := models.Event{
+						OrganizationID:         orgID,
+						ExternalSubscriptionID: "sub_id",
+						Code:                   "tokens",
+						Timestamp:              1741007009.0,
+						Source:                 "SQS",
+						Properties:             map[string]any{"tokens": "1000", "user_id": "alice"},
+					}
+
+					bm := &models.BillableMetric{
+						ID:                       "bm123",
+						OrganizationID:           orgID,
+						Code:                     event.Code,
+						AggregationType:          models.AggregationTypeSum,
+						FieldName:                "tokens",
+						HasUsageAttributionTypes: true,
+						CreatedAt:                utils.NowNullTime(),
+						UpdatedAt:                utils.NowNullTime(),
+					}
+					testEnv.DataStore.SetBillableMetric(bm)
+					testEnv.DataStore.ExpectSubscriptionNotFound()
+					testEnv.DataStore.ExpectUsageAttributionTypesError()
+
+					enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+					require.True(t, enrichResult.Success())
+					assert.Nil(t, enrichResult.Value().AttributionLabels)
+					assert.Equal(t, "1000", *enrichResult.Value().Value)
+				})
+
+				t.Run("When a custom expression overwrites an attribution key", func(t *testing.T) {
+					testEnv := setupEnrichmentTestEnv(t, mode.useCache)
+					defer testEnv.Cleanup()
+
+					orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+
+					event := models.Event{
+						OrganizationID:         orgID,
+						ExternalSubscriptionID: "sub_id",
+						Code:                   "tokens",
+						Timestamp:              1741007009.0,
+						Source:                 "SQS",
+						Properties:             map[string]any{"units": 3, "user_id": "alice"},
+					}
+
+					bm := &models.BillableMetric{
+						ID:                       "bm123",
+						OrganizationID:           orgID,
+						Code:                     event.Code,
+						AggregationType:          models.AggregationTypeSum,
+						FieldName:                "user_id",
+						Expression:               "event.properties.units * 2",
+						HasUsageAttributionTypes: true,
+						CreatedAt:                utils.NowNullTime(),
+						UpdatedAt:                utils.NowNullTime(),
+					}
+					testEnv.DataStore.SetBillableMetric(bm)
+					testEnv.DataStore.ExpectSubscriptionNotFound()
+					testEnv.DataStore.SetUsageAttributionTypes(
+						&models.UsageAttributionType{Code: "user", AttributionKeys: utils.StringArray{"user_id"}},
+					)
+
+					enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
+					require.True(t, enrichResult.Success())
+					assert.Equal(t, "6", *enrichResult.Value().Value)
+					assert.Equal(t, map[string]string{"user": "alice"}, enrichResult.Value().AttributionLabels)
+				})
+			}
 		})
 	}
 }

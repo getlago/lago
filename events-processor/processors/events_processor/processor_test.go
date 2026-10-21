@@ -48,6 +48,8 @@ type DataStore interface {
 	SetBillableMetric(bm *models.BillableMetric)
 	SetSubscription(sub *models.Subscription)
 	SetCharge(charge *models.Charge)
+	SetUsageAttributionTypes(types ...*models.UsageAttributionType)
+	ExpectUsageAttributionTypesError()
 	ExpectSubscriptionNotFound()
 	ExpectSubscriptionError()
 	ExpectBillableMetricNotFound()
@@ -74,9 +76,13 @@ func (s *CacheDataStore) SetCharge(charge *models.Charge) {
 	require.True(s.t, result.Success())
 }
 
-func (s *CacheDataStore) ExpectSubscriptionNotFound()   {}
-func (s *CacheDataStore) ExpectSubscriptionError()      {}
-func (s *CacheDataStore) ExpectBillableMetricNotFound() {}
+// Usage attribution types are not cached: events processed with the cache get no labels.
+func (s *CacheDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {}
+
+func (s *CacheDataStore) ExpectUsageAttributionTypesError() {}
+func (s *CacheDataStore) ExpectSubscriptionNotFound()       {}
+func (s *CacheDataStore) ExpectSubscriptionError()          {}
+func (s *CacheDataStore) ExpectBillableMetricNotFound()     {}
 
 // MockDataStore wraps SQL mock for test setup
 type MockDataStore struct {
@@ -85,10 +91,10 @@ type MockDataStore struct {
 }
 
 func (s *MockDataStore) SetBillableMetric(bm *models.BillableMetric) {
-	columns := []string{"id", "organization_id", "code", "aggregation_type", "recurring", "field_name", "expression", "created_at", "updated_at", "deleted_at"}
+	columns := []string{"id", "organization_id", "code", "aggregation_type", "recurring", "field_name", "expression", "created_at", "updated_at", "deleted_at", "has_usage_attribution_types"}
 	rows := sqlmock.NewRows(columns).
-		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.Recurring, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt)
-	s.mock.SQLMock.ExpectQuery("SELECT \\* FROM \"billable_metrics\".*").WillReturnRows(rows)
+		AddRow(bm.ID, bm.OrganizationID, bm.Code, bm.AggregationType, bm.Recurring, bm.FieldName, bm.Expression, bm.CreatedAt, bm.UpdatedAt, bm.DeletedAt, bm.HasUsageAttributionTypes)
+	s.mock.SQLMock.ExpectQuery(".* FROM \"billable_metrics\".*").WillReturnRows(rows)
 }
 
 func (s *MockDataStore) SetSubscription(sub *models.Subscription) {
@@ -106,6 +112,20 @@ func (s *MockDataStore) SetCharge(charge *models.Charge) {
 		rows.AddRow(charge.ID)
 	}
 	s.mock.SQLMock.ExpectQuery(".* FROM \"charges\".*").WillReturnRows(rows)
+}
+
+// SetUsageAttributionTypes registers the organization's usage attribution types lookup, that events
+// go through once their subscription is resolved, when their billable metric has HasUsageAttributionTypes.
+func (s *MockDataStore) SetUsageAttributionTypes(types ...*models.UsageAttributionType) {
+	rows := sqlmock.NewRows([]string{"code", "attribution_keys"})
+	for _, uat := range types {
+		rows.AddRow(uat.Code, uat.AttributionKeys)
+	}
+	s.mock.SQLMock.ExpectQuery(".* FROM \"usage_attribution_types\".*").WillReturnRows(rows)
+}
+
+func (s *MockDataStore) ExpectUsageAttributionTypesError() {
+	s.mock.SQLMock.ExpectQuery(".* FROM \"usage_attribution_types\".*").WillReturnError(gorm.ErrInvalidDB)
 }
 
 func (s *MockDataStore) ExpectSubscriptionNotFound() {
