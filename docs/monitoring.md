@@ -161,6 +161,8 @@ These metrics are available from the Sidekiq web service at `/prometheus/metrics
 | `wallets` | Default Worker (deprecated) |
 | `webhook` | Default Worker (webhook jobs) |
 | `webhook_worker` | Dedicated Webhook Worker |
+| `webhook_worker_high_priority` | Dedicated Webhook Worker |
+| `webhook_alert_worker` | Dedicated Webhook Alert Worker |
 
 ### Sidekiq Pro Metrics (StatsD)
 
