@@ -5,13 +5,12 @@
 # bases: no apt, no shell in the runtime layer, nonroot by default.
 # See getlago/lago-packages for the base image definitions.
 #
-# TAG PIN: both ARGs below default to an immutable
-# `:<lago-packages-commit-sha>`. The daily rebuild of lago-packages
-# keeps `:latest` within ~24h of upstream Wolfi; repin here to pick
-# that up, so a base bump is a reviewable diff rather than a silent
-# change under a floating tag.
-ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:4c2a516c79a6fb9e26b3bb20a139852a88e45889
-ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:4c2a516c79a6fb9e26b3bb20a139852a88e45889
+# BASE PIN: `:latest@sha256:<index digest>`. Docker builds from the digest,
+# so a build is reproducible. Renovate (getlago/lago-packages
+# renovate/lago-bases) opens a PR when `latest` moves; the base refresh
+# rebuilds deployed tags with a newer RUNTIME_IMAGE in between.
+ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:latest@sha256:dadee68b85c00da7aac537966634cf35e7246eb7d65ba960289c85ca172af6c4
+ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:latest@sha256:90b25a60d3d1a4593a61af07090a1ce46cd08eb0dca4bc23d539061b259ebb97
 
 # lago-expression builds libexpression_go.so, the cdylib that the
 # expression-go cgo binding links against (`#cgo LDFLAGS:
