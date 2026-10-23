@@ -18,8 +18,14 @@
 # internal/impl/kafka both carry the Apache-2.0 header. The repo is
 # dual-licensed (Apache-2.0 + Redpanda Community License) and declares no
 # repo-level licence, so re-check headers before adding a component.
-ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:latest
-ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:latest
+
+# BASE PIN: `:<YYYYMMDD>-r<run>@sha256:<index digest>`, an immutable
+# lago-packages publish. Docker builds from the digest, so a build is
+# reproducible. Renovate (getlago/lago-packages renovate/lago-bases) moves tag
+# and digest together when a newer base is published; the base refresh
+# rebuilds deployed tags with a newer RUNTIME_IMAGE in between.
+ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:20261023-r68@sha256:d6f1288bfdf4624facad3abef971af96d43222fc13a2178a71f0be429fe0cfdf
+ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:20261021-r62@sha256:4096e88559b12003c6b55f8051a7f579f3821793acbbdb4b26e0e0cf93d15f3c
 
 # Must match the upstream image tag this replaces, so component behaviour and
 # config schema stay identical.
