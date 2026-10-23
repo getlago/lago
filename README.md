@@ -231,7 +231,7 @@ docker compose up -d
 >
 > - Point it at container port `8080`. The host port can stay `80`.
 > - Give `/tmp` a writable mount (a tmpfs or an emptyDir). The container writes its pid file, `env-config.js` and `csp.conf` there.
-> - If you mount your own nginx `default.conf`, listen on 8080/8443, and copy the `env-config.js` location and the `include /tmp/csp.conf` lines from `extra/nginx-selfsigned.conf`. Do not set `ssl_dhparam`: the image cannot load DH parameter files.
+> - If you mount your own nginx `default.conf`, listen on 8080/8443, and copy the `env-config.js` location, the dotfile location (it keeps `/.env.sh` private) and the `include /tmp/csp.conf` lines from `extra/nginx-selfsigned.conf`. Do not set `ssl_dhparam`: the image cannot load DH parameter files.
 > - Make TLS keys readable by uid 65532 (`extra/init-selfsigned.sh` and `extra/init-letsencrypt.sh` do this).
 > - Remove any `command:` override for the front service. It never reached nginx; use the `entrypoint:` in `docker-compose.yml` instead.
 
