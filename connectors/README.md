@@ -82,3 +82,15 @@
 |KAFKA_BATCH_BYTE_SIZE|Maximum size in bytes for batching, default: 1000000 (1MB)|No|
 |KAFKA_BATCH_PERIOD|Time period for batching, default: 1s|No|
 
+
+## Upgrading Redpanda Connect
+
+`CONNECT_VERSION` in the `Dockerfile` sets the component behaviour and config schema. After a bump, build the image and check the configs:
+
+```shell
+docker build -t lago-connectors:test connectors
+docker run --rm --entrypoint /redpanda-connect lago-connectors:test test ./sqs.yml
+docker run --rm --entrypoint /redpanda-connect lago-connectors:test lint ./sqs.yml ./kinesis.yml ./http.yml
+```
+
+`lint` reports the unset environment variables. Any other finding needs a config change.
