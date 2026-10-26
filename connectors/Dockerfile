@@ -21,23 +21,16 @@
 ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:latest
 ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:latest
 
-# Must match the upstream image tag this replaces, so component behaviour and
-# config schema stay identical.
-ARG CONNECT_VERSION=v4.78.0
+# Component behaviour and config schema follow this version. Lint the
+# configs on every bump (see README).
+ARG CONNECT_VERSION=v4.115.1
 
-# CVE bumps applied over whatever connect v4.78.0's go.mod resolves to. These
-# are the modules Wiz flagged on the published image; `go get` on an
-# already-satisfied version is a no-op, so a stale line here is harmless but
-# misleading — drop one once CONNECT_VERSION requires at least it.
-# x/net is set ABOVE the v0.55.0 the advisory asks for, and that is
-# load-bearing. connect v4.78.0 already resolves x/net to v0.58.0, so
-# `go get golang.org/x/net@v0.55.0` is a DOWNGRADE — and downgrading x/net
-# drags x/crypto down with it, landing on v0.55.0 and silently undoing the
-# crypto bump below. Keep every pin here at or above what the dependency
-# graph already selects; a bump must never be a downgrade.
-ARG GO_CRYPTO_VERSION=v0.56.0
-ARG GO_NET_VERSION=v0.58.0
-ARG GO_GRPC_VERSION=v1.83.2
+# Minimum versions for modules Wiz flagged on earlier images. The build
+# forces none of them: CONNECT_VERSION already selects at or above each one.
+# The check below fails the build if a later CONNECT_VERSION goes below one.
+# To force a version again, `go get` it AFTER `go mod tidy`: tidy recomputes
+# module selection and undoes an earlier bump.
+ARG MIN_MODULE_VERSIONS="golang.org/x/crypto=v0.56.0 golang.org/x/net=v0.58.0 google.golang.org/grpc=v1.83.2 github.com/jackc/pgx/v5=v5.9.2"
 
 # ---------------------------------------------------------------------------
 # Build stage — a tiny module that imports only the components we run.
@@ -45,9 +38,7 @@ ARG GO_GRPC_VERSION=v1.83.2
 FROM ${BUILD_IMAGE} AS build
 
 ARG CONNECT_VERSION
-ARG GO_CRYPTO_VERSION
-ARG GO_NET_VERSION
-ARG GO_GRPC_VERSION
+ARG MIN_MODULE_VERSIONS
 
 WORKDIR /src
 
@@ -57,24 +48,20 @@ COPY main.go .
 # only to select components, and `go mod tidy` resolving against the pinned
 # CONNECT_VERSION is what makes the dependency set reproducible. Promote them
 # into the repo if you want the build to run without the module proxy.
-# ORDER MATTERS. `go mod tidy` recomputes module selection, and running it
-# after the CVE bumps silently undoes them: with tidy last, x/crypto resolved
-# back to v0.55.0 even though v0.56.0 was requested — and x/crypto carried 7
-# of this image's 14 critical findings. Tidy first, bump second, then verify.
 RUN go mod init lago-connectors && \
     go get github.com/redpanda-data/connect/v4@${CONNECT_VERSION} && \
-    go mod tidy && \
-    go get golang.org/x/crypto@${GO_CRYPTO_VERSION} && \
-    go get golang.org/x/net@${GO_NET_VERSION} && \
-    go get google.golang.org/grpc@${GO_GRPC_VERSION}
+    go mod tidy
 
-# Fail the build if a bump did not stick, rather than shipping an image that
-# looks hardened and is not. `go list` reports the version actually selected
-# for the build, which is the only number that matters.
+# Fail the build if a flagged module resolves below its minimum, rather than
+# shipping an image that looks hardened and is not. `go list` reports the
+# version actually selected for the build, which is the only number that
+# matters. A module that is not in the build list is not linked: skip it.
 RUN set -eu; \
-    for mod in "golang.org/x/crypto=${GO_CRYPTO_VERSION}" "golang.org/x/net=${GO_NET_VERSION}" "google.golang.org/grpc=${GO_GRPC_VERSION}"; do \
+    for mod in ${MIN_MODULE_VERSIONS}; do \
       m=${mod%%=*}; want=${mod##*=}; \
-      got=$(go list -m -f '{{.Version}}' "$m"); \
+      if ! got=$(go list -m -f '{{.Version}}' "$m" 2>/dev/null); then \
+        echo "ok: $m not in the build list"; continue; \
+      fi; \
       if [ "$(printf '%s\n%s\n' "$want" "$got" | sort -V | head -1)" != "$want" ]; then \
         echo "ERROR: $m resolved to $got, below required $want" >&2; exit 1; \
       fi; \
