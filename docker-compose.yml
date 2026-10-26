@@ -78,6 +78,7 @@ x-backend-environment: &backend-env
   # - SIDEKIQ_BILLING=true
   # - SIDEKIQ_CLOCK=true
   # - SIDEKIQ_WEBHOOK=true
+  # - SIDEKIQ_WEBHOOK_ALERT=true
   # - SIDEKIQ_AI_AGENT=true
   # - SIDEKIQ_ALERTS=true
 x-frontend-environment: &frontend-env
@@ -299,6 +300,20 @@ services:
   #    api:
   #      condition: service_healthy
   #  command: ["./scripts/start.webhook.worker.sh"]
+  #  environment:
+  #    <<: [*backend-env, *lago-api-url]
+
+  # You can uncomment this if you want to use a dedicated Sidekiq worker for the usage alert webhooks
+  # (alert.triggered, subscription.usage_threshold_reached, wallet.depleted_ongoing_balance).
+  # Set SIDEKIQ_WEBHOOK_ALERT=true on the other workers so these webhooks are routed to this worker.
+  #api-webhook-alert-worker:
+  #  <<: *backend-image
+  #  container_name: lago-webhook-alert-worker
+  #  restart: unless-stopped
+  #  depends_on:
+  #    api:
+  #      condition: service_healthy
+  #  command: ["./scripts/start.webhook_alert.worker.sh"]
   #  environment:
   #    <<: [*backend-env, *lago-api-url]
 

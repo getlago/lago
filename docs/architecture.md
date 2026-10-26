@@ -87,7 +87,8 @@ Lago supports dedicated workers for specific job types to improve performance an
 | `SIDEKIQ_EVENTS`     | `events`                           | 10                               | Event processing     |
 | `SIDEKIQ_PAYMENTS`   | `payments`                         | 10                               | Payment operations   |
 | `SIDEKIQ_PDF`        | `pdfs`                             | 10                               | PDF generation       |
-| `SIDEKIQ_WEBHOOK`    | `webhook_worker`                   | 10                               | Webhook delivery     |
+| `SIDEKIQ_WEBHOOK`    | `webhook_worker_high_priority`, `webhook_worker` | 10                 | Webhook delivery     |
+| `SIDEKIQ_WEBHOOK_ALERT` | `webhook_alert_worker`          | 10                               | Usage alert webhook delivery |
 | `SIDEKIQ_AI_AGENT`   | `ai_agent`                         | 10                               | AI Agent             |
 | `SIDEKIQ_ALERTS`     | `alerts_high_priority`, `alerts`   | 5                                | Usage Alerting       |
 | `SIDEKIQ_WALLETS`    | `wallets`                          | 10                               | Wallet balance refresh |
@@ -216,7 +217,8 @@ Lago's production deployment includes multiple worker types, each handling speci
 | **Events Worker** | `events` | Processes incoming usage events | Highly Recommended | Enable with `SIDEKIQ_EVENTS=true`; scale based on event ingestion rate |
 | **Payments Worker** | `payments` | Handles payment processing operations | Recommended | Enable with `SIDEKIQ_PAYMENTS=true`; scale based on payment volume |
 | **PDF Worker** | `pdfs` | Generates PDF invoices and documents | Highly Recommended | Enable with `SIDEKIQ_PDF=true`; PDF generation is CPU-intensive |
-| **Webhook Worker** | `webhook_worker` | Delivers webhooks to customer endpoints | Highly Recommended | Enable with `SIDEKIQ_WEBHOOK=true`; isolate webhook delays from core processing |
+| **Webhook Worker** | `webhook_worker_high_priority`, `webhook_worker` | Delivers webhooks to customer endpoints | Highly Recommended | Enable with `SIDEKIQ_WEBHOOK=true`; isolate webhook delays from core processing |
+| **Webhook Alert Worker** | `webhook_alert_worker` | Delivers `alert.triggered`, `subscription.usage_threshold_reached` and `wallet.depleted_ongoing_balance` webhooks | Optional | Enable with `SIDEKIQ_WEBHOOK_ALERT=true`; keeps usage alerts on time during invoice and customer webhook bursts. Takes precedence over `SIDEKIQ_WEBHOOK` for these types |
 | **Wallet Worker** | `wallets` | Refreshes wallet ongoing balances | Optional | Enable with `SIDEKIQ_WALLETS=true`; otherwise jobs fall back to `low_priority` |
 | **Alerts Worker** | `alerts_high_priority`, `alerts` | Processes usage alerting jobs | Optional | Enable with `SIDEKIQ_ALERTS=true`; otherwise jobs fall back to `default` |
 | **AI Agent Worker** | `ai_agent` | Handles AI Agent jobs | Optional | Enable with `SIDEKIQ_AI_AGENT=true` |
@@ -263,6 +265,7 @@ Based on production deployment data from high-volume clusters, here are recommen
 | **PDF Worker**       | 1100m   | - | 1Gi | 1Gi | 1 | Only reads from sidekiq queue and trigger a PDF generation through the PDF deployment (see next) |
 | **PDF**              | 2 cores | - | 1Gi | 1Gi | 2-4 | Generates PDF through gotemberg, triggered by worker through HTTP call |
 | **Webhook Worker**   | 1100m   | - | 1Gi | 1Gi | 3-10 | Scale based on webhook volume; network I/O bound |
+| **Webhook Alert Worker** | 1100m | - | 1Gi | 1Gi | 1-3 | Scale based on usage alert volume; network I/O bound |
 | **Clock Worker**     | 3 cores | - | 8Gi | 8Gi | 1 | High-memory variant for special processing needs |
 
 #### Scaling Guidelines
