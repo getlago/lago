@@ -46,14 +46,18 @@ FROM ${BUILD_IMAGE} AS go-build
 
 WORKDIR /app
 
+# Manifests first so the module download layer only rebuilds when
+# go.mod/go.sum change, not on every source edit.
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
 # The .so has to be on the linker path before `go build`, not just at
 # runtime — expression-go resolves -lexpression_go at link time.
 COPY --from=rust-build /lago-expression/target/release/libexpression_go.so /usr/lib/libexpression_go.so
 
 COPY . /app/
 
-RUN go mod download && go mod verify && \
-    CGO_ENABLED=1 go build -o event_processors .
+RUN CGO_ENABLED=1 go build -o event_processors .
 
 # ---------------------------------------------------------------------------
 # Runtime stage — hardened Wolfi. events-processor-base carries glibc and
