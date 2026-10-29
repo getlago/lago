@@ -413,6 +413,7 @@ services:
       - product_events_enriched
       - events_charged_in_advance
       - events_dead_letter
+      - usage_attribution_values
       - activity_logs
       - api_logs
       - security_logs
