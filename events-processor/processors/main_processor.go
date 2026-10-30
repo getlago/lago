@@ -28,6 +28,8 @@ const (
 	envEnv                                       = "ENV"
 	envLagoEventsProcessorDatabaseMaxConnections = "LAGO_EVENTS_PROCESSOR_DATABASE_MAX_CONNECTIONS"
 	envLagoKafkaBootstrapServers                 = "LAGO_KAFKA_BOOTSTRAP_SERVERS"
+	envLagoKafkaCatalogEnrichedEventsTopic       = "LAGO_KAFKA_CATALOG_ENRICHED_EVENTS_TOPIC"
+	envLagoKafkaCatalogRawEventsTopic            = "LAGO_KAFKA_CATALOG_RAW_EVENTS_TOPIC"
 	envLagoKafkaConsumerGroup                    = "LAGO_KAFKA_CONSUMER_GROUP"
 	envLagoKafkaEnrichedEventsTopic              = "LAGO_KAFKA_ENRICHED_EVENTS_TOPIC"
 	envLagoKafkaEventsChargedInAdvanceTopic      = "LAGO_KAFKA_EVENTS_CHARGED_IN_ADVANCE_TOPIC"
@@ -99,7 +101,7 @@ func initFlagStore(ctx context.Context, name string) (*models.FlagStore, error) 
 	return models.NewFlagStore(db, name), nil
 }
 
-func StartProcessingEvents(ctx context.Context, config *Config) {
+func initKafkaConfig(tracerProvider tracing.TracerProvider) {
 	serverBrokers := utils.ParseBrokersEnv(os.Getenv(envLagoKafkaBootstrapServers))
 	if len(serverBrokers) == 0 {
 		slog.Error("brokers not found")
@@ -110,10 +112,35 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		ScramAlgorithm: os.Getenv(envLagoKafkaScramAlgorithm),
 		TLS:            utils.GetEnvAsBool(envLagoKafkaTLS, false),
 		Servers:        serverBrokers,
-		TracerProvider: config.TracerProvider,
+		TracerProvider: tracerProvider,
 		UserName:       os.Getenv(envLagoKafkaUsername),
 		Password:       os.Getenv(envLagoKafkaPassword),
 	}
+}
+
+// initApiStore connects to the database when the processor reads from it
+// instead of the in-memory cache.
+func initApiStore() (*models.ApiStore, func()) {
+	maxConns, err := utils.GetEnvAsInt(envLagoEventsProcessorDatabaseMaxConnections, 200)
+	if err != nil {
+		utils.LogAndPanic(err, "Error converting max connections into integer")
+	}
+
+	dbConfig := database.DBConfig{
+		Url:      os.Getenv("DATABASE_URL"),
+		MaxConns: int32(maxConns),
+	}
+
+	db, err := database.NewConnection(dbConfig)
+	if err != nil {
+		utils.LogAndPanic(err, "Error connecting to the database")
+	}
+
+	return models.NewApiStore(db), db.Close
+}
+
+func StartProcessingEvents(ctx context.Context, config *Config) {
+	initKafkaConfig(config.TracerProvider)
 
 	eventsEnrichedProducer, err := initProducer(ctx, envLagoKafkaEnrichedEventsTopic)
 	if err != nil {
@@ -131,22 +158,9 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 	}
 
 	if config.Cache == nil {
-		maxConns, err := utils.GetEnvAsInt(envLagoEventsProcessorDatabaseMaxConnections, 200)
-		if err != nil {
-			utils.LogAndPanic(err, "Error converting max connections into integer")
-		}
-
-		dbConfig := database.DBConfig{
-			Url:      os.Getenv("DATABASE_URL"),
-			MaxConns: int32(maxConns),
-		}
-
-		db, err := database.NewConnection(dbConfig)
-		if err != nil {
-			utils.LogAndPanic(err, "Error connecting to the database")
-		}
-		apiStore = models.NewApiStore(db)
-		defer db.Close()
+		var closeDB func()
+		apiStore, closeDB = initApiStore()
+		defer closeDB()
 	}
 
 	flagger, err := initFlagStore(ctx, "subscription_refreshed_v2")
