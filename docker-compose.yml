@@ -359,4 +359,4 @@ services:
       <<: [*backend-env, *lago-api-url]
 
   pdf:
-    image: getlago/lago-gotenberg:7.8.2
+    image: ghcr.io/getlago/lago-gotenberg:8.39

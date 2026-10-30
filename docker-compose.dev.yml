@@ -349,7 +349,7 @@ services:
       - ./events-processor:/app:cached
 
   pdf:
-    image: getlago/lago-gotenberg:8
+    image: ghcr.io/getlago/lago-gotenberg:8.39
     container_name: lago_pdf_dev
     restart: unless-stopped
     command:
