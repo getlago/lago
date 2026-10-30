@@ -416,6 +416,7 @@ services:
       - activity_logs
       - api_logs
       - security_logs
+      - wallet_alerts
     volumes:
       - ./scripts/create-topics.sh:/usr/local/bin/create-topics
     environment:
