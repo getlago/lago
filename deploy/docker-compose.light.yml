@@ -306,7 +306,7 @@ services:
       <<: [*backend-env, *backend-urls]
 
   pdf:
-    image: getlago/lago-gotenberg:8.15
+    image: ghcr.io/getlago/lago-gotenberg:8.39
     command:
       - gotenberg
       - --libreoffice-disable-routes=true

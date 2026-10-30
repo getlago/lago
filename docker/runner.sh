@@ -54,7 +54,7 @@ if df -hT | grep -q docker.sock > /dev/null; then
         docker stop lago-pdf > /dev/null
         docker rm lago-pdf > /dev/null
     fi
-    docker run -d --name lago-pdf -p 3001:3000 getlago/lago-gotenberg:8 > /dev/null
+    docker run -d --name lago-pdf -p 3001:3000 ghcr.io/getlago/lago-gotenberg:8.39 > /dev/null
 else
     echo "WARN: Docker socket is not mounted. Skipping PDF service."
 fi
