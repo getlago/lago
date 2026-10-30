@@ -1,5 +1,5 @@
 ARG NODE_VERSION=24
-ARG RUBY_VERSION=4.0.6
+ARG RUBY_VERSION=4.0.9
 
 # Front Build
 FROM node:$NODE_VERSION-alpine AS front_build
@@ -59,6 +59,15 @@ COPY ./docker/nginx.conf /etc/nginx/sites-enabled/default
 
 COPY --from=front_build /app/dist /app/front
 COPY --from=api_build /usr/local/bundle/ /usr/local/bundle
+
+# Ruby 4.0.x ships the vulnerable json 2.18.0 as a default gem (CVE-2026-33210).
+# The bundle provides a fixed json, so the default copy is removed.
+RUN rm -rf /usr/local/lib/ruby/[0-9]*/json.rb \
+  /usr/local/lib/ruby/[0-9]*/json \
+  /usr/local/lib/ruby/[0-9]*/*-linux*/json \
+  /usr/local/lib/ruby/gems/[0-9]*/gems/json-[0-9]* \
+  /usr/local/lib/ruby/gems/[0-9]*/specifications/default/json-[0-9]*.gemspec && \
+  ruby -e 'require "json"; JSON.parse("{}")'
 
 COPY ./front/.env.sh ./front/.env.sh
 COPY ./api ./api
