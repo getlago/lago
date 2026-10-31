@@ -54,11 +54,21 @@ type BillableMetric struct {
 	CreatedAt       utils.NullTime  `gorm:"->" json:"created_at"`
 	UpdatedAt       utils.NullTime  `gorm:"->" json:"updated_at"`
 	DeletedAt       utils.NullTime  `gorm:"index;->" json:"deleted_at"`
+
+	// Read with the billable metric, which every event fetches, so that organizations without usage
+	// attribution types do not query them.
+	HasUsageAttributionTypes bool `gorm:"->" json:"-"`
 }
+
+const selectBillableMetric = `billable_metrics.*, EXISTS (
+	SELECT 1 FROM usage_attribution_types
+	WHERE usage_attribution_types.organization_id = billable_metrics.organization_id
+	AND usage_attribution_types.deleted_at IS NULL
+) AS has_usage_attribution_types`
 
 func (store *ApiStore) FetchBillableMetric(organizationID string, code string) utils.Result[*BillableMetric] {
 	var bm BillableMetric
-	result := store.db.Connection.First(
+	result := store.db.Connection.Select(selectBillableMetric).First(
 		&bm,
 		"organization_id = ? AND code = ? AND deleted_at IS NULL",
 		organizationID,
