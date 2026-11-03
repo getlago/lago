@@ -16,8 +16,7 @@
 # and digest together when a newer base is published.
 ARG API_BUILD_IMAGE=ghcr.io/getlago/lago-api-build:20261103-r1325@sha256:3cdff00432d17ad249e6c287acc59f640536d6b20679d57c3e9aecb709cf1c77
 ARG FRONT_BUILD_IMAGE=ghcr.io/getlago/lago-front-build:20261103-r1327@sha256:0e406e30e754d4769ca5181e5fb291fb0b89a6af19c5850405c58b662891f473
-# TODO before merge: pin to the first publish of getlago/lago-packages#54.
-ARG RUNTIME_IMAGE=ghcr.io/getlago/lago-allinone-base:latest
+ARG RUNTIME_IMAGE=ghcr.io/getlago/lago-allinone-base:20261103-r1353@sha256:62b3d3e9be0431198de17bd790d6237ca5095a372d628880d73b9eb870cf925e
 
 # ---------------------------------------------------------------------------
 # Front build — the static bundle that nginx serves.
