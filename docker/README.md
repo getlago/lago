@@ -8,27 +8,39 @@ This docker image is designed for testing and staging environments only. It is n
 
 This docker image embed everything to run Lago with just one command line to ease the deployment.
 Here are the services that are running into the container :
-- PostgreSQL
-- Redis
+- PostgreSQL 18 (with pg_partman)
+- Valkey (Redis-compatible)
 - Lago UI
 - Lago API
 - Lago Worker
 - Lago Clock
-- PDF Service (optional)
+
+The image is built on hardened [Wolfi](https://github.com/wolfi-dev) bases from
+[lago-packages](https://github.com/getlago/lago-packages). Every process runs as
+the nonroot user (uid 65532). The image has no package manager.
 
 ## Get Started
 
 ```bash
-docker run -d --name lago -p 80:80 -p 3000:3000 getlago/lago:latest
+docker run -d --name lago -v lago_data:/data -p 80:80 -p 3000:3000 getlago/lago:latest
 ```
 
-PDF generation is disabled by default. We use [Gotenberg](https://github.com/gotenberg/gotenberg), which is only available as a Docker image. To enable PDF generation, use the following command:
+## PDF Generation
+
+PDF generation uses [Gotenberg](https://github.com/gotenberg/gotenberg), which runs in its own container.
+Start it next to Lago:
 
 ```bash
-docker run -d --name lago -v /var/run/docker.sock:/var/run/docker.sock -p 80:80 -p 3000:3000 getlago/lago:latest
+docker run -d --name lago-pdf -p 3001:3000 ghcr.io/getlago/lago-gotenberg:8.39
+docker run -d --name lago --add-host=host.docker.internal:host-gateway \
+  -v lago_data:/data -p 80:80 -p 3000:3000 getlago/lago:latest
 ```
 
-You will see an other docker container named `lago-pdf` running.
+Lago reaches it at `LAGO_PDF_URL`, which defaults to `http://host.docker.internal:3001`.
+Docker Desktop resolves `host.docker.internal` without `--add-host`.
+
+Earlier images started `lago-pdf` themselves through a mounted `/var/run/docker.sock`.
+This image does not: the socket gives root access to the host.
 
 ## Using External Services
 
@@ -44,7 +56,27 @@ Here are the env var you should pass to the container to use them :
 ## Storage
 
 The container is using a volume to store the data, you can mount it to your host to keep the data safe.
-You can find many folders for each services in the `/data` folder.
+You can find many folders for each services in the `/data` folder:
+
+| Path | Content |
+|------|---------|
+| `/data/.env` | Generated secrets and settings |
+| `/data/postgresql` | PostgreSQL cluster |
+| `/data/valkey` | Valkey append-only file (Sidekiq jobs) |
+| `/data/storage` | Uploaded and generated files (invoice PDFs, exports) |
+| `/data/*.log` | Database setup, PostgreSQL and Valkey logs |
+
+### Upgrading from an image older than the Wolfi one
+
+Earlier images ran as root and kept the PostgreSQL and Redis data in the container, not in `/data`.
+Their `/data` volume holds only `.env` and `db.log`, and root owns it.
+Give the volume to the nonroot user once, then start the new image:
+
+```bash
+docker run --rm -u 0 -v lago_data:/data --entrypoint chown getlago/lago:latest -R 65532:65532 /data
+```
+
+A bind mount works the same way: `chown -R 65532:65532 <host directory>` on the host.
 
 
 ## SSL
@@ -66,6 +98,7 @@ For existing installations:
 ## Logs
 
 Database Logs (creation, migration) are stored in the `/data/db.log` file.
+PostgreSQL and Valkey write to `/data/postgresql.log` and `/data/valkey.log`.
 Applicative logs are streamed to the standard output.
 
 ## Contributing
