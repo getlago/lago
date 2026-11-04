@@ -307,7 +307,7 @@ fi
 case "$selected_key" in
     Quickstart)
         echo "${CYAN}🚧 Running quickstart Docker container...${NORMAL}"
-        docker run -d --name lago-quickstart -p 3000:3000 -p 80:80 getlago/lago:latest &>/dev/null
+        docker run -d --name lago-quickstart -v lago_quickstart_data:/data -p 3000:3000 -p 80:80 getlago/lago:latest &>/dev/null
         ;;
     Local)
         echo "${CYAN}🚧 Running Local Docker Compose deployment...${NORMAL}"
