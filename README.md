@@ -7,7 +7,7 @@
   <h1 align="center">Lago</h1>
 
   <p>
-    <strong>Agentic-first, open-source monetization infrastructure for AI products</strong>
+    <strong>Agentic-first, open-source monetization infrastructure for AI products — on Lago Cloud or self-hosted</strong>
     <br />
     Meter tokens, compute, API calls, or any product usage.<br />
     Turn usage into pricing, credits, entitlements, invoices, payments, and revenue.
@@ -188,7 +188,7 @@ Explore [metering](https://getlago.com/platform/usage-metering), [billing and in
 - **Atomic batches.** If one event in a batch is invalid, Lago rejects the batch and persists none of its events. [Read the batch API reference](https://getlago.com/docs/api-reference/events/batch).
 - **Asynchronous processing.** Dedicated workers can isolate events, billing, payments, invoices, webhooks, PDFs, alerts, and analytics as volume grows. [Review the architecture](./docs/architecture.md).
 - **Observable operation.** Lago exposes Prometheus metrics for APIs, queues, workers, events, billing, webhooks, and dependencies. [Review monitoring](./docs/monitoring.md).
-- **Deployment control.** Run Lago locally, in your cloud, or on your infrastructure. Production deployments can separate and scale stateful services and workers independently.
+- **Deployment control.** Use Lago Cloud, or self-host Lago locally, in your cloud, or on your infrastructure. Self-hosted production deployments can separate and scale stateful services and workers independently.
 - **Security.** Lago is SOC 2 Type II certified and supports self-hosting for teams that need infrastructure and data control. [Review security](https://getlago.com/security).
 
 ## Chosen by teams operating at scale
@@ -210,9 +210,11 @@ Sources for company context: [Mistral AI](https://observer.com/2026/07/arthur-me
 | Option | Best for | Access |
 |---|---|---|
 | **Lago Cloud** | Teams that want usage-based billing without running billing infrastructure. Lago operates the platform in US or EU regions and provides commercial support | [Talk to us](https://getlago.com/pricing) |
-| **Lago open source** | Teams that want to inspect, extend, and operate the billing platform on their infrastructure | This repository, AGPLv3 |
+| **Self-hosted Lago (open source)** | Teams that want to inspect, extend, and operate the billing platform on their infrastructure | This repository, AGPLv3 |
 | **Agent tooling** | Teams that want to meter LLM usage or expose billing primitives to agents | Separate open-source Agent SDK and MCP repositories, MIT |
 | **Premium capabilities** | Teams that need selected assistants, enterprise integrations, governance, or embedded use cases | Availability varies by feature; [talk to us](https://getlago.com/pricing) |
+
+Lago Cloud and self-hosted Lago run the same platform. They differ in deployment, not features: choose Lago Cloud to have Lago operate it for you, or self-host to run it on your own infrastructure.
 
 ## Deploy Lago
 
