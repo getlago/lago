@@ -114,10 +114,8 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		return nil
 	})
 
-	errgroup.Go(func() error {
-		processor.AttributionValuesService.ReportAttributionValues(ctx, enrichedEvent)
-		return nil
-	})
+	// Reporting values must never delay the event, so it does not join the event's errgroup.
+	go processor.AttributionValuesService.ReportAttributionValues(ctx, enrichedEvent)
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvanceResult := processor.EnrichmentService.HasPayInAdvanceCharge(enrichedEvent)

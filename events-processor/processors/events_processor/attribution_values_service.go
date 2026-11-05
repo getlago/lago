@@ -20,6 +20,9 @@ const (
 	// Bounds the memory of the reported combinations. When full, the expired ones are dropped, and if
 	// it is still full, all are forgotten: they are reported again, as idempotent upserts in the API.
 	attributionValuesMaxReported = 100_000
+
+	// Bounds a push to a slow or missing topic, so that pending reports cannot pile up.
+	attributionValuesPushTimeout = time.Second
 )
 
 type reportedCombination struct {
@@ -80,6 +83,9 @@ func (s *AttributionValuesService) ReportAttributionValues(ctx context.Context, 
 		utils.CaptureError(err)
 		return
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, attributionValuesPushTimeout)
+	defer cancel()
 
 	pushed := s.producer.Produce(ctx, &kafka.ProducerMessage{
 		Key:   []byte(fmt.Sprintf("%s-%s", message.OrganizationID, message.SubscriptionID)),
