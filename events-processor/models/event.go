@@ -47,12 +47,20 @@ type EnrichedEvent struct {
 	Time                    time.Time      `json:"-"`
 }
 
-type FailedEvent struct {
-	Event               Event     `json:"event"`
+// DeadLetterEvent is what a pipeline sends to its dead letter topic, around the
+// raw event it failed to process.
+type DeadLetterEvent[E any] struct {
+	Event               E         `json:"event"`
 	InitialErrorMessage string    `json:"initial_error_message"`
 	ErrorMessage        string    `json:"error_message"`
 	ErrorCode           string    `json:"error_code"`
 	FailedAt            time.Time `json:"failed_at"`
+}
+
+type FailedEvent = DeadLetterEvent[Event]
+
+func (ev *Event) IngestedTime() time.Time {
+	return ev.IngestedAt.Time()
 }
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
@@ -81,6 +89,23 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er.Time = timeResult.Value()
 
 	return utils.SuccessResult(er)
+}
+
+func (er *EnrichedEvent) GetSource() string {
+	return er.Source
+}
+
+func (er *EnrichedEvent) GetProperties() map[string]any {
+	return er.Properties
+}
+
+func (er *EnrichedEvent) SetBillableMetric(bm *BillableMetric) {
+	er.BillableMetric = bm
+	er.AggregationType = bm.AggregationType.String()
+}
+
+func (er *EnrichedEvent) SetValue(value *string) {
+	er.Value = value
 }
 
 func (ev *Event) NotAPIPostProcessed() bool {
