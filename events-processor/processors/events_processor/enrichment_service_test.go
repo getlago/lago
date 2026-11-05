@@ -378,9 +378,17 @@ func TestEnrichEvent(t *testing.T) {
 					testEnv.DataStore.ExpectUsageAttributionTypesError()
 
 					enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
-					require.True(t, enrichResult.Success())
-					assert.Nil(t, enrichResult.Value().AttributionLabels)
-					assert.Equal(t, "1000", *enrichResult.Value().Value)
+
+					// Events processed with the cache do not look the types up.
+					if mode.useCache {
+						require.True(t, enrichResult.Success())
+						assert.Nil(t, enrichResult.Value().AttributionLabels)
+						return
+					}
+
+					require.True(t, enrichResult.Failure())
+					assert.True(t, enrichResult.IsRetryable())
+					assert.Equal(t, "fetch_usage_attribution_types", enrichResult.ErrorCode())
 				})
 
 				t.Run("When a custom expression overwrites an attribution key", func(t *testing.T) {

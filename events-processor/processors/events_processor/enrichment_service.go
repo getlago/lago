@@ -3,7 +3,6 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"maps"
 	"time"
 
@@ -79,7 +78,10 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		}
 	}
 
-	s.enrichWithAttributionLabels(enrichedEvent, attributionProperties)
+	labelsResult := s.enrichWithAttributionLabels(enrichedEvent, attributionProperties)
+	if labelsResult.Failure() {
+		return failedResult(labelsResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
+	}
 
 	return utils.SuccessResult(enrichedEvent)
 }
@@ -151,25 +153,19 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 // enrichWithAttributionLabels stamps the account tree labels of the event. The billable metric tells
 // whether the organization has usage attribution types, so organizations without them skip the lookup.
 // Events processed with the deprecated in memory cache, which runs without the database, get no labels.
-func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) {
+func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) utils.Result[bool] {
 	if s.apiStore == nil || enrichedEvent.BillableMetric == nil || !enrichedEvent.BillableMetric.HasUsageAttributionTypes {
-		return
+		return utils.SuccessResult(false)
 	}
 
+	// A failed lookup is retried like the other enrichment lookups, so the event is not produced without its labels.
 	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
-
-	// Labels are not worth blocking billing for: the event goes on without them.
 	if typesResult.Failure() {
-		slog.Error(
-			"Error fetching usage attribution types",
-			slog.String("organization_id", enrichedEvent.OrganizationID),
-			slog.String("error", typesResult.ErrorMsg()),
-		)
-		utils.CaptureError(typesResult.Error())
-		return
+		return utils.FailedBoolResult(typesResult.Error())
 	}
 
 	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), properties)
+	return utils.SuccessResult(true)
 }
 
 func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.EnrichedEvent, sub *models.Subscription) utils.Result[*models.EnrichedEvent] {
