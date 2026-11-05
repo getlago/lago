@@ -34,6 +34,7 @@ const (
 	envLagoKafkaEventsDeadLetterTopic            = "LAGO_KAFKA_EVENTS_DEAD_LETTER_TOPIC"
 	envLagoKafkaPassword                         = "LAGO_KAFKA_PASSWORD"
 	envLagoKafkaProductEnrichedEventsTopic       = "LAGO_KAFKA_PRODUCT_ENRICHED_EVENTS_TOPIC"
+	envLagoKafkaProductEventsDeadLetterTopic     = "LAGO_KAFKA_PRODUCT_EVENTS_DEAD_LETTER_TOPIC"
 	envLagoKafkaProductRawEventsTopic            = "LAGO_KAFKA_PRODUCT_RAW_EVENTS_TOPIC"
 	envLagoKafkaRawEventsTopic                   = "LAGO_KAFKA_RAW_EVENTS_TOPIC"
 	envLagoKafkaScramAlgorithm                   = "LAGO_KAFKA_SCRAM_ALGORITHM"

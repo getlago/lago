@@ -3,12 +3,16 @@ package product_processor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/getlago/lago/events-processor/models"
+	"github.com/getlago/lago/events-processor/processors/pipeline"
 	"github.com/getlago/lago/events-processor/tests"
+	"github.com/getlago/lago/events-processor/utils"
 )
 
 func TestProduceEnrichedEvent(t *testing.T) {
@@ -32,4 +36,32 @@ func TestProduceEnrichedEvent(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(enrichedProducer.Value, &payload))
 	assert.Equal(t, "contract_ext_id", payload["external_contract_id"])
 	assert.NotContains(t, payload, "external_subscription_id")
+}
+
+func TestProduceToDeadLetterQueue(t *testing.T) {
+	deadLetterProducer := &tests.MockMessageProducer{}
+	producerService := NewProducerService(&tests.MockMessageProducer{}, deadLetterProducer)
+
+	failure := utils.FailedResult[*models.ProductEnrichedEvent](errors.New("billable metric not found"))
+	errorResult := pipeline.FailedResult[*models.ProductEnrichedEvent](failure, "fetch_billable_metric", "Error fetching billable metric")
+
+	producerService.ProduceToDeadLetterQueue(context.Background(), buildEvent(), errorResult)
+
+	assert.Equal(t, 1, deadLetterProducer.ExecutionCount)
+
+	// The keys are the product_events_dead_letter_queue columns, and the event keeps
+	// the contract id the dead letter table is ordered by.
+	var payload map[string]any
+	require.NoError(t, json.Unmarshal(deadLetterProducer.Value, &payload))
+	assert.ElementsMatch(t, []string{"event", "initial_error_message", "error_code", "error_message", "failed_at"}, keys(payload))
+	assert.Equal(t, "fetch_billable_metric", payload["error_code"])
+	assert.Equal(t, "contract_ext_id", payload["event"].(map[string]any)["external_contract_id"])
+}
+
+func keys(payload map[string]any) []string {
+	result := make([]string, 0, len(payload))
+	for key := range payload {
+		result = append(result, key)
+	}
+	return result
 }

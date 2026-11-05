@@ -29,9 +29,11 @@ func StartProcessingProductEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "failed to initialize product enriched events producer")
 	}
 
-	deadLetterQueue, err := initProducer(ctx, envLagoKafkaEventsDeadLetterTopic)
+	// Its own topic, so that a failed event keeps its external_contract_id in
+	// product_events_dead_letter instead of an empty events_dead_letter column.
+	deadLetterQueue, err := initProducer(ctx, envLagoKafkaProductEventsDeadLetterTopic)
 	if err != nil {
-		utils.LogAndPanic(err, "failed to initialize events dead letter queue producer")
+		utils.LogAndPanic(err, "failed to initialize product events dead letter queue producer")
 	}
 
 	var productApiStore *models.ApiStore
