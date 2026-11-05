@@ -3,6 +3,7 @@ package events_processor
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/getlago/lago-expression/expression-go"
@@ -30,6 +31,9 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		return failedResult(enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
 	}
 	enrichedEvent := enrichedEventResult.Value()
+
+	// Labels come from the properties as sent, before a custom expression overwrites the metric field.
+	attributionProperties := maps.Clone(enrichedEvent.Properties)
 
 	var bmResult utils.Result[*models.BillableMetric]
 
@@ -72,6 +76,11 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		if enrichSubResult.Failure() {
 			return enrichSubResult
 		}
+	}
+
+	labelsResult := s.enrichWithAttributionLabels(enrichedEvent, attributionProperties)
+	if labelsResult.Failure() {
+		return failedResult(labelsResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
 	}
 
 	return utils.SuccessResult(enrichedEvent)
@@ -138,6 +147,24 @@ func (s *EventEnrichmentService) evaluateExpression(ev *models.EnrichedEvent, bm
 			NonRetryable()
 	}
 
+	return utils.SuccessResult(true)
+}
+
+// enrichWithAttributionLabels stamps the account tree labels of the event. The billable metric tells
+// whether the organization has usage attribution types, so organizations without them skip the lookup.
+// Events processed with the deprecated in memory cache, which runs without the database, get no labels.
+func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) utils.Result[bool] {
+	if s.apiStore == nil || enrichedEvent.BillableMetric == nil || !enrichedEvent.BillableMetric.HasUsageAttributionTypes {
+		return utils.SuccessResult(false)
+	}
+
+	// A failed lookup is retried like the other enrichment lookups, so the event is not produced without its labels.
+	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	if typesResult.Failure() {
+		return utils.FailedBoolResult(typesResult.Error())
+	}
+
+	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), properties)
 	return utils.SuccessResult(true)
 }
 
