@@ -27,8 +27,8 @@ var testModes = []struct {
 	{"WithoutCache", false},
 }
 
-func buildEvent() models.Event {
-	return models.Event{
+func buildEvent() models.ProductEvent {
+	return models.ProductEvent{
 		IngestedAt:         utils.CustomTime(time.Now().UTC()),
 		OrganizationID:     orgID,
 		ExternalContractID: "contract_ext_id",
@@ -52,7 +52,7 @@ func buildBillableMetric() *models.BillableMetric {
 	}
 }
 
-func eventRecord(t *testing.T, offset int64, event models.Event) *kgo.Record {
+func eventRecord(t *testing.T, offset int64, event models.ProductEvent) *kgo.Record {
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
 

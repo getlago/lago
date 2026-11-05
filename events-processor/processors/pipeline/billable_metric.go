@@ -22,22 +22,43 @@ func NewBillableMetricEnricher(apiStore *models.ApiStore, memCache *cache.Cache)
 	return BillableMetricEnricher{apiStore: apiStore, memCache: memCache}
 }
 
+// MeteredEvent is an enriched event of either pipeline, as billable metric
+// enrichment fills it.
+type MeteredEvent interface {
+	GetSource() string
+	GetProperties() map[string]any
+	SetBillableMetric(bm *models.BillableMetric)
+	SetValue(value *string)
+}
+
 func (e BillableMetricEnricher) Enrich(event *models.Event) utils.Result[*models.EnrichedEvent] {
 	enrichedEventResult := event.ToEnrichedEvent()
 	if enrichedEventResult.Failure() {
 		return FailedResult[*models.EnrichedEvent](enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
 	}
-	enrichedEvent := enrichedEventResult.Value()
 
+	return enrich(e, enrichedEventResult.Value(), event.OrganizationID, event.Code)
+}
+
+func (e BillableMetricEnricher) EnrichProductEvent(event *models.ProductEvent) utils.Result[*models.ProductEnrichedEvent] {
+	enrichedEventResult := event.ToProductEnrichedEvent()
+	if enrichedEventResult.Failure() {
+		return FailedResult[*models.ProductEnrichedEvent](enrichedEventResult, "build_enriched_event", "Error while converting event to enriched event")
+	}
+
+	return enrich(e, enrichedEventResult.Value(), event.OrganizationID, event.Code)
+}
+
+func enrich[T MeteredEvent](e BillableMetricEnricher, enrichedEvent T, organizationID string, code string) utils.Result[T] {
 	var bmResult utils.Result[*models.BillableMetric]
 
 	if e.memCache != nil {
-		bmResult = e.memCache.GetBillableMetric(event.OrganizationID, event.Code)
+		bmResult = e.memCache.GetBillableMetric(organizationID, code)
 	} else {
-		bmResult = e.apiStore.FetchBillableMetric(event.OrganizationID, event.Code)
+		bmResult = e.apiStore.FetchBillableMetric(organizationID, code)
 	}
 	if bmResult.Failure() {
-		return FailedResult[*models.EnrichedEvent](bmResult, "fetch_billable_metric", "Error fetching billable metric")
+		return FailedResult[T](bmResult, "fetch_billable_metric", "Error fetching billable metric")
 	}
 
 	bm := bmResult.Value()
@@ -51,28 +72,27 @@ func (e BillableMetricEnricher) Enrich(event *models.Event) utils.Result[*models
 	return utils.SuccessResult(enrichedEvent)
 }
 
-func enrichWithBillableMetric(enrichedEvent *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[*models.EnrichedEvent] {
-	enrichedEvent.BillableMetric = bm
-	enrichedEvent.AggregationType = bm.AggregationType.String()
+func enrichWithBillableMetric[T MeteredEvent](enrichedEvent T, bm *models.BillableMetric) utils.Result[T] {
+	enrichedEvent.SetBillableMetric(bm)
 
-	if enrichedEvent.Source != models.HTTP_RUBY {
+	if enrichedEvent.GetSource() != models.HTTP_RUBY {
 		expressionResult := evaluateExpression(enrichedEvent, bm)
 		if expressionResult.Failure() {
-			return FailedResult[*models.EnrichedEvent](expressionResult, "evaluate_expression", "Error evaluating custom expression")
+			return FailedResult[T](expressionResult, "evaluate_expression", "Error evaluating custom expression")
 		}
 	}
 
 	if bm.AggregationType == models.AggregationTypeCount {
-		enrichedEvent.Value = utils.StringPtr("1")
+		enrichedEvent.SetValue(utils.StringPtr("1"))
 	} else {
-		var value = fmt.Sprintf("%v", enrichedEvent.Properties[bm.FieldName])
-		enrichedEvent.Value = &value
+		var value = fmt.Sprintf("%v", enrichedEvent.GetProperties()[bm.FieldName])
+		enrichedEvent.SetValue(&value)
 	}
 
 	return utils.SuccessResult(enrichedEvent)
 }
 
-func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) utils.Result[bool] {
+func evaluateExpression(ev MeteredEvent, bm *models.BillableMetric) utils.Result[bool] {
 	if bm.Expression == "" {
 		return utils.SuccessResult(false)
 	}
@@ -85,7 +105,7 @@ func evaluateExpression(ev *models.EnrichedEvent, bm *models.BillableMetric) uti
 
 	result := expression.Evaluate(bm.Expression, eventJsonString)
 	if result != nil {
-		ev.Properties[bm.FieldName] = *result
+		ev.GetProperties()[bm.FieldName] = *result
 	} else {
 		return utils.
 			FailedBoolResult(fmt.Errorf("failed to evaluate expr: %s with json: %s", bm.Expression, eventJsonString)).

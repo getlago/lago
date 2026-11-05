@@ -14,14 +14,14 @@ import (
 type EventProducerService struct {
 	enrichedProducer  kafka.MessageProducer
 	inAdvanceProducer kafka.MessageProducer
-	producer          pipeline.Producer
+	producer          pipeline.Producer[models.Event]
 }
 
 func NewEventProducerService(enrichedProducer, inAdvanceProducer, deadLetterProducer kafka.MessageProducer) *EventProducerService {
 	return &EventProducerService{
 		enrichedProducer:  enrichedProducer,
 		inAdvanceProducer: inAdvanceProducer,
-		producer:          pipeline.NewProducer(deadLetterProducer),
+		producer:          pipeline.NewProducer[models.Event](deadLetterProducer),
 	}
 }
 

@@ -13,13 +13,13 @@ import (
 
 type ProducerService struct {
 	enrichedProducer kafka.MessageProducer
-	producer         pipeline.Producer
+	producer         pipeline.Producer[models.ProductEvent]
 }
 
 func NewProducerService(enrichedProducer, deadLetterProducer kafka.MessageProducer) *ProducerService {
 	return &ProducerService{
 		enrichedProducer: enrichedProducer,
-		producer:         pipeline.NewProducer(deadLetterProducer),
+		producer:         pipeline.NewProducer[models.ProductEvent](deadLetterProducer),
 	}
 }
 
@@ -32,6 +32,6 @@ func (ps *ProducerService) ProduceEnrichedEvent(ctx context.Context, event *mode
 	}
 }
 
-func (ps *ProducerService) ProduceToDeadLetterQueue(ctx context.Context, event models.Event, errorResult utils.AnyResult) {
+func (ps *ProducerService) ProduceToDeadLetterQueue(ctx context.Context, event models.ProductEvent, errorResult utils.AnyResult) {
 	ps.producer.ProduceToDeadLetterQueue(ctx, event, errorResult)
 }

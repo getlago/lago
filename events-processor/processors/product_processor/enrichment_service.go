@@ -23,7 +23,7 @@ func NewEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache) *Enr
 
 // EnrichEvent enriches the event from its billable metric. The contract and its
 // rate cards are not resolved here: the API matches them when it reads.
-func (s *EnrichmentService) EnrichEvent(event *models.Event) utils.Result[*models.ProductEnrichedEvent] {
+func (s *EnrichmentService) EnrichEvent(event *models.ProductEvent) utils.Result[*models.ProductEnrichedEvent] {
 	// Without it the event can't be tied to a contract nor aggregated: a payload
 	// sent to the product topic by mistake goes to the dead letter queue.
 	if event.ExternalContractID == "" {
@@ -32,10 +32,5 @@ func (s *EnrichmentService) EnrichEvent(event *models.Event) utils.Result[*model
 		return pipeline.FailedResult[*models.ProductEnrichedEvent](missing, "missing_external_contract_id", "Product event without external_contract_id")
 	}
 
-	enrichedEventResult := pipeline.NewBillableMetricEnricher(s.apiStore, s.memCache).Enrich(event)
-	if enrichedEventResult.Failure() {
-		return pipeline.FailedResult[*models.ProductEnrichedEvent](enrichedEventResult, enrichedEventResult.ErrorCode(), enrichedEventResult.ErrorMessage())
-	}
-
-	return utils.SuccessResult(enrichedEventResult.Value().ToProductEnrichedEvent())
+	return pipeline.NewBillableMetricEnricher(s.apiStore, s.memCache).EnrichProductEvent(event)
 }

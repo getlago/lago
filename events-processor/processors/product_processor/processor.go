@@ -29,7 +29,7 @@ func (processor *ProductProcessor) ProcessEvents(ctx context.Context, records []
 		ctx,
 		records,
 		"ProductProcess.ProcessEvents",
-		func(ctx context.Context, event *models.Event) utils.AnyResult {
+		func(ctx context.Context, event *models.ProductEvent) utils.AnyResult {
 			return processor.processEvent(ctx, event)
 		},
 		processor.ProducerService.ProduceToDeadLetterQueue,
@@ -38,7 +38,7 @@ func (processor *ProductProcessor) ProcessEvents(ctx context.Context, records []
 
 // processEvent writes the enriched event. Pricing in advance is not handled yet:
 // the API has no consumer for product events billed in advance.
-func (processor *ProductProcessor) processEvent(ctx context.Context, event *models.Event) utils.Result[*models.ProductEnrichedEvent] {
+func (processor *ProductProcessor) processEvent(ctx context.Context, event *models.ProductEvent) utils.Result[*models.ProductEnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return enrichedEventResult

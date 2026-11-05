@@ -51,3 +51,18 @@ func TestEvaluateExpression(t *testing.T) {
 		assert.Equal(t, "36", event.Properties["total_value"])
 	})
 }
+
+func TestEvaluateExpressionOnProductEvent(t *testing.T) {
+	bm := models.BillableMetric{Expression: "round(event.properties.value * event.properties.units)", FieldName: "total_value"}
+	event := models.ProductEnrichedEvent{
+		ExternalContractID: "contract_1",
+		Code:               "foo",
+		Timestamp:          1741007009.0,
+		Properties:         map[string]any{"value": "12.0", "units": 3},
+	}
+
+	result := evaluateExpression(&event, &bm)
+
+	assert.True(t, result.Success())
+	assert.Equal(t, "36", event.Properties["total_value"])
+}

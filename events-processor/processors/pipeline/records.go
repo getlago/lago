@@ -11,17 +11,20 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/getlago/lago/events-processor/config/tracing"
-	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/utils"
 )
 
 // ProcessRecords processes a batch concurrently and returns the records to commit.
-func ProcessRecords(
+// E is the raw event a pipeline decodes each record into.
+func ProcessRecords[E any, P interface {
+	*E
+	IngestedTime() time.Time
+}](
 	ctx context.Context,
 	records []*kgo.Record,
 	spanName string,
-	process func(context.Context, *models.Event) utils.AnyResult,
-	deadLetter func(context.Context, models.Event, utils.AnyResult),
+	process func(context.Context, P) utils.AnyResult,
+	deadLetter func(context.Context, E, utils.AnyResult),
 ) []*kgo.Record {
 	span := tracing.StartSpan(ctx, spanName)
 	defer span.End()
@@ -39,7 +42,7 @@ func ProcessRecords(
 				sp := tracing.StartSpan(ctx, "PostProcess.ProcessOneEvent")
 				defer sp.End()
 
-				event := models.Event{}
+				var event E
 				err := json.Unmarshal(record.Value, &event)
 				if err != nil {
 					slog.Error("Error unmarshalling message", slog.String("error", err.Error()))
@@ -52,7 +55,7 @@ func ProcessRecords(
 					return
 				}
 
-				result := process(ctx, &event)
+				result := process(ctx, P(&event))
 				if result.Failure() {
 					slog.Error(
 						result.ErrorMessage(),
@@ -64,7 +67,7 @@ func ProcessRecords(
 						utils.CaptureErrorResultWithExtra(result, "event", event)
 					}
 
-					if result.IsRetryable() && time.Since(event.IngestedAt.Time()) < 12*time.Hour {
+					if result.IsRetryable() && time.Since(P(&event).IngestedTime()) < 12*time.Hour {
 						// For retryable errors, we should avoid commiting the record,
 						// It will be consumed again and reprocessed
 						// Events older than 12 hours should also be pushed dead letter queue

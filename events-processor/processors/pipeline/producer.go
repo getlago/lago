@@ -13,16 +13,16 @@ import (
 )
 
 // Producer pushes messages to a topic and sends the events it fails to push
-// to the dead letter queue.
-type Producer struct {
+// to the dead letter queue. E is the raw event of the pipeline.
+type Producer[E any] struct {
 	deadLetterProducer kafka.MessageProducer
 }
 
-func NewProducer(deadLetterProducer kafka.MessageProducer) Producer {
-	return Producer{deadLetterProducer: deadLetterProducer}
+func NewProducer[E any](deadLetterProducer kafka.MessageProducer) Producer[E] {
+	return Producer[E]{deadLetterProducer: deadLetterProducer}
 }
 
-func (p Producer) Produce(context context.Context, event any, initialEvent *models.Event, msgKey string, producer kafka.MessageProducer) error {
+func (p Producer[E]) Produce(context context.Context, event any, initialEvent *E, msgKey string, producer kafka.MessageProducer) error {
 	eventJson, err := json.Marshal(event)
 	if err != nil {
 		return err
@@ -40,8 +40,8 @@ func (p Producer) Produce(context context.Context, event any, initialEvent *mode
 	return nil
 }
 
-func (p Producer) ProduceToDeadLetterQueue(context context.Context, event models.Event, errorResult utils.AnyResult) {
-	failedEvent := models.FailedEvent{
+func (p Producer[E]) ProduceToDeadLetterQueue(context context.Context, event E, errorResult utils.AnyResult) {
+	failedEvent := models.DeadLetterEvent[E]{
 		Event:               event,
 		InitialErrorMessage: errorResult.ErrorMsg(),
 		ErrorCode:           errorResult.ErrorCode(),

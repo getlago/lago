@@ -49,7 +49,6 @@ func TestEnrichEvent(t *testing.T) {
 
 		event := buildEvent()
 		event.ExternalContractID = ""
-		event.ExternalSubscriptionID = "sub_id"
 
 		result := env.Processor.EnrichmentService.EnrichEvent(&event)
 

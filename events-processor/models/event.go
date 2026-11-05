@@ -12,7 +12,6 @@ const HTTP_RUBY string = "http_ruby"
 type Event struct {
 	OrganizationID          string           `json:"organization_id"`
 	ExternalSubscriptionID  string           `json:"external_subscription_id"`
-	ExternalContractID      string           `json:"external_contract_id,omitempty"`
 	TransactionID           string           `json:"transaction_id"`
 	Code                    string           `json:"code"`
 	Properties              map[string]any   `json:"properties"`
@@ -48,31 +47,20 @@ type EnrichedEvent struct {
 	Time                    time.Time      `json:"-"`
 }
 
-// ProductEnrichedEvent is what the product events pipeline writes to
-// product_events_enriched: one row per event, keyed by contract, with rate
-// cards and product filters matched when the API reads.
-type ProductEnrichedEvent struct {
-	InitialEvent   *Event          `json:"-"`
-	BillableMetric *BillableMetric `json:"-"`
-
-	OrganizationID          string         `json:"organization_id"`
-	ExternalContractID      string         `json:"external_contract_id"`
-	TransactionID           string         `json:"transaction_id"`
-	Code                    string         `json:"code"`
-	AggregationType         string         `json:"aggregation_type"`
-	Properties              map[string]any `json:"properties"`
-	PreciseTotalAmountCents string         `json:"precise_total_amount_cents"`
-	Source                  string         `json:"source,omitempty"`
-	Value                   *string        `json:"value"`
-	Timestamp               float64        `json:"timestamp"`
-}
-
-type FailedEvent struct {
-	Event               Event     `json:"event"`
+// DeadLetterEvent is what a pipeline sends to its dead letter topic, around the
+// raw event it failed to process.
+type DeadLetterEvent[E any] struct {
+	Event               E         `json:"event"`
 	InitialErrorMessage string    `json:"initial_error_message"`
 	ErrorMessage        string    `json:"error_message"`
 	ErrorCode           string    `json:"error_code"`
 	FailedAt            time.Time `json:"failed_at"`
+}
+
+type FailedEvent = DeadLetterEvent[Event]
+
+func (ev *Event) IngestedTime() time.Time {
+	return ev.IngestedAt.Time()
 }
 
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
@@ -103,21 +91,21 @@ func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	return utils.SuccessResult(er)
 }
 
-func (er *EnrichedEvent) ToProductEnrichedEvent() *ProductEnrichedEvent {
-	return &ProductEnrichedEvent{
-		InitialEvent:            er.InitialEvent,
-		BillableMetric:          er.BillableMetric,
-		OrganizationID:          er.OrganizationID,
-		ExternalContractID:      er.InitialEvent.ExternalContractID,
-		TransactionID:           er.TransactionID,
-		Code:                    er.Code,
-		AggregationType:         er.AggregationType,
-		Properties:              er.Properties,
-		PreciseTotalAmountCents: er.PreciseTotalAmountCents,
-		Source:                  er.Source,
-		Value:                   er.Value,
-		Timestamp:               er.Timestamp,
-	}
+func (er *EnrichedEvent) GetSource() string {
+	return er.Source
+}
+
+func (er *EnrichedEvent) GetProperties() map[string]any {
+	return er.Properties
+}
+
+func (er *EnrichedEvent) SetBillableMetric(bm *BillableMetric) {
+	er.BillableMetric = bm
+	er.AggregationType = bm.AggregationType.String()
+}
+
+func (er *EnrichedEvent) SetValue(value *string) {
+	er.Value = value
 }
 
 func (ev *Event) NotAPIPostProcessed() bool {
