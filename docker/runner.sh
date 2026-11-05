@@ -128,7 +128,10 @@ rm -f ./tmp/pids/server.pid
 # Only the Ruby processes get jemalloc, as on lago-api-base.
 # foreman runs in the background so that this shell gets SIGTERM from tini and
 # stops foreman first, then the services (EXIT trap).
-LD_PRELOAD=/usr/lib/libjemalloc.so.2 foreman start &
+# `-t 30`: Sidekiq takes up to 25 s (`timeout` in sidekiq.yml) to push unfinished
+# jobs back to Valkey. foreman kills it after 5 s by default, which loses them. The
+# container needs a stop timeout above 30 s (`docker run --stop-timeout 40`).
+LD_PRELOAD=/usr/lib/libjemalloc.so.2 foreman start -t 30 &
 FOREMAN_PID=$!
 trap 'kill -TERM "${FOREMAN_PID}" 2>/dev/null' TERM INT
 set +e

@@ -22,8 +22,11 @@ the nonroot user (uid 65532). The image has no package manager.
 ## Get Started
 
 ```bash
-docker run -d --name lago -v lago_data:/data -p 80:80 -p 3000:3000 getlago/lago:latest
+docker run -d --name lago --stop-timeout 40 -v lago_data:/data -p 80:80 -p 3000:3000 getlago/lago:latest
 ```
+
+`--stop-timeout 40` gives running background jobs time to go back to the queue when the
+container stops. With the Docker default of 10 s, Docker kills every process, Postgres included.
 
 ## PDF Generation
 
@@ -32,7 +35,7 @@ Start it next to Lago:
 
 ```bash
 docker run -d --name lago-pdf -p 3001:3000 ghcr.io/getlago/lago-gotenberg:8.39
-docker run -d --name lago --add-host=host.docker.internal:host-gateway \
+docker run -d --name lago --stop-timeout 40 --add-host=host.docker.internal:host-gateway \
   -v lago_data:/data -p 80:80 -p 3000:3000 getlago/lago:latest
 ```
 
