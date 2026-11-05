@@ -11,6 +11,7 @@ on:
       - reopened
     paths:
       - "events-processor/**"
+      - ".github/workflows/events-processor-tests.yml"
 
 jobs:
   test:
@@ -46,7 +47,7 @@ jobs:
 
       - name: Build lago-expression
         working-directory: ./lago-expression
-        run: cargo build --release
+        run: cargo build --release -p expression-go
 
       - name: Copy lago-expression shared library
         working-directory: ./lago-expression
@@ -58,7 +59,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.25.0"
+          go-version: "1.26.0"
 
       - name: Run tests
         run: go test -v ./...

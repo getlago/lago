@@ -1,70 +1,108 @@
-ARG NODE_VERSION=24
-ARG RUBY_VERSION=4.0.6
+# syntax=docker/dockerfile:1.26
 
-# Front Build
-FROM node:$NODE_VERSION-alpine AS front_build
+# Hardened Wolfi/apko-based all-in-one Lago image (getlago/lago). Replaces the
+# node:24-alpine / ruby:4.0-slim chain and its Debian runtime, which ran every
+# process as root and pulled Postgres, Redis and the Docker CLI from apt.
+#
+# Builds on the lago-packages bases: the lago-api and lago-front build bases,
+# and lago-allinone-base for the runtime (Ruby, Postgres 18 + pg_partman,
+# Valkey, nginx, nonroot uid 65532). See getlago/lago-packages for the base
+# image definitions. The bases are public, so this file builds without
+# registry credentials.
+#
+# BASE PIN: `:<YYYYMMDD>-r<run>@sha256:<index digest>`, an immutable
+# lago-packages publish. Docker builds from the digest, so a build is
+# reproducible. Renovate (getlago/lago-packages renovate/lago-bases) moves tag
+# and digest together when a newer base is published.
+ARG API_BUILD_IMAGE=ghcr.io/getlago/lago-api-build:20261103-r1325@sha256:3cdff00432d17ad249e6c287acc59f640536d6b20679d57c3e9aecb709cf1c77
+ARG FRONT_BUILD_IMAGE=ghcr.io/getlago/lago-front-build:20261103-r1327@sha256:0e406e30e754d4769ca5181e5fb291fb0b89a6af19c5850405c58b662891f473
+ARG RUNTIME_IMAGE=ghcr.io/getlago/lago-allinone-base:20261103-r1353@sha256:62b3d3e9be0431198de17bd790d6237ca5095a372d628880d73b9eb870cf925e
+
+# ---------------------------------------------------------------------------
+# Front build — the static bundle that nginx serves.
+# ---------------------------------------------------------------------------
+FROM ${FRONT_BUILD_IMAGE} AS front_build
 
 WORKDIR /app
 
-# Same limit as the lago-front Dockerfile: the default heap is too small for `pnpm build`
-# on the arm64 runner.
+# Same limit as the lago-front Dockerfile: the default heap is too small for
+# `pnpm build` on the arm64 runner.
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 COPY ./front/ .
 
-RUN apk add python3 build-base && \
-  corepack enable && corepack prepare pnpm@latest --activate && \
-  pnpm install && pnpm build
+RUN pnpm install --frozen-lockfile && pnpm build
 
-# API Build
-FROM ruby:$RUBY_VERSION-slim AS api_build
+# ---------------------------------------------------------------------------
+# API build — the gem bundle, with native extensions.
+# ---------------------------------------------------------------------------
+FROM ${API_BUILD_IMAGE} AS api_build
 
-ENV BUNDLER_VERSION=4.0.4
-ENV PATH="$PATH:/root/.cargo/bin/"
+ARG BUNDLER_VERSION=4.0.16
 
 WORKDIR /app
 
-RUN apt-get update && apt-get upgrade -y && \
-  apt-get install nodejs curl build-essential git pkg-config libpq-dev libclang-dev libyaml-dev curl -y && \
-  curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV BUNDLE_WITHOUT="development test"
+ENV BUNDLE_PATH=/usr/local/bundle
+ENV GEM_HOME=/usr/local/bundle
+ENV PATH=/usr/local/bundle/bin:${PATH}
 
-COPY ./api/Gemfile /app/Gemfile
-COPY ./api/Gemfile.lock /app/Gemfile.lock
+COPY ./api/Gemfile ./api/Gemfile.lock ./
 
-RUN gem install bundler --no-document -v $BUNDLER_VERSION && \
-  gem install foreman && \
-  bundle config build.nokogiri --use-system-libraries &&\
-  bundle config set without 'development test' && \
+RUN gem install bundler --no-document -v "${BUNDLER_VERSION}" && \
+  gem install foreman --no-document && \
+  bundle config set --local build.nokogiri --use-system-libraries && \
   bundle install --jobs=3 --retry=3
 
-# Final Image
-FROM ruby:$RUBY_VERSION-slim
+# ---------------------------------------------------------------------------
+# Runtime — hardened Wolfi, nonroot. No apt, no Docker CLI.
+# ---------------------------------------------------------------------------
+FROM ${RUNTIME_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/getlago/lago"
+LABEL org.opencontainers.image.description="Hardened Wolfi-based all-in-one Lago image"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+
+ARG SEGMENT_WRITE_KEY
+ENV SEGMENT_WRITE_KEY=${SEGMENT_WRITE_KEY}
+
+ENV BUNDLE_WITHOUT="development test"
+ENV BUNDLE_PATH=/usr/local/bundle
+ENV GEM_HOME=/usr/local/bundle
+ENV PATH=/usr/local/bundle/bin:${PATH}
 
 WORKDIR /app
 
-RUN apt-get update -y && \
-  apt-get install curl ca-certificates gnupg -y && \
-  curl -fsSL https://postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /usr/share/keyrings/postgresql-archive-keyring.gpg > /dev/null && \
-  echo deb [arch=amd64,arm64,ppc64e1 signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main | tee /etc/ap && \
-  curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
-  chmod a+r /etc/apt/keyrings/docker.asc && \
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-  apt-get update && \
-  apt-get install nginx xz-utils git libpq-dev postgresql-17 postgresql-17-partman redis-server docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y && \
-  apt-get remove apt-transport-https -y
+# Code and config stay root-owned, so the processes cannot rewrite them.
+# nonroot owns only what it writes: the front's env-config.js (written by
+# .env.sh into ./front), and the API's tmp/ (pids, bootsnap cache) and log/.
+COPY --from=api_build /usr/local/bundle /usr/local/bundle
+COPY --from=front_build --chown=nonroot:nonroot /app/dist /app/front
+COPY ./front/.env.sh /app/front/.env.sh
+COPY ./front/nginx/csp.conf.template /etc/nginx/csp.conf.template
+COPY ./docker/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/valkey.conf /etc/valkey/valkey.conf
+COPY ./api /app/api
+COPY ./docker/Procfile /app/api/Procfile
+COPY ./docker/runner.sh /app/runner.sh
 
-COPY ./docker/nginx.conf /etc/nginx/sites-enabled/default
-
-COPY --from=front_build /app/dist /app/front
-COPY --from=api_build /usr/local/bundle/ /usr/local/bundle
-
-COPY ./front/.env.sh ./front/.env.sh
-COPY ./api ./api
-COPY ./docker/Procfile ./api/Procfile
-COPY ./docker/runner.sh ./runner.sh
+# Active Storage's local service writes to api/storage (invoice PDFs, CSV
+# exports). Point it at the volume, so the files outlive the container.
+# runner.sh creates the target. A `COPY --chown` into an existing directory
+# leaves that directory root-owned, hence the chown here.
+USER 0
+RUN chown -R nonroot:nonroot /app/api/tmp /app/api/log && \
+  rm -rf /app/api/storage && ln -s /data/storage /app/api/storage
 
 EXPOSE 80
 EXPOSE 3000
 VOLUME /data
 
-ENTRYPOINT ["./runner.sh"]
+# The base already runs as nonroot. Restating it keeps the image
+# self-sufficient: a base rebuild that drops it fails loudly instead of
+# shipping a root container.
+USER 65532
+
+# tini is PID 1: it forwards SIGTERM to runner.sh, which then stops the
+# services in order (Postgres last, with a fast shutdown).
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/runner.sh"]

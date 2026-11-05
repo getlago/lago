@@ -7,7 +7,7 @@
   <h1 align="center">Lago</h1>
 
   <p>
-    <strong>Agentic-first, open-source monetization infrastructure for AI products</strong>
+    <strong>Agentic-first monetization infrastructure for AI products</strong>
     <br />
     Meter tokens, compute, API calls, or any product usage.<br />
     Turn usage into pricing, credits, entitlements, invoices, payments, and revenue.
@@ -15,13 +15,13 @@
     Use Lago Direct for your own product, or Lago Embedded to power monetization for your customers.
     <br />
     <br />
+    <a href="https://getlago.com/pricing"><strong>Talk to us about Lago Cloud</strong></a>
+    ·
     <a href="#build-with-your-ai-agent"><strong>Build with your AI agent</strong></a>
     ·
     <a href="#see-lago-price-an-ai-workload"><strong>Run the AI billing demo</strong></a>
     ·
     <a href="https://getlago.com/docs/welcome"><strong>Documentation</strong></a>
-    ·
-    <a href="https://getlago.com/pricing"><strong>Talk to us about Lago Cloud</strong></a>
   </p>
 </div>
 
@@ -188,7 +188,7 @@ Explore [metering](https://getlago.com/platform/usage-metering), [billing and in
 - **Atomic batches.** If one event in a batch is invalid, Lago rejects the batch and persists none of its events. [Read the batch API reference](https://getlago.com/docs/api-reference/events/batch).
 - **Asynchronous processing.** Dedicated workers can isolate events, billing, payments, invoices, webhooks, PDFs, alerts, and analytics as volume grows. [Review the architecture](./docs/architecture.md).
 - **Observable operation.** Lago exposes Prometheus metrics for APIs, queues, workers, events, billing, webhooks, and dependencies. [Review monitoring](./docs/monitoring.md).
-- **Deployment control.** Run Lago locally, in your cloud, or on your infrastructure. Production deployments can separate and scale stateful services and workers independently.
+- **Deployment control.** Lago Cloud runs and updates the platform for you. When you need to run it yourself, self-host Lago in your cloud or deploy it on-premise; self-hosted production deployments can separate and scale stateful services and workers independently.
 - **Security.** Lago is SOC 2 Type II certified and supports self-hosting for teams that need infrastructure and data control. [Review security](https://getlago.com/security).
 
 ## Chosen by teams operating at scale
@@ -205,18 +205,28 @@ Mistral AI, Groq, PayPal, Synthesia, Blacksmith, and other teams have publicly s
 
 Sources for company context: [Mistral AI](https://observer.com/2026/07/arthur-menschs-mistral-is-europes-best-bet-for-sovereign-a-i/), [Groq](https://groq.com/newsroom/groq-raises-usd650m-to-scale-its-ai-inference-cloud-business), [Blacksmith](https://www.blacksmith.sh/blog/announcing-blacksmiths-series-b-led-by-peak-xv-partners), [Synthesia](https://www.synthesia.io/post/how-we-scaled-our-billing-system-from-40m-to-140m-arr), and [PayPal](https://newsroom.paypal-corp.com/2026-07-02-PayPal-Joins-the-European-Payments-Council).
 
-## Open source and managed options
+## Deployment options
+
+Lago Cloud and self-hosted Lago differ in deployment, not features. Your code uses the same API and SDKs either way; only the base URL changes.
+
+### 1. Lago Cloud (recommended)
+
+With [Lago Cloud](https://getlago.com/docs/guide/lago-cloud), there is nothing to deploy or maintain. Lago runs and updates the platform for you in US or EU regions and provides commercial support, so your team never operates billing infrastructure. [Talk to us about Lago Cloud](https://getlago.com/pricing).
+
+### 2. Self-hosted and on-premise
+
+Run the open-source platform from this repository (AGPLv3) in your cloud or on your own infrastructure when you need to inspect, extend, and operate billing yourself. Start with [Deploy Lago](#deploy-lago) below and the [self-hosted deployment guide](https://getlago.com/docs/guide/lago-self-hosted/docker#configuration).
+
+### Also available
 
 | Option | Best for | Access |
 |---|---|---|
-| **Lago open source** | Teams that want to inspect, extend, and operate the billing platform on their infrastructure | This repository, AGPLv3 |
 | **Agent tooling** | Teams that want to meter LLM usage or expose billing primitives to agents | Separate open-source Agent SDK and MCP repositories, MIT |
-| **Lago Cloud** | Teams that want Lago to operate the platform and provide commercial support | [Talk to us](https://getlago.com/pricing) |
 | **Premium capabilities** | Teams that need selected assistants, enterprise integrations, governance, or embedded use cases | Availability varies by feature; [talk to us](https://getlago.com/pricing) |
 
 ## Deploy Lago
 
-For a source-based local deployment:
+To self-host Lago or deploy it on-premise, start with a source-based local deployment:
 
 ```bash
 git clone --depth 1 https://github.com/getlago/lago.git
@@ -225,6 +235,15 @@ cd lago
 echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env
 docker compose up -d
 ```
+
+> [!IMPORTANT]
+> **Upgrading the front image.** From v1.56.0 ([getlago/lago-front#4359](https://github.com/getlago/lago-front/pull/4359)), the `front` container runs nginx as uid 65532 (not root), with a read-only root filesystem, and listens on **8080** (8443 for TLS) instead of 80 (443). The `docker-compose.yml` in this repository already maps the host ports to the new container ports. If you run your own Compose file, Kubernetes manifests or reverse proxy:
+>
+> - Point it at container port `8080`. The host port can stay `80`.
+> - Give `/tmp` a writable mount (a tmpfs or an emptyDir). The container writes its pid file, `env-config.js` and `csp.conf` there.
+> - If you mount your own nginx `default.conf`, listen on 8080/8443, and copy the `env-config.js` location, the dotfile location (it keeps `/.env.sh` private) and the `include /tmp/csp.conf` lines from `extra/nginx-selfsigned.conf`. Do not set `ssl_dhparam`: the image cannot load DH parameter files.
+> - Make TLS keys readable by uid 65532 (`extra/init-selfsigned.sh` and `extra/init-letsencrypt.sh` do this).
+> - Remove any `command:` override for the front service. It never reached nginx; use the `entrypoint:` in `docker-compose.yml` instead.
 
 Use the [self-hosted deployment guide](https://getlago.com/docs/guide/lago-self-hosted/docker#configuration) for persistent storage, SMTP, TLS, object storage, Redis, database configuration, and upgrades. For larger deployments, use the [Lago Helm charts](https://github.com/getlago/lago-helm-charts) and configure [dedicated workers](./docs/architecture.md#dedicated-workers).
 

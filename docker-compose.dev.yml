@@ -349,7 +349,7 @@ services:
       - ./events-processor:/app:cached
 
   pdf:
-    image: getlago/lago-gotenberg:8
+    image: ghcr.io/getlago/lago-gotenberg:8.39
     container_name: lago_pdf_dev
     restart: unless-stopped
     command:
@@ -417,6 +417,7 @@ services:
       - activity_logs
       - api_logs
       - security_logs
+      - wallet_alerts
     volumes:
       - ./scripts/create-topics.sh:/usr/local/bin/create-topics
     environment:
