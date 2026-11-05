@@ -327,11 +327,14 @@ func TestProcessEvent(t *testing.T) {
 
 			// The in memory cache stamps no labels, so nothing is reported.
 			if mode.useCache {
-				assert.Equal(t, 0, testEnv.Producers.attributionValuesProducer.ExecutionCount)
+				assert.Equal(t, 0, testEnv.Producers.attributionValuesProducer.Executions())
 				return
 			}
 
-			assert.Equal(t, 1, testEnv.Producers.attributionValuesProducer.ExecutionCount)
+			// The values are reported from a goroutine, outside the event's errgroup.
+			assert.Eventually(t, func() bool {
+				return testEnv.Producers.attributionValuesProducer.Executions() == 1
+			}, time.Second, 10*time.Millisecond)
 			assert.Equal(t, []byte(orgID+"-sub123"), testEnv.Producers.attributionValuesProducer.Key)
 			assert.JSONEq(
 				t,
