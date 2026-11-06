@@ -16,16 +16,18 @@ import (
 )
 
 type EventProcessor struct {
-	EnrichmentService *EventEnrichmentService
-	ProducerService   *EventProducerService
-	RefreshService    *SubscriptionRefreshService
+	EnrichmentService        *EventEnrichmentService
+	ProducerService          *EventProducerService
+	RefreshService           *SubscriptionRefreshService
+	AttributionValuesService *AttributionValuesService
 }
 
-func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService) *EventProcessor {
+func NewEventProcessor(enrichmentService *EventEnrichmentService, producerService *EventProducerService, refreshService *SubscriptionRefreshService, attributionValuesService *AttributionValuesService) *EventProcessor {
 	return &EventProcessor{
-		EnrichmentService: enrichmentService,
-		ProducerService:   producerService,
-		RefreshService:    refreshService,
+		EnrichmentService:        enrichmentService,
+		ProducerService:          producerService,
+		RefreshService:           refreshService,
+		AttributionValuesService: attributionValuesService,
 	}
 }
 
@@ -111,6 +113,9 @@ func (processor *EventProcessor) processEvent(ctx context.Context, event *models
 		processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 		return nil
 	})
+
+	// Reporting values must never delay the event, so it does not join the event's errgroup.
+	go processor.AttributionValuesService.ReportAttributionValues(ctx, enrichedEvent)
 
 	if enrichedEvent.Subscription != nil && event.NotAPIPostProcessed() {
 		payInAdvanceResult := processor.EnrichmentService.HasPayInAdvanceCharge(enrichedEvent)

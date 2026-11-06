@@ -61,6 +61,7 @@ Additionally there's a few optional environment variables
 | LAGO_KAFKA_SCRAM_ALGORITHM    | Your Broker SCRAM algo, supported values are `SCRAM-SHA-256` and `SCRAM-SHA-512`. <br> If you provide a SCRAM Algo, `LAGO_KAFKA_USERNAME` and `LAGO_KAFKA_PASSWORD` are required |
 | LAGO_KAFKA_USERNAME           | If your broker needs auth, your Kafka Username                                                                                     |
 | LAGO_KAFKA_PASSWORD           | If your broker needs auth, your Kafka password                                                                                     |
+| LAGO_KAFKA_USAGE_ATTRIBUTION_VALUES_TOPIC | Kafka topic on which the account tree values of enriched events are reported to the API (eg: `usage_attribution_values`). Nothing is reported when blank |
 | OTEL_SERVICE_NAME             | OpenTelemetry service name (eg: `events-processor`)                                                                                |
 | OTEL_EXPORTER_OTLP_ENDPOINT   | OpenTelemetry server URL. Setting this environment variable will enable tracing                                                    |
 | OTEL_INSECURE                 | Set to `true` to use the insecure mode of OpenTelemetry                                                                            |
