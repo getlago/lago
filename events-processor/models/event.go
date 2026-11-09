@@ -64,6 +64,14 @@ func (ev *Event) IngestedTime() time.Time {
 	return ev.IngestedAt.Time()
 }
 
+// AttributionValuesMessage reports to the API the account tree values carried by an enriched event.
+type AttributionValuesMessage struct {
+	OrganizationID    string            `json:"organization_id"`
+	SubscriptionID    string            `json:"subscription_id"`
+	AttributionLabels map[string]string `json:"attribution_labels"`
+	Timestamp         float64           `json:"timestamp"`
+}
+
 func (ev *Event) ToEnrichedEvent() utils.Result[*EnrichedEvent] {
 	er := &EnrichedEvent{
 		InitialEvent:            ev,

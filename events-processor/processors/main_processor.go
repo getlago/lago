@@ -39,6 +39,7 @@ const (
 	envLagoKafkaRawEventsTopic                   = "LAGO_KAFKA_RAW_EVENTS_TOPIC"
 	envLagoKafkaScramAlgorithm                   = "LAGO_KAFKA_SCRAM_ALGORITHM"
 	envLagoKafkaTLS                              = "LAGO_KAFKA_TLS"
+	envLagoKafkaUsageAttributionValuesTopic      = "LAGO_KAFKA_USAGE_ATTRIBUTION_VALUES_TOPIC"
 	envLagoKafkaUsername                         = "LAGO_KAFKA_USERNAME"
 	envLagoRedisCacheDB                          = "LAGO_REDIS_CACHE_DB"
 	envLagoRedisCachePassword                    = "LAGO_REDIS_CACHE_PASSWORD"
@@ -158,6 +159,15 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "failed to initialize events dead letter queue producer")
 	}
 
+	// Optional: without the topic, account tree values are not reported.
+	var attributionValuesProducer kafka.MessageProducer
+	if os.Getenv(envLagoKafkaUsageAttributionValuesTopic) != "" {
+		attributionValuesProducer, err = initProducer(ctx, envLagoKafkaUsageAttributionValuesTopic)
+		if err != nil {
+			utils.LogAndPanic(err, "failed to initialize usage attribution values producer")
+		}
+	}
+
 	if config.Cache == nil {
 		var closeDB func()
 		apiStore, closeDB = initApiStore()
@@ -178,6 +188,7 @@ func StartProcessingEvents(ctx context.Context, config *Config) {
 			eventsDeadLetterQueue,
 		),
 		events_processor.NewSubscriptionRefreshService(flagger),
+		events_processor.NewAttributionValuesService(attributionValuesProducer),
 	)
 
 	cg, err := kafka.NewConsumerGroup(
