@@ -1,6 +1,7 @@
 package events_processor
 
 import (
+	"maps"
 	"time"
 
 	"github.com/getlago/lago/events-processor/cache"
@@ -22,6 +23,9 @@ func NewEventEnrichmentService(apiStore *models.ApiStore, memCache *cache.Cache)
 }
 
 func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*models.EnrichedEvent] {
+	// Labels come from the properties as sent, before a custom expression overwrites the metric field.
+	attributionProperties := maps.Clone(event.Properties)
+
 	enrichedEventResult := pipeline.NewBillableMetricEnricher(s.apiStore, s.memCache).Enrich(event)
 	if enrichedEventResult.Failure() {
 		return enrichedEventResult
@@ -53,6 +57,11 @@ func (s *EventEnrichmentService) EnrichEvent(event *models.Event) utils.Result[*
 		}
 	}
 
+	labelsResult := s.enrichWithAttributionLabels(enrichedEvent, attributionProperties)
+	if labelsResult.Failure() {
+		return failedResult(labelsResult, "fetch_usage_attribution_types", "Error fetching usage attribution types")
+	}
+
 	return utils.SuccessResult(enrichedEvent)
 }
 
@@ -74,6 +83,24 @@ func (s *EventEnrichmentService) fetchSubscription(event *models.Event, timestam
 		return s.memCache.SearchSubscriptions(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
 	}
 	return s.apiStore.FetchSubscription(event.OrganizationID, event.ExternalSubscriptionID, timestamp)
+}
+
+// enrichWithAttributionLabels stamps the account tree labels of the event. The billable metric tells
+// whether the organization has usage attribution types, so organizations without them skip the lookup.
+// Events processed with the deprecated in memory cache, which runs without the database, get no labels.
+func (s *EventEnrichmentService) enrichWithAttributionLabels(enrichedEvent *models.EnrichedEvent, properties map[string]any) utils.Result[bool] {
+	if s.apiStore == nil || enrichedEvent.BillableMetric == nil || !enrichedEvent.BillableMetric.HasUsageAttributionTypes {
+		return utils.SuccessResult(false)
+	}
+
+	// A failed lookup is retried like the other enrichment lookups, so the event is not produced without its labels.
+	typesResult := s.apiStore.FetchUsageAttributionTypes(enrichedEvent.OrganizationID)
+	if typesResult.Failure() {
+		return utils.FailedBoolResult(typesResult.Error())
+	}
+
+	enrichedEvent.AttributionLabels = models.BuildAttributionLabels(typesResult.Value(), properties)
+	return utils.SuccessResult(true)
 }
 
 func (s *EventEnrichmentService) enrichWithSubscription(enrichedEvent *models.EnrichedEvent, sub *models.Subscription) utils.Result[*models.EnrichedEvent] {

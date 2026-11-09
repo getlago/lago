@@ -12,7 +12,12 @@ import (
 )
 
 var fetchBillableMetricQuery = regexp.QuoteMeta(`
-	SELECT * FROM "billable_metrics"
+	SELECT billable_metrics.*, EXISTS (
+		SELECT 1 FROM usage_attribution_types
+		WHERE usage_attribution_types.organization_id = billable_metrics.organization_id
+		AND usage_attribution_types.deleted_at IS NULL
+	) AS has_usage_attribution_types
+	FROM "billable_metrics"
 	WHERE organization_id = $1 AND code = $2
 	AND deleted_at IS NULL
 	ORDER BY "billable_metrics"."id"
@@ -54,6 +59,27 @@ func TestFetchBillableMetric(t *testing.T) {
 		assert.Equal(t, "api_requests", metric.FieldName)
 		assert.Equal(t, "count", metric.Expression)
 		assert.False(t, metric.Recurring)
+		assert.False(t, metric.HasUsageAttributionTypes)
+	})
+
+	t.Run("should tell whether the organization has usage attribution types", func(t *testing.T) {
+		store, mock, cleanup := setupApiStore(t)
+		defer cleanup()
+
+		orgID := "1a901a90-1a90-1a90-1a90-1a901a901a90"
+		code := "api_calls"
+
+		rows := sqlmock.NewRows([]string{"id", "organization_id", "code", "has_usage_attribution_types"}).
+			AddRow("bm123", orgID, code, true)
+
+		mock.ExpectQuery(fetchBillableMetricQuery).
+			WithArgs(orgID, code, 1).
+			WillReturnRows(rows)
+
+		result := store.FetchBillableMetric(orgID, code)
+
+		assert.True(t, result.Success())
+		assert.True(t, result.Value().HasUsageAttributionTypes)
 	})
 
 	t.Run("should return recurring billable metric when found", func(t *testing.T) {
