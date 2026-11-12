@@ -36,15 +36,27 @@ func (processor *ProductProcessor) ProcessEvents(ctx context.Context, records []
 	)
 }
 
-// processEvent writes the enriched event. Pricing in advance is not handled yet:
-// the API has no consumer for product events billed in advance.
+// processEvent writes the enriched event, and also sends it to the in advance topic
+// when its contract bills the metric in advance. The API then picks the rate card.
 func (processor *ProductProcessor) processEvent(ctx context.Context, event *models.ProductEvent) utils.Result[*models.ProductEnrichedEvent] {
 	enrichedEventResult := processor.EnrichmentService.EnrichEvent(event)
 	if enrichedEventResult.Failure() {
 		return enrichedEventResult
 	}
 
-	processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEventResult.Value())
+	enrichedEvent := enrichedEventResult.Value()
+	processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+
+	if processor.ProducerService.ChargesInAdvance() && event.NotAPIPostProcessed() {
+		advanceResult := processor.EnrichmentService.HasAdvanceRateCard(enrichedEvent)
+		if advanceResult.Failure() {
+			return pipeline.FailedResult[*models.ProductEnrichedEvent](advanceResult, "fetch_advance_rate_card", "Error fetching advance rate card")
+		}
+
+		if advanceResult.Value() {
+			processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
+		}
+	}
 
 	return enrichedEventResult
 }

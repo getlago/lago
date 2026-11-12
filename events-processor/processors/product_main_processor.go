@@ -36,8 +36,20 @@ func StartProcessingProductEvents(ctx context.Context, config *Config) {
 		utils.LogAndPanic(err, "failed to initialize product events dead letter queue producer")
 	}
 
+	// Optional: without the topic, nothing is charged in advance, so the processor can be
+	// deployed before the topic exists.
+	var inAdvanceProducer kafka.MessageProducer
+	if os.Getenv(envLagoKafkaProductEventsChargedInAdvanceTopic) != "" {
+		inAdvanceProducer, err = initProducer(ctx, envLagoKafkaProductEventsChargedInAdvanceTopic)
+		if err != nil {
+			utils.LogAndPanic(err, "failed to initialize product events charged in advance producer")
+		}
+	}
+
+	// The memory cache holds no contract nor rate card: charging in advance reads
+	// PostgreSQL even with the cache.
 	var productApiStore *models.ApiStore
-	if config.Cache == nil {
+	if config.Cache == nil || inAdvanceProducer != nil {
 		var closeDB func()
 		productApiStore, closeDB = initApiStore()
 		defer closeDB()
@@ -45,7 +57,7 @@ func StartProcessingProductEvents(ctx context.Context, config *Config) {
 
 	productProcessor := product_processor.NewProductProcessor(
 		product_processor.NewEnrichmentService(productApiStore, config.Cache),
-		product_processor.NewProducerService(enrichedProducer, deadLetterQueue),
+		product_processor.NewProducerService(enrichedProducer, inAdvanceProducer, deadLetterQueue),
 	)
 
 	// The consumer group name includes the topic, so LAGO_KAFKA_CONSUMER_GROUP can

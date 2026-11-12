@@ -3,6 +3,7 @@ package product_processor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/getlago/lago/events-processor/cache"
+	"github.com/getlago/lago/events-processor/config/kafka"
 	"github.com/getlago/lago/events-processor/models"
 	"github.com/getlago/lago/events-processor/tests"
 	"github.com/getlago/lago/events-processor/utils"
@@ -63,9 +65,30 @@ func eventRecord(t *testing.T, offset int64, event models.ProductEvent) *kgo.Rec
 type DataStore interface {
 	SetBillableMetric(bm *models.BillableMetric)
 	ExpectBillableMetricNotFound()
+	ExpectAdvanceRateCard(found bool)
+	ExpectAdvanceRateCardError()
+}
+
+// advanceRateCards mocks the advance rate card lookup, which reads PostgreSQL with or
+// without the memory cache.
+type advanceRateCards struct {
+	mock *tests.MockedStore
+}
+
+func (s advanceRateCards) ExpectAdvanceRateCard(found bool) {
+	rows := sqlmock.NewRows([]string{"id"})
+	if found {
+		rows.AddRow("crc123")
+	}
+	s.mock.SQLMock.ExpectQuery(".* FROM contract_rate_cards.*").WillReturnRows(rows)
+}
+
+func (s advanceRateCards) ExpectAdvanceRateCardError() {
+	s.mock.SQLMock.ExpectQuery(".* FROM contract_rate_cards.*").WillReturnError(errors.New("connection refused"))
 }
 
 type CacheDataStore struct {
+	advanceRateCards
 	cache *cache.Cache
 	t     *testing.T
 }
@@ -77,6 +100,7 @@ func (s *CacheDataStore) SetBillableMetric(bm *models.BillableMetric) {
 func (s *CacheDataStore) ExpectBillableMetricNotFound() {}
 
 type MockDataStore struct {
+	advanceRateCards
 	mock *tests.MockedStore
 	t    *testing.T
 }
@@ -94,6 +118,7 @@ func (s *MockDataStore) ExpectBillableMetricNotFound() {
 
 type testProducers struct {
 	enriched   *tests.MockMessageProducer
+	inAdvance  *tests.MockMessageProducer
 	deadLetter *tests.MockMessageProducer
 }
 
@@ -105,34 +130,56 @@ type testEnv struct {
 }
 
 func setupTestEnv(t *testing.T, useCache bool) *testEnv {
+	return newTestEnv(t, useCache, false)
+}
+
+// setupTestEnvChargingInAdvance runs the pipeline with the in advance topic configured.
+func setupTestEnvChargingInAdvance(t *testing.T, useCache bool) *testEnv {
+	return newTestEnv(t, useCache, true)
+}
+
+func newTestEnv(t *testing.T, useCache bool, chargesInAdvance bool) *testEnv {
 	var memCache *cache.Cache
-	var apiStore *models.ApiStore
 	var dataStore DataStore
-	var cleanup func()
+
+	mockedStore, deleteFunc := tests.SetupMockStore(t)
+	cleanup := deleteFunc
+
+	// As in production, the cache mode opens no database unless it charges in advance.
+	var apiStore *models.ApiStore
+	if !useCache || chargesInAdvance {
+		apiStore = models.NewApiStore(mockedStore.DB)
+	}
 
 	if useCache {
 		memCache, _ = cache.NewCache(cache.CacheConfig{
 			Context:  context.Background(),
 			Pipeline: cache.PipelineProductEvents,
 		})
-		dataStore = &CacheDataStore{cache: memCache, t: t}
-		cleanup = func() { memCache.Close() }
+		dataStore = &CacheDataStore{advanceRateCards: advanceRateCards{mock: mockedStore}, cache: memCache, t: t}
+		cleanup = func() {
+			memCache.Close()
+			deleteFunc()
+		}
 	} else {
-		mockedStore, deleteFunc := tests.SetupMockStore(t)
-		apiStore = models.NewApiStore(mockedStore.DB)
-		dataStore = &MockDataStore{mock: mockedStore, t: t}
-		cleanup = deleteFunc
+		dataStore = &MockDataStore{advanceRateCards: advanceRateCards{mock: mockedStore}, mock: mockedStore, t: t}
 	}
 
 	producers := testProducers{
 		enriched:   &tests.MockMessageProducer{},
+		inAdvance:  &tests.MockMessageProducer{},
 		deadLetter: &tests.MockMessageProducer{},
+	}
+
+	var inAdvanceProducer kafka.MessageProducer
+	if chargesInAdvance {
+		inAdvanceProducer = producers.inAdvance
 	}
 
 	return &testEnv{
 		Processor: NewProductProcessor(
 			NewEnrichmentService(apiStore, memCache),
-			NewProducerService(producers.enriched, producers.deadLetter),
+			NewProducerService(producers.enriched, inAdvanceProducer, producers.deadLetter),
 		),
 		Producers: producers,
 		DataStore: dataStore,

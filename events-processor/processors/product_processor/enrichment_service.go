@@ -34,3 +34,18 @@ func (s *EnrichmentService) EnrichEvent(event *models.ProductEvent) utils.Result
 
 	return pipeline.NewBillableMetricEnricher(s.apiStore, s.memCache).EnrichProductEvent(event)
 }
+
+// HasAdvanceRateCard reports whether the event's contract has a rate card billed in
+// advance for its billable metric. It reads PostgreSQL even with the memory cache,
+// which holds no contract nor rate card.
+func (s *EnrichmentService) HasAdvanceRateCard(enrichedEvent *models.ProductEnrichedEvent) utils.Result[bool] {
+	if enrichedEvent.BillableMetric == nil {
+		return utils.SuccessResult(false)
+	}
+
+	return s.apiStore.HasAdvanceRateCard(
+		enrichedEvent.OrganizationID,
+		enrichedEvent.ExternalContractID,
+		enrichedEvent.BillableMetric.ID,
+	)
+}

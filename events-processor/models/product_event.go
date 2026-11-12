@@ -44,6 +44,16 @@ func (ev *ProductEvent) IngestedTime() time.Time {
 	return ev.IngestedAt.Time()
 }
 
+// NotAPIPostProcessed is Event.NotAPIPostProcessed for product events: the API bills
+// in advance the events of the PostgreSQL store itself.
+func (ev *ProductEvent) NotAPIPostProcessed() bool {
+	if ev.Source != HTTP_RUBY {
+		return true
+	}
+
+	return ev.SourceMetadata == nil || !ev.SourceMetadata.ApiPostProcess
+}
+
 func (ev *ProductEvent) ToProductEnrichedEvent() utils.Result[*ProductEnrichedEvent] {
 	er := &ProductEnrichedEvent{
 		InitialEvent:            ev,
