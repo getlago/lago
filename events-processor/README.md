@@ -47,6 +47,7 @@ This app requires some env vars
 | LAGO_KAFKA_PRODUCT_RAW_EVENTS_TOPIC         | Product events pipeline only: raw product events (eg: `product_events_raw`)                   |
 | LAGO_KAFKA_PRODUCT_ENRICHED_EVENTS_TOPIC    | Product events pipeline only: enriched product events (eg: `product_events_enriched`)         |
 | LAGO_KAFKA_PRODUCT_EVENTS_DEAD_LETTER_TOPIC | Product events pipeline only: dead letter queue (eg: `product_events_dead_letter`)            |
+| LAGO_KAFKA_PRODUCT_EVENTS_CHARGED_IN_ADVANCE_TOPIC | Product events pipeline only, optional: events charged in advance (eg: `product_events_charged_in_advance`). Blank charges nothing in advance; set, the pipeline reads PostgreSQL even with the memory cache |
 | LAGO_REDIS_STORE_URL                        | Events pipeline only: Redis URL to store subscription refresh IDs                             |
 | LAGO_REDIS_CACHE_URL                        | Redis URL to store charge usage cache entries                                                 |
 

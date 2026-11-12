@@ -83,3 +83,25 @@ func TestDeadLetterEventOfProductEvent(t *testing.T) {
 	assert.Equal(t, "contract_1", payload.Event["external_contract_id"])
 	assert.NotContains(t, payload.Event, "external_subscription_id")
 }
+
+func TestProductEventNotAPIPostProcessed(t *testing.T) {
+	t.Run("When event source is not HTTP_RUBY", func(t *testing.T) {
+		event := ProductEvent{Source: "REDPANDA_CONNECT"}
+
+		assert.True(t, event.NotAPIPostProcessed())
+	})
+
+	t.Run("When event source is HTTP_RUBY without source metadata", func(t *testing.T) {
+		event := ProductEvent{Source: HTTP_RUBY}
+
+		assert.True(t, event.NotAPIPostProcessed())
+	})
+
+	t.Run("When event source is HTTP_RUBY with source metadata", func(t *testing.T) {
+		event := ProductEvent{Source: HTTP_RUBY, SourceMetadata: &SourceMetadata{ApiPostProcess: true}}
+		assert.False(t, event.NotAPIPostProcessed())
+
+		event.SourceMetadata.ApiPostProcess = false
+		assert.True(t, event.NotAPIPostProcessed())
+	})
+}

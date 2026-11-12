@@ -17,7 +17,7 @@ import (
 
 func TestProduceEnrichedEvent(t *testing.T) {
 	enrichedProducer := &tests.MockMessageProducer{}
-	producerService := NewProducerService(enrichedProducer, &tests.MockMessageProducer{})
+	producerService := NewProducerService(enrichedProducer, nil, &tests.MockMessageProducer{})
 
 	event := models.ProductEnrichedEvent{
 		OrganizationID:     orgID,
@@ -38,9 +38,46 @@ func TestProduceEnrichedEvent(t *testing.T) {
 	assert.NotContains(t, payload, "external_subscription_id")
 }
 
+func TestProduceChargedInAdvanceEvent(t *testing.T) {
+	inAdvanceProducer := &tests.MockMessageProducer{}
+	producerService := NewProducerService(&tests.MockMessageProducer{}, inAdvanceProducer, &tests.MockMessageProducer{})
+
+	event := models.ProductEnrichedEvent{
+		OrganizationID:     orgID,
+		ExternalContractID: "contract_ext_id",
+		Code:               "api_calls",
+		TransactionID:      "transaction_id",
+	}
+
+	producerService.ProduceChargedInAdvanceEvent(context.Background(), &event)
+
+	assert.Equal(t, 1, inAdvanceProducer.ExecutionCount)
+	assert.Equal(t, []byte(orgID+"-transaction_id"), inAdvanceProducer.Key)
+
+	// The same payload and key as product_events_enriched.
+	var payload map[string]any
+	assert.NoError(t, json.Unmarshal(inAdvanceProducer.Value, &payload))
+	assert.Equal(t, "contract_ext_id", payload["external_contract_id"])
+	assert.NotContains(t, payload, "external_subscription_id")
+}
+
+func TestChargesInAdvance(t *testing.T) {
+	t.Run("with the in advance topic", func(t *testing.T) {
+		producerService := NewProducerService(&tests.MockMessageProducer{}, &tests.MockMessageProducer{}, &tests.MockMessageProducer{})
+
+		assert.True(t, producerService.ChargesInAdvance())
+	})
+
+	t.Run("without the in advance topic", func(t *testing.T) {
+		producerService := NewProducerService(&tests.MockMessageProducer{}, nil, &tests.MockMessageProducer{})
+
+		assert.False(t, producerService.ChargesInAdvance())
+	})
+}
+
 func TestProduceToDeadLetterQueue(t *testing.T) {
 	deadLetterProducer := &tests.MockMessageProducer{}
-	producerService := NewProducerService(&tests.MockMessageProducer{}, deadLetterProducer)
+	producerService := NewProducerService(&tests.MockMessageProducer{}, nil, deadLetterProducer)
 
 	failure := utils.FailedResult[*models.ProductEnrichedEvent](errors.New("billable metric not found"))
 	errorResult := pipeline.FailedResult[*models.ProductEnrichedEvent](failure, "fetch_billable_metric", "Error fetching billable metric")
