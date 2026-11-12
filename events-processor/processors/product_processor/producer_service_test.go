@@ -54,7 +54,7 @@ func TestProduceChargedInAdvanceEvent(t *testing.T) {
 	assert.Equal(t, 1, inAdvanceProducer.ExecutionCount)
 	assert.Equal(t, []byte(orgID+"-transaction_id"), inAdvanceProducer.Key)
 
-	// The same payload as product_events_enriched, keyed by contract.
+	// The same payload and key as product_events_enriched.
 	var payload map[string]any
 	assert.NoError(t, json.Unmarshal(inAdvanceProducer.Value, &payload))
 	assert.Equal(t, "contract_ext_id", payload["external_contract_id"])

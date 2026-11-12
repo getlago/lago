@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/getlago/lago/events-processor/models"
 )
 
 func TestEnrichEvent(t *testing.T) {
@@ -57,4 +59,41 @@ func TestEnrichEvent(t *testing.T) {
 		assert.False(t, result.IsRetryable())
 		assert.False(t, result.IsCapturable())
 	})
+}
+
+func TestHasAdvanceRateCard(t *testing.T) {
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("looks the contract's rate cards up for the event's billable metric", func(t *testing.T) {
+				env := setupTestEnvChargingInAdvance(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.ExpectAdvanceRateCard(true)
+
+				event := buildEvent()
+				enriched := &models.ProductEnrichedEvent{
+					OrganizationID:     orgID,
+					ExternalContractID: event.ExternalContractID,
+					BillableMetric:     buildBillableMetric(),
+				}
+				result := env.Processor.EnrichmentService.HasAdvanceRateCard(enriched)
+
+				assert.True(t, result.Success())
+				assert.True(t, result.Value())
+			})
+
+			// Enrichment succeeds without a billable metric when the store returns none:
+			// the lookup must not run, nor read the missing metric's id.
+			t.Run("charges nothing in advance without a billable metric", func(t *testing.T) {
+				env := setupTestEnvChargingInAdvance(t, mode.useCache)
+				defer env.Cleanup()
+
+				enriched := &models.ProductEnrichedEvent{OrganizationID: orgID, ExternalContractID: "contract_ext_id"}
+				result := env.Processor.EnrichmentService.HasAdvanceRateCard(enriched)
+
+				assert.True(t, result.Success())
+				assert.False(t, result.Value())
+			})
+		})
+	}
 }
