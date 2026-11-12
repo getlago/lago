@@ -120,8 +120,11 @@ func TestProcessEventChargedInAdvance(t *testing.T) {
 				event := buildEvent()
 				result := env.Processor.processEvent(context.Background(), &event)
 
+				// Nothing is produced, so the retry of the record does not write the
+				// enriched event twice.
 				assert.False(t, result.Success())
 				assert.Equal(t, "fetch_advance_rate_card", result.ErrorCode())
+				assert.Equal(t, 0, env.Producers.enriched.ExecutionCount)
 				assert.Equal(t, 0, env.Producers.inAdvance.ExecutionCount)
 			})
 		})

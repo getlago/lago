@@ -45,17 +45,21 @@ func (processor *ProductProcessor) processEvent(ctx context.Context, event *mode
 	}
 
 	enrichedEvent := enrichedEventResult.Value()
-	processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
 
+	// Looked up before anything is produced: a failure is retried, and the retry
+	// must not write the enriched event a second time.
+	chargedInAdvance := false
 	if processor.ProducerService.ChargesInAdvance() && event.NotAPIPostProcessed() {
 		advanceResult := processor.EnrichmentService.HasAdvanceRateCard(enrichedEvent)
 		if advanceResult.Failure() {
 			return pipeline.FailedResult[*models.ProductEnrichedEvent](advanceResult, "fetch_advance_rate_card", "Error fetching advance rate card")
 		}
+		chargedInAdvance = advanceResult.Value()
+	}
 
-		if advanceResult.Value() {
-			processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
-		}
+	processor.ProducerService.ProduceEnrichedEvent(ctx, enrichedEvent)
+	if chargedInAdvance {
+		processor.ProducerService.ProduceChargedInAdvanceEvent(ctx, enrichedEvent)
 	}
 
 	return enrichedEventResult
