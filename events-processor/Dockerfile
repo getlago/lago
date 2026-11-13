@@ -11,7 +11,7 @@
 # and digest together when a newer base is published; the base refresh
 # rebuilds deployed tags with a newer RUNTIME_IMAGE in between.
 ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:20261023-r68@sha256:672b5833c6b81a1661997b99e11738d9749992b6d7979afc9f967fa8cb567640
-ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:20261022-r64@sha256:060e8122164955cebddbdfd1e0f971fd901b705b0e9e38ace4b7af98b470afce
+ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:20261111-r1716@sha256:60cbdeeec82e25878a88a12d177b6b9481cf013528f24f7d05f0ad06cb8985f7
 
 # lago-expression builds libexpression_go.so, the cdylib that the
 # expression-go cgo binding links against (`#cgo LDFLAGS:
