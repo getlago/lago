@@ -11,70 +11,149 @@ import (
 	"time"
 )
 
-func ToTime(timestamp any) Result[time.Time] {
-	var seconds int64
-	var nanoseconds int64
+const (
+	minUnixTimestampSeconds int64 = 0
+	maxUnixTimestampSeconds int64 = 253402300799 // 9999-12-31T23:59:59Z
+)
 
+type parsedTimestamp struct {
+	isTime      bool
+	timeValue   time.Time
+	seconds     int64
+	nanoseconds int64
+	floatValue  float64
+}
+
+func validateUnixSeconds(seconds int64) error {
+	if seconds < minUnixTimestampSeconds || seconds > maxUnixTimestampSeconds {
+		return fmt.Errorf("unix timestamp %d out of supported range [%d, %d]", seconds, minUnixTimestampSeconds, maxUnixTimestampSeconds)
+	}
+	return nil
+}
+
+func parseUnixFloat(floatTimestamp float64) (parsedTimestamp, error) {
+	if math.IsNaN(floatTimestamp) || math.IsInf(floatTimestamp, 0) {
+		return parsedTimestamp{}, fmt.Errorf("unix timestamp %v is not finite", floatTimestamp)
+	}
+	if floatTimestamp < float64(minUnixTimestampSeconds) || floatTimestamp > float64(maxUnixTimestampSeconds) {
+		return parsedTimestamp{}, fmt.Errorf("unix timestamp %g out of supported range [%d, %d]", floatTimestamp, minUnixTimestampSeconds, maxUnixTimestampSeconds)
+	}
+
+	seconds := int64(floatTimestamp)
+	nanoseconds := int64((floatTimestamp - float64(seconds)) * 1e9)
+	return parsedTimestamp{
+		seconds:     seconds,
+		nanoseconds: nanoseconds,
+		floatValue:  math.Trunc(floatTimestamp*1000) / 1000,
+	}, nil
+}
+
+func parseTimestampString(timestamp string) (parsedTimestamp, error) {
+	var unixErr error
+
+	if intTimestamp, intErr := strconv.ParseInt(timestamp, 10, 64); intErr == nil {
+		if err := validateUnixSeconds(intTimestamp); err == nil {
+			return parsedTimestamp{
+				seconds:    intTimestamp,
+				floatValue: float64(intTimestamp),
+			}, nil
+		} else {
+			unixErr = err
+		}
+	} else {
+		floatTimestamp, floatErr := strconv.ParseFloat(timestamp, 64)
+		if floatErr == nil {
+			parsed, rangeErr := parseUnixFloat(floatTimestamp)
+			if rangeErr == nil {
+				return parsed, nil
+			}
+			unixErr = rangeErr
+		} else {
+			unixErr = floatErr
+		}
+	}
+
+	timeValue, timeError := time.Parse(time.RFC3339, timestamp)
+	if timeError == nil {
+		return parsedTimestamp{
+			isTime:     true,
+			timeValue:  timeValue,
+			floatValue: float64(timeValue.UnixMilli()) / 1e3,
+		}, nil
+	}
+
+	return parsedTimestamp{}, fmt.Errorf("unsupported timestamp %q: not a Unix timestamp (%v) or RFC3339 (%v)", timestamp, unixErr, timeError)
+}
+
+func ToTime(timestamp any) Result[time.Time] {
 	switch timestamp := timestamp.(type) {
 	case string:
-		floatTimestamp, err := strconv.ParseFloat(timestamp, 64)
-		if err == nil {
-			seconds = int64(floatTimestamp)
-			nanoseconds = int64((floatTimestamp - float64(seconds)) * 1e9)
-		} else {
-			timeValue, timeError := time.Parse(time.RFC3339, timestamp)
-			if timeError != nil {
-				return FailedResult[time.Time](err)
-			}
-			return SuccessResult(timeValue)
+		parsed, err := parseTimestampString(timestamp)
+		if err != nil {
+			return FailedResult[time.Time](err)
 		}
+		if parsed.isTime {
+			return SuccessResult(parsed.timeValue)
+		}
+		return SuccessResult(time.Unix(parsed.seconds, parsed.nanoseconds).In(time.UTC).Truncate(time.Millisecond))
 
 	case int:
-		seconds = int64(timestamp)
-		nanoseconds = 0
+		seconds := int64(timestamp)
+		if err := validateUnixSeconds(seconds); err != nil {
+			return FailedResult[time.Time](err)
+		}
+		return SuccessResult(time.Unix(seconds, 0).In(time.UTC).Truncate(time.Millisecond))
 
 	case int64:
-		seconds = timestamp
-		nanoseconds = 0
+		if err := validateUnixSeconds(timestamp); err != nil {
+			return FailedResult[time.Time](err)
+		}
+		return SuccessResult(time.Unix(timestamp, 0).In(time.UTC).Truncate(time.Millisecond))
 
 	case float64:
-		seconds = int64(timestamp)
-		nanoseconds = int64((timestamp - float64(seconds)) * 1e9)
+		parsed, err := parseUnixFloat(timestamp)
+		if err != nil {
+			return FailedResult[time.Time](err)
+		}
+		return SuccessResult(time.Unix(parsed.seconds, parsed.nanoseconds).In(time.UTC).Truncate(time.Millisecond))
 
 	default:
 		return FailedResult[time.Time](fmt.Errorf("Unsupported timestamp type: %T", timestamp))
 	}
-
-	return SuccessResult(time.Unix(seconds, nanoseconds).In(time.UTC).Truncate(time.Millisecond))
 }
 
 func ToFloat64Timestamp(timeValue any) Result[float64] {
-	var value float64
-
 	switch timestamp := timeValue.(type) {
 	case string:
-		floatTimestamp, err := strconv.ParseFloat(timestamp, 64)
-		if err == nil {
-			value = math.Trunc(floatTimestamp*1000) / 1000
-		} else {
-			timeValue, timeError := time.Parse(time.RFC3339, timestamp)
-
-			if timeError != nil {
-				return FailedResult[float64](err)
-			}
-			value = float64(timeValue.UnixMilli()) / 1e3
+		parsed, err := parseTimestampString(timestamp)
+		if err != nil {
+			return FailedResult[float64](err)
 		}
+		return SuccessResult(parsed.floatValue)
+
 	case int:
-		value = float64(timestamp)
+		seconds := int64(timestamp)
+		if err := validateUnixSeconds(seconds); err != nil {
+			return FailedResult[float64](err)
+		}
+		return SuccessResult(float64(seconds))
+
 	case int64:
-		value = float64(timestamp)
+		if err := validateUnixSeconds(timestamp); err != nil {
+			return FailedResult[float64](err)
+		}
+		return SuccessResult(float64(timestamp))
+
 	case float64:
-		value = float64(timestamp)
+		parsed, err := parseUnixFloat(timestamp)
+		if err != nil {
+			return FailedResult[float64](err)
+		}
+		return SuccessResult(parsed.floatValue)
+
 	default:
 		return FailedResult[float64](fmt.Errorf("Unsupported timestamp type: %T", timestamp))
 	}
-
-	return SuccessResult(value)
 }
 
 type CustomTime time.Time

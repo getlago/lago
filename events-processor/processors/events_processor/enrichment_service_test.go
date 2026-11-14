@@ -111,7 +111,8 @@ func TestEnrichEvent(t *testing.T) {
 
 				enrichResult := testEnv.EventProcessor.EnrichEvent(&event)
 				assert.False(t, enrichResult.Success())
-				assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-06 12:00:00\": invalid syntax", enrichResult.ErrorMsg())
+				assert.Contains(t, enrichResult.ErrorMsg(), "unsupported timestamp \"2025-03-06 12:00:00\": not a Unix timestamp")
+				assert.Contains(t, enrichResult.ErrorMsg(), "or RFC3339")
 				assert.Equal(t, "build_enriched_event", enrichResult.ErrorCode())
 				assert.Equal(t, "Error while converting event to enriched event", enrichResult.ErrorMessage())
 			})
