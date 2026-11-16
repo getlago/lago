@@ -87,6 +87,12 @@ on:
         type: string
         default: ''
 
+      app-client-id:
+        description: 'Client ID of a GitHub App that can read `repository`. With the app-private-key secret, the checkout uses a token of that App instead of repository-token.'
+        required: false
+        type: string
+        default: ''
+
       push:
         description: 'Push the built image(s) to the registry. Set false for PR-only validation builds.'
         required: false
@@ -110,6 +116,10 @@ on:
 
       repository-token:
         description: 'Repository token for github checkout'
+        required: false
+
+      app-private-key:
+        description: 'Private key of the GitHub App in app-client-id'
         required: false
 
       build-secrets:
@@ -189,12 +199,33 @@ jobs:
       metadata-version: ${{ steps.meta.outputs.version }}
 
     steps:
+      - name: Repository to check out
+        id: repo
+        if: inputs.app-client-id != ''
+        env:
+          REPOSITORY: ${{ inputs.repository || github.repository }}
+        run: |
+          echo "owner=${REPOSITORY%%/*}" >>"$GITHUB_OUTPUT"
+          echo "name=${REPOSITORY#*/}" >>"$GITHUB_OUTPUT"
+
+      # A read-only token for that repository only, valid for one hour.
+      - name: GitHub App token
+        id: app-token
+        if: inputs.app-client-id != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ inputs.app-client-id }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ steps.repo.outputs.owner }}
+          repositories: ${{ steps.repo.outputs.name }}
+          permission-contents: read
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref }}
-          token: ${{ secrets.repository-token || github.token }}
+          token: ${{ steps.app-token.outputs.token || secrets.repository-token || github.token }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
