@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -36,6 +37,14 @@ func TestToTime(t *testing.T) {
 				parsedValue: valueFloat,
 			},
 			{
+				timestamp:   "1741007009",
+				parsedValue: valueInt,
+			},
+			{
+				timestamp:   "0",
+				parsedValue: time.Unix(0, 0).UTC(),
+			},
+			{
 				timestamp:   "2025-03-03T13:03:29Z",
 				parsedValue: valueInt,
 			},
@@ -53,9 +62,31 @@ func TestToTime(t *testing.T) {
 	})
 
 	t.Run("With unsuported time format", func(t *testing.T) {
-		result := ToTime("2025-03-03 13:03:29")
-		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03 13:03:29\": invalid syntax", result.ErrorMsg())
+		for _, raw := range []string{
+			"2025-03-03 13:03:29",
+			"1741007009344000000",
+			"-1",
+			"1e400",
+			"NaN",
+			"Inf",
+		} {
+			result := ToTime(raw)
+			assert.False(t, result.Success(), "expected failure for %q", raw)
+			assert.Contains(t, result.ErrorMsg(), "unsupported timestamp")
+			assert.Contains(t, result.ErrorMsg(), "not a Unix timestamp")
+			assert.Contains(t, result.ErrorMsg(), "or RFC3339")
+		}
+
+		for _, raw := range []any{
+			-1,
+			int64(1741007009344000000),
+			float64(-1),
+			math.NaN(),
+			math.Inf(1),
+		} {
+			result := ToTime(raw)
+			assert.False(t, result.Success(), "expected failure for %v", raw)
+		}
 	})
 }
 
@@ -84,6 +115,14 @@ func TestToFloat64Timestamp(t *testing.T) {
 				parsedValue: 1741007009.344,
 			},
 			{
+				timestamp:   "1741007009",
+				parsedValue: 1741007009.0,
+			},
+			{
+				timestamp:   "0",
+				parsedValue: 0.0,
+			},
+			{
 				timestamp:   "1741007009.000001",
 				parsedValue: 1741007009.000,
 			},
@@ -105,9 +144,20 @@ func TestToFloat64Timestamp(t *testing.T) {
 	})
 
 	t.Run("With unsuported time format", func(t *testing.T) {
-		result := ToFloat64Timestamp("2025-03-03 13:03:29")
-		assert.False(t, result.Success())
-		assert.Equal(t, "strconv.ParseFloat: parsing \"2025-03-03 13:03:29\": invalid syntax", result.ErrorMsg())
+		for _, raw := range []string{
+			"2025-03-03 13:03:29",
+			"1741007009344000000",
+			"-1",
+			"1e400",
+			"NaN",
+			"Inf",
+		} {
+			result := ToFloat64Timestamp(raw)
+			assert.False(t, result.Success(), "expected failure for %q", raw)
+			assert.Contains(t, result.ErrorMsg(), "unsupported timestamp")
+			assert.Contains(t, result.ErrorMsg(), "not a Unix timestamp")
+			assert.Contains(t, result.ErrorMsg(), "or RFC3339")
+		}
 	})
 }
 
@@ -130,8 +180,10 @@ func TestCustomTime(t *testing.T) {
 	t.Run("With invalid time format", func(t *testing.T) {
 		ct := &CustomTime{}
 
-		time := "2025-03-03 13:03:29"
-		err := ct.UnmarshalJSON([]byte(time))
+		err := ct.UnmarshalJSON([]byte(`"2025-03-03 13:03:29"`))
+		assert.Error(t, err)
+
+		err = ct.UnmarshalJSON([]byte(`"1741007009344000000"`))
 		assert.Error(t, err)
 	})
 
