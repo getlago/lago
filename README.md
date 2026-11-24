@@ -232,9 +232,19 @@ To self-host Lago or deploy it on-premise, start with a source-based local deplo
 git clone --depth 1 https://github.com/getlago/lago.git
 cd lago
 
-echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env
+# Generate the secrets once. A second run keeps the existing values.
+touch .env
+grep -q '^LAGO_RSA_PRIVATE_KEY=.' .env || echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env
+grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+for key in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+  grep -q "^${key}=." .env || echo "${key}=$(openssl rand -hex 32)" >> .env
+done
+
 docker compose up -d
 ```
+
+> [!WARNING]
+> **Upgrading an install that ran without these secrets?** Do not run the block above as is: new encryption keys make the existing encrypted data unreadable. Read [Secrets](deploy/README.md#secrets) first.
 
 > [!IMPORTANT]
 > **Upgrading the front image.** From v1.56.0 ([getlago/lago-front#4359](https://github.com/getlago/lago-front/pull/4359)), the `front` container runs nginx as uid 65532 (not root), with a read-only root filesystem, and listens on **8080** (8443 for TLS) instead of 80 (443). The `docker-compose.yml` in this repository already maps the host ports to the new container ports. If you run your own Compose file, Kubernetes manifests or reverse proxy:

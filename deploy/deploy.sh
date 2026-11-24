@@ -31,6 +31,20 @@ ask_yes_no() {
     done
 }
 
+# Sets $1 to $2 in the .env file and keeps every other line.
+set_env_var() {
+    local tmp
+    tmp=$(mktemp)
+    grep -v "^$1=" "$ENV_FILE" > "$tmp"
+    echo "$1=$2" >> "$tmp"
+    mv "$tmp" "$ENV_FILE"
+}
+
+# True when $1 is set in the environment or in the .env file.
+env_var_set() {
+    [ -n "${!1}" ] || grep -q "^$1=." "$ENV_FILE"
+}
+
 spinner() {
   local pid=$1
   local delay=0.1
@@ -177,7 +191,8 @@ case "$selected_key" in
     "Light")
         echo "${CYAN}${BOLD}🚀 Downloading Light deployment files...${NORMAL}"
         curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.light.yml
-        curl -s -o .env https://deploy.getlago.com/.env.light.example
+        # Keep an existing .env: it holds the secrets of this install
+        [ -f "$ENV_FILE" ] || curl -s -o "$ENV_FILE" https://deploy.getlago.com/.env.light.example
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Light deployment files${NORMAL}"
         else
@@ -188,7 +203,8 @@ case "$selected_key" in
     "Production")
         echo "${CYAN}${BOLD}🚀 Downloading Production deployment files...${NORMAL}"
         curl -s -o docker-compose.yml https://deploy.getlago.com/docker-compose.production.yml
-        curl -s -o .env https://deploy.getlago.com/.env.production.example
+        # Keep an existing .env: it holds the secrets of this install
+        [ -f "$ENV_FILE" ] || curl -s -o "$ENV_FILE" https://deploy.getlago.com/.env.production.example
         if [ $? -eq 0 ]; then
             echo "${GREEN}✅ Successfully downloaded Production deployment files${NORMAL}"
         else
@@ -285,20 +301,44 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
         echo "${YELLOW}⚠️  No .env file found. Created a new one.${NORMAL}"
     fi
 
-    {
-        echo "# Updated by Lago Deploy"
-        for var in "${mandatory_vars[@]}"; do
-            if [ -z "${!var}" ]; then
-                read -p "${YELLOW}⚠️  $var is missing. Enter value: ${NORMAL}" user_input </dev/tty
-                echo "${var}=${user_input}"
-            else
-                echo "${GREEN}✅ $var is already set.${NORMAL}"
-                echo "${var}=${!var}"
-            fi
-        done
-    } > "$ENV_FILE"
+    for var in "${mandatory_vars[@]}"; do
+        if [ -z "${!var}" ]; then
+            read -p "${YELLOW}⚠️  $var is missing. Enter value: ${NORMAL}" user_input </dev/tty
+            set_env_var "$var" "$user_input"
+        else
+            echo "${GREEN}✅ $var is already set.${NORMAL}"
+        fi
+    done
 
     echo "${GREEN}${BOLD}✅ .env file updated successfully.${NORMAL}"
+    echo ""
+fi
+
+# Generate the secrets once. A later run keeps them: new encryption keys make the existing data
+# unreadable.
+if [[ "$selected_key" != "Quickstart" ]]; then
+    touch "$ENV_FILE"
+    if ! env_var_set SECRET_KEY_BASE; then
+        set_env_var SECRET_KEY_BASE "$(openssl rand -hex 64)"
+        echo "${GREEN}✅ Generated SECRET_KEY_BASE.${NORMAL}"
+    fi
+
+    missing_keys=()
+    for var in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+        env_var_set "$var" || missing_keys+=("$var")
+    done
+    if (( ${#missing_keys[@]} > 0 )); then
+        if ask_yes_no "Generate new encryption keys? Answer no if this install already has data."; then
+            for var in "${missing_keys[@]}"; do
+                set_env_var "$var" "$(openssl rand -hex 32)"
+            done
+            echo "${GREEN}✅ Generated ${missing_keys[*]}.${NORMAL}"
+        else
+            echo "${RED}❌ Set ${missing_keys[*]} in ${ENV_FILE} to the values this install already uses.${NORMAL}"
+            echo "See https://github.com/getlago/lago/blob/main/deploy/README.md#secrets"
+            exit 1
+        fi
+    fi
     echo ""
 fi
 

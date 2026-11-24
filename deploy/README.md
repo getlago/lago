@@ -15,7 +15,17 @@ This configuration can be used for small production usages but it's not recommen
 curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.local.yml
 ```
 
-2. Run the following command to start the project:
+2. Generate the secrets (see [Secrets](#secrets)):
+
+```bash
+touch .env
+grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+for key in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+  grep -q "^${key}=." .env || echo "${key}=$(openssl rand -hex 32)" >> .env
+done
+```
+
+3. Run the following command to start the project:
 
 ```bash
 docker compose up --profile all
@@ -43,7 +53,17 @@ LAGO_DOMAIN=domain.tld
 LAGO_ACME_EMAIL=email@domain.tld
 ```
 
-3. Run the following command to start the project
+3. Generate the secrets (see [Secrets](#secrets)):
+
+```bash
+touch .env
+grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+for key in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+  grep -q "^${key}=." .env || echo "${key}=$(openssl rand -hex 32)" >> .env
+done
+```
+
+4. Run the following command to start the project
 
 ```bash
 docker compose up --profile all
@@ -73,7 +93,17 @@ PORTAINER_USER=lago
 PORTAINER_PASSWORD=changeme
 ```
 
-3. Run the following command to start the project
+3. Generate the secrets (see [Secrets](#secrets)):
+
+```bash
+touch .env
+grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+for key in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+  grep -q "^${key}=." .env || echo "${key}=$(openssl rand -hex 32)" >> .env
+done
+```
+
+4. Run the following command to start the project
 
 ```bash
 docker compose up --profile all
@@ -166,6 +196,34 @@ docker compose up --profile all-no-keys
 ```
 
 *All BE Services use the same RSA key, they will exit immediately if no key is provided.*
+
+### Secrets
+
+The backend services need these secrets. The compose files have no default for them, and they stop with an error if one is missing.
+
+| Variable | Use | If you change it |
+|---|---|---|
+| `SECRET_KEY_BASE` | Signs sessions, cookies and signed URLs | Users log in again. Safe to rotate. |
+| `LAGO_ENCRYPTION_PRIMARY_KEY` | Encrypts sensitive columns (for example integration credentials and webhook signing keys) | The data encrypted with the old key becomes unreadable |
+| `LAGO_ENCRYPTION_DETERMINISTIC_KEY` | Encrypts the columns that Lago searches on | Same as above |
+| `LAGO_ENCRYPTION_KEY_DERIVATION_SALT` | Derives the encryption keys | Same as above |
+
+`deploy.sh` and the commands in the sections above generate each secret once and keep it in `.env`. Keep a backup of `.env`: you cannot recover encrypted data without it.
+
+#### Upgrade an install that used the old defaults
+
+Before this change, the compose files used public placeholder values when a secret was not set. If your install ran with them:
+
+1. Set `SECRET_KEY_BASE` to a new value: `openssl rand -hex 64`. Anyone can read the old value, so replace it now.
+2. Keep the encryption values that your data already uses. Set them in `.env` explicitly:
+
+   ```bash
+   LAGO_ENCRYPTION_PRIMARY_KEY=your-encryption-primary-key
+   LAGO_ENCRYPTION_DETERMINISTIC_KEY=your-encryption-deterministic-key
+   LAGO_ENCRYPTION_KEY_DERIVATION_SALT=your-encryption-derivation-salt
+   ```
+
+   Do not generate new encryption keys for an install that has data. To move to new encryption keys, you must re-encrypt the existing data first.
 
 ## Monitoring
 
