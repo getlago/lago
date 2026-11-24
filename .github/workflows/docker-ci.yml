@@ -14,6 +14,17 @@ jobs:
         with:
           sparse-checkout: |
             docker-compose.yml
+      # In .env, not in one step's env: compose needs the secrets for the
+      # ps, logs and down steps too.
+      - name: Generate secrets
+        run: |
+          {
+            echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\""
+            echo "SECRET_KEY_BASE=$(openssl rand -hex 64)"
+            echo "LAGO_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 32)"
+            echo "LAGO_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 32)"
+            echo "LAGO_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 32)"
+          } > .env
       - name: Launch all services with default configuration
         # Deliberately under the job's 10m cap. A stuck dependency then fails
         # this step with compose's own "dependency failed to start: container
@@ -26,9 +37,7 @@ jobs:
           LAGO_ORG_USER_EMAIL: "foo@bar.com"
           LAGO_ORG_USER_PASSWORD: "foobar"
           LAGO_ORG_API_KEY: "test"
-        run: |
-          export LAGO_RSA_PRIVATE_KEY="`openssl genrsa 2048 | openssl base64 -A`"
-          docker compose up -d --wait --wait-timeout 420
+        run: docker compose up -d --wait --wait-timeout 420
       - name: cURL API
         run: curl -f http://localhost:3000/health
       - name: cURL Front

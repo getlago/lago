@@ -31,18 +31,23 @@ ask_yes_no() {
     done
 }
 
-# Sets $1 to $2 in the .env file and keeps every other line.
+# Sets $1 to $2 in the .env file and keeps every other line. Writes into the
+# file, so its owner and mode stay the same.
 set_env_var() {
     local tmp
     tmp=$(mktemp)
     grep -v "^$1=" "$ENV_FILE" > "$tmp"
     echo "$1=$2" >> "$tmp"
-    mv "$tmp" "$ENV_FILE"
+    cat "$tmp" > "$ENV_FILE"
+    rm -f "$tmp"
 }
 
-# True when $1 is set in the environment or in the .env file.
-env_var_set() {
-    [ -n "${!1}" ] || grep -q "^$1=." "$ENV_FILE"
+# True when $1 is in the .env file. A value set only in the shell is saved to
+# the file first, so a later `docker compose` from another shell has it too.
+env_var_saved() {
+    grep -q "^$1=." "$ENV_FILE" && return 0
+    [ -n "${!1}" ] || return 1
+    set_env_var "$1" "${!1}"
 }
 
 spinner() {
@@ -176,6 +181,12 @@ echo ""
 
 profile="all"
 
+# An existing .env or database volume means that this install can already have encrypted data
+existing_install=false
+if [ -f "$ENV_FILE" ] || docker volume ls -q --filter name=lago_postgres_data 2>/dev/null | grep -q .; then
+    existing_install=true
+fi
+
 # Download docker-compose file based on choice
 case "$selected_key" in
     "Local")
@@ -302,11 +313,11 @@ if [[ "$selected_key" == "Light" || "$selected_key" == "Production" ]]; then
     fi
 
     for var in "${mandatory_vars[@]}"; do
-        if [ -z "${!var}" ]; then
+        if env_var_saved "$var"; then
+            echo "${GREEN}✅ $var is already set.${NORMAL}"
+        else
             read -p "${YELLOW}⚠️  $var is missing. Enter value: ${NORMAL}" user_input </dev/tty
             set_env_var "$var" "$user_input"
-        else
-            echo "${GREEN}✅ $var is already set.${NORMAL}"
         fi
     done
 
@@ -318,24 +329,25 @@ fi
 # unreadable.
 if [[ "$selected_key" != "Quickstart" ]]; then
     touch "$ENV_FILE"
-    if ! env_var_set SECRET_KEY_BASE; then
+    if ! env_var_saved SECRET_KEY_BASE; then
         set_env_var SECRET_KEY_BASE "$(openssl rand -hex 64)"
         echo "${GREEN}✅ Generated SECRET_KEY_BASE.${NORMAL}"
     fi
 
     missing_keys=()
     for var in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
-        env_var_set "$var" || missing_keys+=("$var")
+        env_var_saved "$var" || missing_keys+=("$var")
     done
     if (( ${#missing_keys[@]} > 0 )); then
-        if ask_yes_no "Generate new encryption keys? Answer no if this install already has data."; then
+        if ! $existing_install || ask_yes_no "Generate new encryption keys? Answer no if this install already has data."; then
             for var in "${missing_keys[@]}"; do
                 set_env_var "$var" "$(openssl rand -hex 32)"
             done
             echo "${GREEN}✅ Generated ${missing_keys[*]}.${NORMAL}"
         else
             echo "${RED}❌ Set ${missing_keys[*]} in ${ENV_FILE} to the values this install already uses.${NORMAL}"
-            echo "See https://github.com/getlago/lago/blob/main/deploy/README.md#secrets"
+            echo "If you never set them, this install uses the old default values. See"
+            echo "https://github.com/getlago/lago/blob/main/deploy/README.md#upgrade-an-install-that-used-the-old-defaults"
             exit 1
         fi
     fi
