@@ -237,6 +237,8 @@ cd lago
 
 # Generate the secrets once. A second run keeps the existing values.
 touch .env
+# The file holds secrets: only its owner can read it.
+chmod 600 .env
 # Add a final newline if the file has none: the lines below must not join the last line.
 [ -n "$(tail -c1 .env)" ] && echo >> .env
 grep -q '^LAGO_RSA_PRIVATE_KEY=.' .env || echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env

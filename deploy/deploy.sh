@@ -31,15 +31,31 @@ ask_yes_no() {
     done
 }
 
-# Sets $1 to $2 in the .env file and keeps every other line. Writes into the
-# file, so its owner and mode stay the same.
+# Sets $1 to $2 in the .env file and keeps every other line. Writes a new file next to it and
+# moves it in place only when every write passed, so a failure never empties .env. The file holds
+# secrets, so only its owner can read it.
 set_env_var() {
     local tmp
-    tmp=$(mktemp)
-    grep -v "^$1=" "$ENV_FILE" > "$tmp"
-    echo "$1=$2" >> "$tmp"
-    cat "$tmp" > "$ENV_FILE"
-    rm -f "$tmp"
+    if ! tmp=$(mktemp "${ENV_FILE}.XXXXXX"); then
+        echo "${RED}❌ Could not create a file next to ${ENV_FILE}.${NORMAL}"
+        exit 1
+    fi
+    # grep exits 1 when it keeps no line, which is fine, and 2 when it cannot read the file
+    if ! { { grep -v "^$1=" "$ENV_FILE"; [ $? -le 1 ] && echo "$1=$2"; } > "$tmp" && chmod 600 "$tmp" && mv "$tmp" "$ENV_FILE"; }; then
+        rm -f "$tmp"
+        echo "${RED}❌ Could not write $1 to ${ENV_FILE}. The file did not change.${NORMAL}"
+        exit 1
+    fi
+}
+
+# Sets $1 to $2 random bytes, as hex. Stops when openssl fails, so a secret is never empty.
+set_new_secret() {
+    local value
+    if ! value=$(openssl rand -hex "$2") || [ -z "$value" ]; then
+        echo "${RED}❌ openssl could not generate $1.${NORMAL}"
+        exit 1
+    fi
+    set_env_var "$1" "$value"
 }
 
 # True when $1 is in the .env file. A value set only in the shell is saved to
@@ -75,8 +91,9 @@ echo ""
 echo "${CYAN}${BOLD}🔍 Checking Dependencies...${NORMAL}"
 check_command docker || MISSING_DOCKER=true
 check_command docker-compose || check_command "docker compose" || MISSING_DOCKER_COMPOSE=true
+check_command openssl || MISSING_OPENSSL=true
 
-if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true ]]; then
+if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true || "$MISSING_OPENSSL" = true ]]; then
     echo "${YELLOW}⚠️ Please install missing dependencies:${NORMAL}"
 
     if [ "$MISSING_DOCKER" = true ]; then
@@ -85,6 +102,10 @@ if [[ "$MISSING_DOCKER" = true || "$MISSING_DOCKER_COMPOSE" = true ]]; then
 
     if [ "$MISSING_DOCKER_COMPOSE" = true ]; then
         echo "👉 Docker Compose: https://docs.docker.com/compose/install/"
+    fi
+
+    if [ "$MISSING_OPENSSL" = true ]; then
+        echo "👉 OpenSSL: it generates the secrets of the install"
     fi
 fi
 
@@ -181,10 +202,11 @@ echo ""
 
 profile="all"
 
-# An existing .env or database volume means that this install can already have encrypted data
-existing_install=false
-if [ -f "$ENV_FILE" ] || docker volume ls -q --filter name=lago_postgres_data 2>/dev/null | grep -q .; then
-    existing_install=true
+# A new install has no .env and no database volume. If docker cannot list the volumes, the script
+# cannot tell, so it asks before it generates encryption keys. An external database is checked later.
+new_install=false
+if [ ! -f "$ENV_FILE" ] && volumes=$(docker volume ls -q --filter name=lago_postgres_data 2>/dev/null) && [ -z "$volumes" ]; then
+    new_install=true
 fi
 
 # Download docker-compose file based on choice
@@ -329,24 +351,29 @@ fi
 # unreadable.
 if [[ "$selected_key" != "Quickstart" ]]; then
     touch "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
     if ! env_var_saved SECRET_KEY_BASE; then
-        set_env_var SECRET_KEY_BASE "$(openssl rand -hex 64)"
+        set_new_secret SECRET_KEY_BASE 64
         echo "${GREEN}✅ Generated SECRET_KEY_BASE.${NORMAL}"
     fi
+    # No column uses the deterministic key today, so a new value makes no data unreadable
+    env_var_saved LAGO_ENCRYPTION_DETERMINISTIC_KEY || set_new_secret LAGO_ENCRYPTION_DETERMINISTIC_KEY 32
 
     missing_keys=()
-    for var in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+    for var in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
         env_var_saved "$var" || missing_keys+=("$var")
     done
     if (( ${#missing_keys[@]} > 0 )); then
-        if ! $existing_install || ask_yes_no "Generate new encryption keys? Answer no if this install already has data."; then
+        if { $new_install && [ "$external_pg" != true ]; } || ask_yes_no "Generate new encryption keys? Answer no if this install already has data."; then
             for var in "${missing_keys[@]}"; do
-                set_env_var "$var" "$(openssl rand -hex 32)"
+                set_new_secret "$var" 32
             done
             echo "${GREEN}✅ Generated ${missing_keys[*]}.${NORMAL}"
         else
-            echo "${RED}❌ Set ${missing_keys[*]} in ${ENV_FILE} to the values this install already uses.${NORMAL}"
-            echo "If you never set them, this install uses the old default values. See"
+            echo "${RED}❌ Set ${missing_keys[*]} in ${ENV_FILE} to the values that the existing data uses.${NORMAL}"
+            echo "A new install has no data: run this script again and answer y."
+            echo "Until the values are set, every docker compose command of this install stops with an error."
+            echo "If this install has data and you never set these values, see"
             echo "https://github.com/getlago/lago/blob/main/deploy/README.md#upgrade-an-install-that-used-the-old-defaults"
             exit 1
         fi

@@ -19,6 +19,8 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/d
 
 ```bash
 touch .env
+# The file holds secrets: only its owner can read it.
+chmod 600 .env
 # Add a final newline if the file has none: the lines below must not join the last line.
 [ -n "$(tail -c1 .env)" ] && echo >> .env
 grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
@@ -60,6 +62,8 @@ LAGO_ACME_EMAIL=email@domain.tld
 
 ```bash
 touch .env
+# The file holds secrets: only its owner can read it.
+chmod 600 .env
 # Add a final newline if the file has none: the lines below must not join the last line.
 [ -n "$(tail -c1 .env)" ] && echo >> .env
 grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
@@ -84,6 +88,8 @@ It supports SSL wth Let's Encrypt. :warning: You need a valid domain (with at le
 It also adds multiple services that will help your to handle more load.
 Portainer is also packed to help you scale services and manage your Lago stack.
 
+1. Get the docker compose file
+
 ```bash
 curl -o docker-compose.yml https://raw.githubusercontent.com/getlago/lago/main/deploy/docker-compose.production.yml
 # Keep an existing .env: it holds the secrets of this install
@@ -103,6 +109,8 @@ PORTAINER_PASSWORD=changeme
 
 ```bash
 touch .env
+# The file holds secrets: only its owner can read it.
+chmod 600 .env
 # Add a final newline if the file has none: the lines below must not join the last line.
 [ -n "$(tail -c1 .env)" ] && echo >> .env
 grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
@@ -211,7 +219,7 @@ The backend services need these secrets. The compose files have no default for t
 
 | Variable | Use | If you change it |
 |---|---|---|
-| `SECRET_KEY_BASE` | Signs sessions, cookies and signed URLs | Users log in again. Safe to rotate. |
+| `SECRET_KEY_BASE` | Signs sessions, login tokens, customer portal links and document links | Users log in again. Customer portal and document links that were already sent stop working. No stored data becomes unreadable. |
 | `LAGO_ENCRYPTION_PRIMARY_KEY` | Encrypts sensitive columns (for example integration and payment provider credentials, webhook signing keys) | The data encrypted with the old key becomes unreadable |
 | `LAGO_ENCRYPTION_DETERMINISTIC_KEY` | Reserved for deterministic encryption. No column uses it today | Nothing today |
 | `LAGO_ENCRYPTION_KEY_DERIVATION_SALT` | Derives the encryption keys | The encrypted data becomes unreadable |
