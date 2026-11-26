@@ -6,7 +6,7 @@
   "enabledManagers": ["dockerfile", "gomod"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
-    "description": "Security fixes for events-processor/go.mod, indirect modules included. The preset disables every package outside ghcr.io/getlago, so routine Go updates stay off; Renovate applies this block after that rule. OSV reads the Go vulnerability database, which has advisories that Dependabot cannot match.",
+    "description": "Every Go security fix: any module, direct or indirect, in any go.mod of the repository. OSV reads the Go vulnerability database, which has advisories that Dependabot cannot match. Do not add matchFileNames, matchPackageNames or matchDepTypes here: they narrow the fixes. Routine Go updates stay off because the preset disables every package outside ghcr.io/getlago; Renovate applies this block after that rule. The Go standard library comes from the build base image, which the bases group updates.",
     "enabled": true,
     "postUpdateOptions": ["gomodTidy"]
   }
