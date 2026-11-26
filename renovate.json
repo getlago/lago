@@ -6,22 +6,8 @@
   "enabledManagers": ["dockerfile", "gomod"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
-    "description": "Security fixes only. The packageRules below turn off every other Go update; Renovate applies this block after them, so a vulnerable module gets its own [SECURITY] PR.",
+    "description": "Security fixes for events-processor/go.mod, indirect modules included. The preset disables every package outside ghcr.io/getlago, so routine Go updates stay off; Renovate applies this block after that rule. OSV reads the Go vulnerability database, which has advisories that Dependabot cannot match.",
     "enabled": true,
     "postUpdateOptions": ["gomodTidy"]
-  },
-  "packageRules": [
-    {
-      "description": "events-processor Go modules. The base preset disables every package outside ghcr.io/getlago; this rule turns them back on so Renovate looks them up. No matchDepTypes: Renovate skips indirect deps by default, and a vulnerable indirect dep (golang.org/x/net, klauspost/compress) then never moves. OSV reads the Go vulnerability database, which has advisories that Dependabot cannot match.",
-      "matchManagers": ["gomod"],
-      "matchFileNames": ["events-processor/go.mod"],
-      "enabled": true
-    },
-    {
-      "description": "No routine Go updates: only the vulnerability alerts above open PRs.",
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["major", "minor", "patch", "digest", "pin", "pinDigest", "bump"],
-      "enabled": false
-    }
-  ]
+  }
 }
