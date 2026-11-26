@@ -125,6 +125,7 @@ type testProducers struct {
 type testEnv struct {
 	Processor *ProductProcessor
 	Producers testProducers
+	FlagStore *tests.MockFlagStore
 	DataStore DataStore
 	Cleanup   func()
 }
@@ -136,6 +137,16 @@ func setupTestEnv(t *testing.T, useCache bool) *testEnv {
 // setupTestEnvChargingInAdvance runs the pipeline with the in advance topic configured.
 func setupTestEnvChargingInAdvance(t *testing.T, useCache bool) *testEnv {
 	return newTestEnv(t, useCache, true)
+}
+
+// setupTestEnvWithoutFlagStore runs the pipeline without the Redis store, so no
+// contract is flagged for refresh.
+func setupTestEnvWithoutFlagStore(t *testing.T, useCache bool) *testEnv {
+	env := newTestEnv(t, useCache, false)
+	env.Processor.RefreshService = NewContractRefreshService(nil)
+	env.FlagStore = nil
+
+	return env
 }
 
 func newTestEnv(t *testing.T, useCache bool, chargesInAdvance bool) *testEnv {
@@ -176,12 +187,16 @@ func newTestEnv(t *testing.T, useCache bool, chargesInAdvance bool) *testEnv {
 		inAdvanceProducer = producers.inAdvance
 	}
 
+	flagStore := &tests.MockFlagStore{}
+
 	return &testEnv{
 		Processor: NewProductProcessor(
 			NewEnrichmentService(apiStore, memCache),
 			NewProducerService(producers.enriched, inAdvanceProducer, producers.deadLetter),
+			NewContractRefreshService(flagStore),
 		),
 		Producers: producers,
+		FlagStore: flagStore,
 		DataStore: dataStore,
 		Cleanup:   cleanup,
 	}

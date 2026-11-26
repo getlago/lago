@@ -2,6 +2,7 @@ package product_processor
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,6 +127,95 @@ func TestProcessEventChargedInAdvance(t *testing.T) {
 				assert.Equal(t, "fetch_advance_rate_card", result.ErrorCode())
 				assert.Equal(t, 0, env.Producers.enriched.ExecutionCount)
 				assert.Equal(t, 0, env.Producers.inAdvance.ExecutionCount)
+			})
+		})
+	}
+}
+
+func TestProcessEventContractRefresh(t *testing.T) {
+	for _, mode := range testModes {
+		t.Run(mode.name, func(t *testing.T) {
+			t.Run("flags the contract of an event sent straight to Kafka", func(t *testing.T) {
+				env := setupTestEnv(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.SetBillableMetric(buildBillableMetric())
+
+				event := buildEvent()
+				result := env.Processor.processEvent(context.Background(), &event)
+
+				require.True(t, result.Success())
+				assert.Equal(t, 1, env.Producers.enriched.ExecutionCount)
+				assert.Equal(t, 1, env.FlagStore.ExecutionCount)
+				assert.Equal(t, orgID+":contract_ext_id", env.FlagStore.Key)
+			})
+
+			t.Run("does not flag the contract of an event the API already post processed", func(t *testing.T) {
+				env := setupTestEnv(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.SetBillableMetric(buildBillableMetric())
+
+				event := buildEvent()
+				event.Source = models.HTTP_RUBY
+				event.SourceMetadata = &models.SourceMetadata{ApiPostProcess: true}
+				result := env.Processor.processEvent(context.Background(), &event)
+
+				// The API tracks the contract of the events it post processes itself.
+				require.True(t, result.Success())
+				assert.Equal(t, 1, env.Producers.enriched.ExecutionCount)
+				assert.Equal(t, 0, env.FlagStore.ExecutionCount)
+			})
+
+			t.Run("writes the event and succeeds when the flag fails", func(t *testing.T) {
+				env := setupTestEnvChargingInAdvance(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.SetBillableMetric(buildBillableMetric())
+				env.DataStore.ExpectAdvanceRateCard(true)
+				env.FlagStore.ReturnedError = errors.New("connection refused")
+
+				event := buildEvent()
+				result := env.Processor.processEvent(context.Background(), &event)
+
+				// A failure would send the written event to the dead letter queue, or
+				// write it twice when retried.
+				require.True(t, result.Success())
+				assert.Equal(t, 1, env.Producers.enriched.ExecutionCount)
+				assert.Equal(t, 1, env.Producers.inAdvance.ExecutionCount)
+				assert.Equal(t, 0, env.Producers.deadLetter.ExecutionCount)
+				assert.Equal(t, 1, env.FlagStore.ExecutionCount)
+			})
+
+			t.Run("writes the event without a flag store", func(t *testing.T) {
+				env := setupTestEnvWithoutFlagStore(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.SetBillableMetric(buildBillableMetric())
+
+				event := buildEvent()
+				result := env.Processor.processEvent(context.Background(), &event)
+
+				require.True(t, result.Success())
+				assert.Equal(t, 1, env.Producers.enriched.ExecutionCount)
+				assert.Equal(t, 0, env.Producers.deadLetter.ExecutionCount)
+			})
+
+			t.Run("does not flag the contract when the rate cards can't be looked up", func(t *testing.T) {
+				env := setupTestEnvChargingInAdvance(t, mode.useCache)
+				defer env.Cleanup()
+
+				env.DataStore.SetBillableMetric(buildBillableMetric())
+				env.DataStore.ExpectAdvanceRateCardError()
+
+				event := buildEvent()
+				result := env.Processor.processEvent(context.Background(), &event)
+
+				// The contract is flagged only once its event is written.
+				assert.False(t, result.Success())
+				assert.Equal(t, "fetch_advance_rate_card", result.ErrorCode())
+				assert.Equal(t, 0, env.Producers.enriched.ExecutionCount)
+				assert.Equal(t, 0, env.FlagStore.ExecutionCount)
 			})
 		})
 	}

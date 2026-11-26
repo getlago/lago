@@ -55,9 +55,23 @@ func StartProcessingProductEvents(ctx context.Context, config *Config) {
 		defer closeDB()
 	}
 
+	// Optional: without the Redis store, no contract is flagged for refresh, so the
+	// events of this pipeline do not wake the alerts of their contract.
+	var contractFlagStore models.Flagger
+	if os.Getenv(envLagoRedisStoreURL) != "" {
+		flagStore, err := initFlagStore(ctx, "contract_refreshed_v1")
+		if err != nil {
+			utils.LogAndPanic(err, "Error connecting to the flag store")
+		}
+		defer flagStore.Close()
+
+		contractFlagStore = flagStore
+	}
+
 	productProcessor := product_processor.NewProductProcessor(
 		product_processor.NewEnrichmentService(productApiStore, config.Cache),
 		product_processor.NewProducerService(enrichedProducer, inAdvanceProducer, deadLetterQueue),
+		product_processor.NewContractRefreshService(contractFlagStore),
 	)
 
 	// The consumer group name includes the topic, so LAGO_KAFKA_CONSUMER_GROUP can
