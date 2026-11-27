@@ -156,7 +156,11 @@ services:
     healthcheck:
       test: curl -f http://localhost:3000/health || exit 1
       interval: 10s
-      start_period: 30s
+      # The api has to boot Rails and run the migrations check before /health
+      # answers. On a slow first boot that takes longer than 30s, and compose
+      # then stops the front service with "dependency failed to start", even
+      # though the api turns healthy a moment later.
+      start_period: 120s
       timeout: 60s
       start_interval: 2s
     environment:
