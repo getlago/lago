@@ -14,9 +14,9 @@
 # lago-packages publish. Docker builds from the digest, so a build is
 # reproducible. Renovate (getlago/lago-packages renovate/lago-bases) moves tag
 # and digest together when a newer base is published.
-ARG API_BUILD_IMAGE=ghcr.io/getlago/lago-api-build:20261119-r2082@sha256:df44d064632615619bc3ad1ecd49a5cb93802bd6f4004b56ceee770ac613b53f
-ARG FRONT_BUILD_IMAGE=ghcr.io/getlago/lago-front-build:20261103-r1327@sha256:0e406e30e754d4769ca5181e5fb291fb0b89a6af19c5850405c58b662891f473
-ARG RUNTIME_IMAGE=ghcr.io/getlago/lago-allinone-base:20261119-r2080@sha256:2ed17434c0142d40109497ae9b71c274b60d9cb0bbd2dfef4d958f7e069776d2
+ARG API_BUILD_IMAGE=ghcr.io/getlago/lago-api-build:20261127-r2548@sha256:f68f419ff301ed34d869206b758b84a67408e56a3f4aae2165fc15b2849fdd3d
+ARG FRONT_BUILD_IMAGE=ghcr.io/getlago/lago-front-build:20261127-r2550@sha256:2e8db501c21cd90a0d99c757d8d98390c63aa2c29454578ab85f61b474340a90
+ARG RUNTIME_IMAGE=ghcr.io/getlago/lago-allinone-base:20261127-r2546@sha256:8d31802c637d9122e9e7be221b475af0ca467964081de3adf58766cca5c276a4
 
 # ---------------------------------------------------------------------------
 # Front build — the static bundle that nginx serves.
