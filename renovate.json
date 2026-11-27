@@ -9,5 +9,16 @@
     "description": "Every Go security fix, any module, direct or indirect. Add no match* filter here. Routine updates stay off: the preset disables them.",
     "enabled": true,
     "postUpdateOptions": ["gomodTidy"]
-  }
+  },
+  "packageRules": [
+    {
+      "description": "connectors/go.mod: Redpanda Connect releases (with benthos, which moves with it). The preset disables routine updates; this enables them for Connect only. Lint the configs before merge (connectors/README.md).",
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["connectors/go.mod"],
+      "matchPackageNames": ["github.com/redpanda-data/connect/v4", "github.com/redpanda-data/benthos/v4"],
+      "groupName": "redpanda connect",
+      "enabled": true,
+      "postUpdateOptions": ["gomodTidy"]
+    }
+  ]
 }

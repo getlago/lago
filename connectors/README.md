@@ -85,7 +85,7 @@
 
 ## Upgrading Redpanda Connect
 
-`CONNECT_VERSION` in the `Dockerfile` sets the component behaviour and config schema. After a bump, build the image and check the configs:
+`go.mod` pins `github.com/redpanda-data/connect/v4`, which sets the component behaviour and config schema, and every module it links. Renovate opens the bump PRs. To bump by hand, run `go get github.com/redpanda-data/connect/v4@<version> && go mod tidy` in `connectors/`. Then check that each version in `MIN_MODULE_VERSIONS` (Dockerfile) still holds, build the image and check the configs:
 
 ```shell
 docker build -t lago-connectors:test connectors
