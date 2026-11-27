@@ -27,15 +27,15 @@
 ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:20261127-r2531@sha256:3827d63b661466f30641841417cee8abf13ecfdd91bfcfb91b66c7e0e69a41f0
 ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:20261124-r2333@sha256:875a69e9824e30c3d0f46c4c7b97da40e8c959705ae75b46d53be314d291fb62
 
-# Component behaviour and config schema follow this version. Lint the
-# configs on every bump (see README).
-ARG CONNECT_VERSION=v4.115.1
+# go.mod pins the Redpanda Connect version (github.com/redpanda-data/connect/v4)
+# and every module it links; go.sum verifies them. Component behaviour and
+# config schema follow that version: lint the configs on every bump (README).
+# Renovate's gomod manager bumps Connect and opens a PR for each Go security
+# fix, as it does for any committed go.mod.
 
-# Minimum versions for modules Wiz flagged on earlier images. The build
-# forces none of them: CONNECT_VERSION already selects at or above each one.
-# The check below fails the build if a later CONNECT_VERSION goes below one.
-# To force a version again, `go get` it AFTER `go mod tidy`: tidy recomputes
-# module selection and undoes an earlier bump.
+# Minimum versions for modules scanners flagged on earlier images. go.mod sets
+# at or above each one; the check below fails the build if a later go.mod goes
+# below one (for example a Connect bump followed by `go mod tidy`).
 ARG MIN_MODULE_VERSIONS="golang.org/x/crypto=v0.56.0 golang.org/x/net=v0.58.0 google.golang.org/grpc=v1.83.2 github.com/jackc/pgx/v5=v5.9.2"
 
 # ---------------------------------------------------------------------------
@@ -43,20 +43,14 @@ ARG MIN_MODULE_VERSIONS="golang.org/x/crypto=v0.56.0 golang.org/x/net=v0.58.0 go
 # ---------------------------------------------------------------------------
 FROM ${BUILD_IMAGE} AS build
 
-ARG CONNECT_VERSION
 ARG MIN_MODULE_VERSIONS
 
 WORKDIR /src
 
-COPY main.go .
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 
-# go.mod/go.sum are generated here rather than committed: the module exists
-# only to select components, and `go mod tidy` resolving against the pinned
-# CONNECT_VERSION is what makes the dependency set reproducible. Promote them
-# into the repo if you want the build to run without the module proxy.
-RUN go mod init lago-connectors && \
-    go get github.com/redpanda-data/connect/v4@${CONNECT_VERSION} && \
-    go mod tidy
+COPY main.go .
 
 # Fail the build if a flagged module resolves below its minimum, rather than
 # shipping an image that looks hardened and is not. `go list` reports the
