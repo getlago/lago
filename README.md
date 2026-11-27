@@ -228,11 +228,25 @@ Run the open-source platform from this repository (AGPLv3) in your cloud or on y
 
 To self-host Lago or deploy it on-premise, start with a source-based local deployment:
 
+> [!WARNING]
+> **Upgrading an install that ran without these secrets?** Do not run the block below as is: new encryption keys make the existing encrypted data unreadable. Read [Secrets](deploy/README.md#secrets) first.
+
 ```bash
 git clone --depth 1 https://github.com/getlago/lago.git
 cd lago
 
-echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env
+# Generate the secrets once. A second run keeps the existing values.
+touch .env
+# The file holds secrets: only its owner can read it.
+chmod 600 .env
+# Add a final newline if the file has none: the lines below must not join the last line.
+[ -n "$(tail -c1 .env)" ] && echo >> .env
+grep -q '^LAGO_RSA_PRIVATE_KEY=.' .env || echo "LAGO_RSA_PRIVATE_KEY=\"$(openssl genrsa 2048 | openssl base64 -A)\"" >> .env
+grep -q '^SECRET_KEY_BASE=.' .env || echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+for key in LAGO_ENCRYPTION_PRIMARY_KEY LAGO_ENCRYPTION_DETERMINISTIC_KEY LAGO_ENCRYPTION_KEY_DERIVATION_SALT; do
+  grep -q "^${key}=." .env || echo "${key}=$(openssl rand -hex 32)" >> .env
+done
+
 docker compose up -d
 ```
 
