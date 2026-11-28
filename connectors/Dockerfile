@@ -24,7 +24,7 @@
 # reproducible. Renovate (getlago/lago-packages renovate/lago-bases) moves tag
 # and digest together when a newer base is published; the base refresh
 # rebuilds deployed tags with a newer RUNTIME_IMAGE in between.
-ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:20261127-r2531@sha256:3827d63b661466f30641841417cee8abf13ecfdd91bfcfb91b66c7e0e69a41f0
+ARG BUILD_IMAGE=ghcr.io/getlago/connectors-build:20261128-r2586@sha256:be6b4ed9b4838414077d6c8eb291d256993779ad1b90b30016e9f7dab196d0fb
 ARG RUNTIME_IMAGE=ghcr.io/getlago/connectors-base:20261124-r2333@sha256:875a69e9824e30c3d0f46c4c7b97da40e8c959705ae75b46d53be314d291fb62
 
 # Component behaviour and config schema follow this version. Lint the

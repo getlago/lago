@@ -10,8 +10,8 @@
 # reproducible. Renovate (getlago/lago-packages renovate/lago-bases) moves tag
 # and digest together when a newer base is published; the base refresh
 # rebuilds deployed tags with a newer RUNTIME_IMAGE in between.
-ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:20261127-r2539@sha256:4b66829a79d461407ab390802a541c9acd2aeedc0a8e86548ca84133b8d7be40
-ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:20261127-r2538@sha256:8c3357cb3605f873b444460a34c065399ae97eff99aa03b942996652d5b6939d
+ARG BUILD_IMAGE=ghcr.io/getlago/events-processor-build:20261128-r2594@sha256:3a891c5fb8f69359e26d7375fb2b25068a197e3c72ad62df331b775a957b54b8
+ARG RUNTIME_IMAGE=ghcr.io/getlago/events-processor-base:20261128-r2593@sha256:73e11db94efc036859967221fcd7821ef061e6840bf8f9beb45f9b4d4bcd6c56
 
 # lago-expression builds libexpression_go.so, the cdylib that the
 # expression-go cgo binding links against (`#cgo LDFLAGS:
